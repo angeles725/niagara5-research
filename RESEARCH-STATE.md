@@ -44,15 +44,15 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
      Field names use UNDERSCORES on purpose: they must never collide with the prose greps below. -->
 <!-- research-state.v1 -->
 schema: research-state.v1
-covered_blocks: 44
-gaps_closed: 72
-known_gaps: 223
-investigable_open: 121
+covered_blocks: 45
+gaps_closed: 73
+known_gaps: 226
+investigable_open: 123
 requires_execution_open: 7
 blocked_open: 20
 deferred_open: 3
 undocumented_findings: 0
-blocks_since_retro: 9
+blocks_since_retro: 10
 last_iteration_ts: 2026-09-27T11:10:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
@@ -61,8 +61,8 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 
 ## Coverage
 
-- **Covered blocks**: 44 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15, B16, B17, B18, B19, B20, B21, B22, B23, B24, B25, B26, B27, B28, B29, B30, B31, B32, B33, B34, B35, B36, B37, B38, B39, B40, B41, B42, B43, B46)
-- **Coverage metric**: 72 / 223 closed
+- **Covered blocks**: 45 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15, B16, B17, B18, B19, B20, B21, B22, B23, B24, B25, B26, B27, B28, B29, B30, B31, B32, B33, B34, B35, B36, B37, B38, B39, B40, B41, B42, B43, B46, B47)
+- **Coverage metric**: 73 / 226 closed
 - **Last iteration**: 2026-09-27 — N5-G5 core API delta (B5)
 
 ## Gap-backlog
@@ -257,7 +257,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B42-G4 Authoritative statement on nCloudDriver retirement (newer releases / web) | web | pending |
 | low | B42-G5 Forge message-handler classes | cloudLinkForge | pending |
 | low | B42-G6 Throttle / backpressure numeric defaults | cloudLink | pending |
-| high | B43-G1 KeyRing alias rename javax.baja.security.BAes256PasswordEncoder.key → niagara.security.BAes256PasswordEncoder.key: does N5 (or n5mig) remap it, or do migrated stations lose reversible passwords? | nre KeyRing + migrator | pending |
+| high | B43-G1 KeyRing alias rename javax.baja.security.BAes256PasswordEncoder.key → niagara.security.BAes256PasswordEncoder.key: does N5 (or n5mig) remap it, or do migrated stations lose reversible passwords? | nre KeyRing + migrator | ✅ covered — B47 (MITIGATED by n5mig force-clear/passphrase path; PANCCADIA uses external encoding (3 pbkdf2-aes-256 secrets)) |
 | low | B43-G2 N4 orientSystemDb default-encryption parity (narrows B19-G1) | N4 orientSystemDb | pending |
 | low | B43-G3 N4 EncryptionKeySource member count | N4 baja decompile | pending |
 | low | B43-G4 NativePlatformProviderNpsdk getKeyMaterial0/setKeyMaterial0 native RE | native npsdk lib | pending |
@@ -271,6 +271,9 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | medium | B46-G2 Implement the x-niagara-csrfToken check in the DashboardPan-ux port | our module + web.jar | pending |
 | low | B46-G3 Should the 3 read-side BOrd.get(this, null) resolutions use the request Context | our module | pending |
 | deferred | B46-G5 Port the audited-write fix back into the live N4 DashboardPan source (same N4 gate B829/B830) — product change in the client repo, needs operator decision | client repo | pending (parked; recommendation only — outside research scope) |
+| low | B47-G1 Confirm the vestigial source-.kr extraction code has no live call site (Premigrate + bytecode xref) | migrator.jar | pending |
+| low | B47-G2 Purpose of the source-.kr extraction machinery (dist-container encryption?) | migrator.jar | pending |
+| low | B47-G3 AxPasswordUtil.usesPasswordEncodings definition | migrator/baja | pending |
 | deferred | B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only | N5 GA install | pending (parked; needs a GA build) |
 
 ## Iteration history
@@ -321,6 +324,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | 42 | 2026-09-27 | B28-G7/G2/G3 alarm graph needs javafx (bundled in JRE) + batik (absent from the whole install); fix = 6 compileOnly Maven deps, no stubs; Windows javac.exe hits the same batik gap | B39 | yes · sonnet | 4 new — B39-G1..G4 |
 | 43 | 2026-09-27 | B33-G3/G4/G5 system-property writers (4, hard-coded keys; boot re-applies etc/system.properties), nft adapter dead code, firewall sysprops absent from Supervisor install (§14 correction of B33: 27 keys) | B40 | yes · sonnet | 4 new — B40-G1..G4 |
 | 44 | 2026-09-27 | B41-G6 DashboardPan write path passes the request niagara.context (1 HTTP write site; bytecode-verified) | B46 | yes · sonnet | 5 new — B46-G1..G5 |
+| 45 | 2026-09-27 | B43-G1 reversible secrets across N4→N5: keyring-mode cleared with SEVERE log, external-mode kept with passphrase; PANCCADIA = external, 3 secrets (§14 correction of B24) | B47 | yes · sonnet | 3 new — B47-G1..G3 |
 
 ## Blocked gaps (each tagged with what it needs)
 
@@ -347,7 +351,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 121
+- **Open gaps — read-only investigable**: 123
 - **Open gaps — requires-execution**: 7
 - **Open gaps — blocked**: 20
 - Consecutive iterations with empty backlog (secondary): 0/2

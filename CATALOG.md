@@ -2,7 +2,7 @@
 
 # Block catalog
 
-Total: **44 blocks**
+Total: **45 blocks**
 
 | Block | File | Title |
 |-------|------|-------|
@@ -50,3 +50,4 @@ Total: **44 blocks**
 | 42 | [niagara5-block42.md](niagara5-block42.md) | cloudLink AMQP internals, provider channels, and the fate of N4 nCloudDriver |
 | 43 | [niagara5-block43.md](niagara5-block43.md) | N5 data-at-rest cryptography: KeyRing, EncryptionKeySource and systemDb encryption |
 | 46 | [niagara5-block46.md](niagara5-block46.md) | Audited writes from DashboardPan on N5: passing the request Context (PoC) |
+| 47 | [niagara5-block47.md](niagara5-block47.md) | Do reversible secrets survive N4→N5? The KeyRing alias rename |
