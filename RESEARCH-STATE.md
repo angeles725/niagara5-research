@@ -44,16 +44,16 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
      Field names use UNDERSCORES on purpose: they must never collide with the prose greps below. -->
 <!-- research-state.v1 -->
 schema: research-state.v1
-covered_blocks: 79
-gaps_closed: 170
-known_gaps: 366
-investigable_open: 144
+covered_blocks: 81
+gaps_closed: 175
+known_gaps: 373
+investigable_open: 146
 requires_execution_open: 8
 blocked_open: 34
 deferred_open: 10
 undocumented_findings: 0
-blocks_since_retro: 4
-last_iteration_ts: 2026-09-27T21:15:00Z
+blocks_since_retro: 6
+last_iteration_ts: 2026-09-27T22:30:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
      applies to every corpus (single-focus and campaign alike); the stall-detection instrument reads it
@@ -61,9 +61,9 @@ last_iteration_ts: 2026-09-27T21:15:00Z
 
 ## Coverage
 
-- **Covered blocks**: 79 (B1..B75, B77, B79, B81, B82)
-- **Coverage metric**: 170 / 366 closed
-- **Last iteration**: 2026-09-27 — wave 8 partial (B77/B79/B81/B82; B76/B78/B80 rate-limited): entitlement/frontend/security-residual/migrator
+- **Covered blocks**: 81 (B1..B75, B77, B78, B79, B80, B81, B82)
+- **Coverage metric**: 175 / 373 closed
+- **Last iteration**: 2026-09-27 — wave 8 completion (B78 box/alarm.adb, B80 census) authored directly; B76 native cluster deferred to post-reset delegated wave
 
 ## Gap-backlog
 
@@ -207,7 +207,7 @@ last_iteration_ts: 2026-09-27T21:15:00Z
 | low | B29-G5 compileModuleTestJava "cannot determine module name" message root cause | n-plugin | pending |
 | low | B29-G3 assertArrayEquals mapping in the port script | tools/port-junit4-to-testng.py | pending |
 | low | B25-G1 instanceof-pattern adoption (bytecode-invisible) via decompiled sources | organized/ + docSource | pending |
-| low | B25-G2 Classify the 34 ambiguous Deque-family SequencedCollection call sites | bytecode census | pending |
+| low | B25-G2 Classify the 34 ambiguous Deque-family SequencedCollection call sites | bytecode census | ✅ covered — B80 |
 | medium | B25-G3 Full 253-jar jdeprscan --for-removal pass | all jars | ✅ covered — B44 |
 | low | B25-G4 Read the switch logic of control.jar B*Writable pattern switches | control.jar | ✅ covered — B70 |
 | medium | B32-G2 Compile a program object that depends on a non-default module (readability end-to-end) | prototype run | requires-execution → §19 (needs a running station; blocked with the license gate) |
@@ -225,7 +225,7 @@ last_iteration_ts: 2026-09-27T21:15:00Z
 | medium | B33-G3 All callers of SystemPropertiesUtil.setSystemProperty (ungated except a 24-key denylist) | all modules | ✅ covered — B40 |
 | medium | B33-G4 BServerPort.adapter → nft rule-hint injection reachability | nre + baja | ✅ covered — B40 |
 | medium | B33-G5 Where niagara.firewall.enabled / frontend=nft are set by default (platform template?) | install + platform | ✅ covered — B40 |
-| low | B33-G1 JMX usage across the remaining modules | all modules | pending |
+| low | B33-G1 JMX usage across the remaining modules | all modules | ✅ covered — B80 |
 | low | B33-G6 Operational impact of the firewall losing port-redirect (N4 pf) in N5 nft | platform docs + code | pending |
 | high | B28-G7 niagara.alarm transitive dependency on javafx/batik platform modules forces stub module-info jars when compiling third-party modules on Linux — find the supported way (Windows javac.exe? SDK module path?) | n-plugin + alarm/gx/bajaui module-info | ✅ covered — B39 |
 | medium | B28-G2 Batik (org.apache.xmlgraphics) provider: JavaFX confirmed in the bundled JRE release MODULES (7 javafx.* modules); batik not a JRE module and svgBatik.jar holds no org/apache classes | jre + bin/ext + modules | ✅ covered — B39 |
@@ -321,9 +321,9 @@ last_iteration_ts: 2026-09-27T21:15:00Z
 | low | B55-G2 Decompile okio-jvm for any egress hook | bin/ext okio | pending |
 | low | B55-G4 Does any N5 module hit the okhttp-5.5.0 empty placeholder jar trap | bin/ext + builds | ✅ covered — B74 |
 | medium | B58-G2 Where PANCCADIA's real runtime histories/schedules/px live (not on the Windows Workbench path; prior memory says a Linux snap) | live station host | pending |
-| low | B58-G1 alarm.adb N5-side format compatibility (no N5 alarm.jar decompile yet) | alarm.jar | pending |
+| low | B58-G1 alarm.adb N5-side format compatibility (no N5 alarm.jar decompile yet) | alarm.jar | ✅ covered — B78 |
 | low | B58-G3 systemDb absent: unlicensed vs never-provisioned on this OEM build | install | pending |
-| low | B58-G4 Decode alarm.adb header words 0x0C-0x20 | alarm.adb + tool | pending |
+| low | B58-G4 Decode alarm.adb header words 0x0C-0x20 | alarm.adb + tool | ✅ covered — B78 |
 | low | B59-G1 Is niagara-help guide-search/devguide-search index-backed or linear scan | niagara-help tool | pending |
 | low | B59-G2 BajadocIndex.lookup/ensureTagsLoaded internals (rendering of java.* refs) | help.jar | pending |
 | low | B59-G4 docDeveloperAnalytics.jar own .dat index presence | docDeveloperAnalytics.jar | pending |
@@ -371,7 +371,7 @@ last_iteration_ts: 2026-09-27T21:15:00Z
 | low | B71-G6 DEVICE_REGISTRATION_CLIENT_ID OAuth flow (structure only) | nre.subscription | ✅ covered — B77 |
 | low | B72-G1 Exact FE-selection UI command that sets fieldEditor facet | workbench | pending |
 | low | B72-G2 AgentList.getDefault() specificity algorithm | baja agent | pending |
-| low | B72-G3 fox/box isWar() status + WebSocket-upgrade-filter interaction | fox/box | pending |
+| low | B72-G3 fox/box isWar() status + WebSocket-upgrade-filter interaction | fox/box | ✅ covered — B78 |
 | low | B72-G4 Px-side converter registry | px | pending |
 | low | B73-G1 BNiagaraEdgeLiteStation license-downgrade edge cases | niagaraDriver | pending |
 | low | B73-G2 BReachableStations BQL live-query cost/caching | niagaraDriver | pending |
@@ -400,6 +400,13 @@ last_iteration_ts: 2026-09-27T21:15:00Z
 | low | B82-G2 BFormat.ReflectCall.eval permission-gate caller census | baja | pending |
 | low | B82-G3 AxPasswordUtil recursive-walk callers | migrator/baja | pending |
 | low | B82-G4 BJettyQoSFilterMigrator runtime effect on N5 jetty config | migrator | pending |
+| low | B78-G1 box jetty-web.xml contextPath + WebSocket-upgrade-filter vs auth-filter ordering | box | pending |
+| low | B78-G2 N4 AlarmStoreHeader magic/version compare (alarm.adb upgrade compatibility) | N4 alarm | pending |
+| low | B78-G3 niagaraSync getLicenseFeature consumer: unlicensed fault/down/disabled severity | niagaraSync | pending |
+| low | B78-G4 box wire-format message opcodes / frame body layout | box | pending |
+| low | B80-G1 Full new-vs-old classification of all 110 getFirst/getLast call sites by receiver type | organized/ | pending |
+| low | B80-G2 What Jetty MBeanContainer publishes + platform MBean server remote reachability | jetty | pending |
+| low | B80-G3 Decompile the 5 B31 types from on-host N4-4.15 jars and slot-diff vs 4.14 | N4 4.15 jars | pending |
 | deferred | B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only | N5 GA install | pending (parked; needs a GA build) |
 
 ## Iteration history
@@ -483,6 +490,8 @@ last_iteration_ts: 2026-09-27T21:15:00Z
 | 75 | 2026-09-27 | B59-G1/G2 help linear-scan + bajadoc JDK-null + B21-G1/G2 uxBuilder new/JxBrowser default + B36-G1 buildingJS stale | B75 | yes · sonnet | 4 new — B75-G1..G4 |
 | 77 | 2026-09-27 | B71-G1/G3/G6 entitlement+portal (getPortalUpdates XML-over-HTTPS to legacy host; device-flow OAuth) + B53-G5 (TPK=Honeywell leaf pubkey) + B53-G6 (dev CA dead) | B77 | delegated (rate-limited post-write) | 5 new — B77-G1..G5 |
 | 79 | 2026-09-27 | B21-G4 jxBrowser real version + B75-G4 uxBuilder AMD bundle + B75-G1 preInitialize fallback gates; B36-G3 narrowed | B79 | delegated | 3 new — B79-G1..G3 |
+| 78 | 2026-09-27 | box = Building Object eXchange (N4 carryover, not new) on Jetty-ee11 WS + Fox; B72-G3 + B58-G1/G4 alarm.adb header (MAGIC 1611526157) | B78 | orchestrator-direct (rate-limit fallback) | 4 new — B78-G1..G4 |
+| 80 | 2026-09-27 | B25-G2 SequencedCollection types only in bajaui NSS2; B33-G1 JMX = MXBean introspection + jetty MBeanContainer only, no first-party MBeans | B80 | orchestrator-direct | 3 new — B80-G1..G3 |
 | 81 | 2026-09-27 | B65-G3 permission grant-matching bodies + B38-G3 LDAP Kerberos/GSSAPI REMOVED in N5 + B15-G3 BServerPort opt-in inbound-only nftables firewall; B65-G4 narrowed | B81 | delegated | 3 new — B81-G1..G3 |
 | 82 | 2026-09-27 | B66-G2 ReflectCall.eval permission-gated + B47-G3 AxPasswordUtil recursive walk + B31-G3 BWebBogConverter/QoS property lists; B66-G1 narrowed | B82 | delegated | 4 new — B82-G1..G4 |
 
@@ -525,7 +534,7 @@ last_iteration_ts: 2026-09-27T21:15:00Z
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 144
+- **Open gaps — read-only investigable**: 146
 - **Open gaps — requires-execution**: 8
 - **Open gaps — blocked**: 34
 - Consecutive iterations with empty backlog (secondary): 0/2
