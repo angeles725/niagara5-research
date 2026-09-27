@@ -92,7 +92,6 @@ This index guides through the **28 blocks** of this research. The flat catalog l
 > Readable mirror of `RESEARCH-STATE.md` (authoritative).
 
 - [ ] (high) N5-G3 Bytecode, signing and obfuscation profile: class major 69, NIAGARA4.SF signing, ZKM vs N4, decompiler bake-off — pending
-- [ ] (high) N5-G4 Java 17-25 language feature adoption in Tridium code (records, sealed, switch patterns, virtual threads, text blocks) — pending
 - [ ] (low) N5-G16 N4→N5 porting guide synthesis for own modules (what breaks: Java 8 APIs, removed modules, packaging) — pending
 - [ ] (medium) B2-G5 N5 JS build pipeline (node/yarn/grunt plugins) for -ux style web resources — pending
 - [ ] (medium) B2-G6 Delta list for our build-n4-module kit templates (.gradle.kts) against N5 plugin DSL — pending
@@ -191,10 +190,15 @@ This index guides through the **28 blocks** of this research. The flat catalog l
 - [ ] (low) B29-G4 Does the niagaraTest runner require BTestNg even for pure-logic tests — pending
 - [ ] (low) B29-G5 compileModuleTestJava "cannot determine module name" message root cause — pending
 - [ ] (low) B29-G3 assertArrayEquals mapping in the port script — pending
+- [ ] (low) B25-G1 instanceof-pattern adoption (bytecode-invisible) via decompiled sources — pending
+- [ ] (low) B25-G2 Classify the 34 ambiguous Deque-family SequencedCollection call sites — pending
+- [ ] (medium) B25-G3 Full 253-jar jdeprscan --for-removal pass — pending
+- [ ] (low) B25-G4 Read the switch logic of control.jar B*Writable pattern switches — pending
 - [ ] (deferred) B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only — pending (parked; needs a GA build)
 
 - [x] N5-G1 Module packaging: one jar per module + JPMS module-info.class + module.xml schemaVersion 5 — how rt/ux/wb runtime profiles are expressed without the -rt/-ux split → [Block 1]
 - [x] N5-G2 Module inventory delta N4.14 (OptimizerSupervisor) vs N5 5.0.0.28: added / removed / merged / renamed modules → [Block 13]
+- [x] N5-G4 Java 17-25 language feature adoption in Tridium code (records, sealed, switch patterns, virtual threads, text blocks) → [Block 25]
 - [x] N5-G5 Core API delta javax.baja.* N4 docSource vs N5 docSource (removed / deprecated / new types) → [Block 5]
 - [x] N5-G6 N5 module build toolchain: etc/m2 gradle plugins (n-module, n-java, niagara, nap) and devkit vs N4 Java 8 + slotomatic → [Block 2]
 - [x] N5-G7 Boot/runtime: NRE on JRE 25, bin layout, nre.properties / system.properties, JPMS module loading → [Block 3]

@@ -45,14 +45,14 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
 <!-- research-state.v1 -->
 schema: research-state.v1
 covered_blocks: 28
-gaps_closed: 37
-known_gaps: 148
-investigable_open: 94
+gaps_closed: 38
+known_gaps: 152
+investigable_open: 97
 requires_execution_open: 5
 blocked_open: 10
 deferred_open: 2
 undocumented_findings: 0
-blocks_since_retro: 4
+blocks_since_retro: 5
 last_iteration_ts: 2026-09-27T11:10:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
@@ -62,7 +62,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 ## Coverage
 
 - **Covered blocks**: 28 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15, B16, B17, B18, B19, B20, B21, B22, B23, B24, B25, B26, B27, B29)
-- **Coverage metric**: 37 / 148 closed
+- **Coverage metric**: 38 / 152 closed
 - **Last iteration**: 2026-09-27 — N5-G5 core API delta (B5)
 
 ## Gap-backlog
@@ -72,7 +72,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | high | N5-G1 Module packaging: one jar per module + JPMS module-info.class + module.xml schemaVersion 5 — how rt/ux/wb runtime profiles are expressed without the -rt/-ux split | Java bytecode + module.xml | ✅ covered — B1 |
 | high | N5-G2 Module inventory delta N4.14 (OptimizerSupervisor) vs N5 5.0.0.28: added / removed / merged / renamed modules | jar listing + module.xml | ✅ covered — B13 |
 | high | N5-G3 Bytecode, signing and obfuscation profile: class major 69, NIAGARA4.SF signing, ZKM vs N4, decompiler bake-off | Java bytecode + META-INF | pending |
-| high | N5-G4 Java 17-25 language feature adoption in Tridium code (records, sealed, switch patterns, virtual threads, text blocks) | Java bytecode (javap attributes) | pending |
+| high | N5-G4 Java 17-25 language feature adoption in Tridium code (records, sealed, switch patterns, virtual threads, text blocks) | Java bytecode (javap attributes) | ✅ covered — B25 |
 | high | N5-G5 Core API delta javax.baja.* N4 docSource vs N5 docSource (removed / deprecated / new types) | docSource originals | ✅ covered — B5 |
 | high | N5-G6 N5 module build toolchain: etc/m2 gradle plugins (n-module, n-java, niagara, nap) and devkit vs N4 Java 8 + slotomatic | gradle plugin jars/poms + devkit | ✅ covered — B2 |
 | high | N5-G7 Boot/runtime: NRE on JRE 25, bin layout, nre.properties / system.properties, JPMS module loading | install bin/defaults + baja sys | ✅ covered — B3 |
@@ -206,6 +206,10 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B29-G4 Does the niagaraTest runner require BTestNg even for pure-logic tests | test module | pending |
 | low | B29-G5 compileModuleTestJava "cannot determine module name" message root cause | n-plugin | pending |
 | low | B29-G3 assertArrayEquals mapping in the port script | tools/port-junit4-to-testng.py | pending |
+| low | B25-G1 instanceof-pattern adoption (bytecode-invisible) via decompiled sources | organized/ + docSource | pending |
+| low | B25-G2 Classify the 34 ambiguous Deque-family SequencedCollection call sites | bytecode census | pending |
+| medium | B25-G3 Full 253-jar jdeprscan --for-removal pass | all jars | pending |
+| low | B25-G4 Read the switch logic of control.jar B*Writable pattern switches | control.jar | pending |
 | deferred | B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only | N5 GA install | pending (parked; needs a GA build) |
 
 ## Iteration history
@@ -239,6 +243,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | 25 | 2026-09-27 | B21-G3 web security headers (default CSP allows unsafe-inline; CSRF token only on 4 URL patterns) | B27 | yes · sonnet | 5 new — B27-G1..G6 |
 | 26 | 2026-09-27 | B20-G4 BCapacity hazard — CONFIRMED narrower; PANCCADIA zero exposure (§14 refinement of B20) | B26 | yes · sonnet | 3 new — B26-G2..G4 |
 | 27 | 2026-09-27 | B16-G6 + B16-G1 JUnit4→TestNG (117 asserts, 51/51 pass; test.exe license-gated) | B29 | yes · sonnet | 3 new — B29-G3..G5 |
+| 28 | 2026-09-27 | N5-G4 Java 17-25 feature census (recompiled, not modernized: 45 records, 3 sealed, 33 pattern switches, 0 virtual threads) | B25 | yes · sonnet | 4 new — B25-G1..G4 |
 
 ## Blocked gaps (each tagged with what it needs)
 
@@ -255,7 +260,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 94
+- **Open gaps — read-only investigable**: 97
 - **Open gaps — requires-execution**: 5
 - **Open gaps — blocked**: 10
 - Consecutive iterations with empty backlog (secondary): 0/2
