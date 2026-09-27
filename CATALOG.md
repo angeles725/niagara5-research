@@ -2,7 +2,7 @@
 
 # Block catalog
 
-Total: **31 blocks**
+Total: **35 blocks**
 
 | Block | File | Title |
 |-------|------|-------|
@@ -36,4 +36,8 @@ Total: **31 blocks**
 | 28 | [niagara5-block28.md](niagara5-block28.md) | Porting CompPan and DashboardPan to N5: multi-part merge and the jakarta servlet migration |
 | 29 | [niagara5-block29.md](niagara5-block29.md) | Tests on N5: JUnit4 to TestNG and running them (niagaraTest, test.exe, plain TestNG) |
 | 30 | [niagara5-block30.md](niagara5-block30.md) | N5 bytecode, jar signing and obfuscation profile (and why it decompiles well) |
+| 31 | [niagara5-block31.md](niagara5-block31.md) | Do PANCCADIA's unconverted N4 objects load in N5? Type and slot compatibility census |
 | 32 | [niagara5-block32.md](niagara5-block32.md) | Program objects in N5: in-station compilation, signing and classloading |
+| 33 | [niagara5-block33.md](niagara5-block33.md) | What N5 still gates: reflection, JMX, native access, exec, and the nftables firewall |
+| 34 | [niagara5-block34.md](niagara5-block34.md) | N5 subscription entitlements and capacity licensing: the `nre.jar` `com.tridium.nre.subscription`/`com.tridium.nre.license` bootstrap (closing B6-G1), and `resource.limit`'s NOT-capacity-licensing polarity corrected against B11 §11.5 (closing B11-G1) |
+| 35 | [niagara5-block35.md](niagara5-block35.md) | N5 drivers on the deprecated chassis, the BACnet Descriptor change and niagaraDriver deltas |
