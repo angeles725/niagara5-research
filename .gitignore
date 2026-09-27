@@ -11,6 +11,8 @@ indexes/
 tools/decompilers/*.jar
 tools/decompilers/*.zip
 tools/decompilers/jadx/
+tools/decompilers/jadx-*/
+tools/decompilers/krakatau/
 
 # Python / OS
 __pycache__/
@@ -22,3 +24,8 @@ __pycache__/
 *.env
 .env
 .env.*
+
+# PoC build outputs (Gradle)
+poc/**/.gradle/
+poc/**/build/
+poc/**/.niagara_user_home/

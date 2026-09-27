@@ -2,7 +2,7 @@
 
 # Block catalog
 
-Total: **9 blocks**
+Total: **11 blocks**
 
 | Block | File | Title |
 |-------|------|-------|
@@ -14,4 +14,6 @@ Total: **9 blocks**
 | 6 | [niagara5-block6.md](niagara5-block6.md) | N5 licensing layer: ECDSA-P256 replaces the DSA-1024 master key, `algorithm`/`licenseId` become mandatory license-XML attributes, a `~~` config-home storage tier appears, and the `com.tridium.sys.license.subscription` package is NOT new to N5 |
 | 7 | [niagara5-block7.md](niagara5-block7.md) | N5 code generation: Slotomatic vs the nap annotation processor |
 | 8 | [niagara5-block8.md](niagara5-block8.md) | N5 permission model: SecurityAgent advice and PermissionManager grants |
+| 9 | [niagara5-block9.md](niagara5-block9.md) | Building a minimal N5 module with the shipped Gradle plugins (PoC) |
 | 10 | [niagara5-block10.md](niagara5-block10.md) | Official N4→N5 transition guides: breaking changes and a porting checklist for our modules |
+| 14 | [niagara5-block14.md](niagara5-block14.md) | N4→N5 station migration: n5mig and the migrator SPI |
