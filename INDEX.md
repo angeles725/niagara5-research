@@ -143,9 +143,6 @@ This index guides through the **40 blocks** of this research. The flat catalog l
 - [ ] (low) B13-G3 59 N4 doc-guides absent from docDeveloper.jar — pending
 - [ ] (low) B13-G5 What the Atlas hardware (platHwScanAtlas) is — pending
 - [ ] (low) B13-G6 Licensing of Honeywell-branded modules shipped under vendor Tridium — pending
-- [ ] (medium) B18-G2 cloudLink AMQP link-handler method-body trace — pending
-- [ ] (medium) B18-G7 Fate of N4 nCloudDriver (Azure IoT / Forge) in N5 — pending
-- [ ] (low) B18-G3 Per-provider channel config classes (Forge / HonSbp) — pending
 - [ ] (low) B18-G5 NCS-Agent registration vs cloudLinkNcs station identity convergence — pending
 - [ ] (low) B18-G6 Deeper NCS-Agent Go binary RE beyond strings — pending
 - [ ] (medium) B19-G1 BOrientSystemDb at-rest AES encryption toggle: new in N5 or pre-existing — pending
@@ -225,6 +222,11 @@ This index guides through the **40 blocks** of this research. The flat catalog l
 - [ ] (low) B41-G2 JAAS Subject / AddSubjectFilter contents — pending
 - [ ] (low) B41-G3 Jetty LoginService / UserIdentity resolution — pending
 - [ ] (low) B41-G5 Do first-party N5 servlets thread niagara.context through to writes — pending
+- [ ] (low) B42-G2 Three cloudLinkExtension satellite modules — pending
+- [ ] (low) B42-G3 retriableError() classification body — pending
+- [ ] (low) B42-G4 Authoritative statement on nCloudDriver retirement (newer releases / web) — pending
+- [ ] (low) B42-G5 Forge message-handler classes — pending
+- [ ] (low) B42-G6 Throttle / backpressure numeric defaults — pending
 - [ ] (deferred) B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only — pending (parked; needs a GA build)
 
 - [x] N5-G1 Module packaging: one jar per module + JPMS module-info.class + module.xml schemaVersion 5 — how rt/ux/wb runtime profiles are expressed without the -rt/-ux split → [Block 1]
@@ -272,6 +274,9 @@ This index guides through the **40 blocks** of this research. The flat catalog l
 - [x] B12-G7 LDAP v2/v3 bind details → [Block 38]
 - [x] B12-G8 SRP6 key exchange: new in N5 or carried over → [Block 38]
 - [x] B11-G1 Capacity licensing mode: Metrics.isUsingCapacityLicensing() and resource.limit → [Block 34]
+- [x] B18-G2 cloudLink AMQP link-handler method-body trace → [Block 42]
+- [x] B18-G7 Fate of N4 nCloudDriver (Azure IoT / Forge) in N5 → [Block 42]
+- [x] B18-G3 Per-provider channel config classes (Forge / HonSbp) → [Block 42]
 - [x] B18-G4 Other BINiagaraSyncCapableComplex consumers (full-tree search) → [Block 37]
 - [x] B20-G2 niagaraSync ticks integration in kitControl BLoopPoint (BNiagaraSyncTicks) semantics → [Block 37]
 - [x] B20-G3 BIActionAuditProvider old-value audit path end-to-end → [Block 41]

@@ -45,14 +45,14 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
 <!-- research-state.v1 -->
 schema: research-state.v1
 covered_blocks: 40
-gaps_closed: 61
-known_gaps: 200
-investigable_open: 114
+gaps_closed: 64
+known_gaps: 206
+investigable_open: 116
 requires_execution_open: 7
-blocked_open: 16
+blocked_open: 17
 deferred_open: 2
 undocumented_findings: 0
-blocks_since_retro: 4
+blocks_since_retro: 5
 last_iteration_ts: 2026-09-27T11:10:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
@@ -62,7 +62,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 ## Coverage
 
 - **Covered blocks**: 40 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15, B16, B17, B18, B19, B20, B21, B22, B23, B24, B25, B26, B27, B28, B29, B30, B31, B32, B33, B34, B35, B36, B37, B38, B41, B42)
-- **Coverage metric**: 61 / 200 closed
+- **Coverage metric**: 64 / 206 closed
 - **Last iteration**: 2026-09-27 — N5-G5 core API delta (B5)
 
 ## Gap-backlog
@@ -154,9 +154,9 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B13-G3 59 N4 doc-guides absent from docDeveloper.jar | doc jars | pending |
 | low | B13-G5 What the Atlas hardware (platHwScanAtlas) is | platHwScanAtlas.jar | pending |
 | low | B13-G6 Licensing of Honeywell-branded modules shipped under vendor Tridium | cloudLinkForge/HonSbp | pending |
-| medium | B18-G2 cloudLink AMQP link-handler method-body trace | cloudLink.jar | pending |
-| medium | B18-G7 Fate of N4 nCloudDriver (Azure IoT / Forge) in N5 | N4 vs N5 modules | pending |
-| low | B18-G3 Per-provider channel config classes (Forge / HonSbp) | cloudLink satellites | pending |
+| medium | B18-G2 cloudLink AMQP link-handler method-body trace | cloudLink.jar | ✅ covered — B42 |
+| medium | B18-G7 Fate of N4 nCloudDriver (Azure IoT / Forge) in N5 | N4 vs N5 modules | ✅ covered — B42 |
+| low | B18-G3 Per-provider channel config classes (Forge / HonSbp) | cloudLink satellites | ✅ covered — B42 |
 | low | B18-G4 Other BINiagaraSyncCapableComplex consumers (full-tree search) | organized/ decompile | ✅ covered — B37 |
 | low | B18-G5 NCS-Agent registration vs cloudLinkNcs station identity convergence | NCS-Agent + cloudLinkNcs | pending |
 | low | B18-G6 Deeper NCS-Agent Go binary RE beyond strings | NCS-Agent Go binary | pending |
@@ -252,6 +252,11 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B41-G2 JAAS Subject / AddSubjectFilter contents | web.jar | pending |
 | low | B41-G3 Jetty LoginService / UserIdentity resolution | jetty.jar | pending |
 | low | B41-G5 Do first-party N5 servlets thread niagara.context through to writes | web modules | pending |
+| low | B42-G2 Three cloudLinkExtension satellite modules | cloudLinkExtension* | pending |
+| low | B42-G3 retriableError() classification body | cloudLink | pending |
+| low | B42-G4 Authoritative statement on nCloudDriver retirement (newer releases / web) | web | pending |
+| low | B42-G5 Forge message-handler classes | cloudLinkForge | pending |
+| low | B42-G6 Throttle / backpressure numeric defaults | cloudLink | pending |
 | deferred | B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only | N5 GA install | pending (parked; needs a GA build) |
 
 ## Iteration history
@@ -297,9 +302,11 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | 37 | 2026-09-27 | B12-G5..G8 TOTP enrollment (2 paths, AES-256 reversible at rest, no gauth migration), SAML SP/IdP, LDAP bind, SRP6 (§14 correction of B12) | B38 | yes · sonnet | 4 new — B38-G1..G4 |
 | 38 | 2026-09-27 | B35-G1 + B18-G4 + B20-G2 niagaraSync internals (AND-gate failover, ~180 sync-capable types; ColdRoomPan timers not HA-safe) (§14 refinement of B18) | B37 | yes · sonnet | 6 new — B37-G1..G6 |
 | 39 | 2026-09-27 | B20-G3 + B27-G3 N5 action audit (old value now recorded for 4 writables; null-Context servlet writes still unaudited) + web authn chain | B41 | yes · sonnet | 6 new — B41-G1..G6 |
+| 40 | 2026-09-27 | B18-G2/G3/G7 cloudLink AMQP (in-memory-only offline queue, Azure fingerprint in generic chassis), provider channels, nCloudDriver retired without migrator | B42 | yes · sonnet | 6 new — B42-G1..G6 |
 
 ## Blocked gaps (each tagged with what it needs)
 
+- B42-G1 Live AMQP capture against a cloud tenant — needs: tenant + running station · tried: static only
 - B41-G4 Live confirmation of audited servlet writes — needs: a running N5 station · tried: static only
 - B37-G1 / B37-G3 Live niagaraSync pair probe incl. ColdRoomPan mid-defrost failover — needs: two licensed N5 stations · tried: static only
 - B17-G1 / B29-G2 Real n5mig run and niagaraTest/test.exe run on the PANCCADIA copy — needs: a licensed N5 install (tridium:nre feature) · tried: n5mig -premigrate and -o via WSL interop (FeatureNotLicensedException tridium:nre, exit 253), java Bootstrap fallback (missing JavaFX runtime)
@@ -319,9 +326,9 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 114
+- **Open gaps — read-only investigable**: 116
 - **Open gaps — requires-execution**: 7
-- **Open gaps — blocked**: 16
+- **Open gaps — blocked**: 17
 - Consecutive iterations with empty backlog (secondary): 0/2
 - Budget cap (default safety net): none
 
