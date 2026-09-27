@@ -299,7 +299,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | medium | B51-G5 Does any real N5 gradle.kts need per-profile splitting at all (single-jar world) | PoC build files | ✅ covered — B60 |
 | low | B51-G1 verify-module.sh stored check on N5 jars | prototype build | pending |
 | low | B51-G3 lint-bundled-jar-class-version.sh major-version constants | kit lints | ✅ covered — B60 |
-| low | B51-G4 rc-scan.sh / bog-audit.sh -rt|-ux|-wb assumptions | kit lints | pending |
+| low | B51-G4 rc-scan.sh and bog-audit.sh part-suffix (rt/ux/wb) assumptions | kit lints | pending |
 | low | B51-G6 lint-wb-threading: Swing invokeLater vs JavaFX Platform.runLater on real N5 wb code | prototype build | pending |
 | low | B51-G7 Measured N4 vs N5 explicit dependency counts | module.xml census | ✅ covered — B60 |
 | deferred | B51-G8 Implement the build-n5-module kit fork in niagara-tools (9-step plan in B51 §51.7) | niagara-tools repo | pending (parked; separate kit campaign in niagara-tools with its own gates) |
