@@ -44,15 +44,15 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
      Field names use UNDERSCORES on purpose: they must never collide with the prose greps below. -->
 <!-- research-state.v1 -->
 schema: research-state.v1
-covered_blocks: 55
-gaps_closed: 94
-known_gaps: 271
-investigable_open: 133
+covered_blocks: 56
+gaps_closed: 99
+known_gaps: 275
+investigable_open: 131
 requires_execution_open: 8
-blocked_open: 25
+blocked_open: 26
 deferred_open: 10
 undocumented_findings: 0
-blocks_since_retro: 5
+blocks_since_retro: 6
 last_iteration_ts: 2026-09-27T11:10:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
@@ -61,8 +61,8 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 
 ## Coverage
 
-- **Covered blocks**: 55 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15, B16, B17, B18, B19, B20, B21, B22, B23, B24, B25, B26, B27, B28, B29, B30, B31, B32, B33, B34, B35, B36, B37, B38, B39, B40, B41, B42, B43, B44, B45, B46, B47, B48, B49, B50, B51, B52, B53, B54, B56)
-- **Coverage metric**: 94 / 271 closed
+- **Covered blocks**: 56 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15, B16, B17, B18, B19, B20, B21, B22, B23, B24, B25, B26, B27, B28, B29, B30, B31, B32, B33, B34, B35, B36, B37, B38, B39, B40, B41, B42, B43, B44, B45, B46, B47, B48, B49, B50, B51, B52, B53, B54, B56, B57)
+- **Coverage metric**: 99 / 275 closed
 - **Last iteration**: 2026-09-27 — N5-G5 core API delta (B5)
 
 ## Gap-backlog
@@ -160,8 +160,8 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B18-G4 Other BINiagaraSyncCapableComplex consumers (full-tree search) | organized/ decompile | ✅ covered — B37 |
 | low | B18-G5 NCS-Agent registration vs cloudLinkNcs station identity convergence | NCS-Agent + cloudLinkNcs | pending |
 | low | B18-G6 Deeper NCS-Agent Go binary RE beyond strings | NCS-Agent Go binary | pending |
-| medium | B19-G1 BOrientSystemDb at-rest AES encryption toggle: new in N5 or pre-existing | orientSystemDb.jar vs N4 | pending |
-| low | B19-G2 EncryptionKeySource enum in N4 (never decompiled there) vs N5 five members | N4 baja decompile | pending |
+| medium | B19-G1 BOrientSystemDb at-rest AES encryption toggle: new in N5 or pre-existing | orientSystemDb.jar vs N4 | ✅ covered — B57 |
+| low | B19-G2 EncryptionKeySource enum in N4 (never decompiled there) vs N5 five members | N4 baja decompile | ✅ covered — B57 |
 | low | B19-G4 KeyRing/SecurityInitializer proprietary blocker unchanged in N5 | nre/baja | ✅ covered — B43 |
 | medium | B19-G5 OrientDB 3.2.23 → 3.2.55 on-disk compatibility for migrated stations | prototype run | requires-execution → §19 (open an N4 systemDb store with the N5 OrientDB libs) |
 | medium | B17-G2 Why wb.exe boots on the unlicensed beta while n5mig/station do not (tridium:nre gate path) | nre.jar + launchers | ✅ covered — B53 |
@@ -258,8 +258,8 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B42-G5 Forge message-handler classes | cloudLinkForge | pending |
 | low | B42-G6 Throttle / backpressure numeric defaults | cloudLink | pending |
 | high | B43-G1 KeyRing alias rename javax.baja.security.BAes256PasswordEncoder.key → niagara.security.BAes256PasswordEncoder.key: does N5 (or n5mig) remap it, or do migrated stations lose reversible passwords? | nre KeyRing + migrator | ✅ covered — B47 (MITIGATED by n5mig force-clear/passphrase path; PANCCADIA uses external encoding (3 pbkdf2-aes-256 secrets)) |
-| low | B43-G2 N4 orientSystemDb default-encryption parity (narrows B19-G1) | N4 orientSystemDb | pending |
-| low | B43-G3 N4 EncryptionKeySource member count | N4 baja decompile | pending |
+| low | B43-G2 N4 orientSystemDb default-encryption parity (narrows B19-G1) | N4 orientSystemDb | ✅ covered — B57 |
+| low | B43-G3 N4 EncryptionKeySource member count | N4 baja decompile | ✅ covered — B57 |
 | low | B43-G4 NativePlatformProviderNpsdk getKeyMaterial0/setKeyMaterial0 native RE | native npsdk lib | pending |
 | low | B39-G2 Does the batik-awt-util version matter beyond 1.19 | prototype build | pending |
 | medium | B39-G3 Why 3 other absent gx.jar requires (batik.transcoder, swt win32, owasp.encoder) never fail compilation | javac module resolution | pending |
@@ -303,7 +303,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B51-G6 lint-wb-threading: Swing invokeLater vs JavaFX Platform.runLater on real N5 wb code | prototype build | pending |
 | low | B51-G7 Measured N4 vs N5 explicit dependency counts | module.xml census | pending |
 | deferred | B51-G8 Implement the build-n5-module kit fork in niagara-tools (9-step plan in B51 §51.7) | niagara-tools repo | pending (parked; separate kit campaign in niagara-tools with its own gates) |
-| medium | B53-G3 niagara.commandLinePropertyDenyList is itself read via System.getProperty — can a -D override neuter the denylist (static hypothesis, measure) | nre/baja Nre | pending |
+| medium | B53-G3 niagara.commandLinePropertyDenyList is itself read via System.getProperty — can a -D override neuter the denylist (static hypothesis, measure) | nre/baja Nre | ✅ covered — B57 |
 | low | B53-G2 portalApi LicenseDownload flow | portalApi | pending |
 | low | B53-G4 Runtime cacerts contents (structure only) | install jre | pending |
 | low | B53-G5 TPK pin vs Honeywell leaf key identity | nre + signed jars | pending |
@@ -314,6 +314,9 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B56-G2 Niagara Sync vs Cloud Suite licensing coupling | web + license features | pending |
 | deferred | B56-G3 Supervisor Linux support at N5 GA | N5 GA docs | pending (parked; revisit at GA) |
 | low | B56-G4 Survey the rest of the 2023 Loyalty Program Q&A transcript | web | pending |
+| low | B57-G1 Are nre.properties-sourced JVM args also cmdline::-tagged (nre.dll disassembly) | nre.dll | pending |
+| medium | B57-G2 How platDaemon spawns station.exe (no ProcessBuilder in the Java corpus) — remote reachability of JVM-arg injection | platDaemon + native | pending |
+| low | B57-G4 N4 BogPasswordObjectEncoder semantics for shared/undefined | N4 baja | pending |
 | deferred | B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only | N5 GA install | pending (parked; needs a GA build) |
 
 ## Iteration history
@@ -375,9 +378,11 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | 53 | 2026-09-27 | B17-G2/B23-G3/B30-G3/B34-G3 launch gates: tridium:nre allowlist (WbMain, LicenseDownload), skipModuleValidation not denylisted, trust anchor = runtime cacerts + TPK pin, LicenseAccessKey via niagarad | B53 | yes · sonnet | 6 new — B53-G1..G6 |
 | 54 | 2026-09-27 | B46-G2/B27-G6/B5-G4/B5-G2 DashboardPan CSRF via CsrfUtil + /api/csrfToken; zero javax/servlet residue in 4 built jars; BObject.equals removal is not a risk | B52 | yes · sonnet | 4 new — B52-G1..G5 |
 | 55 | 2026-09-27 | B48-G1/G5 public Java version (all first-party say 25; Java 21 only in 3 third-party pages) and HA naming (Niagara Sync = tridium:niagaraSync) | B56 | yes · sonnet | 4 new — B56-G1..G4 |
+| 56 | 2026-09-27 | B53-G3 denylist self-override CONFIRMED but bounded to host-admin; nre.properties is a 2nd JVM-arg surface; B43-G2/G3 N4 parity: systemDb encrypted-by-default and EncryptionKeySource unchanged since N4 | B57 | yes · sonnet | 4 new — B57-G1..G4 |
 
 ## Blocked gaps (each tagged with what it needs)
 
+- B57-G3 Live reproduction of the denylist -D override — needs: a running station with controllable launch args · tried: static trace only
 - B56-G1 Wayback Machine crawl of Tridium pages for the Java 21 → 25 change — needs: a fetch tool allowed on web.archive.org · tried: WebFetch (refused for that domain), live pages
 - B52-G4 Live CSRF round trip on a station — needs: a running licensed N5 station · tried: build + javap only
 - B53-G1 Live wb.exe license dialog path — needs: GUI session on the Windows host · tried: -help only (short-circuits before the check)
@@ -406,9 +411,9 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 133
+- **Open gaps — read-only investigable**: 131
 - **Open gaps — requires-execution**: 8
-- **Open gaps — blocked**: 25
+- **Open gaps — blocked**: 26
 - Consecutive iterations with empty backlog (secondary): 0/2
 - Budget cap (default safety net): none
 
