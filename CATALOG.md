@@ -2,7 +2,7 @@
 
 # Block catalog
 
-Total: **75 blocks**
+Total: **79 blocks**
 
 | Block | File | Title |
 |-------|------|-------|
@@ -81,3 +81,7 @@ Total: **75 blocks**
 | 73 | [niagara5-block73.md](niagara5-block73.md) | `BNiagaraEdgeLiteStation` licensing/identity gating, the Fox-websocket-behavior enum plus `BReachableStations` topology discovery, three trivial `niagaraSync` point-folder markers, `modbusAsync`/`modbusTcp`'s `basicDriver` chassis lineage, and a corpus-wide negative-existence census for list/queue-shaped `niagaraSync` state |
 | 74 | [niagara5-block74.md](niagara5-block74.md) | Closing the build-toolchain/devkit cluster: the wizard's greenfield driver scaffold, the `native`/`npsdk-native` Gradle plugin's real (property-driven) compiler invocation, a Slotomatic Context-overload feasibility verdict, a whole-corpus generated-action-invoke census, and the okhttp-5.5.0 placeholder-jar trap ruled out |
 | 75 | [niagara5-block75.md](niagara5-block75.md) | Closing five named gaps across the help/doc-tooling and Workbench-UI clusters: `BajadocIndex.lookup()`'s exact-then-wildcard match, the `niagara-help` guide-search linear scan, `uxBuilder`'s `ux/make`+`ux/fe` novelty, the JxBrowser-vs-JavaFX-WebView default, and a confirmed-stale N4-era `buildingJS.html` |
+| 77 | [niagara5-block77.md](niagara5-block77.md) | Closing the entitlement/portal/cert cluster: `PortalLicenseUtil.getPortalUpdates()`'s real HTTP body, the subscription-API field-level request/response schema, the `DEVICE_REGISTRATION_CLIENT_ID` OAuth device-flow structure, and two code-signing trust-anchor identity questions |
+| 79 | [niagara5-block79.md](niagara5-block79.md) | Closing three named gaps and narrowing a fourth: TeamDev jxbrowser's actual shipped version vs. a stale Tridium log string, `uxBuilder.jar`'s built AMD bundle structure and entry points, `BJxWebBrowserImpl`/`BFxWebBrowserImpl`'s `preInitialize()` fallback gates, and the still-unnamed `grunt-niagara`-successor npm package |
+| 81 | [niagara5-block81.md](niagara5-block81.md) | Closing the security-residual cluster: `FilePermission`/`RuntimeExecPermission`/`NiagaraBasicPermission`'s grant-matching bodies, `securityBridge.jar`'s unmodularized readability edge (narrowing away from `-Xbootclasspath/a:`), LDAP Kerberos/GSSAPI support REMOVED (not relocated) in N5, and `BServerPort`'s opt-in, inbound-only nftables firewall |
+| 82 | [niagara5-block82.md](niagara5-block82.md) | Closing the migrator/backup residual cluster: `BFormat.ReflectCall.eval()`'s permission-gated reflection semantics, `AxPasswordUtil.usesPasswordEncodings`'s exhaustive recursive walk, `BWebBogConverter`/`BJettyQoSFilterMigrator`'s exact property lists, and `backup.jar`'s own live (and partly dead) `.dist`-container KeyRing mechanism |

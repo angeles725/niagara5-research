@@ -443,6 +443,21 @@ This index guides through the **61 blocks** of this research. The flat catalog l
 - [x] B21-G2 JxBrowser is Workbench default; JavaFX WebView fallback, never on a station → [Block 75]
 - [x] B36-G1 buildingJS.html is stale unmodified N4 content (cites com.tridium.n-grunt, 4.10) → [Block 75]
 
+- [x] B71-G1 PortalLicenseUtil.getPortalUpdates = XML-over-HTTPS POST to a legacy Tridium portal host → [Block 77]
+- [x] B71-G3 nre.jar subscription API request/response field schema (RetrieveEntitlements/RegistrationApi) → [Block 77]
+- [x] B71-G6 DEVICE_REGISTRATION_CLIENT_ID OAuth 2.0 device-authorization flow structure → [Block 77]
+- [x] B53-G5 SecurityConstants.TPK = Honeywell Niagara4Modules code-signing leaf public key (byte-identical) → [Block 77]
+- [x] B53-G6 TRIDIUM_DEV_CA_CERT = dev-build-only fallback anchor, structurally dead in this build → [Block 77]
+- [x] B21-G4 jxBrowser shipped version vs stale 7.30.3 log string resolved → [Block 79]
+- [x] B75-G4 uxBuilder.jar built AMD bundle structure + entry points → [Block 79]
+- [x] B75-G1 BJxWebBrowserImpl/BFxWebBrowserImpl preInitialize() fallback gates → [Block 79]
+- [x] B65-G3 FilePermission/RuntimeExecPermission/NiagaraBasicPermission grant-matching bodies → [Block 81]
+- [x] B38-G3 LDAP Kerberos/GSSAPI support REMOVED (not relocated) in N5 → [Block 81]
+- [x] B15-G3 BServerPort opt-in, inbound-only nftables firewall (OS-level egress finding) → [Block 81]
+- [x] B66-G2 BFormat.ReflectCall.eval() permission-gated reflection semantics → [Block 82]
+- [x] B47-G3 AxPasswordUtil.usesPasswordEncodings exhaustive recursive walk → [Block 82]
+- [x] B31-G3 BWebBogConverter/BJettyQoSFilterMigrator exact property lists → [Block 82]
+
 ## Non-investigable gaps (without a running N5 station)
 
 - See `RESEARCH-STATE.md` → Blocked gaps.
