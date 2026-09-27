@@ -45,14 +45,14 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
 <!-- research-state.v1 -->
 schema: research-state.v1
 covered_blocks: 35
-gaps_closed: 44
-known_gaps: 165
-investigable_open: 102
+gaps_closed: 46
+known_gaps: 171
+investigable_open: 105
 requires_execution_open: 6
-blocked_open: 11
+blocked_open: 12
 deferred_open: 2
 undocumented_findings: 0
-blocks_since_retro: 9
+blocks_since_retro: 10
 last_iteration_ts: 2026-09-27T11:10:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
@@ -62,7 +62,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 ## Coverage
 
 - **Covered blocks**: 35 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15, B16, B17, B18, B19, B20, B21, B22, B23, B24, B25, B26, B27, B28, B29, B30, B31, B32, B33, B34, B35)
-- **Coverage metric**: 44 / 165 closed
+- **Coverage metric**: 46 / 171 closed
 - **Last iteration**: 2026-09-27 — N5-G5 core API delta (B5)
 
 ## Gap-backlog
@@ -112,7 +112,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | medium | B7-G1 Exact Gradle task-graph edge slotomatic ↔ compileJava ↔ nap processor | prototype build | ✅ covered — B9 |
 | low | B7-G2 Defining module of niagara.rpc.NiagaraRpc (claimed by NullProcessor) | module bytecode | pending |
 | high | B8-G4 Confirm or refute that outbound HTTP/sockets from third-party modules are ungated in N5 (okhttp3/Jetty client layer) | nre.jar + bin/ext + module bytecode | ✅ covered — B15 |
-| medium | B8-G3 Are reflection / JMX / native-library / system-property accesses gated elsewhere in N5 | nre.jar + baja.jar | pending |
+| medium | B8-G3 Are reflection / JMX / native-library / system-property accesses gated elsewhere in N5 | nre.jar + baja.jar | ✅ covered — B33 |
 | low | B8-G1 ModifyProtectedPropertiesPermission construction sites | module bytecode | pending |
 | low | B8-G2 Permission-denial log filename: code vs doc discrepancy | nre.jar | pending |
 | medium | B10-G1 Compile-verify the 15-item porting checklist by building DashboardPan/CompPan/ColdRoomPan against N5 | prototype build | ✅ covered — B16 |
@@ -136,7 +136,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | medium | B15-G2 Independent egress gate inside okhttp / jetty-client / jetty library internals | bin/ext third-party jars | pending |
 | low | B15-G3 OS/platform-level egress control outside NiagaraPermission (daemon, platform firewall) | platform modules | pending |
 | low | B15-G4 Full niagara.security.dashboard module: any provider surfacing network grants | security dashboard module | pending |
-| medium | B12-G4 nftables firewall backend: N5-only? and is it PermissionManager-gated | nre.jar firewall | pending |
+| medium | B12-G4 nftables firewall backend: N5-only? and is it PermissionManager-gated | nre.jar firewall | ✅ covered — B33 |
 | medium | B12-G5 totpAuth enrollment UI flow and secret storage path | totpAuth.jar | pending |
 | medium | B12-G6 SAML IdP servlet flow in N5 | saml.jar | pending |
 | low | B12-G1 Location of the Nimbus OAuth SDK jar required by oauth2 | bin/ext + modules | pending |
@@ -222,6 +222,11 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | medium | B35-G1 niagaraSync package semantics (standby/active RPC state machine in niagaraDriver) | niagaraSync + niagaraDriver | pending |
 | low | B35-G2 BNiagaraEdgeLiteStation | niagaraDriver | pending |
 | low | B35-G5 BFoxClientWebsocketBehavior / BReachableStations deeper read | niagaraDriver + fox | pending |
+| medium | B33-G3 All callers of SystemPropertiesUtil.setSystemProperty (ungated except a 24-key denylist) | all modules | pending |
+| medium | B33-G4 BServerPort.adapter → nft rule-hint injection reachability | nre + baja | pending |
+| medium | B33-G5 Where niagara.firewall.enabled / frontend=nft are set by default (platform template?) | install + platform | pending |
+| low | B33-G1 JMX usage across the remaining modules | all modules | pending |
+| low | B33-G6 Operational impact of the firewall losing port-redirect (N4 pf) in N5 nft | platform docs + code | pending |
 | deferred | B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only | N5 GA install | pending (parked; needs a GA build) |
 
 ## Iteration history
@@ -260,10 +265,12 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | 30 | 2026-09-27 | N5-G3 bytecode/signing/obfuscation (same Honeywell cert as N4, zero obfuscation; found pipeline marker bug) | B30 | yes · sonnet | 4 new — B30-G1..G4 |
 | 31 | 2026-09-27 | B24-G6 PANCCADIA types load in N5 (0/283 missing; 1 real orphan slot resurrected as dynamic) | B31 | yes · sonnet | 5 new — B31-G1..G5 |
 | 32 | 2026-09-27 | B22-G1/G3/G4 drivers on basicDriver (10), BACnet export API change, niagaraDriver deltas | B35 | yes · sonnet | 5 new — B35-G1..G5 |
+| 33 | 2026-09-27 | B8-G3 + B12-G4 residual gating (only exec enforced; self-declared native access ungated) + nftables firewall | B33 | yes · sonnet | 6 new — B33-G1..G6 |
 
 ## Blocked gaps (each tagged with what it needs)
 
 - B17-G1 / B29-G2 Real n5mig run and niagaraTest/test.exe run on the PANCCADIA copy — needs: a licensed N5 install (tridium:nre feature) · tried: n5mig -premigrate and -o via WSL interop (FeatureNotLicensedException tridium:nre, exit 253), java Bootstrap fallback (missing JavaFX runtime)
+- B33-G2 Live check of self-declared @NiagaraEnableNativeAccess — needs: a running N5 station · tried: static decompile only
 - B32-G1 Unsigned-program behaviour on real hardware — needs: a running N5 station/device · tried: static decompile only
 - B27-G1 Live HTTP header capture from an N5 station — needs: a running N5 station · tried: static jar census only
 - B23-G4 Live module-layer confirmation via the moduleConfiguration spy — needs: a running N5 station · tried: static decompile only
@@ -277,9 +284,9 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 102
+- **Open gaps — read-only investigable**: 105
 - **Open gaps — requires-execution**: 6
-- **Open gaps — blocked**: 11
+- **Open gaps — blocked**: 12
 - Consecutive iterations with empty backlog (secondary): 0/2
 - Budget cap (default safety net): none
 

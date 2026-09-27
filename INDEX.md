@@ -115,7 +115,6 @@ This index guides through the **35 blocks** of this research. The flat catalog l
 - [ ] (medium) B6-G1 com.tridium.nre.subscription in nre.jar (subscription bootstrap outside baja.jar) — pending
 - [ ] (low) B6-G2 Code path of the security/licenses/conf directory — pending
 - [ ] (low) B7-G2 Defining module of niagara.rpc.NiagaraRpc (claimed by NullProcessor) — pending
-- [ ] (medium) B8-G3 Are reflection / JMX / native-library / system-property accesses gated elsewhere in N5 — pending
 - [ ] (low) B8-G1 ModifyProtectedPropertiesPermission construction sites — pending
 - [ ] (low) B8-G2 Permission-denial log filename: code vs doc discrepancy — pending
 - [ ] (medium) B10-G2 Locate the full Niagara 5.0 Breaking Changes list (in-jar or web-only) and diff vs B10 32-row table — pending
@@ -130,7 +129,6 @@ This index guides through the **35 blocks** of this research. The flat catalog l
 - [ ] (medium) B15-G2 Independent egress gate inside okhttp / jetty-client / jetty library internals — pending
 - [ ] (low) B15-G3 OS/platform-level egress control outside NiagaraPermission (daemon, platform firewall) — pending
 - [ ] (low) B15-G4 Full niagara.security.dashboard module: any provider surfacing network grants — pending
-- [ ] (medium) B12-G4 nftables firewall backend: N5-only? and is it PermissionManager-gated — pending
 - [ ] (medium) B12-G5 totpAuth enrollment UI flow and secret storage path — pending
 - [ ] (medium) B12-G6 SAML IdP servlet flow in N5 — pending
 - [ ] (low) B12-G1 Location of the Nimbus OAuth SDK jar required by oauth2 — pending
@@ -207,6 +205,11 @@ This index guides through the **35 blocks** of this research. The flat catalog l
 - [ ] (medium) B35-G1 niagaraSync package semantics (standby/active RPC state machine in niagaraDriver) — pending
 - [ ] (low) B35-G2 BNiagaraEdgeLiteStation — pending
 - [ ] (low) B35-G5 BFoxClientWebsocketBehavior / BReachableStations deeper read — pending
+- [ ] (medium) B33-G3 All callers of SystemPropertiesUtil.setSystemProperty (ungated except a 24-key denylist) — pending
+- [ ] (medium) B33-G4 BServerPort.adapter → nft rule-hint injection reachability — pending
+- [ ] (medium) B33-G5 Where niagara.firewall.enabled / frontend=nft are set by default (platform template?) — pending
+- [ ] (low) B33-G1 JMX usage across the remaining modules — pending
+- [ ] (low) B33-G6 Operational impact of the firewall losing port-redirect (N4 pf) in N5 nft — pending
 - [ ] (deferred) B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only — pending (parked; needs a GA build)
 
 - [x] N5-G1 Module packaging: one jar per module + JPMS module-info.class + module.xml schemaVersion 5 — how rt/ux/wb runtime profiles are expressed without the -rt/-ux split → [Block 1]
@@ -235,6 +238,7 @@ This index guides through the **35 blocks** of this research. The flat catalog l
 - [x] B6-G3 Full caller enumeration of LicenseManager.checkFeature across all N5 jars (license-gated features map) → [Block 11]
 - [x] B7-G1 Exact Gradle task-graph edge slotomatic ↔ compileJava ↔ nap processor → [Block 9]
 - [x] B8-G4 Confirm or refute that outbound HTTP/sockets from third-party modules are ungated in N5 (okhttp3/Jetty client layer) → [Block 15]
+- [x] B8-G3 Are reflection / JMX / native-library / system-property accesses gated elsewhere in N5 → [Block 33]
 - [x] B10-G1 Compile-verify the 15-item porting checklist by building DashboardPan/CompPan/ColdRoomPan against N5 → [Block 16]
 - [x] B10-G5 The n5mig station migration application: where it ships, what it transforms (N4 station → N5) → [Block 14]
 - [x] B5-G3 niagaraSync subsystem (new BINiagaraSyncCapableComplex on status types) — feeds N5-G10 → [Block 18]
@@ -244,6 +248,7 @@ This index guides through the **35 blocks** of this research. The flat catalog l
 - [x] B14-G4 BBogMigrator 4-phase pipeline full read → [Block 24]
 - [x] B14-G2 propMigration.jar 8 declarative converter classes → [Block 24]
 - [x] B14-G5 MigratorTypeResolver / MigratorOrdConverter / MigrationUtils → [Block 24]
+- [x] B12-G4 nftables firewall backend: N5-only? and is it PermissionManager-gated → [Block 33]
 - [x] B20-G4 History rollover mechanism after BCapacity storage-size mode removal (migration hazard) → [Block 26]
 - [x] B21-G3 CSP / security headers served by niagara.web / jetty (static half) → [Block 27 (static half)]
 - [x] B16-G1 Run niagaraTest on the ColdRoomPan TestNG test via the Windows test.exe (WSL interop) — may hit the tridium:nre license gate → [Block 29 (test.exe blocked by license tridium:nre; plain TestNG 51/51)]
