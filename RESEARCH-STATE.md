@@ -45,14 +45,14 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
 <!-- research-state.v1 -->
 schema: research-state.v1
 covered_blocks: 14
-gaps_closed: 15
-known_gaps: 80
-investigable_open: 55
+gaps_closed: 16
+known_gaps: 84
+investigable_open: 57
 requires_execution_open: 5
 blocked_open: 4
-deferred_open: 1
+deferred_open: 2
 undocumented_findings: 0
-blocks_since_retro: 13
+blocks_since_retro: 3
 last_iteration_ts: 2026-09-27T11:10:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
@@ -62,7 +62,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 ## Coverage
 
 - **Covered blocks**: 14 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B14, B15)
-- **Coverage metric**: 15 / 80 closed
+- **Coverage metric**: 16 / 84 closed
 - **Last iteration**: 2026-09-27 — N5-G5 core API delta (B5)
 
 ## Gap-backlog
@@ -107,7 +107,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B4-G7 Census of N5 PDF manuals | install + doc jars | pending |
 | low | B4-G2 Render bajadoc via HtmlCompilerMain | help.jar | requires-execution → §19 (run HtmlCompilerMain on a bajadoc file) |
 | medium | B6-G1 com.tridium.nre.subscription in nre.jar (subscription bootstrap outside baja.jar) | nre.jar bytecode | pending |
-| medium | B6-G3 Full caller enumeration of LicenseManager.checkFeature across all N5 jars (license-gated features map) | all module bytecode | pending |
+| medium | B6-G3 Full caller enumeration of LicenseManager.checkFeature across all N5 jars (license-gated features map) | all module bytecode | ✅ covered — B11 |
 | low | B6-G2 Code path of the security/licenses/conf directory | baja.jar license | pending |
 | medium | B7-G1 Exact Gradle task-graph edge slotomatic ↔ compileJava ↔ nap processor | prototype build | ✅ covered — B9 |
 | low | B7-G2 Defining module of niagara.rpc.NiagaraRpc (claimed by NullProcessor) | module bytecode | pending |
@@ -144,6 +144,10 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B12-G3 signingService Fox CSR protocol | signingService.jar | pending |
 | low | B12-G7 LDAP v2/v3 bind details | ldap.jar | pending |
 | low | B12-G8 SRP6 key exchange: new in N5 or carried over | baja/nre | pending |
+| medium | B11-G1 Capacity licensing mode: Metrics.isUsingCapacityLicensing() and resource.limit | baja metrics + license | pending |
+| low | B11-G3 Six dynamic (non-literal) checkFeature/getFeature call sites | module bytecode | pending |
+| low | B11-G4 Upgrade B11 bytecode-offset citations to source file:line via full decompile | organized/ decompile | pending |
+| deferred | B11-G2 OEM-branded module absence (Honeywell UI, eSignature): edition gap vs removal | OEM N5 build | pending (parked; needs an OEM N5 build) |
 | deferred | B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only | N5 GA install | pending (parked; needs a GA build) |
 
 ## Iteration history
@@ -163,6 +167,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | 11 | 2026-09-27 | B10-G5 n5mig station migration + migrator SPI | B14 | yes · sonnet | 5 new — B14-G1..G5 |
 | 12 | 2026-09-27 | B8-G4 outbound network gating — CONFIRMED audit-only | B15 | yes · sonnet | 4 new — B15-G1..G4 |
 | 13 | 2026-09-27 | N5-G9 authn/security surface | B12 | yes · sonnet | 8 new — B12-G1..G8 |
+| 14 | 2026-09-27 | B6-G3 license-gated features map (253 call sites, 84 features) | B11 | yes · sonnet | 4 new — B11-G1..G4 |
 
 ## Blocked gaps (each tagged with what it needs)
 
@@ -173,7 +178,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 55
+- **Open gaps — read-only investigable**: 57
 - **Open gaps — requires-execution**: 5
 - **Open gaps — blocked**: 4
 - Consecutive iterations with empty backlog (secondary): 0/2

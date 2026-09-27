@@ -97,7 +97,6 @@ This index guides through the **14 blocks** of this research. The flat catalog l
 - [ ] (low) B4-G7 Census of N5 PDF manuals — pending
 - [ ] (low) B4-G2 Render bajadoc via HtmlCompilerMain — requires-execution → §19 (run HtmlCompilerMain on a bajadoc file)
 - [ ] (medium) B6-G1 com.tridium.nre.subscription in nre.jar (subscription bootstrap outside baja.jar) — pending
-- [ ] (medium) B6-G3 Full caller enumeration of LicenseManager.checkFeature across all N5 jars (license-gated features map) — pending
 - [ ] (low) B6-G2 Code path of the security/licenses/conf directory — pending
 - [ ] (low) B7-G2 Defining module of niagara.rpc.NiagaraRpc (claimed by NullProcessor) — pending
 - [ ] (medium) B8-G3 Are reflection / JMX / native-library / system-property accesses gated elsewhere in N5 — pending
@@ -131,6 +130,10 @@ This index guides through the **14 blocks** of this research. The flat catalog l
 - [ ] (low) B12-G3 signingService Fox CSR protocol — pending
 - [ ] (low) B12-G7 LDAP v2/v3 bind details — pending
 - [ ] (low) B12-G8 SRP6 key exchange: new in N5 or carried over — pending
+- [ ] (medium) B11-G1 Capacity licensing mode: Metrics.isUsingCapacityLicensing() and resource.limit — pending
+- [ ] (low) B11-G3 Six dynamic (non-literal) checkFeature/getFeature call sites — pending
+- [ ] (low) B11-G4 Upgrade B11 bytecode-offset citations to source file:line via full decompile — pending
+- [ ] (deferred) B11-G2 OEM-branded module absence (Honeywell UI, eSignature): edition gap vs removal — pending (parked; needs an OEM N5 build)
 - [ ] (deferred) B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only — pending (parked; needs a GA build)
 
 - [x] N5-G1 Module packaging: one jar per module + JPMS module-info.class + module.xml schemaVersion 5 — how rt/ux/wb runtime profiles are expressed without the -rt/-ux split → [Block 1]
@@ -145,6 +148,7 @@ This index guides through the **14 blocks** of this research. The flat catalog l
 - [x] B2-G7 Build a trivial N5 module end-to-end with the shipped gradle plugins (gradlew jar) and observe module.xml/module-info output → [Block 9]
 - [x] B3-G4 Map N4 19 java-permissions groups onto N5 NiagaraPermission taxonomy → [Block 8]
 - [x] B4-G8 Deep-read official upgrade guides (upgradingToN5, upgradingUItoN5, upgradingJDK) + porting checklist for our modules → [Block 10]
+- [x] B6-G3 Full caller enumeration of LicenseManager.checkFeature across all N5 jars (license-gated features map) → [Block 11]
 - [x] B7-G1 Exact Gradle task-graph edge slotomatic ↔ compileJava ↔ nap processor → [Block 9]
 - [x] B8-G4 Confirm or refute that outbound HTTP/sockets from third-party modules are ungated in N5 (okhttp3/Jetty client layer) → [Block 15]
 - [x] B10-G5 The n5mig station migration application: where it ships, what it transforms (N4 station → N5) → [Block 14]
