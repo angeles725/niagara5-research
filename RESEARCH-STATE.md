@@ -44,15 +44,15 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
      Field names use UNDERSCORES on purpose: they must never collide with the prose greps below. -->
 <!-- research-state.v1 -->
 schema: research-state.v1
-covered_blocks: 28
-gaps_closed: 38
-known_gaps: 152
-investigable_open: 97
-requires_execution_open: 5
-blocked_open: 10
+covered_blocks: 31
+gaps_closed: 39
+known_gaps: 156
+investigable_open: 98
+requires_execution_open: 6
+blocked_open: 11
 deferred_open: 2
 undocumented_findings: 0
-blocks_since_retro: 5
+blocks_since_retro: 6
 last_iteration_ts: 2026-09-27T11:10:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
@@ -61,8 +61,8 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 
 ## Coverage
 
-- **Covered blocks**: 28 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15, B16, B17, B18, B19, B20, B21, B22, B23, B24, B25, B26, B27, B29)
-- **Coverage metric**: 38 / 152 closed
+- **Covered blocks**: 31 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15, B16, B17, B18, B19, B20, B21, B22, B23, B24, B25, B26, B27, B28, B29, B30, B32)
+- **Coverage metric**: 39 / 156 closed
 - **Last iteration**: 2026-09-27 — N5-G5 core API delta (B5)
 
 ## Gap-backlog
@@ -185,7 +185,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | medium | B22-G3 Which other bundled drivers still extend the deprecated basicDriver chassis | driver modules | pending |
 | low | B22-G4 niagaraDriver logic diff N4→N5 | niagaraDriver.jar | pending |
 | low | B22-G2 Compile a basicDriver-based module on N5 | prototype build | requires-execution → §19 (build a minimal basicDriver module against the local mirror) |
-| medium | B23-G1 PROGRAM ModuleType is dead code: where program objects actually load (com.tridium.program) | program.jar | pending |
+| medium | B23-G1 PROGRAM ModuleType is dead code: where program objects actually load (com.tridium.program) | program.jar | ✅ covered — B32 |
 | medium | B23-G3 Is skipModuleValidation blacklisted on the N5 command line | nre + launchers | pending |
 | low | B23-G2 Locate com.tridium.crypto.core (absent from nre/baja) | bin/ext + modules | pending |
 | low | B23-G5 NreInstantiator DI plumbing | nre.jar | pending |
@@ -210,6 +210,9 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B25-G2 Classify the 34 ambiguous Deque-family SequencedCollection call sites | bytecode census | pending |
 | medium | B25-G3 Full 253-jar jdeprscan --for-removal pass | all jars | pending |
 | low | B25-G4 Read the switch logic of control.jar B*Writable pattern switches | control.jar | pending |
+| medium | B32-G2 Compile a program object that depends on a non-default module (readability end-to-end) | prototype run | requires-execution → §19 (needs a running station; blocked with the license gate) |
+| low | B32-G3 Confirm bin/javac ships on embedded-tier device images | device image | pending |
+| low | B32-G4 Any station/platform flag relaxing mandatory program signing beyond dev-license test mode | program.jar + nre | pending |
 | deferred | B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only | N5 GA install | pending (parked; needs a GA build) |
 
 ## Iteration history
@@ -244,10 +247,12 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | 26 | 2026-09-27 | B20-G4 BCapacity hazard — CONFIRMED narrower; PANCCADIA zero exposure (§14 refinement of B20) | B26 | yes · sonnet | 3 new — B26-G2..G4 |
 | 27 | 2026-09-27 | B16-G6 + B16-G1 JUnit4→TestNG (117 asserts, 51/51 pass; test.exe license-gated) | B29 | yes · sonnet | 3 new — B29-G3..G5 |
 | 28 | 2026-09-27 | N5-G4 Java 17-25 feature census (recompiled, not modernized: 45 records, 3 sealed, 33 pattern switches, 0 virtual threads) | B25 | yes · sonnet | 4 new — B25-G1..G4 |
+| 29 | 2026-09-27 | B23-G1 program objects: javac shell-out, per-program ModuleLayer, mandatory signing for v69 | B32 | yes · sonnet | 4 new — B32-G1..G4 |
 
 ## Blocked gaps (each tagged with what it needs)
 
 - B17-G1 / B29-G2 Real n5mig run and niagaraTest/test.exe run on the PANCCADIA copy — needs: a licensed N5 install (tridium:nre feature) · tried: n5mig -premigrate and -o via WSL interop (FeatureNotLicensedException tridium:nre, exit 253), java Bootstrap fallback (missing JavaFX runtime)
+- B32-G1 Unsigned-program behaviour on real hardware — needs: a running N5 station/device · tried: static decompile only
 - B27-G1 Live HTTP header capture from an N5 station — needs: a running N5 station · tried: static jar census only
 - B23-G4 Live module-layer confirmation via the moduleConfiguration spy — needs: a running N5 station · tried: static decompile only
 - B20-G1 / B26-G1 Dynamic confirmation of BCapacity reinterpretation — needs: a running N5 station · tried: static decompile + bytecode (static half closed by B26: the JS contradiction predates N5)
@@ -260,9 +265,9 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 97
-- **Open gaps — requires-execution**: 5
-- **Open gaps — blocked**: 10
+- **Open gaps — read-only investigable**: 98
+- **Open gaps — requires-execution**: 6
+- **Open gaps — blocked**: 11
 - Consecutive iterations with empty backlog (secondary): 0/2
 - Budget cap (default safety net): none
 

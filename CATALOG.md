@@ -2,7 +2,7 @@
 
 # Block catalog
 
-Total: **28 blocks**
+Total: **31 blocks**
 
 | Block | File | Title |
 |-------|------|-------|
@@ -33,4 +33,7 @@ Total: **28 blocks**
 | 25 | [niagara5-block25.md](niagara5-block25.md) | Java 17-25 feature adoption in N5 Tridium bytecode (census) |
 | 26 | [niagara5-block26.md](niagara5-block26.md) | History capacity after N4→N5: the removed storage-size mode |
 | 27 | [niagara5-block27.md](niagara5-block27.md) | N5 web server security headers, CSP and resource serving |
+| 28 | [niagara5-block28.md](niagara5-block28.md) | Porting CompPan and DashboardPan to N5: multi-part merge and the jakarta servlet migration |
 | 29 | [niagara5-block29.md](niagara5-block29.md) | Tests on N5: JUnit4 to TestNG and running them (niagaraTest, test.exe, plain TestNG) |
+| 30 | [niagara5-block30.md](niagara5-block30.md) | N5 bytecode, jar signing and obfuscation profile (and why it decompiles well) |
+| 32 | [niagara5-block32.md](niagara5-block32.md) | Program objects in N5: in-station compilation, signing and classloading |
