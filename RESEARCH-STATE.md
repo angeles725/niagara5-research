@@ -44,15 +44,15 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
      Field names use UNDERSCORES on purpose: they must never collide with the prose greps below. -->
 <!-- research-state.v1 -->
 schema: research-state.v1
-covered_blocks: 19
-gaps_closed: 20
-known_gaps: 102
-investigable_open: 68
-requires_execution_open: 6
-blocked_open: 6
+covered_blocks: 21
+gaps_closed: 23
+known_gaps: 115
+investigable_open: 77
+requires_execution_open: 5
+blocked_open: 8
 deferred_open: 2
 undocumented_findings: 0
-blocks_since_retro: 6
+blocks_since_retro: 9
 last_iteration_ts: 2026-09-27T11:10:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
@@ -61,8 +61,8 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 
 ## Coverage
 
-- **Covered blocks**: 19 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15, B17, B18, B19, B20)
-- **Coverage metric**: 20 / 102 closed
+- **Covered blocks**: 21 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15, B16, B17, B18, B19, B20, B21)
+- **Coverage metric**: 23 / 115 closed
 - **Last iteration**: 2026-09-27 — N5-G5 core API delta (B5)
 
 ## Gap-backlog
@@ -79,10 +79,10 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | high | N5-G8 Licensing layer delta (premise corrected: subscription package is NOT new — exists in N4 per B6) | baja license packages | ✅ covered — B6 |
 | medium | N5-G9 Security/authn surface: totpAuth (new), oauth2, saml, clientCertAuth, firewall, authn (premise corrected: tls.jar is the Veeder-Root tank driver, not TLS crypto) | module bytecode | ✅ covered — B12 |
 | medium | N5-G10 Cloud surface new in N5: cloudLink*, niagaraCloud, niagaraSync | module bytecode | ✅ covered — B18 |
-| medium | N5-G11 UI stack: themeN5 (new), uxBuilder, hx, bajaux, webEditors, JxBrowser in workbench | module bytecode + js resources | pending |
+| medium | N5-G11 UI stack: themeN5 (new), uxBuilder, hx, bajaux, webEditors, JxBrowser in workbench | module bytecode + js resources | ✅ covered — B21 |
 | medium | N5-G12 Shipped documentation: docDeveloper.jar (8,817 files: guides, jsdoc, bajadoc) and rebuild of an N5 niagara-help index | doc jar | ✅ covered — B4 |
 | medium | N5-G13 Station persistence/index: orientSystemDb, systemDb, systemIndex, niagaraSystemIndex, search | module bytecode | ✅ covered — B19 |
-| medium | N5-G14 Control/alarm/history/schedule/kitControl delta — portability of our N4 modules (ColdRoomPan, CompPan, DashboardPan) | docSource + bytecode | pending |
+| medium | N5-G14 Control/alarm/history/schedule/kitControl delta — portability of our N4 modules (ColdRoomPan, CompPan, DashboardPan) | docSource + bytecode | ✅ covered — B20 |
 | medium | N5-G15 Driver framework delta (driver, ndriver, basicDriver, bacnet, modbus*, niagaraDriver, fox) | module bytecode | pending |
 | low | N5-G16 N4→N5 porting guide synthesis for own modules (what breaks: Java 8 APIs, removed modules, packaging) | synthesis of G1-G15 | pending |
 | high | B2-G1 Slotomatic vs nap annotation processor division of labor (who generates slot code vs module-include.xml) | n-plugin jar + niagaraAnnotationProcessors | ✅ covered — B7 |
@@ -128,7 +128,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | high | B9-G2 Real niagaraTest run with a TestNG test in the PoC (settles B2-G4) | prototype build | requires-execution → §19 (add a BTestNg test to poc/n5-hello and run niagaraTest) |
 | medium | B9-G3 Is com.tridium.n-java required per module or at root (wizard template omits it) | devkit templates + PoC | pending |
 | low | B9-G4 NDriver / device-driver module scaffold on N5 | devkit templates | pending |
-| high | B14-G1 Run n5mig -premigrate (dry-run report) on a copy of a real N4.15 station backup/bog (e.g. PANCCADIA) with and without our modules installed | n5mig.exe + station copy | requires-execution → §19 (run n5mig -premigrate on a COPY, output under poc/) |
+| high | B14-G1 Run n5mig -premigrate (dry-run report) on a copy of a real N4.15 station backup/bog (e.g. PANCCADIA) with and without our modules installed | n5mig.exe + station copy | ✅ covered — B17 (partial: run blocked by license tridium:nre; static census substituted) |
 | medium | B14-G3 Open the ~26 unread migrator.jar converter types (driver/protocol bog converters) | migrator.jar | pending |
 | medium | B14-G4 BBogMigrator 4-phase pipeline full read | migrator.jar | pending |
 | low | B14-G2 propMigration.jar 8 declarative converter classes | propMigration.jar | pending |
@@ -164,6 +164,17 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B19-G2 EncryptionKeySource enum in N4 (never decompiled there) vs N5 five members | N4 baja decompile | pending |
 | low | B19-G4 KeyRing/SecurityInitializer proprietary blocker unchanged in N5 | nre/baja | pending |
 | medium | B19-G5 OrientDB 3.2.23 → 3.2.55 on-disk compatibility for migrated stations | prototype run | requires-execution → §19 (open an N4 systemDb store with the N5 OrientDB libs) |
+| medium | B17-G2 Why wb.exe boots on the unlicensed beta while n5mig/station do not (tridium:nre gate path) | nre.jar + launchers | pending |
+| low | B17-G3 Reconstruct the native launcher VM/module-path args to run n5mig via java | bin launchers + nre.dll | pending |
+| low | B17-G4 DefrostMode declared in ColdRoomPan-rt module.xml has zero bog instances | our module + PANCCADIA bog | pending |
+| medium | B20-G2 niagaraSync ticks integration in kitControl BLoopPoint (BNiagaraSyncTicks) semantics | kitControl + niagaraSync | pending |
+| medium | B20-G3 BIActionAuditProvider old-value audit path end-to-end | baja security + control | pending |
+| medium | B20-G4 History rollover mechanism after BCapacity storage-size mode removal (migration hazard) | history.jar | pending |
+| low | B20-G5 Decompile control/alarm/kitControl/schedule to source for file:line citations | organized/ decompile | pending |
+| low | B21-G1 uxBuilder ux/make + ux/fe sub-packages: new vs N4 | uxBuilder.jar | pending |
+| low | B21-G2 JxBrowser vs JavaFX WebView default selection in Workbench | workbench.jar | pending |
+| medium | B21-G3 CSP / security headers served by niagara.web / jetty (static half) | web.jar + jetty | pending |
+| low | B21-G4 Stale JxBrowser 7.30.3 log string vs 9.5.0 engine | jxBrowser.jar | pending |
 | deferred | B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only | N5 GA install | pending (parked; needs a GA build) |
 
 ## Iteration history
@@ -187,9 +198,14 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | 15 | 2026-09-27 | N5-G2 module inventory delta | B13 | yes · sonnet | 6 new — B13-G1..G6 |
 | 16 | 2026-09-27 | N5-G10 + B5-G3 cloud surface and niagaraSync | B18 | yes · sonnet | 7 new — B18-G1..G7 |
 | 17 | 2026-09-27 | N5-G13 persistence: bog v5 grammar unchanged, .hdb MAGIC unchanged, OrientDB 3.2.55 | B19 | yes · sonnet | 5 new — B19-G1..G5; §14 fix of N4 B33 hex (niagara-research PR #3) |
+| 18 | 2026-09-27 | N5-G14 behavioural delta control/alarm/history/kitControl | B20 | yes · sonnet | 5 new — B20-G1..G5 |
+| 19 | 2026-09-27 | N5-G11 UI stack | B21 | yes · sonnet | 4 new — B21-G1..G4 |
+| 20 | 2026-09-27 | B14-G1 n5mig on PANCCADIA copy (license-blocked; static census) | B17 | yes · sonnet | 4 new — B17-G1..G4 |
 
 ## Blocked gaps (each tagged with what it needs)
 
+- B17-G1 Real n5mig run on the PANCCADIA copy — needs: a licensed N5 install (tridium:nre feature) · tried: n5mig -premigrate and -o via WSL interop (FeatureNotLicensedException tridium:nre, exit 253), java Bootstrap fallback (missing JavaFX runtime)
+- B20-G1 Adjudicate BCapacity JS vs server contradiction live — needs: a running N5 station · tried: static only
 - B19-G3 Live save/load of an N5 station bog and history — needs: a running N5 station · tried: no station configured
 - B18-G1 Live registration against NCS/Forge/HonSbp/Azure tenants — needs: cloud tenant credentials and a running station · tried: none available (no tenant, no station)
 - B15-G1 Live reproduction of ungated outbound connection — needs: a running N5 station · tried: no station configured (measured: no stations/ dir under config/5.0.0.28)
@@ -199,9 +215,9 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 68
-- **Open gaps — requires-execution**: 6
-- **Open gaps — blocked**: 6
+- **Open gaps — read-only investigable**: 77
+- **Open gaps — requires-execution**: 5
+- **Open gaps — blocked**: 8
 - Consecutive iterations with empty backlog (secondary): 0/2
 - Budget cap (default safety net): none
 
