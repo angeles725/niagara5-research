@@ -44,15 +44,15 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
      Field names use UNDERSCORES on purpose: they must never collide with the prose greps below. -->
 <!-- research-state.v1 -->
 schema: research-state.v1
-covered_blocks: 11
-gaps_closed: 13
-known_gaps: 68
-investigable_open: 46
+covered_blocks: 12
+gaps_closed: 14
+known_gaps: 72
+investigable_open: 48
 requires_execution_open: 5
-blocked_open: 3
+blocked_open: 4
 deferred_open: 1
 undocumented_findings: 0
-blocks_since_retro: 11
+blocks_since_retro: 12
 last_iteration_ts: 2026-09-27T11:10:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
@@ -61,8 +61,8 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 
 ## Coverage
 
-- **Covered blocks**: 11 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B14)
-- **Coverage metric**: 13 / 68 closed
+- **Covered blocks**: 12 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B14, B15)
+- **Coverage metric**: 14 / 72 closed
 - **Last iteration**: 2026-09-27 — N5-G5 core API delta (B5)
 
 ## Gap-backlog
@@ -111,7 +111,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B6-G2 Code path of the security/licenses/conf directory | baja.jar license | pending |
 | medium | B7-G1 Exact Gradle task-graph edge slotomatic ↔ compileJava ↔ nap processor | prototype build | ✅ covered — B9 |
 | low | B7-G2 Defining module of niagara.rpc.NiagaraRpc (claimed by NullProcessor) | module bytecode | pending |
-| high | B8-G4 Confirm or refute that outbound HTTP/sockets from third-party modules are ungated in N5 (okhttp3/Jetty client layer) | nre.jar + bin/ext + module bytecode | pending |
+| high | B8-G4 Confirm or refute that outbound HTTP/sockets from third-party modules are ungated in N5 (okhttp3/Jetty client layer) | nre.jar + bin/ext + module bytecode | ✅ covered — B15 |
 | medium | B8-G3 Are reflection / JMX / native-library / system-property accesses gated elsewhere in N5 | nre.jar + baja.jar | pending |
 | low | B8-G1 ModifyProtectedPropertiesPermission construction sites | module bytecode | pending |
 | low | B8-G2 Permission-denial log filename: code vs doc discrepancy | nre.jar | pending |
@@ -133,6 +133,9 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | medium | B14-G4 BBogMigrator 4-phase pipeline full read | migrator.jar | pending |
 | low | B14-G2 propMigration.jar 8 declarative converter classes | propMigration.jar | pending |
 | low | B14-G5 MigratorTypeResolver / MigratorOrdConverter / MigrationUtils | migrator.jar | pending |
+| medium | B15-G2 Independent egress gate inside okhttp / jetty-client / jetty library internals | bin/ext third-party jars | pending |
+| low | B15-G3 OS/platform-level egress control outside NiagaraPermission (daemon, platform firewall) | platform modules | pending |
+| low | B15-G4 Full niagara.security.dashboard module: any provider surfacing network grants | security dashboard module | pending |
 | deferred | B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only | N5 GA install | pending (parked; needs a GA build) |
 
 ## Iteration history
@@ -150,18 +153,20 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | 9 | 2026-09-27 | N5-G5 core API delta (javax.baja→niagara 1:1, no shim) | B5 | yes · sonnet | 4 new — B5-G1..G4 |
 | 10 | 2026-09-27 | B2-G7 + B7-G1 build PoC (built, signed, JPMS) | B9 | yes · sonnet | 4 new — B9-G1..G4 |
 | 11 | 2026-09-27 | B10-G5 n5mig station migration + migrator SPI | B14 | yes · sonnet | 5 new — B14-G1..G5 |
+| 12 | 2026-09-27 | B8-G4 outbound network gating — CONFIRMED audit-only | B15 | yes · sonnet | 4 new — B15-G1..G4 |
 
 ## Blocked gaps (each tagged with what it needs)
 
+- B15-G1 Live reproduction of ungated outbound connection — needs: a running N5 station · tried: no station configured (measured: no stations/ dir under config/5.0.0.28)
 - B9-G1 Load the built n5Hello.jar in a live N5 station — needs: a running N5 station · tried: no station configured (measured: no stations/ dir under config/5.0.0.28)
 - B8-G5 Live PermissionException reproduction — needs: a running N5 station · tried: no N5 station configured (measured: no stations/ dir under config/5.0.0.28)
 - B1-G1 Live confirmation of module layers via the moduleConfiguration spy — needs: a running N5 station · tried: WSL has no N5 station; beta install has no configured station (measured: no stations/ dir yet)
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 46
+- **Open gaps — read-only investigable**: 48
 - **Open gaps — requires-execution**: 5
-- **Open gaps — blocked**: 3
+- **Open gaps — blocked**: 4
 - Consecutive iterations with empty backlog (secondary): 0/2
 - Budget cap (default safety net): none
 

@@ -2,7 +2,7 @@
 
 # Block catalog
 
-Total: **11 blocks**
+Total: **12 blocks**
 
 | Block | File | Title |
 |-------|------|-------|
@@ -17,3 +17,4 @@ Total: **11 blocks**
 | 9 | [niagara5-block9.md](niagara5-block9.md) | Building a minimal N5 module with the shipped Gradle plugins (PoC) |
 | 10 | [niagara5-block10.md](niagara5-block10.md) | Official N4→N5 transition guides: breaking changes and a porting checklist for our modules |
 | 14 | [niagara5-block14.md](niagara5-block14.md) | N4→N5 station migration: n5mig and the migrator SPI |
+| 15 | [niagara5-block15.md](niagara5-block15.md) | N5 outbound network access from third-party modules: gated or audit-only? |
