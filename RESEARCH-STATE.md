@@ -1,4 +1,8 @@
-# <SUBJECT> — Research State
+# Niagara N5 (5.0.0.28 beta, Java 25) — Research State
+
+MODE: frontier (METHODOLOGY §8) — breadth-first coverage map; high [INFER]/[CERT] ratio expected, deep-dive passes later.
+focus-distinctness: OK — no prior N5 coverage; niagara-research (target #1) covers N4 only and is used as REMITTANCE baseline for N4↔N5 deltas.
+ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar originals, docDeveloper.jar guides) of the N5 module set; N4→N5 delta is the organizing axis.
 
 > Operational state consumed by the loop (Research-SDD). Mirrored in engram
 > (`research/<target>/gaps`, `research/<target>/progress`). Visible and versionable source.
@@ -40,16 +44,16 @@
      Field names use UNDERSCORES on purpose: they must never collide with the prose greps below. -->
 <!-- research-state.v1 -->
 schema: research-state.v1
-covered_blocks: 0
-gaps_closed: 1
-known_gaps: 7
-investigable_open: 3
-requires_execution_open: 1
-blocked_open: 1
+covered_blocks: 9
+gaps_closed: 10
+known_gaps: 59
+investigable_open: 41
+requires_execution_open: 5
+blocked_open: 2
 deferred_open: 1
 undocumented_findings: 0
-blocks_since_retro: 0
-last_iteration_ts: 
+blocks_since_retro: 9
+last_iteration_ts: 2026-09-27T11:10:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
      applies to every corpus (single-focus and campaign alike); the stall-detection instrument reads it
@@ -57,71 +61,98 @@ last_iteration_ts:
 
 ## Coverage
 
-- **Covered blocks**: <N> (B1..B<N>)
-- **Coverage metric**: <gaps-closed> / <known-gaps> closed  (a ratio, not a free %)   ← ONE canonical coverage number, OVERWRITE it each iteration. Do NOT accrete contradictory assertions (e.g. an all-closed ratio, then a larger denominator declared later): if the gap universe grows, reconcile the denominator here to a single value. Per-iteration cumulative snapshots belong in "Iteration history" below, not as repeated coverage-metric lines. NOTE: the placeholder above carries no digits ON PURPOSE — keep it that way until you record a real ratio, so the machine envelope seeds gaps_closed/known_gaps=0 (nothing closed yet) instead of mis-parsing an example number. (`verify-state.sh` CHECK 3 WARNs on contradictory denominators outside the history table; it flags distinct DENOMINATORS only, so same-denominator numerator drift is on you to reconcile.)
-- **Last iteration**: <YYYY-MM-DD> — <which gap was closed>   ← a SINGLE value, OVERWRITE it each iteration (not an append log; the full log lives in "Iteration history" below). Human-readable summary of the most recent iteration; the machine-parseable timestamp lives in the `last_iteration_ts` field of the research-state.v1 envelope.
+- **Covered blocks**: 9 (B1, B2, B3, B4, B5, B6, B7, B8, B10)
+- **Coverage metric**: 10 / 59 closed
+- **Last iteration**: 2026-09-27 — N5-G5 core API delta (B5)
 
 ## Gap-backlog
 
-<!-- Cell grammar declared in METHODOLOGY §8b. Priority: high | medium | low | deferred | — | ~~tier~~.
-     Status leading token: pending (enters investigable_open) | requires-execution | blocked-on-<reason> |
-     ✅ | ~~ (closed). Qualifiers in Priority are non-conforming. Heading grammar is closed: ## Gap-backlog, optionally one parenthetical descriptor. -->
-
-<!-- OPEN requires-execution (§19 build/PoC) gaps: keep them as backlog rows whose STATUS column carries
-     `requires-execution` (the example row below, modeled on three.js's G41). That marker is what makes the
-     envelope's requires_execution_open BACKLOG-ANCHORED — verify-state derives the open count from marked
-     rows and catches a premature build-STOP (envelope 0 while marked rows remain). Close one by striking it
-     (~~) or flipping Status to `✅ cubierto — B<k>` like any other row. NOTE: this example row is REAL to the
-     parsers (an HTML comment would not hide a table row from them), so the placeholder envelope above says
-     requires_execution_open: 1 (and the deferred example row likewise seeds deferred_open: 1 — verify-state
-     CHECK F would flag a 0 mismatch) — --sync-state re-derives both once you edit the backlog. -->
 | Priority | Gap | Artifact type / source | Status |
 |---|---|---|---|
-| high | <research question> | <Java/.NET/native/doc/web> | pending |
-| medium | <...> | <...> | pending |
-| low | <...> | <...> | pending |
-| deferred | <gap set aside — revisit when unblocking condition is met> | <...> | pending (parked; never NEXT — §8b) |
-| high | <build/PoC gap — answerable only by compiling/running something> | prototype build | requires-execution → §19 (not read-only; needs a build + re-measure) |
-| medium | <gap blocked pending a specific resource or tool — e.g. signing-pki-dynamic: full PKI chain without live device access> | <native/doc/live-system> | blocked-on-dual-use (cannot ship a complete PoC that re-uses the vendor signing key) |
-| low | <gap blocked because a required tool is absent or unavailable> | <native/tool> | blocked-on-tool (e.g. no Dart-AOT decompiler available; no live JACE accessible) |
+| high | N5-G1 Module packaging: one jar per module + JPMS module-info.class + module.xml schemaVersion 5 — how rt/ux/wb runtime profiles are expressed without the -rt/-ux split | Java bytecode + module.xml | ✅ covered — B1 |
+| high | N5-G2 Module inventory delta N4.14 (OptimizerSupervisor) vs N5 5.0.0.28: added / removed / merged / renamed modules | jar listing + module.xml | pending |
+| high | N5-G3 Bytecode, signing and obfuscation profile: class major 69, NIAGARA4.SF signing, ZKM vs N4, decompiler bake-off | Java bytecode + META-INF | pending |
+| high | N5-G4 Java 17-25 language feature adoption in Tridium code (records, sealed, switch patterns, virtual threads, text blocks) | Java bytecode (javap attributes) | pending |
+| high | N5-G5 Core API delta javax.baja.* N4 docSource vs N5 docSource (removed / deprecated / new types) | docSource originals | ✅ covered — B5 |
+| high | N5-G6 N5 module build toolchain: etc/m2 gradle plugins (n-module, n-java, niagara, nap) and devkit vs N4 Java 8 + slotomatic | gradle plugin jars/poms + devkit | ✅ covered — B2 |
+| high | N5-G7 Boot/runtime: NRE on JRE 25, bin layout, nre.properties / system.properties, JPMS module loading | install bin/defaults + baja sys | ✅ covered — B3 |
+| high | N5-G8 Licensing layer delta (premise corrected: subscription package is NOT new — exists in N4 per B6) | baja license packages | ✅ covered — B6 |
+| medium | N5-G9 Security/authn surface: totpAuth (new), oauth2, saml, clientCertAuth, firewall, authn | module bytecode | pending |
+| medium | N5-G10 Cloud surface new in N5: cloudLink*, niagaraCloud, niagaraSync | module bytecode | pending |
+| medium | N5-G11 UI stack: themeN5 (new), uxBuilder, hx, bajaux, webEditors, JxBrowser in workbench | module bytecode + js resources | pending |
+| medium | N5-G12 Shipped documentation: docDeveloper.jar (8,817 files: guides, jsdoc, bajadoc) and rebuild of an N5 niagara-help index | doc jar | ✅ covered — B4 |
+| medium | N5-G13 Station persistence/index: orientSystemDb, systemDb, systemIndex, niagaraSystemIndex, search | module bytecode | pending |
+| medium | N5-G14 Control/alarm/history/schedule/kitControl delta — portability of our N4 modules (ColdRoomPan, CompPan, DashboardPan) | docSource + bytecode | pending |
+| medium | N5-G15 Driver framework delta (driver, ndriver, basicDriver, bacnet, modbus*, niagaraDriver, fox) | module bytecode | pending |
+| low | N5-G16 N4→N5 porting guide synthesis for own modules (what breaks: Java 8 APIs, removed modules, packaging) | synthesis of G1-G15 | pending |
+| high | B2-G1 Slotomatic vs nap annotation processor division of labor (who generates slot code vs module-include.xml) | n-plugin jar + niagaraAnnotationProcessors | ✅ covered — B7 |
+| high | B3-G3 PermissionManager default grant table (initThirdPartyPermissions/addPermissions) — N5 permission model that replaced java.policy | nre.jar bytecode | ✅ covered — B8 |
+| high | B2-G7 Build a trivial N5 module end-to-end with the shipped gradle plugins (gradlew jar) and observe module.xml/module-info output | prototype build | requires-execution → §19 (build a minimal module with the local m2 plugins) |
+| medium | B1-G2 N5 module loader method-body trace (ModuleManager / ModuleLayerInfo / NModuleModuleFinderFactory) | baja.jar com.tridium.sys.module | pending |
+| medium | B3-G1 nre.module internals: NModuleModuleReader, NiagaraModuleReference, NiagaraJPMSAccessModifier (merges B1-G3/B1-G4) | nre.jar bytecode | pending |
+| medium | B1-G5 Signature-verification gate parity N4 ModuleClassLoader vs N5 ModuleSetClassLoader | baja.jar bytecode | pending |
+| medium | B3-G4 Map N4 19 java-permissions groups onto N5 NiagaraPermission taxonomy | nre.jar + N4 B635 | ✅ covered — B8 |
+| medium | B2-G5 N5 JS build pipeline (node/yarn/grunt plugins) for -ux style web resources | m2 plugins | pending |
+| medium | B2-G6 Delta list for our build-n4-module kit templates (.gradle.kts) against N5 plugin DSL | kit templates + B2 | pending |
+| low | B1-G6 The 5 automatic-module jars (unterjar packaging) — why not explicit modules | jar manifests | pending |
+| low | B2-G2 Meaning of the Compact3 javac argument in N5 plugins | n-plugin bytecode | pending |
+| low | B2-G3 Read the TestNG Support in Niagara 5 doc | docDeveloper.jar | pending |
+| low | B3-G5 securityBridge.jar 2-class bootclasspath shim | securityBridge.jar | pending |
+| low | B2-G4 Does N5 niagaraTest still hit the N4 plugin zero-tests bug | prototype build | requires-execution → §19 (run niagaraTest on a sample module) |
+| high | B4-G8 Deep-read official upgrade guides (upgradingToN5, upgradingUItoN5, upgradingJDK) + porting checklist for our modules | docDeveloper.jar doc/upgrade | ✅ covered — B10 |
+| medium | B4-G1 Decode the help search index binary format doc/{words,postings,documents,worddocs}.dat | help.jar Searcher + dat files | pending |
+| medium | B4-G5 N5 equivalent of N4 niagara-help jdk/ JDK-class bajadoc stand-ins | docDeveloper.jar | pending |
+| low | B4-G3 Line-count N5 vs N4 shipped source (docSource) | docSource jars | pending |
+| low | B4-G4 Confirm no javadoc-shaped artifact across all 1,013 N4 jars | N4 jars | pending |
+| low | B4-G7 Census of N5 PDF manuals | install + doc jars | pending |
+| low | B4-G2 Render bajadoc via HtmlCompilerMain | help.jar | requires-execution → §19 (run HtmlCompilerMain on a bajadoc file) |
+| medium | B6-G1 com.tridium.nre.subscription in nre.jar (subscription bootstrap outside baja.jar) | nre.jar bytecode | pending |
+| medium | B6-G3 Full caller enumeration of LicenseManager.checkFeature across all N5 jars (license-gated features map) | all module bytecode | pending |
+| low | B6-G2 Code path of the security/licenses/conf directory | baja.jar license | pending |
+| medium | B7-G1 Exact Gradle task-graph edge slotomatic ↔ compileJava ↔ nap processor | prototype build | requires-execution → §19 (captured by the B9 PoC: gradlew tasks --all / --dry-run) |
+| low | B7-G2 Defining module of niagara.rpc.NiagaraRpc (claimed by NullProcessor) | module bytecode | pending |
+| high | B8-G4 Confirm or refute that outbound HTTP/sockets from third-party modules are ungated in N5 (okhttp3/Jetty client layer) | nre.jar + bin/ext + module bytecode | pending |
+| medium | B8-G3 Are reflection / JMX / native-library / system-property accesses gated elsewhere in N5 | nre.jar + baja.jar | pending |
+| low | B8-G1 ModifyProtectedPropertiesPermission construction sites | module bytecode | pending |
+| low | B8-G2 Permission-denial log filename: code vs doc discrepancy | nre.jar | pending |
+| medium | B10-G1 Compile-verify the 15-item porting checklist by building DashboardPan/CompPan/ColdRoomPan against N5 | prototype build | requires-execution → §19 (port one module and gradle-build it against N5) |
+| high | B10-G5 The n5mig station migration application: where it ships, what it transforms (N4 station → N5) | install bin + migration/migrator modules | pending |
+| medium | B10-G2 Locate the full Niagara 5.0 Breaking Changes list (in-jar or web-only) and diff vs B10 32-row table | docDeveloper.jar + web | pending |
+| low | B10-G3 BFoxProxySession.getRemoteNiagaraVersion signature/package | docSource + javadoc | pending |
+| low | B10-G4 Re-run fox grep across our three modules to certify CHK-14 | our module sources | pending |
+| low | B10-G6 DashboardPan-ux preview tooling has no N5-relevant surface | our module sources | pending |
+| medium | B5-G3 niagaraSync subsystem (new BINiagaraSyncCapableComplex on status types) — feeds N5-G10 | niagaraSync.jar + baja | pending |
+| medium | B5-G2 Does any Tridium or our own B* type rely on the removed BObject.equals override | baja + our sources | pending |
+| medium | B5-G4 The javax.baja.web import sites in our modules vs the jakarta.servlet break | our module sources | pending |
+| low | B5-G1 HsmManager: real N5 drop or N4 OEM-baseline artifact | N4 stock vs OEM jars | pending |
+| deferred | B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only | N5 GA install | pending (parked; needs a GA build) |
 
 ## Iteration history
 
-<!-- "New gaps uncovered" feeds the saturation signal: research-sdd-status.sh selects this column BY HEADER
-     NAME (/new gaps|nuevos gaps/i — NOT by position) and flags SATURATED (review) when the last 3 iterations
-     net 0 new gaps — a soft review-prompt complementing §8 STOP. New-gaps CELL GRAMMAR: a leading integer
-     (`3`, `+1`, `3 new`, `2 seeded`) or the `none…` family (`none`, `none net-new`, `ninguno`) = 0. Gap-id
-     lists (`G12`, `B754-G1/G2`, `IC1–IC4 seeded`) and `—` are NOT counted — the instrument reports them as
-     unreadable, never guessing. START the cell with the count (`3 new — G7, G8, G9`) or `none`/`ninguno`;
-     a bare identifier list is not machine-readable. -->
-
 | # | Date | Gap closed | Block | Delegated? · model tier | New gaps uncovered |
 |---|---|---|---|---|---|
-| 1 | <date> | <gap> | B<k> | <no · inline / yes · haiku|sonnet|opus> | <n> |
+| 1 | 2026-09-27 | N5-G1 packaging / JPMS | B1 | yes · sonnet | 6 new — B1-G1..G6 in block |
+| 2 | 2026-09-27 | N5-G6 build toolchain | B2 | yes · sonnet | 7 new — B2-G1..G7 in block |
+| 3 | 2026-09-27 | N5-G7 boot/runtime JRE 25 | B3 | yes · sonnet | 5 new — B3-G1..G5 in block |
+| 4 | 2026-09-27 | N5-G12 shipped docs | B4 | yes · sonnet | 8 new — B4-G1..G8 in block |
+| 5 | 2026-09-27 | N5-G8 licensing (premise refuted: subscription not new) | B6 | yes · sonnet | 3 new — B6-G1..G3 in block |
+| 6 | 2026-09-27 | B2-G1 Slotomatic vs nap processor | B7 | yes · sonnet | 2 new — B7-G1, B7-G2 |
+| 7 | 2026-09-27 | B3-G3+B3-G4 permission model | B8 | yes · sonnet | 5 new — B8-G1..G5 |
+| 8 | 2026-09-27 | B4-G8 upgrade guides + porting checklist | B10 | yes · sonnet | 6 new — B10-G1..G6 in block |
+| 9 | 2026-09-27 | N5-G5 core API delta (javax.baja→niagara 1:1, no shim) | B5 | yes · sonnet | 4 new — B5-G1..G4 |
 
 ## Blocked gaps (each tagged with what it needs)
 
-<!-- Each blocked/absent gap MUST carry both a `needs:` clause AND a `tried:` clause.
-     `needs:` names the missing resource. `tried:` lists the alternatives enumerated and the
-     measurement that ruled each out. A gap with `tried:` only listing "nothing" is unfinished.
-     verify-state.sh checks for the literal token `tried:` the same way it checks `needs:`.
-     A gap may not be declared `blocked` or `absent` without both clauses present.
-     When a gap closes by proven absence, its `- name — needs:` entry transforms to a prose
-     note or is removed from this section; `derive_blocked` no longer counts it, and it is
-     credited to `gaps_closed`. The closing evidence block — citing scope, method, and count
-     — is the durable closure record; the `needs:`/`tried:` requirement above governs only
-     pre-closure entries. -->
-- <gap> — needs: <x64 Dart-AOT decompiler | live server | hardware/lab | NDA | missing tool: <name>> · tried: <alt1 (measured: X) | alt2 (measured: Y) | none enumerated yet→ gap still open>
+- B8-G5 Live PermissionException reproduction — needs: a running N5 station · tried: no N5 station configured (measured: no stations/ dir under config/5.0.0.28)
+- B1-G1 Live confirmation of module layers via the moduleConfiguration spy — needs: a running N5 station · tried: WSL has no N5 station; beta install has no configured station (measured: no stations/ dir yet)
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: <N>   ← the STATIC loop STOPS when this hits 0
-- **Open gaps — requires-execution** (compile/run a PoC, round-trip diff; NOT read-only → build phase): <M>
-- **Open gaps — blocked** (needs live system / hardware / keys → DYNAMIC phase §12 when available): <K>
-- Consecutive iterations with empty backlog (secondary): <0/2>
-- Budget cap (default safety net): <none | max-blocks N | max-tokens>
-- campaign_bounds: (optional — absent line = no bounds; grammar: see METHODOLOGY §8c — max-depth, iterations, wall-clock keys; lives in this section from BOOTSTRAP)
-- `last_iteration_ts` (ADVISORY — stall-detection signal; written by the loop on each block commit; lives in the envelope — do not pre-fill; see the `last_iteration_ts` field in the research-state.v1 envelope above)
+- **Open gaps — read-only investigable**: 41
+- **Open gaps — requires-execution**: 5
+- **Open gaps — blocked**: 2
+- Consecutive iterations with empty backlog (secondary): 0/2
+- Budget cap (default safety net): none
 
 ## Dismissed file types
 
