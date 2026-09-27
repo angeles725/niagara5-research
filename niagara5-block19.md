@@ -223,6 +223,8 @@ in N4 (negative-existence discipline).** `BOrientSystemDb` exposes `getDatabaseE
 with states including `unencrypted`/`encrypted`/`changingToEncrypted`/`changingToUnencrypted` (`[CERT]`
 `BOrientSystemDb.java:179` + usages `:235-497`), and when not `unencrypted`, `createDatabase` is configured with
 `OGlobalConfiguration.STORAGE_ENCRYPTION_METHOD="aes"` + `STORAGE_ENCRYPTION_KEY` (`[CERT]`
+> **§14 resolution (2026-09-27, [Block 57]):** the `BOrientSystemDb.databaseEncryption` default (`encrypted`) and the 3 KeyRing aliases are byte-identical in N4.14 — NOT new in N5; `EncryptionKeySource` has the same 5 members in N4 (package rename only).
+
 `BOrientSystemDb.java:407-411`) — i.e. OrientDB's own at-rest AES storage encryption, keyed via
 `getDbEncryptionPassword()`/the KeyRing (`KEY_RING_DB_ALIAS = "orientSystemDb.database"`, `:163`). B887 does not
 mention this option. `[INFER]`: this could be new in N5, or simply outside B887's stated scope (that block's

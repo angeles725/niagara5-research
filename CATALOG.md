@@ -2,7 +2,7 @@
 
 # Block catalog
 
-Total: **50 blocks**
+Total: **61 blocks**
 
 | Block | File | Title |
 |-------|------|-------|
@@ -56,3 +56,14 @@ Total: **50 blocks**
 | 48 | [niagara5-block48.md](niagara5-block48.md) | Public evidence on Niagara 5: breaking changes, retired modules and cloud/licensing statements |
 | 49 | [niagara5-block49.md](niagara5-block49.md) | Which N5 writes get audited: generated setters, Fox/BajaScript commit paths and the Context rule |
 | 50 | [niagara5-block50.md](niagara5-block50.md) | N4→N5 porting synthesis: what breaks, what to change, in what order |
+| 51 | [niagara5-block51.md](niagara5-block51.md) | From build-n4-module to an N5 kit: file-by-file delta, n-java placement and derived dependencies |
+| 52 | [niagara5-block52.md](niagara5-block52.md) | Hardening DashboardPan on N5: Niagara CSRF token, jakarta residue and equals() reliance (PoC) |
+| 53 | [niagara5-block53.md](niagara5-block53.md) | N5 launch gates: the tridium:nre license check, dangerous system properties, the code-signing trust anchor and license retrieval |
+| 54 | [niagara5-block54.md](niagara5-block54.md) | N5 security auditing, NiagaraRpc Context injection and residual AccessController/Subject usage |
+| 55 | [niagara5-block55.md](niagara5-block55.md) | Why some absent requires break javac and others don't; egress gates inside okhttp and Jetty |
+| 56 | [niagara5-block56.md](niagara5-block56.md) | Niagara 5 public statements on Java version and high availability, reconciled with the beta |
+| 57 | [niagara5-block57.md](niagara5-block57.md) | The command-line denylist's own override path, and N4 parity for data-at-rest defaults |
+| 58 | [niagara5-block58.md](niagara5-block58.md) | PANCCADIA beyond config.bog: histories, alarms, files and systemDb in an N4→N5 migration |
+| 59 | [niagara5-block59.md](niagara5-block59.md) | The N5 help full-text index format and JDK doc coverage |
+| 60 | [niagara5-block60.md](niagara5-block60.md) | N5 kit lint facts: Flags, profile splits, version constants and dependency counts |
+| 61 | [niagara5-block61.md](niagara5-block61.md) | Closing three named gaps: the live station's `BComponentSpace` identity, `nre.dll`/`njre.dll`'s native process-creation capability split, and the SP-side SAML signature-algorithm allowlist buried in the bundled `java-saml-core` jar |
