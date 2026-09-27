@@ -44,15 +44,15 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
      Field names use UNDERSCORES on purpose: they must never collide with the prose greps below. -->
 <!-- research-state.v1 -->
 schema: research-state.v1
-covered_blocks: 48
-gaps_closed: 75
-known_gaps: 239
-investigable_open: 129
+covered_blocks: 49
+gaps_closed: 76
+known_gaps: 241
+investigable_open: 130
 requires_execution_open: 7
 blocked_open: 21
 deferred_open: 7
 undocumented_findings: 0
-blocks_since_retro: 13
+blocks_since_retro: 14
 last_iteration_ts: 2026-09-27T11:10:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
@@ -61,8 +61,8 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 
 ## Coverage
 
-- **Covered blocks**: 48 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15, B16, B17, B18, B19, B20, B21, B22, B23, B24, B25, B26, B27, B28, B29, B30, B31, B32, B33, B34, B35, B36, B37, B38, B39, B40, B41, B42, B43, B44, B46, B47, B48, B49)
-- **Coverage metric**: 75 / 239 closed
+- **Covered blocks**: 49 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15, B16, B17, B18, B19, B20, B21, B22, B23, B24, B25, B26, B27, B28, B29, B30, B31, B32, B33, B34, B35, B36, B37, B38, B39, B40, B41, B42, B43, B44, B45, B46, B47, B48, B49)
+- **Coverage metric**: 76 / 241 closed
 - **Last iteration**: 2026-09-27 — N5-G5 core API delta (B5)
 
 ## Gap-backlog
@@ -243,7 +243,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | medium | B38-G2 SP-side SAML signature algorithm allowlist | saml.jar | pending |
 | low | B38-G3 LDAP Kerberos/GSSAPI location | ldap + kerberos | pending |
 | low | B38-G4 SRP6 group size cross-check | nre/fox | pending |
-| high | B37-G6 HA-ready design for our modules under niagaraSync: replace raw Clock.schedule timers with BNiagaraSyncTicket, state as Properties, BNiagaraSyncTicks, implement BINiagaraSyncCapableComplex (design note + PoC) | our modules + niagaraSync API | pending |
+| high | B37-G6 HA-ready design for our modules under niagaraSync: replace raw Clock.schedule timers with BNiagaraSyncTicket, state as Properties, BNiagaraSyncTicks, implement BINiagaraSyncCapableComplex (design note + PoC) | our modules + niagaraSync API | ✅ covered — B45 |
 | low | B37-G2 Three driver-specific sync-folder classes | bacnet/modbus/niagaraDriver | pending |
 | low | B37-G4 niagaraSync license-fault severity wiring | niagaraSync | pending |
 | low | B37-G5 modbusAsync/modbusTcp chassis lineage | modbus modules | pending |
@@ -286,6 +286,8 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | medium | B44-G2 AccessController-family call sites in jetty/platform/hx: inert after SecurityManager removal or live authorization | jetty/platform/hx | pending |
 | low | B44-G4 svgBatik ThreadDeath usage | svgBatik | pending |
 | deferred | B44-G3 Re-run jdeprscan on the 29 classpath-incomplete jars with vendor SDKs (Prosys OPC UA etc.) | vendor SDKs | pending (parked; needs licensed vendor SDKs) |
+| low | B45-G2 Census other modules for list/queue state under niagaraSync (no stock BSimple list; CSV String precedent) | organized/ | pending |
+| low | B45-G4 Link-wiring validator rule checked only structurally | niagaraSync validator | pending |
 | deferred | B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only | N5 GA install | pending (parked; needs a GA build) |
 
 ## Iteration history
@@ -340,6 +342,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | 46 | 2026-09-27 | Public evidence: Tridium FAQ (GA target Dec 2026, JACE-9000 only, JACE-8000 not upgradable, Java 25), subscription licensing pre-dates N5; B10-G2/B13-G1/B42-G4 narrowed not closed | B48 | yes · sonnet | 5 new — B48-G1..G5 |
 | 47 | 2026-09-27 | B46-G1 which N5 writes are audited: generated setters always null Context (3,589 sites); Fox/BOX/OrdServlet thread real Context via SetOp.commit; 3-tier pattern for our modules | B49 | yes · sonnet | 4 new — B49-G1..G4 |
 | 48 | 2026-09-27 | B25-G3 full jdeprscan: 85 deprecated call sites (39 for-removal) in 16/253 jars; 3 root causes (AccessController family, cloudLink finalize, ThreadDeath); our 3 ported modules clean | B44 | yes · sonnet | 4 new — B44-G1..G4 |
+| 49 | 2026-09-27 | B37-G6 ColdRoomPan HA-ready PoC: 8 Clock.Ticket → BNiagaraSyncTicket, 9 fields → Properties, 3 classes sync-capable; builds; 55/55 tests; validator walk passes statically | B45 | yes · sonnet | 2 new — B45-G2, B45-G4 (B45-G1 merges into blocked B37-G1) |
 
 ## Blocked gaps (each tagged with what it needs)
 
@@ -367,7 +370,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 129
+- **Open gaps — read-only investigable**: 130
 - **Open gaps — requires-execution**: 7
 - **Open gaps — blocked**: 21
 - Consecutive iterations with empty backlog (secondary): 0/2
