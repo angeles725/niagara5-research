@@ -2,7 +2,7 @@
 
 # Block catalog
 
-Total: **40 blocks**
+Total: **41 blocks**
 
 | Block | File | Title |
 |-------|------|-------|
@@ -46,3 +46,4 @@ Total: **40 blocks**
 | 38 | [niagara5-block38.md](niagara5-block38.md) | N5 TOTP enrollment, SAML flow, LDAP bind and SRP6 |
 | 41 | [niagara5-block41.md](niagara5-block41.md) | N5 action auditing (old→new values) and the web authentication chain |
 | 42 | [niagara5-block42.md](niagara5-block42.md) | cloudLink AMQP internals, provider channels, and the fate of N4 nCloudDriver |
+| 43 | [niagara5-block43.md](niagara5-block43.md) | N5 data-at-rest cryptography: KeyRing, EncryptionKeySource and systemDb encryption |
