@@ -44,15 +44,15 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
      Field names use UNDERSCORES on purpose: they must never collide with the prose greps below. -->
 <!-- research-state.v1 -->
 schema: research-state.v1
-covered_blocks: 26
-gaps_closed: 35
-known_gaps: 145
-investigable_open: 92
-requires_execution_open: 6
+covered_blocks: 28
+gaps_closed: 37
+known_gaps: 148
+investigable_open: 94
+requires_execution_open: 5
 blocked_open: 10
 deferred_open: 2
 undocumented_findings: 0
-blocks_since_retro: 3
+blocks_since_retro: 4
 last_iteration_ts: 2026-09-27T11:10:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
@@ -61,8 +61,8 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 
 ## Coverage
 
-- **Covered blocks**: 26 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15, B16, B17, B18, B19, B20, B21, B22, B23, B24, B26, B27)
-- **Coverage metric**: 35 / 145 closed
+- **Covered blocks**: 28 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15, B16, B17, B18, B19, B20, B21, B22, B23, B24, B25, B26, B27, B29)
+- **Coverage metric**: 37 / 148 closed
 - **Last iteration**: 2026-09-27 — N5-G5 core API delta (B5)
 
 ## Gap-backlog
@@ -175,8 +175,8 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B21-G2 JxBrowser vs JavaFX WebView default selection in Workbench | workbench.jar | pending |
 | medium | B21-G3 CSP / security headers served by niagara.web / jetty (static half) | web.jar + jetty | ✅ covered — B27 (static half) |
 | low | B21-G4 Stale JxBrowser 7.30.3 log string vs 9.5.0 engine | jxBrowser.jar | pending |
-| high | B16-G1 Run niagaraTest on the ColdRoomPan TestNG test via the Windows test.exe (WSL interop) — may hit the tridium:nre license gate | prototype run | requires-execution → §19 (invoke test.exe through interop with Windows paths) |
-| high | B16-G6 Port the 5 N4 JUnit4 ColdRoomPan tests to TestNG and write a JUnit4→TestNG recipe | our module tests | pending |
+| high | B16-G1 Run niagaraTest on the ColdRoomPan TestNG test via the Windows test.exe (WSL interop) — may hit the tridium:nre license gate | prototype run | ✅ covered — B29 (test.exe blocked by license tridium:nre; plain TestNG 51/51) |
+| high | B16-G6 Port the 5 N4 JUnit4 ColdRoomPan tests to TestNG and write a JUnit4→TestNG recipe | our module tests | ✅ covered — B29 |
 | high | B16-G7 Port CompPan and DashboardPan (multi-part rt/ux/wb, jakarta servlet) with the B16 recipe | prototype build | requires-execution → §19 (port + build both modules against the local config-home mirror) |
 | medium | B16-G2 Does a multi-module group like DashboardPan still need a parent grouping file | devkit templates + build | pending |
 | low | B16-G3 Locate the TestNG Support in Niagara 5 doc | docDeveloper.jar | pending |
@@ -203,6 +203,9 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B26-G2 Can a raw property-sheet string edit construct a restrictBy=2 capacity on N5 | history + workbench | pending |
 | low | B26-G3 BHistoryDbTable subclasses: alternate capacity enforcement | history.jar | pending |
 | low | B26-G4 BTypeSpecConverter generic simple-value handling | migrator.jar | pending |
+| low | B29-G4 Does the niagaraTest runner require BTestNg even for pure-logic tests | test module | pending |
+| low | B29-G5 compileModuleTestJava "cannot determine module name" message root cause | n-plugin | pending |
+| low | B29-G3 assertArrayEquals mapping in the port script | tools/port-junit4-to-testng.py | pending |
 | deferred | B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only | N5 GA install | pending (parked; needs a GA build) |
 
 ## Iteration history
@@ -235,10 +238,11 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | 24 | 2026-09-27 | B14-G2..G5 migrator catalog (58 types; §14 correction of B14 propMigration) | B24 | yes · sonnet | 5 new — B24-G2..G6 |
 | 25 | 2026-09-27 | B21-G3 web security headers (default CSP allows unsafe-inline; CSRF token only on 4 URL patterns) | B27 | yes · sonnet | 5 new — B27-G1..G6 |
 | 26 | 2026-09-27 | B20-G4 BCapacity hazard — CONFIRMED narrower; PANCCADIA zero exposure (§14 refinement of B20) | B26 | yes · sonnet | 3 new — B26-G2..G4 |
+| 27 | 2026-09-27 | B16-G6 + B16-G1 JUnit4→TestNG (117 asserts, 51/51 pass; test.exe license-gated) | B29 | yes · sonnet | 3 new — B29-G3..G5 |
 
 ## Blocked gaps (each tagged with what it needs)
 
-- B17-G1 Real n5mig run on the PANCCADIA copy — needs: a licensed N5 install (tridium:nre feature) · tried: n5mig -premigrate and -o via WSL interop (FeatureNotLicensedException tridium:nre, exit 253), java Bootstrap fallback (missing JavaFX runtime)
+- B17-G1 / B29-G2 Real n5mig run and niagaraTest/test.exe run on the PANCCADIA copy — needs: a licensed N5 install (tridium:nre feature) · tried: n5mig -premigrate and -o via WSL interop (FeatureNotLicensedException tridium:nre, exit 253), java Bootstrap fallback (missing JavaFX runtime)
 - B27-G1 Live HTTP header capture from an N5 station — needs: a running N5 station · tried: static jar census only
 - B23-G4 Live module-layer confirmation via the moduleConfiguration spy — needs: a running N5 station · tried: static decompile only
 - B20-G1 / B26-G1 Dynamic confirmation of BCapacity reinterpretation — needs: a running N5 station · tried: static decompile + bytecode (static half closed by B26: the JS contradiction predates N5)
@@ -251,8 +255,8 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 92
-- **Open gaps — requires-execution**: 6
+- **Open gaps — read-only investigable**: 94
+- **Open gaps — requires-execution**: 5
 - **Open gaps — blocked**: 10
 - Consecutive iterations with empty backlog (secondary): 0/2
 - Budget cap (default safety net): none
