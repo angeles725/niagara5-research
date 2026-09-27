@@ -44,16 +44,16 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
      Field names use UNDERSCORES on purpose: they must never collide with the prose greps below. -->
 <!-- research-state.v1 -->
 schema: research-state.v1
-covered_blocks: 81
-gaps_closed: 175
-known_gaps: 373
-investigable_open: 146
+covered_blocks: 82
+gaps_closed: 177
+known_gaps: 376
+investigable_open: 145
 requires_execution_open: 8
-blocked_open: 34
+blocked_open: 36
 deferred_open: 10
 undocumented_findings: 0
-blocks_since_retro: 6
-last_iteration_ts: 2026-09-27T22:30:00Z
+blocks_since_retro: 7
+last_iteration_ts: 2026-09-27T22:45:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
      applies to every corpus (single-focus and campaign alike); the stall-detection instrument reads it
@@ -61,9 +61,9 @@ last_iteration_ts: 2026-09-27T22:30:00Z
 
 ## Coverage
 
-- **Covered blocks**: 81 (B1..B75, B77, B78, B79, B80, B81, B82)
-- **Coverage metric**: 175 / 373 closed
-- **Last iteration**: 2026-09-27 — wave 8 completion (B78 box/alarm.adb, B80 census) authored directly; B76 native cluster deferred to post-reset delegated wave
+- **Covered blocks**: 82 (B1..B82)
+- **Coverage metric**: 177 / 376 closed
+- **Last iteration**: 2026-09-27 — wave 8 FULLY closed: B76 (niagarad/.jar.sig/ZKM/npsdk) authored orchestrator-direct with r2/objdump
 
 ## Gap-backlog
 
@@ -213,7 +213,7 @@ last_iteration_ts: 2026-09-27T22:30:00Z
 | medium | B32-G2 Compile a program object that depends on a non-default module (readability end-to-end) | prototype run | requires-execution → §19 (needs a running station; blocked with the license gate) |
 | low | B32-G3 Confirm bin/javac ships on embedded-tier device images | device image | pending |
 | low | B32-G4 Any station/platform flag relaxing mandatory program signing beyond dev-license test mode | program.jar + nre | pending |
-| low | B30-G1 Format and verifier of the bin/ext <jar>.jar.sig sidecars | bin/ext + nre | pending |
+| low | B30-G1 Format and verifier of the bin/ext <jar>.jar.sig sidecars | bin/ext + nre | ✅ covered — B76 |
 | medium | B30-G3 N5 embedded trust anchor that accepts the Honeywell code-signing chain | nre/baja crypto | ✅ covered — B53 |
 | low | B30-G4 Full N4 obfuscation census (beyond the 53-module ZKM sample) | N4 organized/ | pending |
 | low | B31-G1 Slot diff for 5 types in the 4.14→4.15 version gap (needs an N4 4.15 decompile) | N4 4.15 jars | pending |
@@ -260,7 +260,6 @@ last_iteration_ts: 2026-09-27T22:30:00Z
 | high | B43-G1 KeyRing alias rename javax.baja.security.BAes256PasswordEncoder.key → niagara.security.BAes256PasswordEncoder.key: does N5 (or n5mig) remap it, or do migrated stations lose reversible passwords? | nre KeyRing + migrator | ✅ covered — B47 (MITIGATED by n5mig force-clear/passphrase path; PANCCADIA uses external encoding (3 pbkdf2-aes-256 secrets)) |
 | low | B43-G2 N4 orientSystemDb default-encryption parity (narrows B19-G1) | N4 orientSystemDb | ✅ covered — B57 |
 | low | B43-G3 N4 EncryptionKeySource member count | N4 baja decompile | ✅ covered — B57 |
-| low | B43-G4 NativePlatformProviderNpsdk getKeyMaterial0/setKeyMaterial0 native RE | native npsdk lib | pending |
 | low | B39-G2 Does the batik-awt-util version matter beyond 1.19 | prototype build | pending |
 | medium | B39-G3 Why 3 other absent gx.jar requires (batik.transcoder, swt win32, owasp.encoder) never fail compilation | javac module resolution | ✅ covered — B55 |
 | low | B39-G4 Runtime behaviour of a module that really calls JavaFX/Batik APIs with these artifacts | prototype build | requires-execution → §19 (needs a licensed station to run) |
@@ -357,7 +356,7 @@ last_iteration_ts: 2026-09-27T22:30:00Z
 | low | B68-G4 JAAS LoginModule chain internals | baja auth | pending |
 | low | B68-G5 SuperSessionPrincipal branch-on-identity check | baja auth | pending |
 | low | B65-G3 doIsGrantedTo grant-matching body for FilePermission/RuntimeExecPermission | nre bytecode | ✅ covered — B81 |
-| low | B69-G1 Native-launcher-binary confirmation that niagarad never runs the Nre.runClass/Bootstrap path | native launchers | pending |
+| low | B69-G1 Native-launcher-binary confirmation that niagarad never runs the Nre.runClass/Bootstrap path | native launchers | ✅ covered — B76 |
 | low | B69-G2 BUserService.auditLoginAttempt third-party caller confirmation (documented @since 3.3 API) | third-party modules | pending |
 | low | B69-G3 BOrionDatabase storage/retention internals | orion | pending |
 | low | B70-G1 Extend AMBIG SequencedCollection classification to the ~33 sites in undecompiled jars | organized/ | pending |
@@ -407,6 +406,8 @@ last_iteration_ts: 2026-09-27T22:30:00Z
 | low | B80-G1 Full new-vs-old classification of all 110 getFirst/getLast call sites by receiver type | organized/ | pending |
 | low | B80-G2 What Jetty MBeanContainer publishes + platform MBean server remote reachability | jetty | pending |
 | low | B80-G3 Decompile the 5 B31 types from on-host N4-4.15 jars and slot-diff vs 4.14 | N4 4.15 jars | pending |
+| low | B76-G1 Boot-time routine (njre.dll/nre) that verifies the 256-byte .jar.sig sidecars + its key | nre boot | pending |
+| low | B76-G2 Watermark-specific N4 ZKM census (clinit decrypt idiom), replacing base64-polluted grep | N4 organized/ | pending |
 | deferred | B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only | N5 GA install | pending (parked; needs a GA build) |
 
 ## Iteration history
@@ -492,6 +493,7 @@ last_iteration_ts: 2026-09-27T22:30:00Z
 | 79 | 2026-09-27 | B21-G4 jxBrowser real version + B75-G4 uxBuilder AMD bundle + B75-G1 preInitialize fallback gates; B36-G3 narrowed | B79 | delegated | 3 new — B79-G1..G3 |
 | 78 | 2026-09-27 | box = Building Object eXchange (N4 carryover, not new) on Jetty-ee11 WS + Fox; B72-G3 + B58-G1/G4 alarm.adb header (MAGIC 1611526157) | B78 | orchestrator-direct (rate-limit fallback) | 4 new — B78-G1..G4 |
 | 80 | 2026-09-27 | B25-G2 SequencedCollection types only in bajaui NSS2; B33-G1 JMX = MXBean introspection + jetty MBeanContainer only, no first-party MBeans | B80 | orchestrator-direct | 3 new — B80-G1..G3 |
+| 76 | 2026-09-27 | B69-G1 CLOSED niagarad.exe = 24KB njre.dll-hosted service, no CreateProcess/SCM; B30-G1 .jar.sig = 73×256-byte detached RSA-2048; B30-G4 N5 zero-ZKM reaffirmed (base64 FP); B43-G4 blocked (no native npsdk) | B76 | orchestrator-direct (r2/objdump) | 3 new — B76-G1..G3 |
 | 81 | 2026-09-27 | B65-G3 permission grant-matching bodies + B38-G3 LDAP Kerberos/GSSAPI REMOVED in N5 + B15-G3 BServerPort opt-in inbound-only nftables firewall; B65-G4 narrowed | B81 | delegated | 3 new — B81-G1..G3 |
 | 82 | 2026-09-27 | B66-G2 ReflectCall.eval permission-gated + B47-G3 AxPasswordUtil recursive walk + B31-G3 BWebBogConverter/QoS property lists; B66-G1 narrowed | B82 | delegated | 4 new — B82-G1..G4 |
 
@@ -531,12 +533,14 @@ last_iteration_ts: 2026-09-27T22:30:00Z
 - B64-G2 The 59 N4 doc-guides absent from docDeveloper.jar — needs: same portal credentials · tried: confirmed uniform login gate on /s/article/<slug>
 - B68-G6 Live station confirmation of the servlet Context-threading audit gap — needs: a running N5 station · tried: static bytecode census only
 - B70-G3 Live-station probe for BIActionAuditProvider UI consumption — needs: a running N5 station · tried: static read only
+- B43-G4 NativePlatformProviderNpsdk getKeyMaterial0/setKeyMaterial0 native RE — needs: a platform/embedded image bundling the compiled npsdk lib · tried: this desktop install ships only the com.tridium.npsdk-native Gradle plugin, no native artifact
+- B76-G3 Same npsdk native reverse on an embedded image — needs: a device/embedded build · tried: absent from this Beta desktop install
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 146
+- **Open gaps — read-only investigable**: 145
 - **Open gaps — requires-execution**: 8
-- **Open gaps — blocked**: 34
+- **Open gaps — blocked**: 36
 - Consecutive iterations with empty backlog (secondary): 0/2
 - Budget cap (default safety net): none
 

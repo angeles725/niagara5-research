@@ -464,6 +464,9 @@ This index guides through the **61 blocks** of this research. The flat catalog l
 - [x] B25-G2 SequencedCollection/SequencedMap types appear only in bajaui NSS2 (corpus-wide) → [Block 80]
 - [x] B33-G1 JMX = read-only MXBean introspection (7 modules) + jetty MBeanContainer; no first-party MBeans → [Block 80]
 
+- [x] B69-G1 niagarad.exe = 24KB njre.dll-hosted Windows service, no CreateProcess/SCM/LoadLibrary imports → [Block 76]
+- [x] B30-G1 bin/ext .jar.sig = 73 detached 256-byte (RSA-2048) sidecars; in-module signing = CMS/BouncyCastle → [Block 76]
+
 ## Non-investigable gaps (without a running N5 station)
 
 - See `RESEARCH-STATE.md` → Blocked gaps.
