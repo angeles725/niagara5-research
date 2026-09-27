@@ -44,15 +44,15 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
      Field names use UNDERSCORES on purpose: they must never collide with the prose greps below. -->
 <!-- research-state.v1 -->
 schema: research-state.v1
-covered_blocks: 57
-gaps_closed: 101
-known_gaps: 279
-investigable_open: 132
+covered_blocks: 61
+gaps_closed: 102
+known_gaps: 283
+investigable_open: 135
 requires_execution_open: 8
 blocked_open: 27
 deferred_open: 10
 undocumented_findings: 0
-blocks_since_retro: 7
+blocks_since_retro: 8
 last_iteration_ts: 2026-09-27T11:10:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
@@ -61,8 +61,8 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 
 ## Coverage
 
-- **Covered blocks**: 57 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15, B16, B17, B18, B19, B20, B21, B22, B23, B24, B25, B26, B27, B28, B29, B30, B31, B32, B33, B34, B35, B36, B37, B38, B39, B40, B41, B42, B43, B44, B45, B46, B47, B48, B49, B50, B51, B52, B53, B54, B55, B56, B57)
-- **Coverage metric**: 101 / 279 closed
+- **Covered blocks**: 61 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15, B16, B17, B18, B19, B20, B21, B22, B23, B24, B25, B26, B27, B28, B29, B30, B31, B32, B33, B34, B35, B36, B37, B38, B39, B40, B41, B42, B43, B44, B45, B46, B47, B48, B49, B50, B51, B52, B53, B54, B55, B56, B57, B58, B59, B60, B61)
+- **Coverage metric**: 102 / 283 closed
 - **Last iteration**: 2026-09-27 — N5-G5 core API delta (B5)
 
 ## Gap-backlog
@@ -191,7 +191,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B23-G5 NreInstantiator DI plumbing | nre.jar | pending |
 | low | B23-G6 Prove or refute module.xml vs module-info dependency divergence | module census | pending |
 | high | B24-G6 No converter exists for tagdictionary (105), kitControl (100), nrio (96) PANCCADIA objects — confirm they load unchanged in N5 (type names, slot compatibility) | migrator + module registry | ✅ covered — B31 |
-| medium | B24-G2 Census the PANCCADIA points/histories/alarm stores beyond config.bog | PANCCADIA station copy | pending |
+| medium | B24-G2 Census the PANCCADIA points/histories/alarm stores beyond config.bog | PANCCADIA station copy | ✅ covered — B58 (narrowed: this Windows Workbench path holds only config.bog + empty alarm.adb; real runtime data is elsewhere) |
 | low | B24-G3 Tabulate the 180-entry zwave removal type list | migrator.jar | pending |
 | low | B24-G4 MigrationUtils (40 static methods) line-by-line read | migrator.jar | pending |
 | low | B24-G5 BBackupDistMigrator / BPxMigrator / premigrate classes full bodies | migrator.jar | pending |
@@ -320,6 +320,10 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B55-G1 Cross-check the transitive-vs-plain javac rule with the Windows javac.exe | prototype run | pending |
 | low | B55-G2 Decompile okio-jvm for any egress hook | bin/ext okio | pending |
 | low | B55-G4 Does any N5 module hit the okhttp-5.5.0 empty placeholder jar trap | bin/ext + builds | pending |
+| medium | B58-G2 Where PANCCADIA's real runtime histories/schedules/px live (not on the Windows Workbench path; prior memory says a Linux snap) | live station host | pending |
+| low | B58-G1 alarm.adb N5-side format compatibility (no N5 alarm.jar decompile yet) | alarm.jar | pending |
+| low | B58-G3 systemDb absent: unlicensed vs never-provisioned on this OEM build | install | pending |
+| low | B58-G4 Decode alarm.adb header words 0x0C-0x20 | alarm.adb + tool | pending |
 | deferred | B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only | N5 GA install | pending (parked; needs a GA build) |
 
 ## Iteration history
@@ -383,6 +387,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | 55 | 2026-09-27 | B48-G1/G5 public Java version (all first-party say 25; Java 21 only in 3 third-party pages) and HA naming (Niagara Sync = tridium:niagaraSync) | B56 | yes · sonnet | 4 new — B56-G1..G4 |
 | 56 | 2026-09-27 | B53-G3 denylist self-override CONFIRMED but bounded to host-admin; nre.properties is a 2nd JVM-arg surface; B43-G2/G3 N4 parity: systemDb encrypted-by-default and EncryptionKeySource unchanged since N4 | B57 | yes · sonnet | 4 new — B57-G1..G4 |
 | 57 | 2026-09-27 | B39-G3 javac forces only transitive requires of non-root modules (4 controlled compiles); B15-G2 no egress gate inside okhttp 5.5 / Jetty 12.1.13 — audit-only verdict holds at library layer | B55 | yes · sonnet | 4 new — B55-G1..G4 |
+| 58 | 2026-09-27 | B24-G2/B31-G4 PANCCADIA station census: only config.bog + empty alarm.adb on the Windows path; histories/schedules/px/systemDb/.dist structurally absent | B58 | yes · sonnet | 4 new — B58-G1..G4 |
 
 ## Blocked gaps (each tagged with what it needs)
 
@@ -416,7 +421,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 132
+- **Open gaps — read-only investigable**: 135
 - **Open gaps — requires-execution**: 8
 - **Open gaps — blocked**: 27
 - Consecutive iterations with empty backlog (secondary): 0/2

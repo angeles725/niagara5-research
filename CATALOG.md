@@ -2,7 +2,7 @@
 
 # Block catalog
 
-Total: **57 blocks**
+Total: **61 blocks**
 
 | Block | File | Title |
 |-------|------|-------|
@@ -63,3 +63,7 @@ Total: **57 blocks**
 | 55 | [niagara5-block55.md](niagara5-block55.md) | Why some absent requires break javac and others don't; egress gates inside okhttp and Jetty |
 | 56 | [niagara5-block56.md](niagara5-block56.md) | Niagara 5 public statements on Java version and high availability, reconciled with the beta |
 | 57 | [niagara5-block57.md](niagara5-block57.md) | The command-line denylist's own override path, and N4 parity for data-at-rest defaults |
+| 58 | [niagara5-block58.md](niagara5-block58.md) | PANCCADIA beyond config.bog: histories, alarms, files and systemDb in an N4→N5 migration |
+| 59 | [niagara5-block59.md](niagara5-block59.md) | The N5 help full-text index format and JDK doc coverage |
+| 60 | [niagara5-block60.md](niagara5-block60.md) | N5 kit lint facts: Flags, profile splits, version constants and dependency counts |
+| 61 | [niagara5-block61.md](niagara5-block61.md) | Closing three named gaps: the live station's `BComponentSpace` identity, `nre.dll`/`njre.dll`'s native process-creation capability split, and the SP-side SAML signature-algorithm allowlist buried in the bundled `java-saml-core` jar |
