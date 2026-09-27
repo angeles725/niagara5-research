@@ -81,6 +81,8 @@
 | JMX — management | `ManagementFactory.getPlatformMBeanServer()`/`MBeanServer`/`JMXConnectorServer` | **none found used or gated** — the surface itself is absent from both jars, not merely ungated | §33.3 |
 | Native library loading | `System.load`/`System.loadLibrary` | **none** — unconditional, core-only caller (`NativePlatformProvider.load()`) | §33.4 |
 | Native access (Panama/FFM, JPMS) | `Module.enableNativeAccess`, `@NiagaraEnableNativeAccess`, `niagara.enable.native.access` | **none for the annotation path** (self-declared, zero permission check) · **operator-controlled, not permission-based** for the sysprop path | §33.4 |
+> **§14 correction (2026-09-27, [Block 40]):** `PROTECTED_NATIVE_SYSTEM_PROPERTIES_LIST` holds 27 entries, not 24 (`SystemPropertiesUtil.java:19-49`); the only 4 shipped `setSystemProperty` callers use hard-coded keys; `BServerPort.adapter` is READONLY|HIDDEN with zero setter callers, so the unsanitized `iifname` branch is dead code in the shipped product.
+
 | System property writes | `System.setProperty`/`SystemPropertiesUtil.setSystemProperty` | **denylist only, no permission check** — 24 native-platform keys blocked, everything else open to any caller of an unconditionally-exported class | §33.5 |
 | `Runtime.exec`/`ProcessBuilder` | `ProcessBuilder.start()` (0-arg) | **enforce** — `RuntimeExecPermission` via `ProcessBuilderAdvice`, confirmed public-tier requestable ([Block 8] §8.1/§8.5) | §33.6 (re-derivation) |
 | Class loader creation | `ModuleSetClassLoader`/`BootstrapClassLoader` construction | **none as a general API** — confined to internal loader machinery, not a factory a third-party module can invoke | §33.2 (negative existence) |
