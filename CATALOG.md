@@ -2,7 +2,7 @@
 
 # Block catalog
 
-Total: **23 blocks**
+Total: **25 blocks**
 
 | Block | File | Title |
 |-------|------|-------|
@@ -29,3 +29,5 @@ Total: **23 blocks**
 | 21 | [niagara5-block21.md](niagara5-block21.md) | N5 UI stack: bajaux, themes, uxBuilder, Workbench and web resources |
 | 22 | [niagara5-block22.md](niagara5-block22.md) | N5 driver framework delta: driver/ndriver, BACnet, Modbus, Fox |
 | 23 | [niagara5-block23.md](niagara5-block23.md) | N5 module loader internals: ModuleLayer topology, JPMS access patching and signature gates |
+| 24 | [niagara5-block24.md](niagara5-block24.md) | The N4→N5 migrator catalog: every converter n5mig applies |
+| 27 | [niagara5-block27.md](niagara5-block27.md) | N5 web server security headers, CSP and resource serving |
