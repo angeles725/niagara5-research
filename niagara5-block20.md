@@ -221,6 +221,9 @@ first glance at the N5-only method list).
 
 ## 20.5 — History `BCapacity`: a real API removal, a client-layer contradiction, and a migration hazard `[CERT]` + `[INFER]`
 
+> **§14 refinement (2026-09-27, [Block 26]):** the storage-size removal hazard is CONFIRMED but narrower than stated here — N4's own Workbench/web editors never offered storage-size mode (the JS "contradiction" predates N5), getMaxStorage() was never used for enforcement, and exposure is limited to legacy `2:*` capacities never activated under N4. PANCCADIA has zero `2:*` capacities.
+
+
 **Confirmed removal.** N4's `BCapacity` supports three restriction modes — none (`0`), record
 count (`1`), and **storage size in bytes** (`2`) — with a full constructor/getter/`toString`
 surface for the third: `private static final int RESTRICT_STORAGE_SIZE = 2;` [CERT]
