@@ -44,15 +44,15 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
      Field names use UNDERSCORES on purpose: they must never collide with the prose greps below. -->
 <!-- research-state.v1 -->
 schema: research-state.v1
-covered_blocks: 50
-gaps_closed: 77
-known_gaps: 244
-investigable_open: 131
+covered_blocks: 52
+gaps_closed: 80
+known_gaps: 249
+investigable_open: 132
 requires_execution_open: 8
-blocked_open: 21
+blocked_open: 22
 deferred_open: 7
 undocumented_findings: 0
-blocks_since_retro: 0
+blocks_since_retro: 1
 last_iteration_ts: 2026-09-27T11:10:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
@@ -61,8 +61,8 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 
 ## Coverage
 
-- **Covered blocks**: 50 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15, B16, B17, B18, B19, B20, B21, B22, B23, B24, B25, B26, B27, B28, B29, B30, B31, B32, B33, B34, B35, B36, B37, B38, B39, B40, B41, B42, B43, B44, B45, B46, B47, B48, B49, B50)
-- **Coverage metric**: 77 / 244 closed
+- **Covered blocks**: 52 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15, B16, B17, B18, B19, B20, B21, B22, B23, B24, B25, B26, B27, B28, B29, B30, B31, B32, B33, B34, B35, B36, B37, B38, B39, B40, B41, B42, B43, B44, B45, B46, B47, B48, B49, B50, B51, B54)
+- **Coverage metric**: 80 / 249 closed
 - **Last iteration**: 2026-09-27 — N5-G5 core API delta (B5)
 
 ## Gap-backlog
@@ -248,7 +248,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B37-G4 niagaraSync license-fault severity wiring | niagaraSync | pending |
 | low | B37-G5 modbusAsync/modbusTcp chassis lineage | modbus modules | pending |
 | high | B41-G6 DashboardPan N5 write path: pass the servlet request niagara.context (authenticated user) into set()/invoke so writes land in AuditHistory with user and old→new value (design + PoC in the ported copy) | our module + web/baja | ✅ covered — B46 |
-| medium | B41-G1 SecurityAuditEvent / SecurityAuditor full mapping | baja security | pending |
+| medium | B41-G1 SecurityAuditEvent / SecurityAuditor full mapping | baja security | ✅ covered — B54 |
 | low | B41-G2 JAAS Subject / AddSubjectFilter contents | web.jar | pending |
 | low | B41-G3 Jetty LoginService / UserIdentity resolution | jetty.jar | pending |
 | low | B41-G5 Do first-party N5 servlets thread niagara.context through to writes | web modules | pending |
@@ -279,11 +279,11 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | deferred | B48-G2 Read the login-gated docs.niagara-community.com N5 breaking-changes page | Developer Program credentials | pending (parked; needs Developer Program login) |
 | deferred | B48-G3 Re-run the 49 absent-module check on the N5 GA build (target Dec 2026) | N5 GA install | pending (parked; needs a GA build) |
 | deferred | B48-G4 Watch for a post-GA nCloudDriver statement | web after GA | pending (parked; revisit after GA) |
-| medium | B49-G2 Trace N5 NiagaraRpc servlet/BOX dispatch for Context injection into @NiagaraRpc methods | web/box modules | pending |
+| medium | B49-G2 Trace N5 NiagaraRpc servlet/BOX dispatch for Context injection into @NiagaraRpc methods | web/box modules | ✅ covered — B54 |
 | low | B49-G3 Feasibility of a Context-taking overload in Slotomatic output | slotomatic | pending |
 | low | B49-G4 Whole-corpus census of generated action invoke wrappers | organized/ | pending |
 | low | B44-G1 The 13 cloudLink* finalize() overrides: resource, shared base class, Cleaner replacement | cloudLink family | pending |
-| medium | B44-G2 AccessController-family call sites in jetty/platform/hx: inert after SecurityManager removal or live authorization | jetty/platform/hx | pending |
+| medium | B44-G2 AccessController-family call sites in jetty/platform/hx: inert after SecurityManager removal or live authorization | jetty/platform/hx | ✅ covered — B54 |
 | low | B44-G4 svgBatik ThreadDeath usage | svgBatik | pending |
 | deferred | B44-G3 Re-run jdeprscan on the 29 classpath-incomplete jars with vendor SDKs (Prosys OPC UA etc.) | vendor SDKs | pending (parked; needs licensed vendor SDKs) |
 | low | B45-G2 Census other modules for list/queue state under niagaraSync (no stock BSimple list; CSV String precedent) | organized/ | pending |
@@ -291,6 +291,10 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | medium | B50-G1 Driver-module N5 build PoC (ndriver or BDeviceNetwork chassis) | prototype build | requires-execution → §19 (scaffold + build a minimal ndriver module) |
 | low | B50-G2 Native-module (npsdk) build on N5 | m2 native plugins | pending |
 | low | B50-G6 Greenfield (non-ported) N5 module path via the devkit wizard templates | devkit.jar | pending |
+| low | B54-G1 Is -Djava.security.manager set by the N5 launcher (moot: vulnerable Subject API never called) | launchers | pending |
+| low | B54-G3 Open SecurityAgent / SecurityProviderAdvice directly | nre.jar | pending |
+| low | B54-G4 BUserService.auditLoginAttempt appears dead code | baja | pending |
+| low | B54-G5 BOrionSecurityAudit parallel audit DB | orion | pending |
 | deferred | B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only | N5 GA install | pending (parked; needs a GA build) |
 
 ## Iteration history
@@ -347,9 +351,11 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | 48 | 2026-09-27 | B25-G3 full jdeprscan: 85 deprecated call sites (39 for-removal) in 16/253 jars; 3 root causes (AccessController family, cloudLink finalize, ThreadDeath); our 3 ported modules clean | B44 | yes · sonnet | 4 new — B44-G1..G4 |
 | 49 | 2026-09-27 | B37-G6 ColdRoomPan HA-ready PoC: 8 Clock.Ticket → BNiagaraSyncTicket, 9 fields → Properties, 3 classes sync-capable; builds; 55/55 tests; validator walk passes statically | B45 | yes · sonnet | 2 new — B45-G2, B45-G4 (B45-G1 merges into blocked B37-G1) |
 | 50 | 2026-09-27 | N5-G16 porting synthesis + docs/n4-to-n5-porting-guide.md (180 citations across 27 blocks; troubleshooting table; PANCCADIA migration runbook) | B50 | yes · sonnet | 3 new — B50-G1..G6 (G3-G5/G7 fold into existing blocked/deferred gaps) |
+| 51 | 2026-09-27 | B41-G1 + B49-G2 + B44-G2 security audit routing (SecurityHistory vs AuditHistory, 19 emitters, niagarad relay), NiagaraRpc Context = SecurableContext + permission check, AccessController sites inert; no Subject.getSubject | B54 | yes · sonnet | 5 new — B54-G1..G5 |
 
 ## Blocked gaps (each tagged with what it needs)
 
+- B54-G2 Live capture of the audit routing table — needs: a running N5 station · tried: static only
 - B49-G1 Live AuditHistory readback for Fox/BOX writes — needs: a running licensed N5 station · tried: static trace only
 - B46-G4 Live $/AuditHistory readback of a DashboardPan write — needs: a running licensed N5 station · tried: build + javap only
 - B40-G3 Firewall defaults on a JACE/embedded-Linux N5 platform — needs: a JACE-class N5 install image · tried: whole Windows Supervisor install tree + 247-module corpus (absent)
@@ -374,9 +380,9 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 131
+- **Open gaps — read-only investigable**: 132
 - **Open gaps — requires-execution**: 8
-- **Open gaps — blocked**: 21
+- **Open gaps — blocked**: 22
 - Consecutive iterations with empty backlog (secondary): 0/2
 - Budget cap (default safety net): none
 

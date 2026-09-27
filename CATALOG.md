@@ -2,7 +2,7 @@
 
 # Block catalog
 
-Total: **50 blocks**
+Total: **52 blocks**
 
 | Block | File | Title |
 |-------|------|-------|
@@ -56,3 +56,5 @@ Total: **50 blocks**
 | 48 | [niagara5-block48.md](niagara5-block48.md) | Public evidence on Niagara 5: breaking changes, retired modules and cloud/licensing statements |
 | 49 | [niagara5-block49.md](niagara5-block49.md) | Which N5 writes get audited: generated setters, Fox/BajaScript commit paths and the Context rule |
 | 50 | [niagara5-block50.md](niagara5-block50.md) | N4→N5 porting synthesis: what breaks, what to change, in what order |
+| 51 | [niagara5-block51.md](niagara5-block51.md) | From build-n4-module to an N5 kit: file-by-file delta, n-java placement and derived dependencies |
+| 54 | [niagara5-block54.md](niagara5-block54.md) | N5 security auditing, NiagaraRpc Context injection and residual AccessController/Subject usage |
