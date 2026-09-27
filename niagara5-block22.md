@@ -404,6 +404,8 @@ reuse [B10]'s already-snapshotted/extracted doc text.
   `class Descriptor` hits) `[CERT]` (negative-existence, own zipfile search) vs. the doc's own claim that
   this change exists and is significant enough to warrant its own external "BACnet Breaking Changes"
   document `[CERT-doc]`. Unresolved — likely lives in `bacnetUtil.jar` (private API, unexamined this
+> **§14 note (2026-09-27, [Block 35]):** the BC-10 BACnet "Descriptor" is `niagara.bacnet.export.BIBacnetExportObject` (was `javax.baja.bacnet.export.BIBacnetExportObject`), not a type in `bacnetUtil.jar` (28 classes, zero Descriptor types) — the bacnetUtil hypothesis here is refuted.
+
   session) → see child gap B22-G1.
 
 ## 22.x — Named child gaps

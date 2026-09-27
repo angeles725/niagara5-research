@@ -377,6 +377,8 @@ the key; the two-`String`-param overload (`get(String,String)`) takes the SECOND
 | `validCheckRetry.limit` | 1 | baja.jar/SubscriptionLicenseManager#initPeriodicEntitlementCheck — **`[CERT]` live re-verified, §11.10** |
 | `vendor` | 1 | baja.jar/LicenseUtil#checkJreFeature |
 | `virtual` | 1 | niagaraDriver.jar/BNiagaraVirtualNetworkExt#checkLicense |
+> **§14 correction (2026-09-27, [Block 34]):** the `resource.limit` gate polarity is `if (!Metrics.isUsingCapacityLicensing())` (live `javap -c -p` on ResourceManager.checkLicense) — the opposite of the inference below; capacity licensing is NOT new to N5 (N4 B488 §488.2 already had it).
+
 | `resource.limit` (**hand-added, not in the mechanized table**) | 1 | baja.jar/ResourceManager#checkLicense — `[CERT]` live-verified, see below |
 
 **Gating-type classification** `[INFER]` (grouping, not extraction): **numeric limits** — every `*.limit`

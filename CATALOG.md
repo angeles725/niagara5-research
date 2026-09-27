@@ -2,7 +2,7 @@
 
 # Block catalog
 
-Total: **28 blocks**
+Total: **50 blocks**
 
 | Block | File | Title |
 |-------|------|-------|
@@ -33,4 +33,26 @@ Total: **28 blocks**
 | 25 | [niagara5-block25.md](niagara5-block25.md) | Java 17-25 feature adoption in N5 Tridium bytecode (census) |
 | 26 | [niagara5-block26.md](niagara5-block26.md) | History capacity after N4→N5: the removed storage-size mode |
 | 27 | [niagara5-block27.md](niagara5-block27.md) | N5 web server security headers, CSP and resource serving |
+| 28 | [niagara5-block28.md](niagara5-block28.md) | Porting CompPan and DashboardPan to N5: multi-part merge and the jakarta servlet migration |
 | 29 | [niagara5-block29.md](niagara5-block29.md) | Tests on N5: JUnit4 to TestNG and running them (niagaraTest, test.exe, plain TestNG) |
+| 30 | [niagara5-block30.md](niagara5-block30.md) | N5 bytecode, jar signing and obfuscation profile (and why it decompiles well) |
+| 31 | [niagara5-block31.md](niagara5-block31.md) | Do PANCCADIA's unconverted N4 objects load in N5? Type and slot compatibility census |
+| 32 | [niagara5-block32.md](niagara5-block32.md) | Program objects in N5: in-station compilation, signing and classloading |
+| 33 | [niagara5-block33.md](niagara5-block33.md) | What N5 still gates: reflection, JMX, native access, exec, and the nftables firewall |
+| 34 | [niagara5-block34.md](niagara5-block34.md) | N5 subscription entitlements and capacity licensing: the `nre.jar` `com.tridium.nre.subscription`/`com.tridium.nre.license` bootstrap (closing B6-G1), and `resource.limit`'s NOT-capacity-licensing polarity corrected against B11 §11.5 (closing B11-G1) |
+| 35 | [niagara5-block35.md](niagara5-block35.md) | N5 drivers on the deprecated chassis, the BACnet Descriptor change and niagaraDriver deltas |
+| 36 | [niagara5-block36.md](niagara5-block36.md) | The N5 JavaScript build pipeline (node, grunt, RequireJS) for module web resources |
+| 37 | [niagara5-block37.md](niagara5-block37.md) | niagaraSync internals: replication, failover and what third-party modules must do |
+| 38 | [niagara5-block38.md](niagara5-block38.md) | N5 TOTP enrollment, SAML flow, LDAP bind and SRP6 |
+| 39 | [niagara5-block39.md](niagara5-block39.md) | Building N5 modules that depend on alarm/bajaui on Linux: JavaFX and Batik |
+| 40 | [niagara5-block40.md](niagara5-block40.md) | N5 system-property writers, nftables rule-hint provenance and firewall defaults |
+| 41 | [niagara5-block41.md](niagara5-block41.md) | N5 action auditing (old→new values) and the web authentication chain |
+| 42 | [niagara5-block42.md](niagara5-block42.md) | cloudLink AMQP internals, provider channels, and the fate of N4 nCloudDriver |
+| 43 | [niagara5-block43.md](niagara5-block43.md) | N5 data-at-rest cryptography: KeyRing, EncryptionKeySource and systemDb encryption |
+| 44 | [niagara5-block44.md](niagara5-block44.md) | Deprecated JDK API usage across N5 (full jdeprscan census) |
+| 45 | [niagara5-block45.md](niagara5-block45.md) | Making ColdRoomPan HA-ready for niagaraSync (PoC refactor and build) |
+| 46 | [niagara5-block46.md](niagara5-block46.md) | Audited writes from DashboardPan on N5: passing the request Context (PoC) |
+| 47 | [niagara5-block47.md](niagara5-block47.md) | Do reversible secrets survive N4→N5? The KeyRing alias rename |
+| 48 | [niagara5-block48.md](niagara5-block48.md) | Public evidence on Niagara 5: breaking changes, retired modules and cloud/licensing statements |
+| 49 | [niagara5-block49.md](niagara5-block49.md) | Which N5 writes get audited: generated setters, Fox/BajaScript commit paths and the Context rule |
+| 50 | [niagara5-block50.md](niagara5-block50.md) | N4→N5 porting synthesis: what breaks, what to change, in what order |

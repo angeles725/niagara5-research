@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Module Navigator — Web Dashboard (F32)</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">MN</span>
+      <div class="title">
+        <h1>Module Navigator</h1>
+        <p class="subtitle">Niagara N4 decompiled corpus — 51K+ classes · 12 indexes · 43 phases · F32 Web Dashboard</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <span id="health" class="health dot-pending">connecting&hellip;</span>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="sidebar">
+      <ul>
+        <li class="nav-item active" data-view="search">
+          <span class="nav-ic">S</span>
+          <span class="nav-label">Class Search</span>
+        </li>
+        <li class="nav-item" data-view="profile">
+          <span class="nav-ic">P</span>
+          <span class="nav-label">Class Profile</span>
+        </li>
+        <li class="nav-item" data-view="modules">
+          <span class="nav-ic">M</span>
+          <span class="nav-label">Modules</span>
+        </li>
+        <li class="nav-item" data-view="stats">
+          <span class="nav-ic">#</span>
+          <span class="nav-label">Corpus Stats</span>
+        </li>
+        <li class="nav-item" data-view="unified">
+          <span class="nav-ic">U</span>
+          <span class="nav-label">Unified Search</span>
+        </li>
+        <li class="nav-item" data-view="compare">
+          <span class="nav-ic">C</span>
+          <span class="nav-label">Compare</span>
+        </li>
+      </ul>
+      <div class="sidebar-footer">
+        <div class="small muted">Help Nav + Module Nav + BOG Nav</div>
+        <div class="small muted">Port 8042 · stdlib http.server</div>
+      </div>
+    </nav>
+
+    <main class="content">
+      <!-- ========= VIEW: SEARCH ========= -->
+      <section class="view active" id="view-search">
+        <div class="view-header">
+          <h2>Class Search</h2>
+          <p class="muted">Glob-aware pattern search across the 51,167-class corpus.</p>
+        </div>
+        <div class="panel">
+          <div class="search-bar">
+            <input type="text" id="search-input" placeholder="e.g. BLinkPad, *Dialog*, BJetty*, BPoint" autocomplete="off">
+            <button id="search-btn" class="btn primary">Search</button>
+          </div>
+          <div id="autocomplete" class="autocomplete"></div>
+          <div id="search-summary" class="summary"></div>
+          <div id="search-results" class="results"></div>
+        </div>
+      </section>
+
+      <!-- ========= VIEW: PROFILE ========= -->
+      <section class="view" id="view-profile">
+        <div class="view-header">
+          <h2>Class Profile</h2>
+          <p class="muted">Full profile: class info, source preview, UI details, module context.</p>
+        </div>
+        <div class="panel">
+          <div class="search-bar">
+            <input type="text" id="profile-input" placeholder="Class name (e.g. BLinkPad)" autocomplete="off">
+            <button id="profile-btn" class="btn primary">Load</button>
+          </div>
+          <div id="profile-output" class="profile-output"></div>
+        </div>
+      </section>
+
+      <!-- ========= VIEW: MODULES ========= -->
+      <section class="view" id="view-modules">
+        <div class="view-header">
+          <h2>Modules</h2>
+          <p class="muted">661 modules across 926 JARs · RT/WB/UX/DOC filters.</p>
+        </div>
+        <div class="panel">
+          <div class="filter-bar">
+            <label>Type
+              <select id="mod-type">
+                <option value="">all</option>
+                <option value="rt">rt</option>
+                <option value="wb">wb</option>
+                <option value="ux">ux</option>
+                <option value="doc">doc</option>
+                <option value="se">se</option>
+                <option value="standalone">standalone</option>
+              </select>
+            </label>
+            <label class="chk"><input type="checkbox" id="mod-has-code" checked> has code</label>
+            <label class="chk"><input type="checkbox" id="mod-zkm"> ZKM only</label>
+            <button id="mod-refresh" class="btn">Refresh</button>
+          </div>
+          <div id="modules-summary" class="summary"></div>
+          <div id="modules-list" class="results"></div>
+          <div id="module-detail" class="detail-panel"></div>
+        </div>
+      </section>
+
+      <!-- ========= VIEW: STATS ========= -->
+      <section class="view" id="view-stats">
+        <div class="view-header">
+          <h2>Corpus Stats</h2>
+          <p class="muted">Live numbers from 12 indexes · computed on-demand.</p>
+        </div>
+        <div id="stats-grid" class="stats-grid"></div>
+        <div id="stats-indexes" class="panel"></div>
+      </section>
+
+      <!-- ========= VIEW: UNIFIED ========= -->
+      <section class="view" id="view-unified">
+        <div class="view-header">
+          <h2>Unified Search</h2>
+          <p class="muted">Cross-navigator: Help Nav (public docs) · Module Nav (decompiled) · BOG Nav (station config).</p>
+        </div>
+        <div class="panel">
+          <div class="search-bar">
+            <input type="text" id="unified-input" placeholder="Query across all 3 navigators (e.g. Jetty, Alarm, Servlet)">
+            <button id="unified-btn" class="btn primary">Search</button>
+          </div>
+          <div id="unified-sources" class="unified-sources"></div>
+          <div class="three-col">
+            <div class="col">
+              <h3 class="col-title help">Help Nav</h3>
+              <div id="unified-help" class="col-body"></div>
+            </div>
+            <div class="col">
+              <h3 class="col-title module">Module Nav</h3>
+              <div id="unified-module" class="col-body"></div>
+            </div>
+            <div class="col">
+              <h3 class="col-title bog">BOG Nav</h3>
+              <div id="unified-bog" class="col-body"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========= VIEW: COMPARE ========= -->
+      <section class="view" id="view-compare">
+        <div class="view-header">
+          <h2>Compare (Help vs Module vs BOG)</h2>
+          <p class="muted">Side-by-side: public API docs vs decompiled implementation vs active station instances.</p>
+        </div>
+        <div class="panel">
+          <div class="search-bar">
+            <input type="text" id="compare-input" placeholder="Class name (e.g. BJettyWebServer)">
+            <button id="compare-btn" class="btn primary">Compare</button>
+          </div>
+          <pre id="compare-output" class="pre-output"></pre>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <script src="/static/app.js"></script>
+</body>
+</html>

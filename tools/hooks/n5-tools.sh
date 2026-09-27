@@ -105,6 +105,22 @@ installs. Do NOT re-decompile or re-download what is already here.
     -rt/-ux/-wb parts vs one N5 jar). No package-rename awareness (raw
     bytecode diff) — use `source` mode for a rename-aware comparison.
 
+  n5-decompile.sh [<module>|--docsource|--bin-ext|--scan-markers <dir>] [--force]
+    Java-25-aware decompile into organized/<module>/ (Vineflower primary,
+    CFR fallback on timeout or per-class failure markers). Bake-off and
+    rationale: docs/decompiler-bakeoff.md.
+  port-junit4-to-testng.py <src.java> <dest.java>
+    Ports pure JUnit4 tests to TestNG (expected/actual swap, message last).
+
+Indexes over the N5 corpus (rebuild after a re-decompile):
+  module-navigator/tools/module_nav.py <cmd>   (class, callers, callees,
+    method, field, strings, resources <module> --type xml, ...)
+    Rebuild: module-navigator/reindex.sh (indexes/ is gitignored).
+  niagara-help/tools/niagara_help.py <cmd>     (class, slots, guide-search,
+    devguide-search, find, source-grep, freshness) — separate private repo
+    angeles725/niagara5-help; rebuild with tools/extract_n5_docs.py then
+    tools/build_indexes.py.
+
 Run any tool with -h/--help for its full flag list before guessing one.
 EOF
 

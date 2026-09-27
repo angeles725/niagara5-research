@@ -1,5 +1,8 @@
 # Block 12 — N5 authentication and security surface: a new vendor-neutral TOTP module (128-bit secret, up from N4 gauth's 80-bit), a 10×-stronger PBKDF2 default (100,000 vs N4's 10,000 iterations), a new CRL-checking PKI scheme absent from N4's client-cert auth, and a real Linux-`nftables` firewall processor behind the "firewall" package name
 
+> **§14 correction (2026-09-27, [Block 38]):** TOTP enrollment has TWO paths (Workbench admin field editor, and a self-service web-login reset that fires on first login because `forceSecretKeyResetAtNextLogin` defaults true), not admin-only; and bad TOTP tokens ARE rate-limited by the station-wide `BUserService` account lockout (5 bad logins / 30 s → 10 s lockout) via `BAuthenticationService.processLoginAttempt()`, although `TotpAuthLoginModule` itself has none. N4 gauth secrets have no migration path.
+
+
 > **Scope**: Closes gap **N5-G9** (Security/authn surface: `totpAuth` [new], `oauth2`, `saml`,
 > `clientCertAuth`, `firewall`, `authn`). Covers: every `BAuthenticationScheme` subclass shipped across
 > `totpAuth.jar`, `oauth2.jar`, `saml.jar`, `samlEncryption.jar`, `clientCertAuth.jar`, `ldap.jar`,

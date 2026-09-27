@@ -1,5 +1,8 @@
 # Block 18 — N5 cloud surface: cloudLink family, niagaraCloud and niagaraSync
 
+> **§14 refinement (2026-09-27, [Block 37]):** failover promotion requires BOTH heartbeat channels (Fox RPC and the mTLS raw socket on port 5911) to be lost — an AND-gate, not a secondary-only check; every Fox reconnect re-runs a full initSync (no incremental catch-up); planned handoffs re-correct tick offsets but heartbeat-loss failover uses the last periodic correction.
+
+
 > Research of the **N5 cloud-connectivity surface**: 10 modules —
 > `cloudLink`, `cloudLinkAzure`, `cloudLinkExtensionBacnet`, `cloudLinkExtensionEbi`,
 > `cloudLinkExtensionNiagara`, `cloudLinkForge`, `cloudLinkHonSbp`, `cloudLinkNcs`, `niagaraCloud`,
