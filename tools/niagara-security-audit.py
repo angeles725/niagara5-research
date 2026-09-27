@@ -254,9 +254,12 @@ def audit(home, station_bog, host, rep):
                 "no station provisioned yet — cannot inspect key sizes; not a PASS")
     else:
         sizes = keytool_keysizes(ts)
-        if sizes is None:
+        if not sizes:
+            # None = keytool could not read the store; [] = it read nothing
+            # that looks like a key. Neither proves "all keys >= 2048".
+            why = "unreadable with default storepass (need keytool)" if sizes is None else "no key sizes reported by keytool"
             rep.add("SEC-11", "med", "weak signing keys / FIPS",
-                    f"unreadable with default storepass (need keytool); FIPS keystore {'present' if fips else 'absent'}",
+                    f"{why}; FIPS keystore {'present' if fips else 'absent'}",
                     "all keys >= 2048; FIPS suppresses RSA-1024 option",
                     "MANUAL", "B113/B392",
                     "run: keytool -list -v -keystore <ts> -storepass <real password>")

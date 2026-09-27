@@ -90,6 +90,18 @@ class TestSecurityAuditN5(unittest.TestCase):
         rows = self._run()
         self.assertEqual(rows["SEC-11"]["verdict"], "MANUAL")
 
+    def test_sec11_does_not_pass_when_keytool_succeeds_but_reports_no_keys(self):
+        # Regression for the RDD validator rejection on 370284c: keytool can
+        # exit 0 with no "N-bit" tokens (empty truststore, or an older keytool
+        # output format). Zero inspected keys is not evidence of strong keys.
+        secdir = os.path.join(self.home, "security")
+        os.makedirs(secdir, exist_ok=True)
+        with open(os.path.join(secdir, "truststore.jks"), "wb") as fh:
+            fh.write(b"placeholder")
+        self.mod.keytool_keysizes = lambda path, pw="changeit": []
+        rows = self._run()
+        self.assertEqual(rows["SEC-11"]["verdict"], "MANUAL")
+
     def test_keytool_keysizes_returns_none_on_missing_file(self):
         mod = _load()
         self.assertIsNone(mod.keytool_keysizes("/nonexistent/truststore.jks"))
