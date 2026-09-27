@@ -180,6 +180,8 @@ the raw XML — 58 matches).
 | Driver/protocol-specific bog converters | ~26 | BACnet ×5 (incl. `BacnetOwsToAwsBogConverter` — OWS→AWS family swap, run BY `n5mig`, distinct from `driverUpgrade.jar`'s wizard, §14.8), OPC/OPC-UA ×5, cloudLink ×7, jetty ×2, kerberos ×2, video ×2, mobile ×2, snmp/nSnmp ×2, zwave, commercialCooking, abstractMqttDriver, oracle, lonIp, weather, weatherUnderground ×1 each |
 | App/web/misc removal or rename converters | 5 | `AppBogConverter` (§14.5), `WebBogConverter`, `TemplateFileMigrator`, `DataPolicyConverter` (tagDictionary), `CurDisTagConverter` (haystack), `GauthToTotpAuthBogConverter`/`PxElementConverter`, `TunnelServiceConverter` |
 
+> **§14 correction (2026-09-27, [Block 24] §24.5):** `propMigration.jar` is NOT a declarative property-migration DSL — decompiled in full, it is a self-test fixture module for the `BIBogElementConverter` SPI using fake `oldMig:*`/`propMigration:*` types; it contributes nothing to real-station migration. The paragraph below is superseded.
+
 `propMigration.jar` (a SEPARATE, SMALLER jar, description not read this session but inferable from its 8
 declarative converter classes: `BNewType`, `BNumPropNameChange`, `BOrdProps`, `BOrigSimple`,
 `BPropFacetsChange`, `BPropFlagsChange`, `BPropNameChange`, `BPropRemove`, `BPropValueChange`,
