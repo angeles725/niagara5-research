@@ -1,0 +1,4 @@
+<types>
+  <!--poc.n5hello-->
+  <type class="poc.n5hello.BN5Hello" name="N5Hello"/>
+</types>

@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
-# SessionStart hook — Research-SDD protocol for <SUBJECT>.
-# Mirror of the niagara-research hook, parameterized. Copy it to:
-#   <TARGET>/.claude/hooks/research-protocol.sh
-# and register it in <TARGET>/.claude/settings.json (matcher startup|resume|clear).
-# Replace <SUBJECT> and the source/tool paths with the target's.
+# SessionStart hook — Research-SDD protocol for Niagara N5 (5.0.0.28 beta).
+# Mirror of the niagara-research hook, parameterized for this target
+# (niagara5-research). Registered in .claude/settings.json
+# (matcher startup|resume|clear|compact).
 #
 # §479: also records the session-start git sha so retro-gate.sh can detect
 # which research files changed during this session.
@@ -76,23 +75,36 @@ if ! command -v jq >/dev/null 2>&1; then
 fi
 
 read -r -d '' CTX <<'EOF' || true
-RESEARCH PROTOCOL — <SUBJECT> (Research-SDD)
+RESEARCH PROTOCOL — Niagara N5 5.0.0.28 beta (Research-SDD)
 
-Every session in this project is READ-ONLY research of <SUBJECT>. Before
-answering a research question, work in this order:
+Every session in this project is READ-ONLY research of Niagara N5 5.0.0.28
+(Java 25), with the N4↔N5 delta as an organizing axis. Before answering a
+research question, work in this order:
 
 1. FIRST search the project's own .md blocks (truth already distilled):
-   - <prefix>-block*.md
+   - niagara5-block*.md
    - INDEX.md  (map + Pending/gaps section)
    - CATALOG.md
-   Review them before opening any tool.
+   - RESEARCH-STATE.md (open gaps, NEXT)
+   Review them before opening any tool. Also see
+   tools/hooks/n5-research-protocol.sh and tools/hooks/n5-tools.sh
+   (loaded alongside this hook) for the full three-source protocol and the
+   local tools card.
 
 2. Toolbelt tools (Research-SDD) — pick the wrapper for the artifact type from
    $RESEARCH_SDD_KIT/toolbelt/tool-registry.md (profile-target.sh classifies
-   binaries and suggests one).
+   binaries and suggests one). For this target's OWN tools (corpus-nav.py,
+   n5-modules.py, n5-api-diff.py, ...) see tools/README.md.
 
-3. PRIMARY SOURCES of the subject (real paths — fill in per target):
-   - <path to binaries/decompiled output/source code of the system under study>
+3. PRIMARY SOURCES of Niagara N5 (real paths):
+   - N5 modules (jars): /mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules
+   - N5 install: "/mnt/c/Program Files/Niagara/5.0.0.28"
+     (bin, jre, defaults/*.bog, javadoc/niagaraJavadoc.jar, etc/m2)
+   - N4 install (delta baseline): /mnt/c/Honeywell/OptimizerSupervisor-N4.14.0.162/modules
+   - N5 decompiled output (this repo, partial while work is in progress):
+     <repo>/organized/<module>/{extracted,resources,<decompiler>,recon.json}
+   - N4 sibling corpus (docSource originals, prior N4 research):
+     /home/cristian/niagara-research
 
 4. PROVENANCE AND CERTAINTY (mandatory markers on every claim):
    [CERT-hw] live system/device (highest) · [CERT-live] live remote service · [CERT] local primary ·

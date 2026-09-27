@@ -11,6 +11,8 @@ indexes/
 tools/decompilers/*.jar
 tools/decompilers/*.zip
 tools/decompilers/jadx/
+tools/decompilers/jadx-*/
+tools/decompilers/krakatau/
 
 # Python / OS
 __pycache__/
@@ -22,3 +24,18 @@ __pycache__/
 *.env
 .env
 .env.*
+
+# PoC build outputs (Gradle)
+poc/**/.gradle/
+poc/**/build/
+poc/**/.niagara_user_home/
+
+# CLIENT DATA — station copies and migration outputs, never commit
+poc/n5mig-panccadia/
+poc/_quarantine-install-*/
+poc/**/.n5config/
+
+# Ported CLIENT module sources (ColdRoomPan) — recipe lives in niagara5-block16.md; never commit client code
+poc/coldroompan-n5/
+poc/comppan-n5/
+poc/dashboardpan-n5/
