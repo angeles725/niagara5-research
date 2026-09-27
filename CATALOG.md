@@ -2,7 +2,7 @@
 
 # Block catalog
 
-Total: **56 blocks**
+Total: **57 blocks**
 
 | Block | File | Title |
 |-------|------|-------|
@@ -60,5 +60,6 @@ Total: **56 blocks**
 | 52 | [niagara5-block52.md](niagara5-block52.md) | Hardening DashboardPan on N5: Niagara CSRF token, jakarta residue and equals() reliance (PoC) |
 | 53 | [niagara5-block53.md](niagara5-block53.md) | N5 launch gates: the tridium:nre license check, dangerous system properties, the code-signing trust anchor and license retrieval |
 | 54 | [niagara5-block54.md](niagara5-block54.md) | N5 security auditing, NiagaraRpc Context injection and residual AccessController/Subject usage |
+| 55 | [niagara5-block55.md](niagara5-block55.md) | Why some absent requires break javac and others don't; egress gates inside okhttp and Jetty |
 | 56 | [niagara5-block56.md](niagara5-block56.md) | Niagara 5 public statements on Java version and high availability, reconciled with the beta |
 | 57 | [niagara5-block57.md](niagara5-block57.md) | The command-line denylist's own override path, and N4 parity for data-at-rest defaults |
