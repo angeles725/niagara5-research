@@ -2,7 +2,7 @@
 
 # Block catalog
 
-Total: **68 blocks**
+Total: **75 blocks**
 
 | Block | File | Title |
 |-------|------|-------|
@@ -74,3 +74,10 @@ Total: **68 blocks**
 | 66 | [niagara5-block66.md](niagara5-block66.md) | The migrator internals census: `MigrationUtils`'s 40-method surface, the four `-premigrate` bodies, the 180-entry zwave removal list, and a bytecode-level close of the vestigial KeyRing-decrypt gap |
 | 67 | [niagara5-block67.md](niagara5-block67.md) | cloudLink retry/throttle mechanics, the Forge message-handler census, vestigial `finalize()` overrides, and the three driver-extension satellites |
 | 68 | [niagara5-block68.md](niagara5-block68.md) | Closing the web/servlet-auth cluster: first-party N5 servlet write-audit census, JAAS `Subject` contents, Jetty `LoginService`/`UserIdentity`, and `NModuleInfo.isWar()`/`hx.jar` WebAppContext registration |
+| 69 | [niagara5-block69.md](niagara5-block69.md) | `NiagaraDaemon.Main()` structurally cannot be reached through `Bootstrap`/`Nre.main`'s `nreMain` dispatch, closing B65-G1's exact question; plus three closed security/audit gaps: `isPrivileged`'s stack-walk rule (pre-closed by [Block 8]), `BUserService.auditLoginAttempt` as a documented-but-uncalled public API (B54-G4), and Orion's first-party RDBMS audit channel (B54-G5) |
+| 70 | [niagara5-block70.md](niagara5-block70.md) | Source-level citation upgrade for N5 control/alarm/kitControl/schedule: the `Action`-typed pattern-switch, an `instanceof`-pattern census, and AMBIG `SequencedCollection` call sites read at source |
+| 71 | [niagara5-block71.md](niagara5-block71.md) | Closing the licensing/subscription/portalApi cluster: the dead `LicenseDownload` `Nre.runClass` exemption, the backup-restoration re-registration write site, the LicenseAccessKey Workbench UI, the N4 client-package location, and the Niagara Sync / Niagara Cloud licensing split |
+| 72 | [niagara5-block72.md](niagara5-block72.md) | Four named child gaps closed: the `fieldEditor`-facet raw-string bypass for `BCapacity`, `BHistoryDbTable`'s real place in the class hierarchy (not a third backend), `BTypeSpecConverter`'s `TypeSpec`-only scope, and an exhaustive 3-module `jetty-web.xml` census |
+| 73 | [niagara5-block73.md](niagara5-block73.md) | `BNiagaraEdgeLiteStation` licensing/identity gating, the Fox-websocket-behavior enum plus `BReachableStations` topology discovery, three trivial `niagaraSync` point-folder markers, `modbusAsync`/`modbusTcp`'s `basicDriver` chassis lineage, and a corpus-wide negative-existence census for list/queue-shaped `niagaraSync` state |
+| 74 | [niagara5-block74.md](niagara5-block74.md) | Closing the build-toolchain/devkit cluster: the wizard's greenfield driver scaffold, the `native`/`npsdk-native` Gradle plugin's real (property-driven) compiler invocation, a Slotomatic Context-overload feasibility verdict, a whole-corpus generated-action-invoke census, and the okhttp-5.5.0 placeholder-jar trap ruled out |
+| 75 | [niagara5-block75.md](niagara5-block75.md) | Closing five named gaps across the help/doc-tooling and Workbench-UI clusters: `BajadocIndex.lookup()`'s exact-then-wildcard match, the `niagara-help` guide-search linear scan, `uxBuilder`'s `ux/make`+`ux/fe` novelty, the JxBrowser-vs-JavaFX-WebView default, and a confirmed-stale N4-era `buildingJS.html` |
