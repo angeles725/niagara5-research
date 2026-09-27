@@ -63,3 +63,4 @@ machine running the suite — the hermetic tests (synthetic fixtures) always run
      The kit's toolbelt/tool-registry.md documents HOW to use kit tools; this file records
      WHICH kit tools this corpus relies on and WHY any local tools were created or adapted.
      Seeded by BOOTSTRAP (PROMPT-LOOP.md). Updated whenever a tool is added or changed. -->
+| port-junit4-to-testng.py | tools/port-junit4-to-testng.py | created (B29) — ports pure JUnit4 tests to TestNG: paren/string-aware arg split, expected/actual swap, message moved last | `python3 tools/port-junit4-to-testng.py <src.java> <dest.java>` |
