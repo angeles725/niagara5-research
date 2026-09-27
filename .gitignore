@@ -29,3 +29,6 @@ __pycache__/
 poc/**/.gradle/
 poc/**/build/
 poc/**/.niagara_user_home/
+
+# CLIENT DATA — station copies and migration outputs, never commit
+poc/n5mig-panccadia/
