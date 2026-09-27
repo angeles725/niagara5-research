@@ -45,14 +45,14 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
 <!-- research-state.v1 -->
 schema: research-state.v1
 covered_blocks: 54
-gaps_closed: 84
-known_gaps: 257
-investigable_open: 134
+gaps_closed: 88
+known_gaps: 263
+investigable_open: 135
 requires_execution_open: 8
-blocked_open: 22
+blocked_open: 23
 deferred_open: 8
 undocumented_findings: 0
-blocks_since_retro: 2
+blocks_since_retro: 3
 last_iteration_ts: 2026-09-27T11:10:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
@@ -62,7 +62,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 ## Coverage
 
 - **Covered blocks**: 54 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15, B16, B17, B18, B19, B20, B21, B22, B23, B24, B25, B26, B27, B28, B29, B30, B31, B32, B33, B34, B35, B36, B37, B38, B39, B40, B41, B42, B43, B44, B45, B46, B47, B48, B49, B50, B51, B52, B53, B54)
-- **Coverage metric**: 84 / 257 closed
+- **Coverage metric**: 88 / 263 closed
 - **Last iteration**: 2026-09-27 — N5-G5 core API delta (B5)
 
 ## Gap-backlog
@@ -164,7 +164,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B19-G2 EncryptionKeySource enum in N4 (never decompiled there) vs N5 five members | N4 baja decompile | pending |
 | low | B19-G4 KeyRing/SecurityInitializer proprietary blocker unchanged in N5 | nre/baja | ✅ covered — B43 |
 | medium | B19-G5 OrientDB 3.2.23 → 3.2.55 on-disk compatibility for migrated stations | prototype run | requires-execution → §19 (open an N4 systemDb store with the N5 OrientDB libs) |
-| medium | B17-G2 Why wb.exe boots on the unlicensed beta while n5mig/station do not (tridium:nre gate path) | nre.jar + launchers | pending |
+| medium | B17-G2 Why wb.exe boots on the unlicensed beta while n5mig/station do not (tridium:nre gate path) | nre.jar + launchers | ✅ covered — B53 |
 | low | B17-G3 Reconstruct the native launcher VM/module-path args to run n5mig via java | bin launchers + nre.dll | pending |
 | low | B17-G4 DefrostMode declared in ColdRoomPan-rt module.xml has zero bog instances | our module + PANCCADIA bog | pending |
 | medium | B20-G2 niagaraSync ticks integration in kitControl BLoopPoint (BNiagaraSyncTicks) semantics | kitControl + niagaraSync | ✅ covered — B37 |
@@ -186,7 +186,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B22-G4 niagaraDriver logic diff N4→N5 | niagaraDriver.jar | ✅ covered — B35 |
 | low | B22-G2 Compile a basicDriver-based module on N5 | prototype build | requires-execution → §19 (build a minimal basicDriver module against the local mirror) |
 | medium | B23-G1 PROGRAM ModuleType is dead code: where program objects actually load (com.tridium.program) | program.jar | ✅ covered — B32 |
-| medium | B23-G3 Is skipModuleValidation blacklisted on the N5 command line | nre + launchers | pending |
+| medium | B23-G3 Is skipModuleValidation blacklisted on the N5 command line | nre + launchers | ✅ covered — B53 |
 | low | B23-G2 Locate com.tridium.crypto.core (absent from nre/baja) | bin/ext + modules | pending |
 | low | B23-G5 NreInstantiator DI plumbing | nre.jar | pending |
 | low | B23-G6 Prove or refute module.xml vs module-info dependency divergence | module census | pending |
@@ -214,7 +214,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B32-G3 Confirm bin/javac ships on embedded-tier device images | device image | pending |
 | low | B32-G4 Any station/platform flag relaxing mandatory program signing beyond dev-license test mode | program.jar + nre | pending |
 | low | B30-G1 Format and verifier of the bin/ext <jar>.jar.sig sidecars | bin/ext + nre | pending |
-| medium | B30-G3 N5 embedded trust anchor that accepts the Honeywell code-signing chain | nre/baja crypto | pending |
+| medium | B30-G3 N5 embedded trust anchor that accepts the Honeywell code-signing chain | nre/baja crypto | ✅ covered — B53 |
 | low | B30-G4 Full N4 obfuscation census (beyond the 53-module ZKM sample) | N4 organized/ | pending |
 | low | B31-G1 Slot diff for 5 types in the 4.14→4.15 version gap (needs an N4 4.15 decompile) | N4 4.15 jars | pending |
 | low | B31-G3 Re-read BWebBogConverter / BJettyQoSFilterMigrator property lists | migrator.jar | pending |
@@ -231,7 +231,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | medium | B28-G2 Batik (org.apache.xmlgraphics) provider: JavaFX confirmed in the bundled JRE release MODULES (7 javafx.* modules); batik not a JRE module and svgBatik.jar holds no org/apache classes | jre + bin/ext + modules | ✅ covered — B39 |
 | low | B28-G1 Fate of the N4 test-wb module in N5 | modules | pending |
 | medium | B28-G3 Does the Windows jre/bin/javac.exe resolve niagara.alarm without stubs | prototype build | ✅ covered — B39 |
-| medium | B34-G3 Caller of AuthenticatedLicenseRetrievalUtil (perpetual LicenseAccessKey flow) | nre + workbench | pending |
+| medium | B34-G3 Caller of AuthenticatedLicenseRetrievalUtil (perpetual LicenseAccessKey flow) | nre + workbench | ✅ covered — B53 |
 | low | B34-G1 Backup-restoration write site for the subscription cache | nre | pending |
 | low | B34-G4 Workbench UI consumer of the LicenseAccessKey flow | workbench | pending |
 | low | B34-G5 N4 nre.jar client-package comparator for subscription | N4 nre | pending |
@@ -303,6 +303,11 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B51-G6 lint-wb-threading: Swing invokeLater vs JavaFX Platform.runLater on real N5 wb code | prototype build | pending |
 | low | B51-G7 Measured N4 vs N5 explicit dependency counts | module.xml census | pending |
 | deferred | B51-G8 Implement the build-n5-module kit fork in niagara-tools (9-step plan in B51 §51.7) | niagara-tools repo | pending (parked; separate kit campaign in niagara-tools with its own gates) |
+| medium | B53-G3 niagara.commandLinePropertyDenyList is itself read via System.getProperty — can a -D override neuter the denylist (static hypothesis, measure) | nre/baja Nre | pending |
+| low | B53-G2 portalApi LicenseDownload flow | portalApi | pending |
+| low | B53-G4 Runtime cacerts contents (structure only) | install jre | pending |
+| low | B53-G5 TPK pin vs Honeywell leaf key identity | nre + signed jars | pending |
+| low | B53-G6 TRIDIUM_DEV_CA_CERT usage | nre | pending |
 | deferred | B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only | N5 GA install | pending (parked; needs a GA build) |
 
 ## Iteration history
@@ -361,9 +366,11 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | 50 | 2026-09-27 | N5-G16 porting synthesis + docs/n4-to-n5-porting-guide.md (180 citations across 27 blocks; troubleshooting table; PANCCADIA migration runbook) | B50 | yes · sonnet | 3 new — B50-G1..G6 (G3-G5/G7 fold into existing blocked/deferred gaps) |
 | 51 | 2026-09-27 | B41-G1 + B49-G2 + B44-G2 security audit routing (SecurityHistory vs AuditHistory, 19 emitters, niagarad relay), NiagaraRpc Context = SecurableContext + permission check, AccessController sites inert; no Subject.getSubject | B54 | yes · sonnet | 5 new — B54-G1..G5 |
 | 52 | 2026-09-27 | B2-G6 + B9-G3 + B13-G4 N5 kit delta (file-by-file), n-java per module, module.xml deps derived from compileClasspath (explains 2.0.7→2.0) | B51 | yes · sonnet | 8 new — B51-G1..G8 |
+| 53 | 2026-09-27 | B17-G2/B23-G3/B30-G3/B34-G3 launch gates: tridium:nre allowlist (WbMain, LicenseDownload), skipModuleValidation not denylisted, trust anchor = runtime cacerts + TPK pin, LicenseAccessKey via niagarad | B53 | yes · sonnet | 6 new — B53-G1..G6 |
 
 ## Blocked gaps (each tagged with what it needs)
 
+- B53-G1 Live wb.exe license dialog path — needs: GUI session on the Windows host · tried: -help only (short-circuits before the check)
 - B54-G2 Live capture of the audit routing table — needs: a running N5 station · tried: static only
 - B49-G1 Live AuditHistory readback for Fox/BOX writes — needs: a running licensed N5 station · tried: static trace only
 - B46-G4 Live $/AuditHistory readback of a DashboardPan write — needs: a running licensed N5 station · tried: build + javap only
@@ -389,9 +396,9 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 134
+- **Open gaps — read-only investigable**: 135
 - **Open gaps — requires-execution**: 8
-- **Open gaps — blocked**: 22
+- **Open gaps — blocked**: 23
 - Consecutive iterations with empty backlog (secondary): 0/2
 - Budget cap (default safety net): none
 

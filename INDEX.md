@@ -158,7 +158,6 @@ This index guides through the **54 blocks** of this research. The flat catalog l
 - [ ] (medium) B19-G1 BOrientSystemDb at-rest AES encryption toggle: new in N5 or pre-existing — pending
 - [ ] (low) B19-G2 EncryptionKeySource enum in N4 (never decompiled there) vs N5 five members — pending
 - [ ] (medium) B19-G5 OrientDB 3.2.23 → 3.2.55 on-disk compatibility for migrated stations — requires-execution → §19 (open an N4 systemDb store with the N5 OrientDB libs)
-- [ ] (medium) B17-G2 Why wb.exe boots on the unlicensed beta while n5mig/station do not (tridium:nre gate path) — pending
 - [ ] (low) B17-G3 Reconstruct the native launcher VM/module-path args to run n5mig via java — pending
 - [ ] (low) B17-G4 DefrostMode declared in ColdRoomPan-rt module.xml has zero bog instances — pending
 - [ ] (low) B20-G5 Decompile control/alarm/kitControl/schedule to source for file:line citations — pending
@@ -167,7 +166,6 @@ This index guides through the **54 blocks** of this research. The flat catalog l
 - [ ] (low) B21-G4 Stale JxBrowser 7.30.3 log string vs 9.5.0 engine — pending
 - [ ] (low) B16-G3 Locate the TestNG Support in Niagara 5 doc — pending
 - [ ] (low) B22-G2 Compile a basicDriver-based module on N5 — requires-execution → §19 (build a minimal basicDriver module against the local mirror)
-- [ ] (medium) B23-G3 Is skipModuleValidation blacklisted on the N5 command line — pending
 - [ ] (low) B23-G2 Locate com.tridium.crypto.core (absent from nre/baja) — pending
 - [ ] (low) B23-G5 NreInstantiator DI plumbing — pending
 - [ ] (low) B23-G6 Prove or refute module.xml vs module-info dependency divergence — pending
@@ -192,7 +190,6 @@ This index guides through the **54 blocks** of this research. The flat catalog l
 - [ ] (low) B32-G3 Confirm bin/javac ships on embedded-tier device images — pending
 - [ ] (low) B32-G4 Any station/platform flag relaxing mandatory program signing beyond dev-license test mode — pending
 - [ ] (low) B30-G1 Format and verifier of the bin/ext <jar>.jar.sig sidecars — pending
-- [ ] (medium) B30-G3 N5 embedded trust anchor that accepts the Honeywell code-signing chain — pending
 - [ ] (low) B30-G4 Full N4 obfuscation census (beyond the 53-module ZKM sample) — pending
 - [ ] (low) B31-G1 Slot diff for 5 types in the 4.14→4.15 version gap (needs an N4 4.15 decompile) — pending
 - [ ] (low) B31-G3 Re-read BWebBogConverter / BJettyQoSFilterMigrator property lists — pending
@@ -202,7 +199,6 @@ This index guides through the **54 blocks** of this research. The flat catalog l
 - [ ] (low) B33-G1 JMX usage across the remaining modules — pending
 - [ ] (low) B33-G6 Operational impact of the firewall losing port-redirect (N4 pf) in N5 nft — pending
 - [ ] (low) B28-G1 Fate of the N4 test-wb module in N5 — pending
-- [ ] (medium) B34-G3 Caller of AuthenticatedLicenseRetrievalUtil (perpetual LicenseAccessKey flow) — pending
 - [ ] (low) B34-G1 Backup-restoration write site for the subscription cache — pending
 - [ ] (low) B34-G4 Workbench UI consumer of the LicenseAccessKey flow — pending
 - [ ] (low) B34-G5 N4 nre.jar client-package comparator for subscription — pending
@@ -267,6 +263,11 @@ This index guides through the **54 blocks** of this research. The flat catalog l
 - [ ] (low) B51-G6 lint-wb-threading: Swing invokeLater vs JavaFX Platform.runLater on real N5 wb code — pending
 - [ ] (low) B51-G7 Measured N4 vs N5 explicit dependency counts — pending
 - [ ] (deferred) B51-G8 Implement the build-n5-module kit fork in niagara-tools (9-step plan in B51 §51.7) — pending (parked; separate kit campaign in niagara-tools with its own gates)
+- [ ] (medium) B53-G3 niagara.commandLinePropertyDenyList is itself read via System.getProperty — can a -D override neuter the denylist (static hypothesis, measure) — pending
+- [ ] (low) B53-G2 portalApi LicenseDownload flow — pending
+- [ ] (low) B53-G4 Runtime cacerts contents (structure only) — pending
+- [ ] (low) B53-G5 TPK pin vs Honeywell leaf key identity — pending
+- [ ] (low) B53-G6 TRIDIUM_DEV_CA_CERT usage — pending
 - [ ] (deferred) B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only — pending (parked; needs a GA build)
 
 - [x] N5-G1 Module packaging: one jar per module + JPMS module-info.class + module.xml schemaVersion 5 — how rt/ux/wb runtime profiles are expressed without the -rt/-ux split → [Block 1]
@@ -323,6 +324,7 @@ This index guides through the **54 blocks** of this research. The flat catalog l
 - [x] B18-G3 Per-provider channel config classes (Forge / HonSbp) → [Block 42]
 - [x] B18-G4 Other BINiagaraSyncCapableComplex consumers (full-tree search) → [Block 37]
 - [x] B19-G4 KeyRing/SecurityInitializer proprietary blocker unchanged in N5 → [Block 43]
+- [x] B17-G2 Why wb.exe boots on the unlicensed beta while n5mig/station do not (tridium:nre gate path) → [Block 53]
 - [x] B20-G2 niagaraSync ticks integration in kitControl BLoopPoint (BNiagaraSyncTicks) semantics → [Block 37]
 - [x] B20-G3 BIActionAuditProvider old-value audit path end-to-end → [Block 41]
 - [x] B20-G4 History rollover mechanism after BCapacity storage-size mode removal (migration hazard) → [Block 26]
@@ -336,9 +338,11 @@ This index guides through the **54 blocks** of this research. The flat catalog l
 - [x] B22-G3 Which other bundled drivers still extend the deprecated basicDriver chassis → [Block 35]
 - [x] B22-G4 niagaraDriver logic diff N4→N5 → [Block 35]
 - [x] B23-G1 PROGRAM ModuleType is dead code: where program objects actually load (com.tridium.program) → [Block 32]
+- [x] B23-G3 Is skipModuleValidation blacklisted on the N5 command line → [Block 53]
 - [x] B24-G6 No converter exists for tagdictionary (105), kitControl (100), nrio (96) PANCCADIA objects — confirm they load unchanged in N5 (type names, slot compatibility) → [Block 31]
 - [x] B27-G3 NiagaraConstraintSecurityHandler / NiagaraAuthenticator: web authn/authz proper → [Block 41]
 - [x] B25-G3 Full 253-jar jdeprscan --for-removal pass → [Block 44]
+- [x] B30-G3 N5 embedded trust anchor that accepts the Honeywell code-signing chain → [Block 53]
 - [x] B35-G1 niagaraSync package semantics (standby/active RPC state machine in niagaraDriver) → [Block 37]
 - [x] B33-G3 All callers of SystemPropertiesUtil.setSystemProperty (ungated except a 24-key denylist) → [Block 40]
 - [x] B33-G4 BServerPort.adapter → nft rule-hint injection reachability → [Block 40]
@@ -346,6 +350,7 @@ This index guides through the **54 blocks** of this research. The flat catalog l
 - [x] B28-G7 niagara.alarm transitive dependency on javafx/batik platform modules forces stub module-info jars when compiling third-party modules on Linux — find the supported way (Windows javac.exe? SDK module path?) → [Block 39]
 - [x] B28-G2 Batik (org.apache.xmlgraphics) provider: JavaFX confirmed in the bundled JRE release MODULES (7 javafx.* modules); batik not a JRE module and svgBatik.jar holds no org/apache classes → [Block 39]
 - [x] B28-G3 Does the Windows jre/bin/javac.exe resolve niagara.alarm without stubs → [Block 39]
+- [x] B34-G3 Caller of AuthenticatedLicenseRetrievalUtil (perpetual LicenseAccessKey flow) → [Block 53]
 - [x] B37-G6 HA-ready design for our modules under niagaraSync: replace raw Clock.schedule timers with BNiagaraSyncTicket, state as Properties, BNiagaraSyncTicks, implement BINiagaraSyncCapableComplex (design note + PoC) → [Block 45]
 - [x] B41-G6 DashboardPan N5 write path: pass the servlet request niagara.context (authenticated user) into set()/invoke so writes land in AuditHistory with user and old→new value (design + PoC in the ported copy) → [Block 46]
 - [x] B41-G1 SecurityAuditEvent / SecurityAuditor full mapping → [Block 54]
