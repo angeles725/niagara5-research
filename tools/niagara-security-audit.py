@@ -88,9 +88,17 @@ def keytool_default(path, pw="changeit"):
 
 
 def keytool_keysizes(path, pw="changeit"):
-    if not os.path.isfile(path): return []
+    """Return key sizes from a keystore, or None if it could not be inspected
+    (missing file, or keytool failed — e.g. a non-default storepass). Callers
+    must not treat None as "zero keys, all fine" (that produced a false PASS
+    when the store had a custom password: keytool fails silently, stdout has
+    no 'N-bit' tokens, and an empty sizes list looked identical to a clean
+    scan)."""
+    if not os.path.isfile(path): return None
     r = subprocess.run(["keytool", "-list", "-v", "-keystore", path, "-storepass", pw],
                        capture_output=True, text=True)
+    if r.returncode != 0 or any(x in r.stderr.lower() for x in ("tampered", "incorrect", "invalid keystore")):
+        return None
     return [int(x) for x in re.findall(r"(\d+)-bit", r.stdout)]
 
 
@@ -246,11 +254,18 @@ def audit(home, station_bog, host, rep):
                 "no station provisioned yet — cannot inspect key sizes; not a PASS")
     else:
         sizes = keytool_keysizes(ts)
-        weak = [s for s in sizes if s < 2048]
-        rep.add("SEC-11", "med", "weak signing keys / FIPS",
-                f"key sizes {sorted(set(sizes)) or 'n/a'}; FIPS keystore {'present' if fips else 'absent'}",
-                "all keys >= 2048; FIPS suppresses RSA-1024 option",
-                "FAIL" if weak else "PASS", "B113/B392", "RSA-1024 allowed with click-through warning")
+        if sizes is None:
+            rep.add("SEC-11", "med", "weak signing keys / FIPS",
+                    f"unreadable with default storepass (need keytool); FIPS keystore {'present' if fips else 'absent'}",
+                    "all keys >= 2048; FIPS suppresses RSA-1024 option",
+                    "MANUAL", "B113/B392",
+                    "run: keytool -list -v -keystore <ts> -storepass <real password>")
+        else:
+            weak = [s for s in sizes if s < 2048]
+            rep.add("SEC-11", "med", "weak signing keys / FIPS",
+                    f"key sizes {sorted(set(sizes)) or 'n/a'}; FIPS keystore {'present' if fips else 'absent'}",
+                    "all keys >= 2048; FIPS suppresses RSA-1024 option",
+                    "FAIL" if weak else "PASS", "B113/B392", "RSA-1024 allowed with click-through warning")
 
     # SEC-12 med — .bog at-rest encryption (spot-check station config header)
     if station_bog and os.path.isfile(station_bog):

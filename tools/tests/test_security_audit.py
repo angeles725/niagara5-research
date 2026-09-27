@@ -12,10 +12,13 @@ Ported from niagara-research (N4 kit tool). Adaptation:
 """
 import importlib.util
 import os
+import shutil
+import subprocess
 import tempfile
 import unittest
 
 TOOLS_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+HAVE_KEYTOOL = shutil.which("keytool") is not None
 
 
 def _load():
@@ -66,6 +69,30 @@ class TestSecurityAuditN5(unittest.TestCase):
     def test_sec06_missing_license_dir_is_reported(self):
         rows = self._run()
         self.assertIn("SEC-06", rows)
+
+    @unittest.skipUnless(HAVE_KEYTOOL, "keytool not on PATH")
+    def test_sec11_does_not_falsely_pass_on_custom_truststore_password(self):
+        # Regression for R3-sec11-false-pass-custom-password: a truststore
+        # with a non-default storepass makes `keytool -list` fail with the
+        # default "changeit" password, stdout has no "N-bit" tokens, and the
+        # empty sizes list must not be reported as a clean PASS.
+        secdir = os.path.join(self.home, "security")
+        os.makedirs(secdir, exist_ok=True)
+        ts = os.path.join(secdir, "truststore.jks")
+        subprocess.run(
+            [
+                "keytool", "-genkeypair", "-alias", "test", "-keyalg", "RSA",
+                "-keysize", "2048", "-validity", "1", "-keystore", ts,
+                "-storepass", "s3cr3t-not-default", "-dname", "CN=test",
+            ],
+            capture_output=True, text=True, check=True,
+        )
+        rows = self._run()
+        self.assertEqual(rows["SEC-11"]["verdict"], "MANUAL")
+
+    def test_keytool_keysizes_returns_none_on_missing_file(self):
+        mod = _load()
+        self.assertIsNone(mod.keytool_keysizes("/nonexistent/truststore.jks"))
 
 
 if __name__ == "__main__":
