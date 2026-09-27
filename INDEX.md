@@ -103,7 +103,6 @@ This index guides through the **11 blocks** of this research. The flat catalog l
 - [ ] (low) B8-G1 ModifyProtectedPropertiesPermission construction sites — pending
 - [ ] (low) B8-G2 Permission-denial log filename: code vs doc discrepancy — pending
 - [ ] (medium) B10-G1 Compile-verify the 15-item porting checklist by building DashboardPan/CompPan/ColdRoomPan against N5 — requires-execution → §19 (port one module and gradle-build it against N5)
-- [ ] (high) B10-G5 The n5mig station migration application: where it ships, what it transforms (N4 station → N5) — pending
 - [ ] (medium) B10-G2 Locate the full Niagara 5.0 Breaking Changes list (in-jar or web-only) and diff vs B10 32-row table — pending
 - [ ] (low) B10-G3 BFoxProxySession.getRemoteNiagaraVersion signature/package — pending
 - [ ] (low) B10-G4 Re-run fox grep across our three modules to certify CHK-14 — pending
@@ -115,6 +114,11 @@ This index guides through the **11 blocks** of this research. The flat catalog l
 - [ ] (high) B9-G2 Real niagaraTest run with a TestNG test in the PoC (settles B2-G4) — requires-execution → §19 (add a BTestNg test to poc/n5-hello and run niagaraTest)
 - [ ] (medium) B9-G3 Is com.tridium.n-java required per module or at root (wizard template omits it) — pending
 - [ ] (low) B9-G4 NDriver / device-driver module scaffold on N5 — pending
+- [ ] (high) B14-G1 Run n5mig -premigrate (dry-run report) on a copy of a real N4.15 station backup/bog (e.g. PANCCADIA) with and without our modules installed — requires-execution → §19 (run n5mig -premigrate on a COPY, output under poc/)
+- [ ] (medium) B14-G3 Open the ~26 unread migrator.jar converter types (driver/protocol bog converters) — pending
+- [ ] (medium) B14-G4 BBogMigrator 4-phase pipeline full read — pending
+- [ ] (low) B14-G2 propMigration.jar 8 declarative converter classes — pending
+- [ ] (low) B14-G5 MigratorTypeResolver / MigratorOrdConverter / MigrationUtils — pending
 - [ ] (deferred) B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only — pending (parked; needs a GA build)
 
 - [x] N5-G1 Module packaging: one jar per module + JPMS module-info.class + module.xml schemaVersion 5 — how rt/ux/wb runtime profiles are expressed without the -rt/-ux split → [Block 1]
@@ -129,6 +133,7 @@ This index guides through the **11 blocks** of this research. The flat catalog l
 - [x] B3-G4 Map N4 19 java-permissions groups onto N5 NiagaraPermission taxonomy → [Block 8]
 - [x] B4-G8 Deep-read official upgrade guides (upgradingToN5, upgradingUItoN5, upgradingJDK) + porting checklist for our modules → [Block 10]
 - [x] B7-G1 Exact Gradle task-graph edge slotomatic ↔ compileJava ↔ nap processor → [Block 9]
+- [x] B10-G5 The n5mig station migration application: where it ships, what it transforms (N4 station → N5) → [Block 14]
 
 ## Non-investigable gaps (without a running N5 station)
 

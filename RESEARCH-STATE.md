@@ -45,14 +45,14 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
 <!-- research-state.v1 -->
 schema: research-state.v1
 covered_blocks: 11
-gaps_closed: 12
-known_gaps: 63
-investigable_open: 43
-requires_execution_open: 4
+gaps_closed: 13
+known_gaps: 68
+investigable_open: 46
+requires_execution_open: 5
 blocked_open: 3
 deferred_open: 1
 undocumented_findings: 0
-blocks_since_retro: 10
+blocks_since_retro: 11
 last_iteration_ts: 2026-09-27T11:10:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
@@ -62,7 +62,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 ## Coverage
 
 - **Covered blocks**: 11 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B14)
-- **Coverage metric**: 12 / 63 closed
+- **Coverage metric**: 13 / 68 closed
 - **Last iteration**: 2026-09-27 — N5-G5 core API delta (B5)
 
 ## Gap-backlog
@@ -116,7 +116,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B8-G1 ModifyProtectedPropertiesPermission construction sites | module bytecode | pending |
 | low | B8-G2 Permission-denial log filename: code vs doc discrepancy | nre.jar | pending |
 | medium | B10-G1 Compile-verify the 15-item porting checklist by building DashboardPan/CompPan/ColdRoomPan against N5 | prototype build | requires-execution → §19 (port one module and gradle-build it against N5) |
-| high | B10-G5 The n5mig station migration application: where it ships, what it transforms (N4 station → N5) | install bin + migration/migrator modules | pending |
+| high | B10-G5 The n5mig station migration application: where it ships, what it transforms (N4 station → N5) | install bin + migration/migrator modules | ✅ covered — B14 |
 | medium | B10-G2 Locate the full Niagara 5.0 Breaking Changes list (in-jar or web-only) and diff vs B10 32-row table | docDeveloper.jar + web | pending |
 | low | B10-G3 BFoxProxySession.getRemoteNiagaraVersion signature/package | docSource + javadoc | pending |
 | low | B10-G4 Re-run fox grep across our three modules to certify CHK-14 | our module sources | pending |
@@ -128,6 +128,11 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | high | B9-G2 Real niagaraTest run with a TestNG test in the PoC (settles B2-G4) | prototype build | requires-execution → §19 (add a BTestNg test to poc/n5-hello and run niagaraTest) |
 | medium | B9-G3 Is com.tridium.n-java required per module or at root (wizard template omits it) | devkit templates + PoC | pending |
 | low | B9-G4 NDriver / device-driver module scaffold on N5 | devkit templates | pending |
+| high | B14-G1 Run n5mig -premigrate (dry-run report) on a copy of a real N4.15 station backup/bog (e.g. PANCCADIA) with and without our modules installed | n5mig.exe + station copy | requires-execution → §19 (run n5mig -premigrate on a COPY, output under poc/) |
+| medium | B14-G3 Open the ~26 unread migrator.jar converter types (driver/protocol bog converters) | migrator.jar | pending |
+| medium | B14-G4 BBogMigrator 4-phase pipeline full read | migrator.jar | pending |
+| low | B14-G2 propMigration.jar 8 declarative converter classes | propMigration.jar | pending |
+| low | B14-G5 MigratorTypeResolver / MigratorOrdConverter / MigrationUtils | migrator.jar | pending |
 | deferred | B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only | N5 GA install | pending (parked; needs a GA build) |
 
 ## Iteration history
@@ -144,6 +149,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | 8 | 2026-09-27 | B4-G8 upgrade guides + porting checklist | B10 | yes · sonnet | 6 new — B10-G1..G6 in block |
 | 9 | 2026-09-27 | N5-G5 core API delta (javax.baja→niagara 1:1, no shim) | B5 | yes · sonnet | 4 new — B5-G1..G4 |
 | 10 | 2026-09-27 | B2-G7 + B7-G1 build PoC (built, signed, JPMS) | B9 | yes · sonnet | 4 new — B9-G1..G4 |
+| 11 | 2026-09-27 | B10-G5 n5mig station migration + migrator SPI | B14 | yes · sonnet | 5 new — B14-G1..G5 |
 
 ## Blocked gaps (each tagged with what it needs)
 
@@ -153,8 +159,8 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 43
-- **Open gaps — requires-execution**: 4
+- **Open gaps — read-only investigable**: 46
+- **Open gaps — requires-execution**: 5
 - **Open gaps — blocked**: 3
 - Consecutive iterations with empty backlog (secondary): 0/2
 - Budget cap (default safety net): none
