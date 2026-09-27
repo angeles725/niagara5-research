@@ -228,9 +228,7 @@ decompile_module() {
     # failure markers (not application log strings) and re-run just those classes
     # through CFR into fallback/.
     local marker_files
-    # shellcheck disable=SC2016  # '$VF:' is a literal Vineflower marker, not an expansion
-    marker_files="$(grep -rlE '^// \$VF: |Unable to fully decompile class|COULD NOT DECOMPILE|<unknown>' \
-      "$moddir/vineflower" 2>/dev/null || true)"
+    marker_files="$(scan_marker_files "$moddir/vineflower")"
     if [[ -n "$marker_files" ]]; then
       fallback_used="true"
       fallback_reason="per_class_decompiler_marker"
@@ -284,6 +282,16 @@ decompile_binext() {
 # ---------------------------------------------------------------------------
 # main
 # ---------------------------------------------------------------------------
+# Print the .java files under $1 that carry a decompiler failure marker.
+# Vineflower writes "// $VF: Couldn't be decompiled" INDENTED inside the method
+# body, so the pattern must allow leading whitespace (an anchored '^// ' missed
+# andoverAC256/backup — niagara5-block30.md B30-G2).
+scan_marker_files() {
+  # shellcheck disable=SC2016  # '$VF:' is a literal Vineflower marker, not an expansion
+  grep -rlE '^[[:space:]]*// \$VF: |Unable to fully decompile class|COULD NOT DECOMPILE|<unknown>' \
+    "$1" 2>/dev/null || true
+}
+
 main() {
   local force="false"
   local only=""
@@ -293,6 +301,10 @@ main() {
   # --force) never changes behavior.
   while [[ $# -gt 0 ]]; do
     case "$1" in
+      --scan-markers)
+        scan_marker_files "${2:?--scan-markers needs a directory}"
+        exit 0
+        ;;
       --docsource)
         mode="docsource"
         shift

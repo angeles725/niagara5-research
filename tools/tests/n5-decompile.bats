@@ -144,3 +144,14 @@ print(subprocess.run(['unzip','-p','$N5_MODULES_DIR/$MODULE.jar','META-INF/modul
 "
   [[ "$output" == *'vendor="Tridium"'* ]]
 }
+
+@test "--scan-markers finds an INDENTED Vineflower failure marker (regression: andoverAC256/backup)" {
+  local d="$BATS_TEST_TMPDIR/vf"
+  mkdir -p "$d/pkg"
+  printf 'class A {\n  Object getValueAt(int r) {\n         // $VF: Couldn'"'"'t be decompiled\n  }\n}\n' > "$d/pkg/A.java"
+  printf 'class B { String s = "ok"; }\n' > "$d/pkg/B.java"
+  run "$REPO_ROOT/tools/n5-decompile.sh" --scan-markers "$d"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"pkg/A.java"* ]]
+  [[ "$output" != *"pkg/B.java"* ]]
+}
