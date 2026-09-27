@@ -44,15 +44,15 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
      Field names use UNDERSCORES on purpose: they must never collide with the prose greps below. -->
 <!-- research-state.v1 -->
 schema: research-state.v1
-covered_blocks: 12
-gaps_closed: 14
-known_gaps: 72
-investigable_open: 48
+covered_blocks: 14
+gaps_closed: 15
+known_gaps: 80
+investigable_open: 55
 requires_execution_open: 5
 blocked_open: 4
 deferred_open: 1
 undocumented_findings: 0
-blocks_since_retro: 12
+blocks_since_retro: 13
 last_iteration_ts: 2026-09-27T11:10:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
@@ -61,8 +61,8 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 
 ## Coverage
 
-- **Covered blocks**: 12 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B14, B15)
-- **Coverage metric**: 14 / 72 closed
+- **Covered blocks**: 14 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B14, B15)
+- **Coverage metric**: 15 / 80 closed
 - **Last iteration**: 2026-09-27 — N5-G5 core API delta (B5)
 
 ## Gap-backlog
@@ -77,7 +77,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | high | N5-G6 N5 module build toolchain: etc/m2 gradle plugins (n-module, n-java, niagara, nap) and devkit vs N4 Java 8 + slotomatic | gradle plugin jars/poms + devkit | ✅ covered — B2 |
 | high | N5-G7 Boot/runtime: NRE on JRE 25, bin layout, nre.properties / system.properties, JPMS module loading | install bin/defaults + baja sys | ✅ covered — B3 |
 | high | N5-G8 Licensing layer delta (premise corrected: subscription package is NOT new — exists in N4 per B6) | baja license packages | ✅ covered — B6 |
-| medium | N5-G9 Security/authn surface: totpAuth (new), oauth2, saml, clientCertAuth, firewall, authn | module bytecode | pending |
+| medium | N5-G9 Security/authn surface: totpAuth (new), oauth2, saml, clientCertAuth, firewall, authn (premise corrected: tls.jar is the Veeder-Root tank driver, not TLS crypto) | module bytecode | ✅ covered — B12 |
 | medium | N5-G10 Cloud surface new in N5: cloudLink*, niagaraCloud, niagaraSync | module bytecode | pending |
 | medium | N5-G11 UI stack: themeN5 (new), uxBuilder, hx, bajaux, webEditors, JxBrowser in workbench | module bytecode + js resources | pending |
 | medium | N5-G12 Shipped documentation: docDeveloper.jar (8,817 files: guides, jsdoc, bajadoc) and rebuild of an N5 niagara-help index | doc jar | ✅ covered — B4 |
@@ -136,6 +136,14 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | medium | B15-G2 Independent egress gate inside okhttp / jetty-client / jetty library internals | bin/ext third-party jars | pending |
 | low | B15-G3 OS/platform-level egress control outside NiagaraPermission (daemon, platform firewall) | platform modules | pending |
 | low | B15-G4 Full niagara.security.dashboard module: any provider surfacing network grants | security dashboard module | pending |
+| medium | B12-G4 nftables firewall backend: N5-only? and is it PermissionManager-gated | nre.jar firewall | pending |
+| medium | B12-G5 totpAuth enrollment UI flow and secret storage path | totpAuth.jar | pending |
+| medium | B12-G6 SAML IdP servlet flow in N5 | saml.jar | pending |
+| low | B12-G1 Location of the Nimbus OAuth SDK jar required by oauth2 | bin/ext + modules | pending |
+| low | B12-G2 platCrypto daemon protocol | platCrypto.jar | pending |
+| low | B12-G3 signingService Fox CSR protocol | signingService.jar | pending |
+| low | B12-G7 LDAP v2/v3 bind details | ldap.jar | pending |
+| low | B12-G8 SRP6 key exchange: new in N5 or carried over | baja/nre | pending |
 | deferred | B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only | N5 GA install | pending (parked; needs a GA build) |
 
 ## Iteration history
@@ -154,6 +162,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | 10 | 2026-09-27 | B2-G7 + B7-G1 build PoC (built, signed, JPMS) | B9 | yes · sonnet | 4 new — B9-G1..G4 |
 | 11 | 2026-09-27 | B10-G5 n5mig station migration + migrator SPI | B14 | yes · sonnet | 5 new — B14-G1..G5 |
 | 12 | 2026-09-27 | B8-G4 outbound network gating — CONFIRMED audit-only | B15 | yes · sonnet | 4 new — B15-G1..G4 |
+| 13 | 2026-09-27 | N5-G9 authn/security surface | B12 | yes · sonnet | 8 new — B12-G1..G8 |
 
 ## Blocked gaps (each tagged with what it needs)
 
@@ -164,7 +173,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 48
+- **Open gaps — read-only investigable**: 55
 - **Open gaps — requires-execution**: 5
 - **Open gaps — blocked**: 4
 - Consecutive iterations with empty backlog (secondary): 0/2

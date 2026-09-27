@@ -2,7 +2,7 @@
 
 # Block catalog
 
-Total: **12 blocks**
+Total: **14 blocks**
 
 | Block | File | Title |
 |-------|------|-------|
@@ -16,5 +16,7 @@ Total: **12 blocks**
 | 8 | [niagara5-block8.md](niagara5-block8.md) | N5 permission model: SecurityAgent advice and PermissionManager grants |
 | 9 | [niagara5-block9.md](niagara5-block9.md) | Building a minimal N5 module with the shipped Gradle plugins (PoC) |
 | 10 | [niagara5-block10.md](niagara5-block10.md) | Official N4→N5 transition guides: breaking changes and a porting checklist for our modules |
+| 11 | [niagara5-block11.md](niagara5-block11.md) | N5 license-gated features map: 253 confirmed `checkFeature`/`getFeature`/`Feature.*`/`checkDeveloperLicense`/`checkJreFeature` call sites across 77 of 248 scanned jars, 84 distinct `vendor:feature` keys (all vendor `tridium`), closing B6-G3 |
+| 12 | [niagara5-block12.md](niagara5-block12.md) | N5 authentication and security surface: a new vendor-neutral TOTP module (128-bit secret, up from N4 gauth's 80-bit), a 10×-stronger PBKDF2 default (100,000 vs N4's 10,000 iterations), a new CRL-checking PKI scheme absent from N4's client-cert auth, and a real Linux-`nftables` firewall processor behind the "firewall" package name |
 | 14 | [niagara5-block14.md](niagara5-block14.md) | N4→N5 station migration: n5mig and the migrator SPI |
 | 15 | [niagara5-block15.md](niagara5-block15.md) | N5 outbound network access from third-party modules: gated or audit-only? |
