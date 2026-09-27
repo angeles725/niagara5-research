@@ -45,14 +45,14 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
 <!-- research-state.v1 -->
 schema: research-state.v1
 covered_blocks: 25
-gaps_closed: 33
-known_gaps: 136
-investigable_open: 86
+gaps_closed: 34
+known_gaps: 142
+investigable_open: 90
 requires_execution_open: 6
-blocked_open: 9
+blocked_open: 10
 deferred_open: 2
 undocumented_findings: 0
-blocks_since_retro: 13
+blocks_since_retro: 14
 last_iteration_ts: 2026-09-27T11:10:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
@@ -62,7 +62,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 ## Coverage
 
 - **Covered blocks**: 25 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15, B16, B17, B18, B19, B20, B21, B22, B23, B24, B27)
-- **Coverage metric**: 33 / 136 closed
+- **Coverage metric**: 34 / 142 closed
 - **Last iteration**: 2026-09-27 — N5-G5 core API delta (B5)
 
 ## Gap-backlog
@@ -173,7 +173,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B20-G5 Decompile control/alarm/kitControl/schedule to source for file:line citations | organized/ decompile | pending |
 | low | B21-G1 uxBuilder ux/make + ux/fe sub-packages: new vs N4 | uxBuilder.jar | pending |
 | low | B21-G2 JxBrowser vs JavaFX WebView default selection in Workbench | workbench.jar | pending |
-| medium | B21-G3 CSP / security headers served by niagara.web / jetty (static half) | web.jar + jetty | pending |
+| medium | B21-G3 CSP / security headers served by niagara.web / jetty (static half) | web.jar + jetty | ✅ covered — B27 (static half) |
 | low | B21-G4 Stale JxBrowser 7.30.3 log string vs 9.5.0 engine | jxBrowser.jar | pending |
 | high | B16-G1 Run niagaraTest on the ColdRoomPan TestNG test via the Windows test.exe (WSL interop) — may hit the tridium:nre license gate | prototype run | requires-execution → §19 (invoke test.exe through interop with Windows paths) |
 | high | B16-G6 Port the 5 N4 JUnit4 ColdRoomPan tests to TestNG and write a JUnit4→TestNG recipe | our module tests | pending |
@@ -195,6 +195,11 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B24-G3 Tabulate the 180-entry zwave removal type list | migrator.jar | pending |
 | low | B24-G4 MigrationUtils (40 static methods) line-by-line read | migrator.jar | pending |
 | low | B24-G5 BBackupDistMigrator / BPxMigrator / premigrate classes full bodies | migrator.jar | pending |
+| medium | B27-G3 NiagaraConstraintSecurityHandler / NiagaraAuthenticator: web authn/authz proper | jetty.jar + web.jar | pending |
+| medium | B27-G6 Adopt the real x-niagara-csrfToken in DashboardPan-ux on N5 instead of the hand-rolled X-Requested-With guard (design note) | web.jar CsrfUtil + our module | pending |
+| low | B27-G2 Per-module jetty-web.xml census | all modules | pending |
+| low | B27-G4 NModuleInfo.isWar() definition | baja/jetty | pending |
+| low | B27-G5 hx.jar WebAppContext registration path | hx.jar | pending |
 | deferred | B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only | N5 GA install | pending (parked; needs a GA build) |
 
 ## Iteration history
@@ -225,10 +230,12 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | 22 | 2026-09-27 | N5-G15 driver framework delta (javax.baja.log deleted; isNonOperational) | B22 | yes · sonnet | 4 new — B22-G1..G4 |
 | 23 | 2026-09-27 | B1-G2 + B3-G1 + B1-G5 module loader internals (4 layers, PROGRAM dead code) | B23 | yes · sonnet | 6 new — B23-G1..G6 |
 | 24 | 2026-09-27 | B14-G2..G5 migrator catalog (58 types; §14 correction of B14 propMigration) | B24 | yes · sonnet | 5 new — B24-G2..G6 |
+| 25 | 2026-09-27 | B21-G3 web security headers (default CSP allows unsafe-inline; CSRF token only on 4 URL patterns) | B27 | yes · sonnet | 5 new — B27-G1..G6 |
 
 ## Blocked gaps (each tagged with what it needs)
 
 - B17-G1 Real n5mig run on the PANCCADIA copy — needs: a licensed N5 install (tridium:nre feature) · tried: n5mig -premigrate and -o via WSL interop (FeatureNotLicensedException tridium:nre, exit 253), java Bootstrap fallback (missing JavaFX runtime)
+- B27-G1 Live HTTP header capture from an N5 station — needs: a running N5 station · tried: static jar census only
 - B23-G4 Live module-layer confirmation via the moduleConfiguration spy — needs: a running N5 station · tried: static decompile only
 - B20-G1 Adjudicate BCapacity JS vs server contradiction live — needs: a running N5 station · tried: static only
 - B19-G3 Live save/load of an N5 station bog and history — needs: a running N5 station · tried: no station configured
@@ -240,9 +247,9 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 86
+- **Open gaps — read-only investigable**: 90
 - **Open gaps — requires-execution**: 6
-- **Open gaps — blocked**: 9
+- **Open gaps — blocked**: 10
 - Consecutive iterations with empty backlog (secondary): 0/2
 - Budget cap (default safety net): none
 

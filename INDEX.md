@@ -159,7 +159,6 @@ This index guides through the **25 blocks** of this research. The flat catalog l
 - [ ] (low) B20-G5 Decompile control/alarm/kitControl/schedule to source for file:line citations — pending
 - [ ] (low) B21-G1 uxBuilder ux/make + ux/fe sub-packages: new vs N4 — pending
 - [ ] (low) B21-G2 JxBrowser vs JavaFX WebView default selection in Workbench — pending
-- [ ] (medium) B21-G3 CSP / security headers served by niagara.web / jetty (static half) — pending
 - [ ] (low) B21-G4 Stale JxBrowser 7.30.3 log string vs 9.5.0 engine — pending
 - [ ] (high) B16-G1 Run niagaraTest on the ColdRoomPan TestNG test via the Windows test.exe (WSL interop) — may hit the tridium:nre license gate — requires-execution → §19 (invoke test.exe through interop with Windows paths)
 - [ ] (high) B16-G6 Port the 5 N4 JUnit4 ColdRoomPan tests to TestNG and write a JUnit4→TestNG recipe — pending
@@ -181,6 +180,11 @@ This index guides through the **25 blocks** of this research. The flat catalog l
 - [ ] (low) B24-G3 Tabulate the 180-entry zwave removal type list — pending
 - [ ] (low) B24-G4 MigrationUtils (40 static methods) line-by-line read — pending
 - [ ] (low) B24-G5 BBackupDistMigrator / BPxMigrator / premigrate classes full bodies — pending
+- [ ] (medium) B27-G3 NiagaraConstraintSecurityHandler / NiagaraAuthenticator: web authn/authz proper — pending
+- [ ] (medium) B27-G6 Adopt the real x-niagara-csrfToken in DashboardPan-ux on N5 instead of the hand-rolled X-Requested-With guard (design note) — pending
+- [ ] (low) B27-G2 Per-module jetty-web.xml census — pending
+- [ ] (low) B27-G4 NModuleInfo.isWar() definition — pending
+- [ ] (low) B27-G5 hx.jar WebAppContext registration path — pending
 - [ ] (deferred) B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only — pending (parked; needs a GA build)
 
 - [x] N5-G1 Module packaging: one jar per module + JPMS module-info.class + module.xml schemaVersion 5 — how rt/ux/wb runtime profiles are expressed without the -rt/-ux split → [Block 1]
@@ -216,6 +220,7 @@ This index guides through the **25 blocks** of this research. The flat catalog l
 - [x] B14-G4 BBogMigrator 4-phase pipeline full read → [Block 24]
 - [x] B14-G2 propMigration.jar 8 declarative converter classes → [Block 24]
 - [x] B14-G5 MigratorTypeResolver / MigratorOrdConverter / MigrationUtils → [Block 24]
+- [x] B21-G3 CSP / security headers served by niagara.web / jetty (static half) → [Block 27 (static half)]
 
 ## Non-investigable gaps (without a running N5 station)
 
