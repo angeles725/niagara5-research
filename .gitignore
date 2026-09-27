@@ -37,3 +37,5 @@ poc/**/.n5config/
 
 # Ported CLIENT module sources (ColdRoomPan) — recipe lives in niagara5-block16.md; never commit client code
 poc/coldroompan-n5/
+poc/comppan-n5/
+poc/dashboardpan-n5/
