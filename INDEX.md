@@ -135,8 +135,6 @@ This index guides through the **54 blocks** of this research. The flat catalog l
 - [ ] (low) B10-G3 BFoxProxySession.getRemoteNiagaraVersion signature/package — pending
 - [ ] (low) B10-G4 Re-run fox grep across our three modules to certify CHK-14 — pending
 - [ ] (low) B10-G6 DashboardPan-ux preview tooling has no N5-relevant surface — pending
-- [ ] (medium) B5-G2 Does any Tridium or our own B* type rely on the removed BObject.equals override — pending
-- [ ] (medium) B5-G4 The javax.baja.web import sites in our modules vs the jakarta.servlet break — pending
 - [ ] (low) B5-G1 HsmManager: real N5 drop or N4 OEM-baseline artifact — pending
 - [ ] (low) B9-G4 NDriver / device-driver module scaffold on N5 — pending
 - [ ] (medium) B15-G2 Independent egress gate inside okhttp / jetty-client / jetty library internals — pending
@@ -173,7 +171,6 @@ This index guides through the **54 blocks** of this research. The flat catalog l
 - [ ] (low) B24-G3 Tabulate the 180-entry zwave removal type list — pending
 - [ ] (low) B24-G4 MigrationUtils (40 static methods) line-by-line read — pending
 - [ ] (low) B24-G5 BBackupDistMigrator / BPxMigrator / premigrate classes full bodies — pending
-- [ ] (medium) B27-G6 Adopt the real x-niagara-csrfToken in DashboardPan-ux on N5 instead of the hand-rolled X-Requested-With guard (design note) — pending
 - [ ] (low) B27-G2 Per-module jetty-web.xml census — pending
 - [ ] (low) B27-G4 NModuleInfo.isWar() definition — pending
 - [ ] (low) B27-G5 hx.jar WebAppContext registration path — pending
@@ -230,7 +227,6 @@ This index guides through the **54 blocks** of this research. The flat catalog l
 - [ ] (low) B40-G1 OPC UA component-name charset vs ruleHintOverride validation — pending
 - [ ] (medium) B40-G2 Which BComponentSpace subtype a live station instantiates (decides whether BTunnelService ruleHintOverride is validated) — pending
 - [ ] (low) B40-G4 N4 netsh / CAP_NET_ADMIN host-firewall mechanism — pending
-- [ ] (medium) B46-G2 Implement the x-niagara-csrfToken check in the DashboardPan-ux port — pending
 - [ ] (low) B46-G3 Should the 3 read-side BOrd.get(this, null) resolutions use the request Context — pending
 - [ ] (deferred) B46-G5 Port the audited-write fix back into the live N4 DashboardPan source (same N4 gate B829/B830) — product change in the client repo, needs operator decision — pending (parked; recommendation only — outside research scope)
 - [ ] (low) B47-G1 Confirm the vestigial source-.kr extraction code has no live call site (Premigrate + bytecode xref) — pending
@@ -268,6 +264,9 @@ This index guides through the **54 blocks** of this research. The flat catalog l
 - [ ] (low) B53-G4 Runtime cacerts contents (structure only) — pending
 - [ ] (low) B53-G5 TPK pin vs Honeywell leaf key identity — pending
 - [ ] (low) B53-G6 TRIDIUM_DEV_CA_CERT usage — pending
+- [ ] (low) B52-G1 CsrfUtil token compare is String.equals (not constant-time) — platform code, low practical severity — pending
+- [ ] (low) B52-G2 Frontend should refetch the CSRF token after a 403 — pending
+- [ ] (deferred) B52-G5 Port the CSRF + audited-write hardening back to the live N4 DashboardPan (product change, operator decision) — pending (parked; recommendation only)
 - [ ] (deferred) B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only — pending (parked; needs a GA build)
 
 - [x] N5-G1 Module packaging: one jar per module + JPMS module-info.class + module.xml schemaVersion 5 — how rt/ux/wb runtime profiles are expressed without the -rt/-ux split → [Block 1]
@@ -305,6 +304,8 @@ This index guides through the **54 blocks** of this research. The flat catalog l
 - [x] B10-G1 Compile-verify the 15-item porting checklist by building DashboardPan/CompPan/ColdRoomPan against N5 → [Block 16]
 - [x] B10-G5 The n5mig station migration application: where it ships, what it transforms (N4 station → N5) → [Block 14]
 - [x] B5-G3 niagaraSync subsystem (new BINiagaraSyncCapableComplex on status types) — feeds N5-G10 → [Block 18]
+- [x] B5-G2 Does any Tridium or our own B* type rely on the removed BObject.equals override → [Block 52]
+- [x] B5-G4 The javax.baja.web import sites in our modules vs the jakarta.servlet break → [Block 52]
 - [x] B9-G2 Real niagaraTest run with a TestNG test in the PoC (settles B2-G4) → [Block 16 (build+sign OK; niagaraTest platform-gated: test.exe Windows-only)]
 - [x] B9-G3 Is com.tridium.n-java required per module or at root (wizard template omits it) → [Block 51]
 - [x] B14-G1 Run n5mig -premigrate (dry-run report) on a copy of a real N4.15 station backup/bog (e.g. PANCCADIA) with and without our modules installed → [Block 17 (partial: run blocked by license tridium:nre; static census substituted)]
@@ -341,6 +342,7 @@ This index guides through the **54 blocks** of this research. The flat catalog l
 - [x] B23-G3 Is skipModuleValidation blacklisted on the N5 command line → [Block 53]
 - [x] B24-G6 No converter exists for tagdictionary (105), kitControl (100), nrio (96) PANCCADIA objects — confirm they load unchanged in N5 (type names, slot compatibility) → [Block 31]
 - [x] B27-G3 NiagaraConstraintSecurityHandler / NiagaraAuthenticator: web authn/authz proper → [Block 41]
+- [x] B27-G6 Adopt the real x-niagara-csrfToken in DashboardPan-ux on N5 instead of the hand-rolled X-Requested-With guard (design note) → [Block 52]
 - [x] B25-G3 Full 253-jar jdeprscan --for-removal pass → [Block 44]
 - [x] B30-G3 N5 embedded trust anchor that accepts the Honeywell code-signing chain → [Block 53]
 - [x] B35-G1 niagaraSync package semantics (standby/active RPC state machine in niagaraDriver) → [Block 37]
@@ -356,6 +358,7 @@ This index guides through the **54 blocks** of this research. The flat catalog l
 - [x] B41-G1 SecurityAuditEvent / SecurityAuditor full mapping → [Block 54]
 - [x] B43-G1 KeyRing alias rename javax.baja.security.BAes256PasswordEncoder.key → niagara.security.BAes256PasswordEncoder.key: does N5 (or n5mig) remap it, or do migrated stations lose reversible passwords? → [Block 47 (MITIGATED by n5mig force-clear/passphrase path; PANCCADIA uses external encoding (3 pbkdf2-aes-256 secrets))]
 - [x] B46-G1 Slotomatic-generated setters pass null Context (setXxx → setString(prop, v, null)): framework-wide audit implication and recommended pattern → [Block 49]
+- [x] B46-G2 Implement the x-niagara-csrfToken check in the DashboardPan-ux port → [Block 52]
 - [x] B49-G2 Trace N5 NiagaraRpc servlet/BOX dispatch for Context injection into @NiagaraRpc methods → [Block 54]
 - [x] B44-G2 AccessController-family call sites in jetty/platform/hx: inert after SecurityManager removal or live authorization → [Block 54]
 
