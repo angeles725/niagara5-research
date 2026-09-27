@@ -205,7 +205,6 @@ This index guides through the **61 blocks** of this research. The flat catalog l
 - [ ] (medium) B36-G2 Live gradlew gruntBuild / gruntCi run on a JS module — requires-execution → §19 (needs node/npm on PATH + a JS module scaffold)
 - [ ] (low) B36-G3 Locate the grunt-niagara successor npm package contents — pending
 - [ ] (low) B38-G1 Account-lockout defaults: N4 vs N5 provenance — pending
-- [ ] (medium) B38-G2 SP-side SAML signature algorithm allowlist — pending
 - [ ] (low) B38-G3 LDAP Kerberos/GSSAPI location — pending
 - [ ] (low) B38-G4 SRP6 group size cross-check — pending
 - [ ] (low) B37-G2 Three driver-specific sync-folder classes — pending
@@ -223,7 +222,6 @@ This index guides through the **61 blocks** of this research. The flat catalog l
 - [ ] (low) B39-G2 Does the batik-awt-util version matter beyond 1.19 — pending
 - [ ] (low) B39-G4 Runtime behaviour of a module that really calls JavaFX/Batik APIs with these artifacts — requires-execution → §19 (needs a licensed station to run)
 - [ ] (low) B40-G1 OPC UA component-name charset vs ruleHintOverride validation — pending
-- [ ] (medium) B40-G2 Which BComponentSpace subtype a live station instantiates (decides whether BTunnelService ruleHintOverride is validated) — pending
 - [ ] (low) B40-G4 N4 netsh / CAP_NET_ADMIN host-firewall mechanism — pending
 - [ ] (low) B46-G3 Should the 3 read-side BOrd.get(this, null) resolutions use the request Context — pending
 - [ ] (deferred) B46-G5 Port the audited-write fix back into the live N4 DashboardPan source (same N4 gate B829/B830) — product change in the client repo, needs operator decision — pending (parked; recommendation only — outside research scope)
@@ -278,6 +276,8 @@ This index guides through the **61 blocks** of this research. The flat catalog l
 - [ ] (low) B60-G2 Version.strip(2) exact truncation algorithm — pending
 - [ ] (low) B60-G3 plat* cluster +17..+19 dependency gain N4→N5 cause — pending
 - [ ] (low) B60-G4 html/file/fox/export cluster outsized N4→N5 dependency drop — pending
+- [ ] (high) B61-G3 N5's consumer-side SAML (java-saml Util) accepts SHA-1/DSA-SHA1-signed IdP responses — the DEPRECATED_ALGOS reject flag is hardcoded false; weaker than Tridium's own IdP-side policy (security note for SAML SSO deployments) — pending
+- [ ] (medium) B61-G1 nre.dll CreateProcessA target + how niagarad triggers OS-level station start (B57-G2 refined) — pending
 - [ ] (deferred) B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only — pending (parked; needs a GA build)
 
 - [x] N5-G1 Module packaging: one jar per module + JPMS module-info.class + module.xml schemaVersion 5 — how rt/ux/wb runtime profiles are expressed without the -rt/-ux split → [Block 1]
@@ -370,6 +370,7 @@ This index guides through the **61 blocks** of this research. The flat catalog l
 - [x] B28-G2 Batik (org.apache.xmlgraphics) provider: JavaFX confirmed in the bundled JRE release MODULES (7 javafx.* modules); batik not a JRE module and svgBatik.jar holds no org/apache classes → [Block 39]
 - [x] B28-G3 Does the Windows jre/bin/javac.exe resolve niagara.alarm without stubs → [Block 39]
 - [x] B34-G3 Caller of AuthenticatedLicenseRetrievalUtil (perpetual LicenseAccessKey flow) → [Block 53]
+- [x] B38-G2 SP-side SAML signature algorithm allowlist → [Block 61]
 - [x] B37-G6 HA-ready design for our modules under niagaraSync: replace raw Clock.schedule timers with BNiagaraSyncTicket, state as Properties, BNiagaraSyncTicks, implement BINiagaraSyncCapableComplex (design note + PoC) → [Block 45]
 - [x] B41-G6 DashboardPan N5 write path: pass the servlet request niagara.context (authenticated user) into set()/invoke so writes land in AuditHistory with user and old→new value (design + PoC in the ported copy) → [Block 46]
 - [x] B41-G1 SecurityAuditEvent / SecurityAuditor full mapping → [Block 54]
@@ -377,6 +378,7 @@ This index guides through the **61 blocks** of this research. The flat catalog l
 - [x] B43-G2 N4 orientSystemDb default-encryption parity (narrows B19-G1) → [Block 57]
 - [x] B43-G3 N4 EncryptionKeySource member count → [Block 57]
 - [x] B39-G3 Why 3 other absent gx.jar requires (batik.transcoder, swt win32, owasp.encoder) never fail compilation → [Block 55]
+- [x] B40-G2 Which BComponentSpace subtype a live station instantiates (decides whether BTunnelService ruleHintOverride is validated) → [Block 61]
 - [x] B46-G1 Slotomatic-generated setters pass null Context (setXxx → setString(prop, v, null)): framework-wide audit implication and recommended pattern → [Block 49]
 - [x] B46-G2 Implement the x-niagara-csrfToken check in the DashboardPan-ux port → [Block 52]
 - [x] B48-G1 Resolve the public Java 21 vs Java 25 contradiction (first-party says 25; code confirms JRE 25.0.4) → [Block 56 (narrowed: Java 25 authoritative (first-party + local jre/release); HA name = Niagara Sync)]

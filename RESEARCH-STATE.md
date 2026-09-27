@@ -45,14 +45,14 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
 <!-- research-state.v1 -->
 schema: research-state.v1
 covered_blocks: 61
-gaps_closed: 108
-known_gaps: 290
+gaps_closed: 110
+known_gaps: 293
 investigable_open: 136
 requires_execution_open: 8
-blocked_open: 27
+blocked_open: 28
 deferred_open: 10
 undocumented_findings: 0
-blocks_since_retro: 10
+blocks_since_retro: 11
 last_iteration_ts: 2026-09-27T11:10:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
@@ -62,7 +62,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 ## Coverage
 
 - **Covered blocks**: 61 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15, B16, B17, B18, B19, B20, B21, B22, B23, B24, B25, B26, B27, B28, B29, B30, B31, B32, B33, B34, B35, B36, B37, B38, B39, B40, B41, B42, B43, B44, B45, B46, B47, B48, B49, B50, B51, B52, B53, B54, B55, B56, B57, B58, B59, B60, B61)
-- **Coverage metric**: 108 / 290 closed
+- **Coverage metric**: 110 / 293 closed
 - **Last iteration**: 2026-09-27 — N5-G5 core API delta (B5)
 
 ## Gap-backlog
@@ -240,7 +240,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | medium | B36-G2 Live gradlew gruntBuild / gruntCi run on a JS module | prototype build | requires-execution → §19 (needs node/npm on PATH + a JS module scaffold) |
 | low | B36-G3 Locate the grunt-niagara successor npm package contents | m2 + npm | pending |
 | low | B38-G1 Account-lockout defaults: N4 vs N5 provenance | baja security | pending |
-| medium | B38-G2 SP-side SAML signature algorithm allowlist | saml.jar | pending |
+| medium | B38-G2 SP-side SAML signature algorithm allowlist | saml.jar | ✅ covered — B61 |
 | low | B38-G3 LDAP Kerberos/GSSAPI location | ldap + kerberos | pending |
 | low | B38-G4 SRP6 group size cross-check | nre/fox | pending |
 | high | B37-G6 HA-ready design for our modules under niagaraSync: replace raw Clock.schedule timers with BNiagaraSyncTicket, state as Properties, BNiagaraSyncTicks, implement BINiagaraSyncCapableComplex (design note + PoC) | our modules + niagaraSync API | ✅ covered — B45 |
@@ -265,7 +265,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | medium | B39-G3 Why 3 other absent gx.jar requires (batik.transcoder, swt win32, owasp.encoder) never fail compilation | javac module resolution | ✅ covered — B55 |
 | low | B39-G4 Runtime behaviour of a module that really calls JavaFX/Batik APIs with these artifacts | prototype build | requires-execution → §19 (needs a licensed station to run) |
 | low | B40-G1 OPC UA component-name charset vs ruleHintOverride validation | opcUaServer + baja | pending |
-| medium | B40-G2 Which BComponentSpace subtype a live station instantiates (decides whether BTunnelService ruleHintOverride is validated) | baja + station | pending |
+| medium | B40-G2 Which BComponentSpace subtype a live station instantiates (decides whether BTunnelService ruleHintOverride is validated) | baja + station | ✅ covered — B61 |
 | low | B40-G4 N4 netsh / CAP_NET_ADMIN host-firewall mechanism | N4 platform | pending |
 | medium | B46-G1 Slotomatic-generated setters pass null Context (setXxx → setString(prop, v, null)): framework-wide audit implication and recommended pattern | slotomatic + baja | ✅ covered — B49 |
 | medium | B46-G2 Implement the x-niagara-csrfToken check in the DashboardPan-ux port | our module + web.jar | ✅ covered — B52 |
@@ -331,6 +331,8 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B60-G2 Version.strip(2) exact truncation algorithm | baja Version | pending |
 | low | B60-G3 plat* cluster +17..+19 dependency gain N4→N5 cause | module.xml census | pending |
 | low | B60-G4 html/file/fox/export cluster outsized N4→N5 dependency drop | module.xml census | pending |
+| high | B61-G3 N5's consumer-side SAML (java-saml Util) accepts SHA-1/DSA-SHA1-signed IdP responses — the DEPRECATED_ALGOS reject flag is hardcoded false; weaker than Tridium's own IdP-side policy (security note for SAML SSO deployments) | saml java-saml-core | pending |
+| medium | B61-G1 nre.dll CreateProcessA target + how niagarad triggers OS-level station start (B57-G2 refined) | native launchers | pending |
 | deferred | B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only | N5 GA install | pending (parked; needs a GA build) |
 
 ## Iteration history
@@ -397,9 +399,11 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | 58 | 2026-09-27 | B24-G2/B31-G4 PANCCADIA station census: only config.bog + empty alarm.adb on the Windows path; histories/schedules/px/systemDb/.dist structurally absent | B58 | yes · sonnet | 4 new — B58-G1..G4 |
 | 59 | 2026-09-27 | B4-G1/B4-G5 help full-text index format decoded (words/worddocs/postings/documents.dat, 7,270 docs, verified reader); no JDK-class bajadoc stand-ins in N5 (javadoc links to Oracle only) | B59 | yes · sonnet | 3 new — B59-G1..G4 (G3 folds into B4-G2) |
 | 60 | 2026-09-27 | B51-G2..G7 kit lint facts: Flags byte-identical (only 2 lints need niagara.* added), no real per-profile split, class-version 52→69 inverts, dependency slimming is mostly the N4 part-split artifact | B60 | yes · sonnet | 4 new — B60-G1..G4 |
+| 61 | 2026-09-27 | B40-G2 live station root space is base BComponentSpace (ruleHintOverride never validated) [CERT]; B38-G2 consumer SAML allowlist includes SHA-1 (deprecated-reject is dead code) | B61 | yes · sonnet | 4 new — B61-G1..G3 (B57-G2 refined) |
 
 ## Blocked gaps (each tagged with what it needs)
 
+- B61-G2 Live confirmation that N5 accepts an rsa-sha1-signed SAML response — needs: a running station + IdP · tried: bytecode gate reading only
 - B55-G3 Live egress reproduction — needs: a running station · tried: static decompile
 - B57-G3 Live reproduction of the denylist -D override — needs: a running station with controllable launch args · tried: static trace only
 - B56-G1 Wayback Machine crawl of Tridium pages for the Java 21 → 25 change — needs: a fetch tool allowed on web.archive.org · tried: WebFetch (refused for that domain), live pages
@@ -432,7 +436,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 
 - **Open gaps — read-only investigable**: 136
 - **Open gaps — requires-execution**: 8
-- **Open gaps — blocked**: 27
+- **Open gaps — blocked**: 28
 - Consecutive iterations with empty backlog (secondary): 0/2
 - Budget cap (default safety net): none
 
