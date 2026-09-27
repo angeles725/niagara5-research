@@ -2,7 +2,7 @@
 
 # Block catalog
 
-Total: **37 blocks**
+Total: **38 blocks**
 
 | Block | File | Title |
 |-------|------|-------|
@@ -42,4 +42,5 @@ Total: **37 blocks**
 | 34 | [niagara5-block34.md](niagara5-block34.md) | N5 subscription entitlements and capacity licensing: the `nre.jar` `com.tridium.nre.subscription`/`com.tridium.nre.license` bootstrap (closing B6-G1), and `resource.limit`'s NOT-capacity-licensing polarity corrected against B11 §11.5 (closing B11-G1) |
 | 35 | [niagara5-block35.md](niagara5-block35.md) | N5 drivers on the deprecated chassis, the BACnet Descriptor change and niagaraDriver deltas |
 | 36 | [niagara5-block36.md](niagara5-block36.md) | The N5 JavaScript build pipeline (node, grunt, RequireJS) for module web resources |
+| 37 | [niagara5-block37.md](niagara5-block37.md) | niagaraSync internals: replication, failover and what third-party modules must do |
 | 38 | [niagara5-block38.md](niagara5-block38.md) | N5 TOTP enrollment, SAML flow, LDAP bind and SRP6 |
