@@ -2,7 +2,7 @@
 
 # Block catalog
 
-Total: **46 blocks**
+Total: **48 blocks**
 
 | Block | File | Title |
 |-------|------|-------|
@@ -49,6 +49,8 @@ Total: **46 blocks**
 | 41 | [niagara5-block41.md](niagara5-block41.md) | N5 action auditing (old→new values) and the web authentication chain |
 | 42 | [niagara5-block42.md](niagara5-block42.md) | cloudLink AMQP internals, provider channels, and the fate of N4 nCloudDriver |
 | 43 | [niagara5-block43.md](niagara5-block43.md) | N5 data-at-rest cryptography: KeyRing, EncryptionKeySource and systemDb encryption |
+| 44 | [niagara5-block44.md](niagara5-block44.md) | Deprecated JDK API usage across N5 (full jdeprscan census) |
 | 46 | [niagara5-block46.md](niagara5-block46.md) | Audited writes from DashboardPan on N5: passing the request Context (PoC) |
 | 47 | [niagara5-block47.md](niagara5-block47.md) | Do reversible secrets survive N4→N5? The KeyRing alias rename |
 | 48 | [niagara5-block48.md](niagara5-block48.md) | Public evidence on Niagara 5: breaking changes, retired modules and cloud/licensing statements |
+| 49 | [niagara5-block49.md](niagara5-block49.md) | Which N5 writes get audited: generated setters, Fox/BajaScript commit paths and the Context rule |
