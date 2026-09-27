@@ -44,15 +44,15 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
      Field names use UNDERSCORES on purpose: they must never collide with the prose greps below. -->
 <!-- research-state.v1 -->
 schema: research-state.v1
-covered_blocks: 38
-gaps_closed: 59
-known_gaps: 194
-investigable_open: 111
+covered_blocks: 40
+gaps_closed: 61
+known_gaps: 200
+investigable_open: 114
 requires_execution_open: 7
-blocked_open: 15
+blocked_open: 16
 deferred_open: 2
 undocumented_findings: 0
-blocks_since_retro: 3
+blocks_since_retro: 4
 last_iteration_ts: 2026-09-27T11:10:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
@@ -61,8 +61,8 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 
 ## Coverage
 
-- **Covered blocks**: 38 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15, B16, B17, B18, B19, B20, B21, B22, B23, B24, B25, B26, B27, B28, B29, B30, B31, B32, B33, B34, B35, B36, B37, B38)
-- **Coverage metric**: 59 / 194 closed
+- **Covered blocks**: 40 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15, B16, B17, B18, B19, B20, B21, B22, B23, B24, B25, B26, B27, B28, B29, B30, B31, B32, B33, B34, B35, B36, B37, B38, B41, B42)
+- **Coverage metric**: 61 / 200 closed
 - **Last iteration**: 2026-09-27 — N5-G5 core API delta (B5)
 
 ## Gap-backlog
@@ -168,7 +168,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B17-G3 Reconstruct the native launcher VM/module-path args to run n5mig via java | bin launchers + nre.dll | pending |
 | low | B17-G4 DefrostMode declared in ColdRoomPan-rt module.xml has zero bog instances | our module + PANCCADIA bog | pending |
 | medium | B20-G2 niagaraSync ticks integration in kitControl BLoopPoint (BNiagaraSyncTicks) semantics | kitControl + niagaraSync | ✅ covered — B37 |
-| medium | B20-G3 BIActionAuditProvider old-value audit path end-to-end | baja security + control | pending |
+| medium | B20-G3 BIActionAuditProvider old-value audit path end-to-end | baja security + control | ✅ covered — B41 |
 | medium | B20-G4 History rollover mechanism after BCapacity storage-size mode removal (migration hazard) | history.jar | ✅ covered — B26 |
 | low | B20-G5 Decompile control/alarm/kitControl/schedule to source for file:line citations | organized/ decompile | pending |
 | low | B21-G1 uxBuilder ux/make + ux/fe sub-packages: new vs N4 | uxBuilder.jar | pending |
@@ -195,7 +195,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B24-G3 Tabulate the 180-entry zwave removal type list | migrator.jar | pending |
 | low | B24-G4 MigrationUtils (40 static methods) line-by-line read | migrator.jar | pending |
 | low | B24-G5 BBackupDistMigrator / BPxMigrator / premigrate classes full bodies | migrator.jar | pending |
-| medium | B27-G3 NiagaraConstraintSecurityHandler / NiagaraAuthenticator: web authn/authz proper | jetty.jar + web.jar | pending |
+| medium | B27-G3 NiagaraConstraintSecurityHandler / NiagaraAuthenticator: web authn/authz proper | jetty.jar + web.jar | ✅ covered — B41 |
 | medium | B27-G6 Adopt the real x-niagara-csrfToken in DashboardPan-ux on N5 instead of the hand-rolled X-Requested-With guard (design note) | web.jar CsrfUtil + our module | pending |
 | low | B27-G2 Per-module jetty-web.xml census | all modules | pending |
 | low | B27-G4 NModuleInfo.isWar() definition | baja/jetty | pending |
@@ -247,6 +247,11 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B37-G2 Three driver-specific sync-folder classes | bacnet/modbus/niagaraDriver | pending |
 | low | B37-G4 niagaraSync license-fault severity wiring | niagaraSync | pending |
 | low | B37-G5 modbusAsync/modbusTcp chassis lineage | modbus modules | pending |
+| high | B41-G6 DashboardPan N5 write path: pass the servlet request niagara.context (authenticated user) into set()/invoke so writes land in AuditHistory with user and old→new value (design + PoC in the ported copy) | our module + web/baja | pending |
+| medium | B41-G1 SecurityAuditEvent / SecurityAuditor full mapping | baja security | pending |
+| low | B41-G2 JAAS Subject / AddSubjectFilter contents | web.jar | pending |
+| low | B41-G3 Jetty LoginService / UserIdentity resolution | jetty.jar | pending |
+| low | B41-G5 Do first-party N5 servlets thread niagara.context through to writes | web modules | pending |
 | deferred | B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only | N5 GA install | pending (parked; needs a GA build) |
 
 ## Iteration history
@@ -291,9 +296,11 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | 36 | 2026-09-27 | B2-G5 N5 JS pipeline (node never bundled; grunt/yarn-workspace plugins; optional for DashboardPan) | B36 | yes · sonnet | 3 new — B36-G1..G3 |
 | 37 | 2026-09-27 | B12-G5..G8 TOTP enrollment (2 paths, AES-256 reversible at rest, no gauth migration), SAML SP/IdP, LDAP bind, SRP6 (§14 correction of B12) | B38 | yes · sonnet | 4 new — B38-G1..G4 |
 | 38 | 2026-09-27 | B35-G1 + B18-G4 + B20-G2 niagaraSync internals (AND-gate failover, ~180 sync-capable types; ColdRoomPan timers not HA-safe) (§14 refinement of B18) | B37 | yes · sonnet | 6 new — B37-G1..G6 |
+| 39 | 2026-09-27 | B20-G3 + B27-G3 N5 action audit (old value now recorded for 4 writables; null-Context servlet writes still unaudited) + web authn chain | B41 | yes · sonnet | 6 new — B41-G1..G6 |
 
 ## Blocked gaps (each tagged with what it needs)
 
+- B41-G4 Live confirmation of audited servlet writes — needs: a running N5 station · tried: static only
 - B37-G1 / B37-G3 Live niagaraSync pair probe incl. ColdRoomPan mid-defrost failover — needs: two licensed N5 stations · tried: static only
 - B17-G1 / B29-G2 Real n5mig run and niagaraTest/test.exe run on the PANCCADIA copy — needs: a licensed N5 install (tridium:nre feature) · tried: n5mig -premigrate and -o via WSL interop (FeatureNotLicensedException tridium:nre, exit 253), java Bootstrap fallback (missing JavaFX runtime)
 - B28-G4 Deploy the three ported modules to a live N5 station — needs: a running (licensed) N5 station · tried: build + sign only
@@ -312,9 +319,9 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 111
+- **Open gaps — read-only investigable**: 114
 - **Open gaps — requires-execution**: 7
-- **Open gaps — blocked**: 15
+- **Open gaps — blocked**: 16
 - Consecutive iterations with empty backlog (secondary): 0/2
 - Budget cap (default safety net): none
 

@@ -2,7 +2,7 @@
 
 # Block catalog
 
-Total: **38 blocks**
+Total: **40 blocks**
 
 | Block | File | Title |
 |-------|------|-------|
@@ -44,3 +44,5 @@ Total: **38 blocks**
 | 36 | [niagara5-block36.md](niagara5-block36.md) | The N5 JavaScript build pipeline (node, grunt, RequireJS) for module web resources |
 | 37 | [niagara5-block37.md](niagara5-block37.md) | niagaraSync internals: replication, failover and what third-party modules must do |
 | 38 | [niagara5-block38.md](niagara5-block38.md) | N5 TOTP enrollment, SAML flow, LDAP bind and SRP6 |
+| 41 | [niagara5-block41.md](niagara5-block41.md) | N5 action auditing (old→new values) and the web authentication chain |
+| 42 | [niagara5-block42.md](niagara5-block42.md) | cloudLink AMQP internals, provider channels, and the fate of N4 nCloudDriver |
