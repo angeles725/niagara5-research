@@ -44,16 +44,16 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
      Field names use UNDERSCORES on purpose: they must never collide with the prose greps below. -->
 <!-- research-state.v1 -->
 schema: research-state.v1
-covered_blocks: 61
-gaps_closed: 110
-known_gaps: 293
-investigable_open: 136
+covered_blocks: 68
+gaps_closed: 133
+known_gaps: 321
+investigable_open: 137
 requires_execution_open: 8
-blocked_open: 28
+blocked_open: 33
 deferred_open: 10
 undocumented_findings: 0
-blocks_since_retro: 0
-last_iteration_ts: 2026-09-27T11:10:00Z
+blocks_since_retro: 7
+last_iteration_ts: 2026-09-27T18:30:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
      applies to every corpus (single-focus and campaign alike); the stall-detection instrument reads it
@@ -61,9 +61,9 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 
 ## Coverage
 
-- **Covered blocks**: 61 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15, B16, B17, B18, B19, B20, B21, B22, B23, B24, B25, B26, B27, B28, B29, B30, B31, B32, B33, B34, B35, B36, B37, B38, B39, B40, B41, B42, B43, B44, B45, B46, B47, B48, B49, B50, B51, B52, B53, B54, B55, B56, B57, B58, B59, B60, B61)
-- **Coverage metric**: 110 / 293 closed
-- **Last iteration**: 2026-09-27 — N5-G5 core API delta (B5)
+- **Covered blocks**: 68 (B1..B61, B62, B63, B64, B65, B66, B67, B68)
+- **Coverage metric**: 133 / 322 closed
+- **Last iteration**: 2026-09-27 — wave 6 (B62-B68): SAML/native-launcher/removals/SecurityAgent/migrator/cloudLink/servlet-Context
 
 ## Gap-backlog
 
@@ -97,7 +97,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B1-G6 The 5 automatic-module jars (unterjar packaging) — why not explicit modules | jar manifests | pending |
 | low | B2-G2 Meaning of the Compact3 javac argument in N5 plugins | n-plugin bytecode | pending |
 | low | B2-G3 Read the TestNG Support in Niagara 5 doc | docDeveloper.jar | pending |
-| low | B3-G5 securityBridge.jar 2-class bootclasspath shim | securityBridge.jar | pending |
+| low | B3-G5 securityBridge.jar 2-class bootclasspath shim | securityBridge.jar | ✅ covered — B65 |
 | low | B2-G4 Does N5 niagaraTest still hit the N4 plugin zero-tests bug | prototype build | requires-execution → §19 (run niagaraTest on a sample module) |
 | high | B4-G8 Deep-read official upgrade guides (upgradingToN5, upgradingUItoN5, upgradingJDK) + porting checklist for our modules | docDeveloper.jar doc/upgrade | ✅ covered — B10 |
 | medium | B4-G1 Decode the help search index binary format doc/{words,postings,documents,worddocs}.dat | help.jar Searcher + dat files | ✅ covered — B59 |
@@ -192,14 +192,14 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B23-G6 Prove or refute module.xml vs module-info dependency divergence | module census | pending |
 | high | B24-G6 No converter exists for tagdictionary (105), kitControl (100), nrio (96) PANCCADIA objects — confirm they load unchanged in N5 (type names, slot compatibility) | migrator + module registry | ✅ covered — B31 |
 | medium | B24-G2 Census the PANCCADIA points/histories/alarm stores beyond config.bog | PANCCADIA station copy | ✅ covered — B58 (narrowed: this Windows Workbench path holds only config.bog + empty alarm.adb; real runtime data is elsewhere) |
-| low | B24-G3 Tabulate the 180-entry zwave removal type list | migrator.jar | pending |
-| low | B24-G4 MigrationUtils (40 static methods) line-by-line read | migrator.jar | pending |
-| low | B24-G5 BBackupDistMigrator / BPxMigrator / premigrate classes full bodies | migrator.jar | pending |
+| low | B24-G3 Tabulate the 180-entry zwave removal type list | migrator.jar | ✅ covered — B66 |
+| low | B24-G4 MigrationUtils (40 static methods) line-by-line read | migrator.jar | ✅ covered — B66 |
+| low | B24-G5 BBackupDistMigrator / BPxMigrator / premigrate classes full bodies | migrator.jar | ✅ covered — B66 |
 | medium | B27-G3 NiagaraConstraintSecurityHandler / NiagaraAuthenticator: web authn/authz proper | jetty.jar + web.jar | ✅ covered — B41 |
 | medium | B27-G6 Adopt the real x-niagara-csrfToken in DashboardPan-ux on N5 instead of the hand-rolled X-Requested-With guard (design note) | web.jar CsrfUtil + our module | ✅ covered — B52 |
 | low | B27-G2 Per-module jetty-web.xml census | all modules | pending |
-| low | B27-G4 NModuleInfo.isWar() definition | baja/jetty | pending |
-| low | B27-G5 hx.jar WebAppContext registration path | hx.jar | pending |
+| low | B27-G4 NModuleInfo.isWar() definition | baja/jetty | ✅ covered — B68 |
+| low | B27-G5 hx.jar WebAppContext registration path | hx.jar | ✅ covered — B68 |
 | low | B26-G2 Can a raw property-sheet string edit construct a restrictBy=2 capacity on N5 | history + workbench | pending |
 | low | B26-G3 BHistoryDbTable subclasses: alternate capacity enforcement | history.jar | pending |
 | low | B26-G4 BTypeSpecConverter generic simple-value handling | migrator.jar | pending |
@@ -229,7 +229,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B33-G6 Operational impact of the firewall losing port-redirect (N4 pf) in N5 nft | platform docs + code | pending |
 | high | B28-G7 niagara.alarm transitive dependency on javafx/batik platform modules forces stub module-info jars when compiling third-party modules on Linux — find the supported way (Windows javac.exe? SDK module path?) | n-plugin + alarm/gx/bajaui module-info | ✅ covered — B39 |
 | medium | B28-G2 Batik (org.apache.xmlgraphics) provider: JavaFX confirmed in the bundled JRE release MODULES (7 javafx.* modules); batik not a JRE module and svgBatik.jar holds no org/apache classes | jre + bin/ext + modules | ✅ covered — B39 |
-| low | B28-G1 Fate of the N4 test-wb module in N5 | modules | pending |
+| low | B28-G1 Fate of the N4 test-wb module in N5 | modules | ✅ covered — B64 |
 | medium | B28-G3 Does the Windows jre/bin/javac.exe resolve niagara.alarm without stubs | prototype build | ✅ covered — B39 |
 | medium | B34-G3 Caller of AuthenticatedLicenseRetrievalUtil (perpetual LicenseAccessKey flow) | nre + workbench | ✅ covered — B53 |
 | low | B34-G1 Backup-restoration write site for the subscription cache | nre | pending |
@@ -239,7 +239,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B36-G1 Read doc/js/buildingJS.html and doc/requirejs.html fully | docDeveloper.jar | pending |
 | medium | B36-G2 Live gradlew gruntBuild / gruntCi run on a JS module | prototype build | requires-execution → §19 (needs node/npm on PATH + a JS module scaffold) |
 | low | B36-G3 Locate the grunt-niagara successor npm package contents | m2 + npm | pending |
-| low | B38-G1 Account-lockout defaults: N4 vs N5 provenance | baja security | pending |
+| low | B38-G1 Account-lockout defaults: N4 vs N5 provenance | baja security | ✅ covered — B62 |
 | medium | B38-G2 SP-side SAML signature algorithm allowlist | saml.jar | ✅ covered — B61 |
 | low | B38-G3 LDAP Kerberos/GSSAPI location | ldap + kerberos | pending |
 | low | B38-G4 SRP6 group size cross-check | nre/fox | pending |
@@ -249,14 +249,14 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B37-G5 modbusAsync/modbusTcp chassis lineage | modbus modules | pending |
 | high | B41-G6 DashboardPan N5 write path: pass the servlet request niagara.context (authenticated user) into set()/invoke so writes land in AuditHistory with user and old→new value (design + PoC in the ported copy) | our module + web/baja | ✅ covered — B46 |
 | medium | B41-G1 SecurityAuditEvent / SecurityAuditor full mapping | baja security | ✅ covered — B54 |
-| low | B41-G2 JAAS Subject / AddSubjectFilter contents | web.jar | pending |
-| low | B41-G3 Jetty LoginService / UserIdentity resolution | jetty.jar | pending |
-| low | B41-G5 Do first-party N5 servlets thread niagara.context through to writes | web modules | pending |
-| low | B42-G2 Three cloudLinkExtension satellite modules | cloudLinkExtension* | pending |
-| low | B42-G3 retriableError() classification body | cloudLink | pending |
+| low | B41-G2 JAAS Subject / AddSubjectFilter contents | web.jar | ✅ covered — B68 |
+| low | B41-G3 Jetty LoginService / UserIdentity resolution | jetty.jar | ✅ covered — B68 |
+| low | B41-G5 Do first-party N5 servlets thread niagara.context through to writes | web modules | ✅ covered — B68 |
+| low | B42-G2 Three cloudLinkExtension satellite modules | cloudLinkExtension* | ✅ covered — B67 |
+| low | B42-G3 retriableError() classification body | cloudLink | ✅ covered — B67 |
 | low | B42-G4 Authoritative statement on nCloudDriver retirement (newer releases / web) | web | pending |
-| low | B42-G5 Forge message-handler classes | cloudLinkForge | pending |
-| low | B42-G6 Throttle / backpressure numeric defaults | cloudLink | pending |
+| low | B42-G5 Forge message-handler classes | cloudLinkForge | ✅ covered — B67 |
+| low | B42-G6 Throttle / backpressure numeric defaults | cloudLink | ✅ covered — B67 |
 | high | B43-G1 KeyRing alias rename javax.baja.security.BAes256PasswordEncoder.key → niagara.security.BAes256PasswordEncoder.key: does N5 (or n5mig) remap it, or do migrated stations lose reversible passwords? | nre KeyRing + migrator | ✅ covered — B47 (MITIGATED by n5mig force-clear/passphrase path; PANCCADIA uses external encoding (3 pbkdf2-aes-256 secrets)) |
 | low | B43-G2 N4 orientSystemDb default-encryption parity (narrows B19-G1) | N4 orientSystemDb | ✅ covered — B57 |
 | low | B43-G3 N4 EncryptionKeySource member count | N4 baja decompile | ✅ covered — B57 |
@@ -271,7 +271,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | medium | B46-G2 Implement the x-niagara-csrfToken check in the DashboardPan-ux port | our module + web.jar | ✅ covered — B52 |
 | low | B46-G3 Should the 3 read-side BOrd.get(this, null) resolutions use the request Context | our module | pending |
 | deferred | B46-G5 Port the audited-write fix back into the live N4 DashboardPan source (same N4 gate B829/B830) — product change in the client repo, needs operator decision | client repo | pending (parked; recommendation only — outside research scope) |
-| low | B47-G1 Confirm the vestigial source-.kr extraction code has no live call site (Premigrate + bytecode xref) | migrator.jar | pending |
+| low | B47-G1 Confirm the vestigial source-.kr extraction code has no live call site (Premigrate + bytecode xref) | migrator.jar | ✅ covered — B66 |
 | low | B47-G2 Purpose of the source-.kr extraction machinery (dist-container encryption?) | migrator.jar | pending |
 | low | B47-G3 AxPasswordUtil.usesPasswordEncodings definition | migrator/baja | pending |
 | medium | B48-G1 Resolve the public Java 21 vs Java 25 contradiction (first-party says 25; code confirms JRE 25.0.4) | web + install | ✅ covered — B56 (narrowed: Java 25 authoritative (first-party + local jre/release); HA name = Niagara Sync) |
@@ -282,7 +282,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | medium | B49-G2 Trace N5 NiagaraRpc servlet/BOX dispatch for Context injection into @NiagaraRpc methods | web/box modules | ✅ covered — B54 |
 | low | B49-G3 Feasibility of a Context-taking overload in Slotomatic output | slotomatic | pending |
 | low | B49-G4 Whole-corpus census of generated action invoke wrappers | organized/ | pending |
-| low | B44-G1 The 13 cloudLink* finalize() overrides: resource, shared base class, Cleaner replacement | cloudLink family | pending |
+| low | B44-G1 The 13 cloudLink* finalize() overrides: resource, shared base class, Cleaner replacement | cloudLink family | ✅ covered — B67 |
 | medium | B44-G2 AccessController-family call sites in jetty/platform/hx: inert after SecurityManager removal or live authorization | jetty/platform/hx | ✅ covered — B54 |
 | low | B44-G4 svgBatik ThreadDeath usage | svgBatik | pending |
 | deferred | B44-G3 Re-run jdeprscan on the 29 classpath-incomplete jars with vendor SDKs (Prosys OPC UA etc.) | vendor SDKs | pending (parked; needs licensed vendor SDKs) |
@@ -291,8 +291,8 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | medium | B50-G1 Driver-module N5 build PoC (ndriver or BDeviceNetwork chassis) | prototype build | requires-execution → §19 (scaffold + build a minimal ndriver module) |
 | low | B50-G2 Native-module (npsdk) build on N5 | m2 native plugins | pending |
 | low | B50-G6 Greenfield (non-ported) N5 module path via the devkit wizard templates | devkit.jar | pending |
-| low | B54-G1 Is -Djava.security.manager set by the N5 launcher (moot: vulnerable Subject API never called) | launchers | pending |
-| low | B54-G3 Open SecurityAgent / SecurityProviderAdvice directly | nre.jar | pending |
+| low | B54-G1 Is -Djava.security.manager set by the N5 launcher (moot: vulnerable Subject API never called) | launchers | ✅ covered — B63 |
+| low | B54-G3 Open SecurityAgent / SecurityProviderAdvice directly | nre.jar | ✅ covered — B65 |
 | low | B54-G4 BUserService.auditLoginAttempt appears dead code | baja | pending |
 | low | B54-G5 BOrionSecurityAudit parallel audit DB | orion | pending |
 | medium | B51-G2 Where Flags.TRANSIENT/OPERATOR live in N5 (niagara.sys.Flags?) — lints keyed on Flags vocabulary | baja | ✅ covered — B60 |
@@ -314,8 +314,8 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B56-G2 Niagara Sync vs Cloud Suite licensing coupling | web + license features | pending |
 | deferred | B56-G3 Supervisor Linux support at N5 GA | N5 GA docs | pending (parked; revisit at GA) |
 | low | B56-G4 Survey the rest of the 2023 Loyalty Program Q&A transcript | web | pending |
-| low | B57-G1 Are nre.properties-sourced JVM args also cmdline::-tagged (nre.dll disassembly) | nre.dll | pending |
-| medium | B57-G2 How platDaemon spawns station.exe (no ProcessBuilder in the Java corpus) — remote reachability of JVM-arg injection | platDaemon + native | pending |
+| low | B57-G1 Are nre.properties-sourced JVM args also cmdline::-tagged (nre.dll disassembly) | nre.dll | ✅ covered — B63 |
+| medium | B57-G2 How platDaemon spawns station.exe (no ProcessBuilder in the Java corpus) — remote reachability of JVM-arg injection | platDaemon + native | ✅ covered — B63 |
 | low | B57-G4 N4 BogPasswordObjectEncoder semantics for shared/undefined | N4 baja | pending |
 | low | B55-G1 Cross-check the transitive-vs-plain javac rule with the Windows javac.exe | prototype run | pending |
 | low | B55-G2 Decompile okio-jvm for any egress hook | bin/ext okio | pending |
@@ -331,8 +331,31 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B60-G2 Version.strip(2) exact truncation algorithm | baja Version | pending |
 | low | B60-G3 plat* cluster +17..+19 dependency gain N4→N5 cause | module.xml census | pending |
 | low | B60-G4 html/file/fox/export cluster outsized N4→N5 dependency drop | module.xml census | pending |
-| high | B61-G3 N5's consumer-side SAML (java-saml Util) accepts SHA-1/DSA-SHA1-signed IdP responses — the DEPRECATED_ALGOS reject flag is hardcoded false; weaker than Tridium's own IdP-side policy (security note for SAML SSO deployments) | saml java-saml-core | pending |
-| medium | B61-G1 nre.dll CreateProcessA target + how niagarad triggers OS-level station start (B57-G2 refined) | native launchers | pending |
+| high | B61-G3 N5's consumer-side SAML (java-saml Util) accepts SHA-1/DSA-SHA1-signed IdP responses — the DEPRECATED_ALGOS reject flag is hardcoded false; weaker than Tridium's own IdP-side policy (security note for SAML SSO deployments) | saml java-saml-core | ✅ covered — B62 |
+| medium | B61-G1 nre.dll CreateProcessA target + how niagarad triggers OS-level station start (B57-G2 refined) | native launchers | ✅ covered — B63 |
+| medium | B65-G3 niagarad runs with the ByteBuddy permission layer inert (PermissionUtil.isTrustedDomain=true set unconditionally in NiagaraDaemon.Main) — confirm the Main→Bootstrap wiring shares one call stack | nre + platDaemon bytecode | pending |
+| low | B62-G1 Did N4's bare JDK javax.xml.crypto.dsig provider independently restrict SHA-1 (N4 used older com.onelogin.saml.Utils with no allowlist) | N4 saml + JDK | pending |
+| low | B62-G2 N4 runtime-crypto jar decompile for SRP6 KeyExchange (re-scoped B38-G4) | N4 nre-equivalent | pending |
+| low | B63-G2 nre.dll module-path / java.library.path / niagara.* %s runtime-value origin trace | nre.dll disasm | pending |
+| low | B63-G4 Disassemble nre.dll's shared snprintf-style command-line helper | nre.dll disasm | pending |
+| low | B64-G3 Independently open the third-party CloudConnector_Sentience doc (WebSearch-summary confidence only) | web | pending |
+| low | B64-G4 Full page-by-page pass of the Summit-2026 128-slide Module Transition deck | web PDF | pending |
+| low | B64-G5 Same deck: enumerate any further module-level breaking-change rows beyond BACnet | web PDF | pending |
+| low | B65-G2 PermissionUtil.isPrivileged frame-classification rule | nre bytecode | pending |
+| low | B65-G4 securityBridge.jar -Xbootclasspath/a: loading mechanism (residual half of B3-G5) | securityBridge.jar + launcher | pending |
+| low | B66-G1 backup.jar design-intent: can BBackupService produce a KeyRing-protected .dist the dead migrator code consumed (residual B47-G2) | backup.jar | pending |
+| low | B66-G2 BPxMigrator.processFormat ReflectCall.eval semantics | migrator.jar | pending |
+| low | B66-G3 BBogPremigrator program-object module-dependency check vs a real station | migrator + station | pending |
+| low | B67-G1 Deliberate-vs-vestigial intent of the empty finalize() idiom (needs external changelog) | cloudLink + web | pending |
+| low | B67-G2 MessageWrapper.canRetry() logic — the real retry-count gate | cloudLink | pending |
+| low | B67-G3 Whether Forge's Azure-Blob file-upload reuse implies an Azure-owned backend or a shared client primitive | cloudLinkForge + cloudLinkAzure | pending |
+| low | B67-G4 The ~30 remaining unread Forge msg/ classes | cloudLinkForge | pending |
+| low | B67-G5 BINiagaraNetworkHelper declaring file | cloudLinkExtensionNiagara | pending |
+| low | B68-G1 Remaining uncensused first-party servlets (Context threading) | web modules | pending |
+| low | B68-G2 @NiagaraRpc method bodies past injection point | niagaraDriver + rpc | pending |
+| low | B68-G3 BOrdScheme.resolve null-user read-permission enforcement | baja ord | pending |
+| low | B68-G4 JAAS LoginModule chain internals | baja auth | pending |
+| low | B68-G5 SuperSessionPrincipal branch-on-identity check | baja auth | pending |
 | deferred | B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only | N5 GA install | pending (parked; needs a GA build) |
 
 ## Iteration history
@@ -400,6 +423,13 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | 59 | 2026-09-27 | B4-G1/B4-G5 help full-text index format decoded (words/worddocs/postings/documents.dat, 7,270 docs, verified reader); no JDK-class bajadoc stand-ins in N5 (javadoc links to Oracle only) | B59 | yes · sonnet | 3 new — B59-G1..G4 (G3 folds into B4-G2) |
 | 60 | 2026-09-27 | B51-G2..G7 kit lint facts: Flags byte-identical (only 2 lints need niagara.* added), no real per-profile split, class-version 52→69 inverts, dependency slimming is mostly the N4 part-split artifact | B60 | yes · sonnet | 4 new — B60-G1..G4 |
 | 61 | 2026-09-27 | B40-G2 live station root space is base BComponentSpace (ruleHintOverride never validated) [CERT]; B38-G2 consumer SAML allowlist includes SHA-1 (deprecated-reject is dead code) | B61 | yes · sonnet | 4 new — B61-G1..G3 (B57-G2 refined) |
+| 62 | 2026-09-27 | B61-G3 SAML SHA-1 accept CLOSED (no config flips OneLogin rejectDeprecatedAlg; Santuario secureValidation gates ref-count only) + B38-G1 lockout N4=N5 | B62 | yes · sonnet | 2 new — B62-G1..G2 |
+| 63 | 2026-09-27 | B61-G1/B57-G2 CLOSED: sole nre.dll CreateProcessA xref = restartPlatformDaemon0 building plat.exe restartdaemon (refutes B61 JxBrowser reading, §14) + B57-G1 + B54-G1 (neg) | B63 | yes · sonnet | 4 new — B63-G1..G4 |
+| 64 | 2026-09-27 | B28-G1 CLOSED (test-wb→test, Summit-2026 deck) + B10-G2/B13-G1 narrowed (bacnetOws removed, bacnetAlarmRouter→bacnetUtil) | B64 | yes · sonnet | 5 new — B64-G1..G5 |
+| 65 | 2026-09-27 | B54-G3 CLOSED (full ByteBuddy interception map) + B3-G5 content half; niagarad runs permission layer inert (isTrustedDomain=true) | B65 | yes · sonnet | 4 new — B65-G1..G4 |
+| 66 | 2026-09-27 | B24-G3/G4/G5 + B47-G1 CLOSED (MigrationUtils 47 sigs, migrators/premigrators, zwave 180-list, .kr decrypt is dead code via bytecode xref) | B66 | yes · sonnet | 3 new — B66-G1..G3 |
+| 67 | 2026-09-27 | B42-G2/G3/G5/G6 + B44-G1 CLOSED (retriableError=true default, throttle defaults, Forge handlers, 13 empty finalize() no Cleaner) | B67 | yes · sonnet | 5 new — B67-G1..G5 |
+| 68 | 2026-09-27 | B41-G2/G3/G5 + B27-G4/G5 CLOSED (JAAS 2-principal Subject, Jetty isUserInRole dead, first-party servlets drop Context via 2-arg set overload) | B68 | yes · sonnet | 6 new — B68-G1..G6 |
 
 ## Blocked gaps (each tagged with what it needs)
 
@@ -431,12 +461,17 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 - B9-G1 Load the built n5Hello.jar in a live N5 station — needs: a running N5 station · tried: no station configured (measured: no stations/ dir under config/5.0.0.28)
 - B8-G5 Live PermissionException reproduction — needs: a running N5 station · tried: no N5 station configured (measured: no stations/ dir under config/5.0.0.28)
 - B1-G1 Live confirmation of module layers via the moduleConfiguration spy — needs: a running N5 station · tried: WSL has no N5 station; beta install has no configured station (measured: no stations/ dir yet)
+- B63-G1 station.exe's own OS-start path via Service Control Manager — needs: a live Windows N5 station + SCM probe · tried: static import-table read only (nre.dll CreateProcessA xref is the plat.exe path, not station.exe)
+- B63-G3 Live HTTP reproduction of the refreshSoftware daemon-restart path — needs: a running N5 platform daemon · tried: static disassembly + Java-chain trace only
+- B64-G1 The 47 remaining Tridium modules absent from N5 with no removal/merge evidence — needs: authorized niagara-community.com developer-portal credentials · tried: WebSearch + Wayback (portal 302-redirects to Salesforce login)
+- B64-G2 The 59 N4 doc-guides absent from docDeveloper.jar — needs: same portal credentials · tried: confirmed uniform login gate on /s/article/<slug>
+- B68-G6 Live station confirmation of the servlet Context-threading audit gap — needs: a running N5 station · tried: static bytecode census only
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 136
+- **Open gaps — read-only investigable**: 137
 - **Open gaps — requires-execution**: 8
-- **Open gaps — blocked**: 28
+- **Open gaps — blocked**: 33
 - Consecutive iterations with empty backlog (secondary): 0/2
 - Budget cap (default safety net): none
 

@@ -2,7 +2,7 @@
 
 # Block catalog
 
-Total: **61 blocks**
+Total: **68 blocks**
 
 | Block | File | Title |
 |-------|------|-------|
@@ -67,3 +67,10 @@ Total: **61 blocks**
 | 59 | [niagara5-block59.md](niagara5-block59.md) | The N5 help full-text index format and JDK doc coverage |
 | 60 | [niagara5-block60.md](niagara5-block60.md) | N5 kit lint facts: Flags, profile splits, version constants and dependency counts |
 | 61 | [niagara5-block61.md](niagara5-block61.md) | Closing three named gaps: the live station's `BComponentSpace` identity, `nre.dll`/`njre.dll`'s native process-creation capability split, and the SP-side SAML signature-algorithm allowlist buried in the bundled `java-saml-core` jar |
+| 62 | [niagara5-block62.md](niagara5-block62.md) | Closing the SAML deprecated-algorithm security cluster (B61-G3), reaffirming the CSRF timing-comparison finding (B52-G1), and settling two low-priority provenance gaps (B38-G1 closed, B38-G4 narrowed) |
+| 63 | [niagara5-block63.md](niagara5-block63.md) | `nre.dll`'s ONE `CreateProcessA` call site is `NativePlatformProvider.restartPlatformDaemon0()`, spawning `plat.exe restartdaemon` from an HTTP-servlet-reachable, weakly-gated path; `nre.properties` JVM args are never `cmdline::`-tagged; and the launcher's complete fixed VM-argument recipe is now disassembled |
+| 64 | [niagara5-block64.md](niagara5-block64.md) | Fresh 2026 Tridium sources close B28-G1 (`test-wb`→`test`), name two concrete BACnet casualties for B13-G1, and locate (but cannot pass) the login gate behind B10-G2's canonical Breaking-Changes list |
+| 65 | [niagara5-block65.md](niagara5-block65.md) | Opening `SecurityAgent`/`SecurityProviderAdvice` directly: the full ByteBuddy interception map, the `Module`-keyed enforcement chain (never `AccessControlContext`/`Subject`), and a new finding — the platform daemon runs with the whole advice layer permanently inert via `PermissionUtil.isTrustedDomain` |
+| 66 | [niagara5-block66.md](niagara5-block66.md) | The migrator internals census: `MigrationUtils`'s 40-method surface, the four `-premigrate` bodies, the 180-entry zwave removal list, and a bytecode-level close of the vestigial KeyRing-decrypt gap |
+| 67 | [niagara5-block67.md](niagara5-block67.md) | cloudLink retry/throttle mechanics, the Forge message-handler census, vestigial `finalize()` overrides, and the three driver-extension satellites |
+| 68 | [niagara5-block68.md](niagara5-block68.md) | Closing the web/servlet-auth cluster: first-party N5 servlet write-audit census, JAAS `Subject` contents, Jetty `LoginService`/`UserIdentity`, and `NModuleInfo.isWar()`/`hx.jar` WebAppContext registration |

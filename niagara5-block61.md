@@ -235,6 +235,15 @@ Java tree does not expose). **Net: this session narrows the search space (rules 
 holder of process-creation/SCM capability; confirms `nre.dll` HAS both capabilities) but does not close
 B57-G2** — the specific call site and its actual target remain unread. Refined and re-opened as **B61-G1**.
 
+> **Correction (added by [Block 63], §14 cross-block).** [Block 63] disassembled the actual call site and
+> **refutes reading (1)**: `axt` on the `CreateProcessA` import thunk finds exactly ONE cross-reference in
+> all of `nre.dll` — inside the JNI export `Java_com_tridium_nre_platform_NativePlatformProvider_restartPlatformDaemon0`,
+> which builds the literal command line `"<install-root>\bin\plat.exe restartdaemon"`. There is no second
+> (JxBrowser/renderer) call site. `njre.dll` lacks `CreateProcessA` because it is a separate minimal
+> `JavaLauncherWin32` with zero JNI exports; `nre.dll` is `System.loadLibrary`'d into any JVM including
+> `niagarad`'s. `station.exe`'s own start path narrows to the Service Control Manager (open child gap
+> B63-G1). B61-G1 is thereby **closed** by [Block 63] — see §63.1.
+
 ## 61.3 — B38-G2 CLOSED: the SP-side SAML signature-algorithm allowlist lives inside OneLogin's bundled `java-saml-core-2.9.0.jar`, is a hardcoded 5-URI set INCLUDING SHA-1 variants, and IS the gate N5's actual call chain hits — with a separate "reject deprecated" flag the N5 call site never enables `[CERT]`
 
 [Block 38] §38.6 read `Response.validateSignatures()` (`Response.java:238-286`) calling

@@ -391,6 +391,29 @@ This index guides through the **61 blocks** of this research. The flat catalog l
 - [x] B51-G7 Measured N4 vs N5 explicit dependency counts → [Block 60]
 - [x] B53-G3 niagara.commandLinePropertyDenyList is itself read via System.getProperty — can a -D override neuter the denylist (static hypothesis, measure) → [Block 57]
 
+- [x] B61-G3 Consumer-side SAML accepts SHA-1/DSA-SHA1 (rejectDeprecatedAlg unreachable from config; Santuario secureValidation gates ref-count only) → [Block 62]
+- [x] B38-G1 Account-lockout defaults N4=N5 (5 attempts/30s/10s, carryover) → [Block 62]
+- [x] B61-G1 / B57-G2 Sole nre.dll CreateProcessA xref = restartPlatformDaemon0 building plat.exe restartdaemon; njre.dll has none → [Block 63]
+- [x] B57-G1 nre.properties-sourced JVM args get no -Dcmdline:: shadow (only raw-argv buildArgs tags them) → [Block 63]
+- [x] B54-G1 No -Djava.security.manager anywhere (consistent with JRE 25 + JEP 486) → [Block 63]
+- [x] B28-G1 test-wb module → merged into test in N5 (Summit-2026 deck p.59) → [Block 64]
+- [x] B54-G3 SecurityAgent/SecurityProviderAdvice full ByteBuddy interception map; chain never touches AccessControlContext/Subject → [Block 65]
+- [x] B3-G5 securityBridge.jar 2-class shim (content half; loading mechanism = B65-G4) → [Block 65]
+- [x] B24-G3 zwave 180-entry CONVERT_TYPES list shape-tabulated → [Block 66]
+- [x] B24-G4 MigrationUtils 47 static signatures reference table → [Block 66]
+- [x] B24-G5 BBackupDistMigrator/BPxMigrator/premigrate bodies traced; .kr never forwarded → [Block 66]
+- [x] B47-G1 Vestigial .kr-decrypt code has zero call sites (bytecode xref over 94 classes) → [Block 66]
+- [x] B42-G3 retriableError() base = unconditional true; only BHttpTransport narrows → [Block 67]
+- [x] B42-G6 Throttle/backpressure defaults (pendingMessageLimit=50, retries=2, timeout=60000ms, throttle=0) → [Block 67]
+- [x] B42-G5 cloudLinkForge ~30 handlers via 3 factories; Azure Blob SAS reuse → [Block 67]
+- [x] B44-G1 13 cloudLink finalize() overrides all empty; no Cleaner → [Block 67]
+- [x] B42-G2 cloudLinkExtension Bacnet/Ebi/Niagara SPI adapters (Niagara subclasses BNiagaraStation) → [Block 67]
+- [x] B41-G2 JAAS Subject carries only BUser + SuperSessionPrincipal, then setReadOnly → [Block 68]
+- [x] B41-G3 NiagaraUserIdentity.isUserInRole hardcoded true; Jetty role auth dead → [Block 68]
+- [x] B41-G5 First-party servlets (uxBuilder/httpClient) drop Context via 2-arg set overload → [Block 68]
+- [x] B27-G4 NModuleInfo.isWar = jar has WEB-INF/web.xml (Builder.java:397-399) → [Block 68]
+- [x] B27-G5 hx.jar has no WEB-INF; HxOp dispatched via web.jar OrdServlet → [Block 68]
+
 ## Non-investigable gaps (without a running N5 station)
 
 - See `RESEARCH-STATE.md` → Blocked gaps.
