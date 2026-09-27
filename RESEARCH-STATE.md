@@ -44,15 +44,15 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
      Field names use UNDERSCORES on purpose: they must never collide with the prose greps below. -->
 <!-- research-state.v1 -->
 schema: research-state.v1
-covered_blocks: 35
-gaps_closed: 51
-known_gaps: 182
-investigable_open: 109
-requires_execution_open: 6
+covered_blocks: 37
+gaps_closed: 52
+known_gaps: 185
+investigable_open: 110
+requires_execution_open: 7
 blocked_open: 14
 deferred_open: 2
 undocumented_findings: 0
-blocks_since_retro: 0
+blocks_since_retro: 1
 last_iteration_ts: 2026-09-27T11:10:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
@@ -61,8 +61,8 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 
 ## Coverage
 
-- **Covered blocks**: 35 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15, B16, B17, B18, B19, B20, B21, B22, B23, B24, B25, B26, B27, B28, B29, B30, B31, B32, B33, B34, B35)
-- **Coverage metric**: 51 / 182 closed
+- **Covered blocks**: 37 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15, B16, B17, B18, B19, B20, B21, B22, B23, B24, B25, B26, B27, B28, B29, B30, B31, B32, B33, B34, B35, B36, B38)
+- **Coverage metric**: 52 / 185 closed
 - **Last iteration**: 2026-09-27 — N5-G5 core API delta (B5)
 
 ## Gap-backlog
@@ -92,7 +92,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | medium | B3-G1 nre.module internals: NModuleModuleReader, NiagaraModuleReference, NiagaraJPMSAccessModifier (merges B1-G3/B1-G4) | nre.jar bytecode | ✅ covered — B23 |
 | medium | B1-G5 Signature-verification gate parity N4 ModuleClassLoader vs N5 ModuleSetClassLoader | baja.jar bytecode | ✅ covered — B23 |
 | medium | B3-G4 Map N4 19 java-permissions groups onto N5 NiagaraPermission taxonomy | nre.jar + N4 B635 | ✅ covered — B8 |
-| medium | B2-G5 N5 JS build pipeline (node/yarn/grunt plugins) for -ux style web resources | m2 plugins | pending |
+| medium | B2-G5 N5 JS build pipeline (node/yarn/grunt plugins) for -ux style web resources | m2 plugins | ✅ covered — B36 |
 | medium | B2-G6 Delta list for our build-n4-module kit templates (.gradle.kts) against N5 plugin DSL | kit templates + B2 | pending |
 | low | B1-G6 The 5 automatic-module jars (unterjar packaging) — why not explicit modules | jar manifests | pending |
 | low | B2-G2 Meaning of the Compact3 javac argument in N5 plugins | n-plugin bytecode | pending |
@@ -236,6 +236,9 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B34-G4 Workbench UI consumer of the LicenseAccessKey flow | workbench | pending |
 | low | B34-G5 N4 nre.jar client-package comparator for subscription | N4 nre | pending |
 | low | B34-G6 Is security/licenses/conf N5-only | N4 vs N5 | pending |
+| low | B36-G1 Read doc/js/buildingJS.html and doc/requirejs.html fully | docDeveloper.jar | pending |
+| medium | B36-G2 Live gradlew gruntBuild / gruntCi run on a JS module | prototype build | requires-execution → §19 (needs node/npm on PATH + a JS module scaffold) |
+| low | B36-G3 Locate the grunt-niagara successor npm package contents | m2 + npm | pending |
 | deferred | B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only | N5 GA install | pending (parked; needs a GA build) |
 
 ## Iteration history
@@ -277,6 +280,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | 33 | 2026-09-27 | B8-G3 + B12-G4 residual gating (only exec enforced; self-declared native access ungated) + nftables firewall | B33 | yes · sonnet | 6 new — B33-G1..G6 |
 | 34 | 2026-09-27 | B16-G7 CompPan + DashboardPan ported and built (rt+ux+wb merge, jakarta servlet; alarm needs javafx/batik stubs) | B28 | yes · sonnet | 7 new — B28-G1..G7 |
 | 35 | 2026-09-27 | B6-G1/G2 + B11-G1 subscription client, license conf dir, capacity licensing (§14 correction of B11) | B34 | yes · sonnet | 6 new — B34-G1..G6 |
+| 36 | 2026-09-27 | B2-G5 N5 JS pipeline (node never bundled; grunt/yarn-workspace plugins; optional for DashboardPan) | B36 | yes · sonnet | 3 new — B36-G1..G3 |
 
 ## Blocked gaps (each tagged with what it needs)
 
@@ -297,8 +301,8 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 109
-- **Open gaps — requires-execution**: 6
+- **Open gaps — read-only investigable**: 110
+- **Open gaps — requires-execution**: 7
 - **Open gaps — blocked**: 14
 - Consecutive iterations with empty backlog (secondary): 0/2
 - Budget cap (default safety net): none

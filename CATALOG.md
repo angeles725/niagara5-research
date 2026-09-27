@@ -2,7 +2,7 @@
 
 # Block catalog
 
-Total: **35 blocks**
+Total: **37 blocks**
 
 | Block | File | Title |
 |-------|------|-------|
@@ -41,3 +41,5 @@ Total: **35 blocks**
 | 33 | [niagara5-block33.md](niagara5-block33.md) | What N5 still gates: reflection, JMX, native access, exec, and the nftables firewall |
 | 34 | [niagara5-block34.md](niagara5-block34.md) | N5 subscription entitlements and capacity licensing: the `nre.jar` `com.tridium.nre.subscription`/`com.tridium.nre.license` bootstrap (closing B6-G1), and `resource.limit`'s NOT-capacity-licensing polarity corrected against B11 §11.5 (closing B11-G1) |
 | 35 | [niagara5-block35.md](niagara5-block35.md) | N5 drivers on the deprecated chassis, the BACnet Descriptor change and niagaraDriver deltas |
+| 36 | [niagara5-block36.md](niagara5-block36.md) | The N5 JavaScript build pipeline (node, grunt, RequireJS) for module web resources |
+| 38 | [niagara5-block38.md](niagara5-block38.md) | N5 TOTP enrollment, SAML flow, LDAP bind and SRP6 |
