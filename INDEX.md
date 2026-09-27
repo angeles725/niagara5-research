@@ -458,6 +458,12 @@ This index guides through the **61 blocks** of this research. The flat catalog l
 - [x] B47-G3 AxPasswordUtil.usesPasswordEncodings exhaustive recursive walk → [Block 82]
 - [x] B31-G3 BWebBogConverter/BJettyQoSFilterMigrator exact property lists → [Block 82]
 
+- [x] B72-G3 box ships WEB-INF/jetty-web.xml; WebSocket upgrade gated on box service + HTTPS policy → [Block 78]
+- [x] B58-G1 alarm.adb N5 format read (BFileAlarmDatabase + AlarmStoreHeader) → [Block 78]
+- [x] B58-G4 alarm.adb header decoded: MAGIC 1611526157, version 1, pageSize 512, pagesPerBlock 8, header 1024 → [Block 78]
+- [x] B25-G2 SequencedCollection/SequencedMap types appear only in bajaui NSS2 (corpus-wide) → [Block 80]
+- [x] B33-G1 JMX = read-only MXBean introspection (7 modules) + jetty MBeanContainer; no first-party MBeans → [Block 80]
+
 ## Non-investigable gaps (without a running N5 station)
 
 - See `RESEARCH-STATE.md` → Blocked gaps.
