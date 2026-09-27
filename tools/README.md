@@ -63,4 +63,4 @@ machine running the suite — the hermetic tests (synthetic fixtures) always run
      The kit's toolbelt/tool-registry.md documents HOW to use kit tools; this file records
      WHICH kit tools this corpus relies on and WHY any local tools were created or adapted.
      Seeded by BOOTSTRAP (PROMPT-LOOP.md). Updated whenever a tool is added or changed. -->
-| port-junit4-to-testng.py | tools/port-junit4-to-testng.py | created (B29) — ports pure JUnit4 tests to TestNG: paren/string-aware arg split, expected/actual swap, message moved last | `python3 tools/port-junit4-to-testng.py <src.java> <dest.java>` |
+| port-junit4-to-testng.py | `tools/port-junit4-to-testng.py` | `created` | `2026-09-27` (B29) · `n/a` | Ports pure (no-Baja) JUnit4 test files to TestNG: paren/string-literal-aware top-level argument split, `assertEquals` expected/actual swap, message argument moved last (TestNG has no `(String, boolean)` overload). Promoted from the B29 PoC (117 asserts, 5 files, 51/51 pass). **searched:** no N4 corpus tool ports test frameworks → `created`. | `python3 tools/port-junit4-to-testng.py <src.java> <dest.java>` |
