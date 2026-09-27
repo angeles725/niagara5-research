@@ -1,0 +1,24 @@
+# Orchestrator-local artifacts (not corpus) — research-sdd METHODOLOGY §15
+.atl/
+.claude/.rsdd-*
+.claude/settings.local.json
+
+# PROPRIETARY Tridium bytecode/decompiled output — NEVER commit (niagara-research
+# was public once with decompiled code exposed; this repo must stay private AND
+# keep decompiled material out of git regardless).
+organized/
+indexes/
+tools/decompilers/*.jar
+tools/decompilers/*.zip
+tools/decompilers/jadx/
+
+# Python / OS
+__pycache__/
+*.pyc
+.DS_Store
+
+# Credentials — NEVER commit
+.secrets
+*.env
+.env
+.env.*
