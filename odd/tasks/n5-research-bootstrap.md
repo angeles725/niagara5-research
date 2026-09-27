@@ -33,3 +33,5 @@
 - Strategy: feature-branch slices merged to main after per-commit RDD review (user pre-authorized merge).
 - Slice 1: feat/n5-bootstrap-tooling up to 0679d7a — all code commits RDD-approved; docs passive.
 - Incident: PoC builds installed 2 jars into the N5 install (quarantined, not deleted; builds redirected to a local config-home mirror).
+
+- Slice 2 (feat/n5-wave3): blocks 30-50, module-navigator N5 port, niagara-help (own repo angeles725/niagara5-help), porting guide, 3 more retros. RDD: 5f3aa8c, 8d709b6, fe1c291 approved; 30de796 skipped (vendored N4 baseline); d0b5d4f (.gitignore 1 line) under_budget; docs passive.
