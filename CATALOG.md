@@ -2,7 +2,7 @@
 
 # Block catalog
 
-Total: **52 blocks**
+Total: **54 blocks**
 
 | Block | File | Title |
 |-------|------|-------|
@@ -57,4 +57,6 @@ Total: **52 blocks**
 | 49 | [niagara5-block49.md](niagara5-block49.md) | Which N5 writes get audited: generated setters, Fox/BajaScript commit paths and the Context rule |
 | 50 | [niagara5-block50.md](niagara5-block50.md) | N4→N5 porting synthesis: what breaks, what to change, in what order |
 | 51 | [niagara5-block51.md](niagara5-block51.md) | From build-n4-module to an N5 kit: file-by-file delta, n-java placement and derived dependencies |
+| 52 | [niagara5-block52.md](niagara5-block52.md) | Hardening DashboardPan on N5: Niagara CSRF token, jakarta residue and equals() reliance (PoC) |
+| 53 | [niagara5-block53.md](niagara5-block53.md) | N5 launch gates: the tridium:nre license check, dangerous system properties, the code-signing trust anchor and license retrieval |
 | 54 | [niagara5-block54.md](niagara5-block54.md) | N5 security auditing, NiagaraRpc Context injection and residual AccessController/Subject usage |
