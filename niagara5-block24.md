@@ -256,6 +256,8 @@ migrate()
                            convertComplex() logic — as opposed to convertXElem() — actually runs);
                            also special-cases BHsqlDatabase passwords under Drivers (forces the
                            TRANSIENT flag bit if the password is empty)
+> **§14 correction (2026-09-27, [Block 47]):** `encodeBog()` does not re-encode keyring-sourced passwords — `migrateBog()` force-clears every reversible `BPassword` upstream when the source header says `reversibleEncodingKeySource=keyring` (SEVERE itemized log, `migrator.lexicon:161`); output encoding can only be `external` or `none`. `external` secrets survive only with the correct bog-protection passphrase.
+
                          encodeBog(root, zipped) — re-encodes the live tree back to XML/bog bytes via
                            a MigratorDocEncoder (handles AES-256/keyring password re-encoding,
                            palette-specific deny-listed-type stripping)
