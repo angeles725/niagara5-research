@@ -2,7 +2,7 @@
 
 # Block catalog
 
-Total: **25 blocks**
+Total: **26 blocks**
 
 | Block | File | Title |
 |-------|------|-------|
@@ -30,4 +30,5 @@ Total: **25 blocks**
 | 22 | [niagara5-block22.md](niagara5-block22.md) | N5 driver framework delta: driver/ndriver, BACnet, Modbus, Fox |
 | 23 | [niagara5-block23.md](niagara5-block23.md) | N5 module loader internals: ModuleLayer topology, JPMS access patching and signature gates |
 | 24 | [niagara5-block24.md](niagara5-block24.md) | The N4→N5 migrator catalog: every converter n5mig applies |
+| 26 | [niagara5-block26.md](niagara5-block26.md) | History capacity after N4→N5: the removed storage-size mode |
 | 27 | [niagara5-block27.md](niagara5-block27.md) | N5 web server security headers, CSP and resource serving |
