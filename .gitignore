@@ -32,3 +32,5 @@ poc/**/.niagara_user_home/
 
 # CLIENT DATA — station copies and migration outputs, never commit
 poc/n5mig-panccadia/
+poc/_quarantine-install-*/
+poc/**/.n5config/
