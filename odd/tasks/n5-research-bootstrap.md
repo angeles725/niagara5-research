@@ -19,10 +19,17 @@
 | ID | Task | Route (trigger evidence) | Status | Evidence |
 |---|---|---|---|---|
 | T1 | Scaffold repo (research-sdd-init, flat, prefix niagara5), .gitignore, ODD doc | inline (mechanical) | done | init OK 2026-09-27 |
-| T2 | Decompiler bake-off on Java 25 classes + `tools/n5-decompile.sh` + full run over 247 jars | delegated (writer, 2+ files) | in progress | — |
+| T2 | Decompiler bake-off on Java 25 classes + `tools/n5-decompile.sh` + full run over 247 jars | delegated (writer, 2+ files) | done | Vineflower primary / CFR fallback (switch-pattern recompile 5/5 vs 0/5); 246 modules, 20,723 classes + 6 bin/ext jars; bats 12/12; commits d39eb4a c4ed726 7c9a162; RDD approved |
 | T3 | Map N4 tools/hooks → N5 adaptation plan | delegated (mapper, 4+ files) | done | mapper report 2026-09-27: 12 navigator builders keyed on hardcoded organized path in build_module_inventory.py:216; station-modules.py N4-only; niagara-help rebuild = extract docDeveloper/docSource/javadoc |
-| T4 | Port/adapt tools (in progress: writer)  for N5 (corpus-nav, gen-catalog, check-coverage, module-find, bog-nav, navigator/help rebuild, N4↔N5 diff) | delegated writer | pending | — |
-| T5 | N5 SessionStart protocol + tools-card hooks, settings wiring | inline/delegated | pending | — |
+| T4 | Port/adapt tools for N5 | delegated writer | done (module-navigator + niagara-help N5 in progress) | 9 chained commits + SEC-11 fix (15929cf); 70+ unittest; RDD 8/9 approved + fix approved |
+| T5 | N5 SessionStart protocol + tools-card hooks, settings wiring | delegated | done | commit 7a4fc5a; shellcheck clean |
 | T6 | Register target in kit TARGETS.md (kit PR) + private GitHub remote | inline | done | kit PR #1170 merged (issue #1171); repo angeles725/niagara5-research PRIVATE |
-| T7 | Seed frontier backlog + run block loop | delegated per block | in progress | 16 gaps seeded; B1 (G1), B2 (G6), B3 (G7) delegated |
-| T8 | Retro (§18) + session close | inline | pending | — |
+| T7 | Seed frontier backlog + run block loop | delegated per block | in progress | 28+ blocks, 38/152 gaps closed, child gaps promoted (heavy mode) |
+| T8 | Retro (§18) + session close | inline/delegated | in progress | retros 1 and 2 committed; kit issues #1173-#1181 + 7 more |
+
+
+## Delivery
+
+- Strategy: feature-branch slices merged to main after per-commit RDD review (user pre-authorized merge).
+- Slice 1: feat/n5-bootstrap-tooling up to 0679d7a — all code commits RDD-approved; docs passive.
+- Incident: PoC builds installed 2 jars into the N5 install (quarantined, not deleted; builds redirected to a local config-home mirror).
