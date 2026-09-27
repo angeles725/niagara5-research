@@ -45,14 +45,14 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
 <!-- research-state.v1 -->
 schema: research-state.v1
 covered_blocks: 61
-gaps_closed: 104
-known_gaps: 286
+gaps_closed: 108
+known_gaps: 290
 investigable_open: 136
 requires_execution_open: 8
 blocked_open: 27
 deferred_open: 10
 undocumented_findings: 0
-blocks_since_retro: 9
+blocks_since_retro: 10
 last_iteration_ts: 2026-09-27T11:10:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
@@ -62,7 +62,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 ## Coverage
 
 - **Covered blocks**: 61 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15, B16, B17, B18, B19, B20, B21, B22, B23, B24, B25, B26, B27, B28, B29, B30, B31, B32, B33, B34, B35, B36, B37, B38, B39, B40, B41, B42, B43, B44, B45, B46, B47, B48, B49, B50, B51, B52, B53, B54, B55, B56, B57, B58, B59, B60, B61)
-- **Coverage metric**: 104 / 286 closed
+- **Coverage metric**: 108 / 290 closed
 - **Last iteration**: 2026-09-27 — N5-G5 core API delta (B5)
 
 ## Gap-backlog
@@ -295,13 +295,13 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B54-G3 Open SecurityAgent / SecurityProviderAdvice directly | nre.jar | pending |
 | low | B54-G4 BUserService.auditLoginAttempt appears dead code | baja | pending |
 | low | B54-G5 BOrionSecurityAudit parallel audit DB | orion | pending |
-| medium | B51-G2 Where Flags.TRANSIENT/OPERATOR live in N5 (niagara.sys.Flags?) — lints keyed on Flags vocabulary | baja | pending |
-| medium | B51-G5 Does any real N5 gradle.kts need per-profile splitting at all (single-jar world) | PoC build files | pending |
+| medium | B51-G2 Where Flags.TRANSIENT/OPERATOR live in N5 (niagara.sys.Flags?) — lints keyed on Flags vocabulary | baja | ✅ covered — B60 |
+| medium | B51-G5 Does any real N5 gradle.kts need per-profile splitting at all (single-jar world) | PoC build files | ✅ covered — B60 |
 | low | B51-G1 verify-module.sh stored check on N5 jars | prototype build | pending |
-| low | B51-G3 lint-bundled-jar-class-version.sh major-version constants | kit lints | pending |
+| low | B51-G3 lint-bundled-jar-class-version.sh major-version constants | kit lints | ✅ covered — B60 |
 | low | B51-G4 rc-scan.sh / bog-audit.sh -rt|-ux|-wb assumptions | kit lints | pending |
 | low | B51-G6 lint-wb-threading: Swing invokeLater vs JavaFX Platform.runLater on real N5 wb code | prototype build | pending |
-| low | B51-G7 Measured N4 vs N5 explicit dependency counts | module.xml census | pending |
+| low | B51-G7 Measured N4 vs N5 explicit dependency counts | module.xml census | ✅ covered — B60 |
 | deferred | B51-G8 Implement the build-n5-module kit fork in niagara-tools (9-step plan in B51 §51.7) | niagara-tools repo | pending (parked; separate kit campaign in niagara-tools with its own gates) |
 | medium | B53-G3 niagara.commandLinePropertyDenyList is itself read via System.getProperty — can a -D override neuter the denylist (static hypothesis, measure) | nre/baja Nre | ✅ covered — B57 |
 | low | B53-G2 portalApi LicenseDownload flow | portalApi | pending |
@@ -327,6 +327,10 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B59-G1 Is niagara-help guide-search/devguide-search index-backed or linear scan | niagara-help tool | pending |
 | low | B59-G2 BajadocIndex.lookup/ensureTagsLoaded internals (rendering of java.* refs) | help.jar | pending |
 | low | B59-G4 docDeveloperAnalytics.jar own .dat index presence | docDeveloperAnalytics.jar | pending |
+| low | B60-G1 ignoreRuntimeProfileCheck consuming logic/effect in N5 ModuleXml | n-plugin | pending |
+| low | B60-G2 Version.strip(2) exact truncation algorithm | baja Version | pending |
+| low | B60-G3 plat* cluster +17..+19 dependency gain N4→N5 cause | module.xml census | pending |
+| low | B60-G4 html/file/fox/export cluster outsized N4→N5 dependency drop | module.xml census | pending |
 | deferred | B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only | N5 GA install | pending (parked; needs a GA build) |
 
 ## Iteration history
@@ -392,6 +396,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | 57 | 2026-09-27 | B39-G3 javac forces only transitive requires of non-root modules (4 controlled compiles); B15-G2 no egress gate inside okhttp 5.5 / Jetty 12.1.13 — audit-only verdict holds at library layer | B55 | yes · sonnet | 4 new — B55-G1..G4 |
 | 58 | 2026-09-27 | B24-G2/B31-G4 PANCCADIA station census: only config.bog + empty alarm.adb on the Windows path; histories/schedules/px/systemDb/.dist structurally absent | B58 | yes · sonnet | 4 new — B58-G1..G4 |
 | 59 | 2026-09-27 | B4-G1/B4-G5 help full-text index format decoded (words/worddocs/postings/documents.dat, 7,270 docs, verified reader); no JDK-class bajadoc stand-ins in N5 (javadoc links to Oracle only) | B59 | yes · sonnet | 3 new — B59-G1..G4 (G3 folds into B4-G2) |
+| 60 | 2026-09-27 | B51-G2..G7 kit lint facts: Flags byte-identical (only 2 lints need niagara.* added), no real per-profile split, class-version 52→69 inverts, dependency slimming is mostly the N4 part-split artifact | B60 | yes · sonnet | 4 new — B60-G1..G4 |
 
 ## Blocked gaps (each tagged with what it needs)
 

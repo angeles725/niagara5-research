@@ -247,13 +247,9 @@ This index guides through the **61 blocks** of this research. The flat catalog l
 - [ ] (low) B54-G3 Open SecurityAgent / SecurityProviderAdvice directly — pending
 - [ ] (low) B54-G4 BUserService.auditLoginAttempt appears dead code — pending
 - [ ] (low) B54-G5 BOrionSecurityAudit parallel audit DB — pending
-- [ ] (medium) B51-G2 Where Flags.TRANSIENT/OPERATOR live in N5 (niagara.sys.Flags?) — lints keyed on Flags vocabulary — pending
-- [ ] (medium) B51-G5 Does any real N5 gradle.kts need per-profile splitting at all (single-jar world) — pending
 - [ ] (low) B51-G1 verify-module.sh stored check on N5 jars — pending
-- [ ] (low) B51-G3 lint-bundled-jar-class-version.sh major-version constants — pending
 - [ ] (low) B51-G4 rc-scan.sh / bog-audit.sh -rt — -wb assumptions
 - [ ] (low) B51-G6 lint-wb-threading: Swing invokeLater vs JavaFX Platform.runLater on real N5 wb code — pending
-- [ ] (low) B51-G7 Measured N4 vs N5 explicit dependency counts — pending
 - [ ] (deferred) B51-G8 Implement the build-n5-module kit fork in niagara-tools (9-step plan in B51 §51.7) — pending (parked; separate kit campaign in niagara-tools with its own gates)
 - [ ] (low) B53-G2 portalApi LicenseDownload flow — pending
 - [ ] (low) B53-G4 Runtime cacerts contents (structure only) — pending
@@ -278,6 +274,10 @@ This index guides through the **61 blocks** of this research. The flat catalog l
 - [ ] (low) B59-G1 Is niagara-help guide-search/devguide-search index-backed or linear scan — pending
 - [ ] (low) B59-G2 BajadocIndex.lookup/ensureTagsLoaded internals (rendering of java.* refs) — pending
 - [ ] (low) B59-G4 docDeveloperAnalytics.jar own .dat index presence — pending
+- [ ] (low) B60-G1 ignoreRuntimeProfileCheck consuming logic/effect in N5 ModuleXml — pending
+- [ ] (low) B60-G2 Version.strip(2) exact truncation algorithm — pending
+- [ ] (low) B60-G3 plat* cluster +17..+19 dependency gain N4→N5 cause — pending
+- [ ] (low) B60-G4 html/file/fox/export cluster outsized N4→N5 dependency drop — pending
 - [ ] (deferred) B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only — pending (parked; needs a GA build)
 
 - [x] N5-G1 Module packaging: one jar per module + JPMS module-info.class + module.xml schemaVersion 5 — how rt/ux/wb runtime profiles are expressed without the -rt/-ux split → [Block 1]
@@ -383,6 +383,10 @@ This index guides through the **61 blocks** of this research. The flat catalog l
 - [x] B48-G5 N5 HA/niagaraSync 'limited availability first' signal — scope of niagaraSync at GA → [Block 56 (narrowed: Java 25 authoritative (first-party + local jre/release); HA name = Niagara Sync)]
 - [x] B49-G2 Trace N5 NiagaraRpc servlet/BOX dispatch for Context injection into @NiagaraRpc methods → [Block 54]
 - [x] B44-G2 AccessController-family call sites in jetty/platform/hx: inert after SecurityManager removal or live authorization → [Block 54]
+- [x] B51-G2 Where Flags.TRANSIENT/OPERATOR live in N5 (niagara.sys.Flags?) — lints keyed on Flags vocabulary → [Block 60]
+- [x] B51-G5 Does any real N5 gradle.kts need per-profile splitting at all (single-jar world) → [Block 60]
+- [x] B51-G3 lint-bundled-jar-class-version.sh major-version constants → [Block 60]
+- [x] B51-G7 Measured N4 vs N5 explicit dependency counts → [Block 60]
 - [x] B53-G3 niagara.commandLinePropertyDenyList is itself read via System.getProperty — can a -D override neuter the denylist (static hypothesis, measure) → [Block 57]
 
 ## Non-investigable gaps (without a running N5 station)
