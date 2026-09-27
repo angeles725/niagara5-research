@@ -2,7 +2,7 @@
 
 # Block catalog
 
-Total: **45 blocks**
+Total: **46 blocks**
 
 | Block | File | Title |
 |-------|------|-------|
@@ -51,3 +51,4 @@ Total: **45 blocks**
 | 43 | [niagara5-block43.md](niagara5-block43.md) | N5 data-at-rest cryptography: KeyRing, EncryptionKeySource and systemDb encryption |
 | 46 | [niagara5-block46.md](niagara5-block46.md) | Audited writes from DashboardPan on N5: passing the request Context (PoC) |
 | 47 | [niagara5-block47.md](niagara5-block47.md) | Do reversible secrets survive N4→N5? The KeyRing alias rename |
+| 48 | [niagara5-block48.md](niagara5-block48.md) | Public evidence on Niagara 5: breaking changes, retired modules and cloud/licensing statements |
