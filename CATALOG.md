@@ -2,7 +2,7 @@
 
 # Block catalog
 
-Total: **43 blocks**
+Total: **44 blocks**
 
 | Block | File | Title |
 |-------|------|-------|
@@ -49,3 +49,4 @@ Total: **43 blocks**
 | 41 | [niagara5-block41.md](niagara5-block41.md) | N5 action auditing (old→new values) and the web authentication chain |
 | 42 | [niagara5-block42.md](niagara5-block42.md) | cloudLink AMQP internals, provider channels, and the fate of N4 nCloudDriver |
 | 43 | [niagara5-block43.md](niagara5-block43.md) | N5 data-at-rest cryptography: KeyRing, EncryptionKeySource and systemDb encryption |
+| 46 | [niagara5-block46.md](niagara5-block46.md) | Audited writes from DashboardPan on N5: passing the request Context (PoC) |
