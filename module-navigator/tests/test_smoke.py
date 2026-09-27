@@ -23,7 +23,8 @@ class CoreSmoke(unittest.TestCase):
         rc, out, err = run_nav("class", FIXTURE_CLASS)
         self.assertEqual(rc, 0, err[:300])
         self.assertIn(FIXTURE_CLASS, out)
-        self.assertIn("javax.baja.alarm", out)
+        # N5 note: N4's javax.baja.alarm package was renamed to niagara.alarm.
+        self.assertIn("niagara.alarm", out)
 
     def test_module_lookup(self):
         rc, out, err = run_nav("module", FIXTURE_MODULE)

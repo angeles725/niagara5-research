@@ -304,7 +304,8 @@ Commands (Batch 10 - Discovery & Output formatting):
   permission-report --md       (new) Markdown output with YAML frontmatter
 
 Requires: Python 3.x (stdlib only, sqlite3)
-Source:   /home/cristian/modules/Prototipos/modulos/organized/
+Source:   organized/ (resolved via class-index.json _meta.source /
+          NAV_ORGANIZED_DIR / corpus_config.resolve_organized_dir())
 Index:    indexes/module-inventory.json, indexes/class-index.json
 """
 

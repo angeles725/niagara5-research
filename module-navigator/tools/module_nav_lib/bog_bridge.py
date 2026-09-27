@@ -25,12 +25,16 @@ import sys
 _bog_cache = None
 _bog_path_used = None
 
-# Well-known locations to search for bog_index.json
+# Well-known locations to search for bog_index.json.
+#
+# N5 port note: N4's list included a hardcoded absolute path to a sibling
+# "Reflow-Clean" project's bog_index.json. That project isn't part of this
+# N5 corpus/tool copy, so it's dropped rather than replaced -- bog-trace/
+# bog-classes/bog-coverage degrade gracefully (report "not found") when no
+# bog_index.json exists, same as N4 when the file is simply missing.
 _BOG_SEARCH_PATHS = [
     # Sibling of module-navigator (same parent dir)
     lambda base: os.path.join(os.path.dirname(base), "tools", "bog_index.json"),
-    # Reflow-Clean project
-    r"/home/cristian/modules/Prototipos/Reflow-Clean/tools/bog_index.json",
     # CWD
     lambda base: os.path.join(os.getcwd(), "bog_index.json"),
 ]

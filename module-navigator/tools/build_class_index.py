@@ -2,8 +2,9 @@
 """
 Build class-index.json from decompiled Java sources.
 
-Scans all vineflower/ directories listed in module-inventory.json
-and parses each .java file to extract:
+Scans vineflower/ (and, in the N5 flat layout, fallback/ as an overlay for
+classes vineflower failed to decompile) directories listed in
+module-inventory.json and parses each .java file to extract:
   - Class/interface/enum name and kind
   - Package declaration
   - extends / implements
@@ -12,21 +13,29 @@ and parses each .java file to extract:
   - Inner classes
   - Relative path from organized/
 
-Source: /home/cristian/modules/Prototipos/modulos/organized/
+Layout (read from module-inventory.json's _meta.layout, default "flat"):
+  flat (N5)  organized/<module>/{vineflower,fallback}/  -- vineflower wins on
+             overlap; fallback/ fills classes vineflower has no file for.
+  n4         organized/<module>/<submodule>/vineflower/  -- legacy shape.
+
+The corpus root is resolved via --organized, NAV_ORGANIZED_DIR, a sibling
+organized/ directory, or module-inventory.json's _meta.source -- see
+corpus_config.resolve_organized_dir().
+
 Input:  indexes/module-inventory.json
 Output: indexes/class-index.json
 
 Requires: Python 3.x (stdlib only)
 """
 
+import argparse
 import json
 import os
 import re
 import sys
 import time
 
-
-ORGANIZED_DIR = r"/home/cristian/modules/Prototipos/modulos/organized"
+import corpus_config
 
 # --- Regex patterns ---
 
@@ -228,8 +237,68 @@ def process_file(filepath, rel_path, submod_name, is_zkm):
 
 # --- Index builder ---
 
-def build_class_index(base_dir, organized_dir, verbose=False):
-    """Build class index from all vineflower directories."""
+def _scan_source_dir(source_dir, organized_dir, submod_name, is_zkm,
+                      classes, stats, already_seen):
+    """Walk source_dir and parse every .java file whose path (relative to
+    source_dir itself) is not already in `already_seen`. Updates `classes`
+    and `stats` in place. Returns the set of newly-seen relative paths.
+
+    `already_seen` is how the flat-layout overlay works: pass the set of
+    relpaths already indexed from vineflower/ when scanning fallback/, so
+    fallback only fills classes vineflower had no file for (vineflower wins
+    on any overlap).
+    """
+    newly_seen = set()
+    if not os.path.isdir(source_dir):
+        return newly_seen
+
+    for root, dirs, files in os.walk(source_dir):
+        for fname in files:
+            if not fname.endswith(".java"):
+                continue
+
+            fpath = os.path.join(root, fname)
+            rel_from_root = os.path.relpath(fpath, source_dir).replace("\\", "/")
+            if rel_from_root in already_seen:
+                continue
+            newly_seen.add(rel_from_root)
+
+            rel = os.path.relpath(fpath, organized_dir).replace("\\", "/")
+            entries = process_file(fpath, rel, submod_name, is_zkm)
+
+            stats['files_processed'] += 1
+
+            if not entries:
+                stats['files_no_decl'] += 1
+                continue
+
+            for cname, entry in entries:
+                pkg = entry['package']
+                if pkg:
+                    stats['packages'].add(pkg)
+
+                is_inner = entry['outer_class'] is not None
+                if is_inner:
+                    stats['inner_classes'] += 1
+                else:
+                    stats['top_classes'] += 1
+                    if entry['kind'] == 'interface':
+                        stats['interfaces'] += 1
+                    elif entry['kind'] == 'enum':
+                        stats['enums'] += 1
+                    if 'abstract' in entry['modifiers']:
+                        stats['abstract'] += 1
+
+                if cname not in classes:
+                    classes[cname] = []
+                classes[cname].append(entry)
+
+    return newly_seen
+
+
+def build_class_index(base_dir, organized_dir, layout=None, verbose=False):
+    """Build class index from all vineflower (and, in flat layout,
+    fallback-overlay) directories."""
     inv_path = os.path.join(base_dir, "indexes", "module-inventory.json")
     if not os.path.isfile(inv_path):
         print("ERROR: module-inventory.json not found.")
@@ -238,6 +307,9 @@ def build_class_index(base_dir, organized_dir, verbose=False):
 
     with open(inv_path, "r", encoding="utf-8") as f:
         inv_data = json.load(f)
+
+    if layout is None:
+        layout = inv_data.get("_meta", {}).get("layout", "n4")
 
     modules = inv_data["modules"]
     classes = {}  # name -> list of entry dicts
@@ -253,60 +325,44 @@ def build_class_index(base_dir, organized_dir, verbose=False):
     }
 
     submod_count = 0
-    submod_with_vf = sum(1 for v in modules.values() if v.get("has_vineflower"))
+    submod_with_vf = sum(
+        1 for v in modules.values()
+        if v.get("has_vineflower") or (layout == "flat" and v.get("has_fallback"))
+    )
 
     for submod_name, info in sorted(modules.items()):
-        if not info.get("has_vineflower"):
+        has_source = info.get("has_vineflower") or (
+            layout == "flat" and info.get("has_fallback")
+        )
+        if not has_source:
             continue
 
         submod_count += 1
         module_name = info["module"]
         is_zkm = info.get("zkm", False)
-        vf_dir = os.path.join(organized_dir, module_name, submod_name, "vineflower")
 
-        if not os.path.isdir(vf_dir):
+        if layout == "flat":
+            # submod_name IS the module dir path relative to organized/
+            # (e.g. "baja" or "_bin-ext/nre") -- no submodule split.
+            module_dir = os.path.join(organized_dir, submod_name)
+            vf_dir = os.path.join(module_dir, "vineflower")
+            fallback_dir = os.path.join(module_dir, "fallback")
+        else:
+            vf_dir = os.path.join(organized_dir, module_name, submod_name, "vineflower")
+            fallback_dir = None
+
+        if not os.path.isdir(vf_dir) and not (fallback_dir and os.path.isdir(fallback_dir)):
             continue
 
         if verbose and submod_count % 50 == 0:
             print("  ... {}/{} submodules ({})".format(
                 submod_count, submod_with_vf, submod_name))
 
-        for root, dirs, files in os.walk(vf_dir):
-            for fname in files:
-                if not fname.endswith(".java"):
-                    continue
-
-                fpath = os.path.join(root, fname)
-                rel = os.path.relpath(fpath, organized_dir).replace("\\", "/")
-
-                entries = process_file(fpath, rel, submod_name, is_zkm)
-
-                stats['files_processed'] += 1
-
-                if not entries:
-                    stats['files_no_decl'] += 1
-                    continue
-
-                for cname, entry in entries:
-                    pkg = entry['package']
-                    if pkg:
-                        stats['packages'].add(pkg)
-
-                    is_inner = entry['outer_class'] is not None
-                    if is_inner:
-                        stats['inner_classes'] += 1
-                    else:
-                        stats['top_classes'] += 1
-                        if entry['kind'] == 'interface':
-                            stats['interfaces'] += 1
-                        elif entry['kind'] == 'enum':
-                            stats['enums'] += 1
-                        if 'abstract' in entry['modifiers']:
-                            stats['abstract'] += 1
-
-                    if cname not in classes:
-                        classes[cname] = []
-                    classes[cname].append(entry)
+        seen = _scan_source_dir(vf_dir, organized_dir, submod_name, is_zkm,
+                                 classes, stats, already_seen=set())
+        if fallback_dir:
+            _scan_source_dir(fallback_dir, organized_dir, submod_name, is_zkm,
+                              classes, stats, already_seen=seen)
 
     stats['packages'] = len(stats['packages'])
     return classes, stats
@@ -349,23 +405,38 @@ def print_summary(classes, stats, elapsed):
         print("")
 
 
+def _parse_args(argv):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--organized", default=None,
+                         help="Path to the organized/ corpus dir "
+                              "(default: NAV_ORGANIZED_DIR env, sibling "
+                              "organized/, or module-inventory.json source)")
+    parser.add_argument("--layout", default=None, choices=corpus_config.VALID_LAYOUTS,
+                         help="Corpus layout override (default: read from "
+                              "module-inventory.json's _meta.layout)")
+    parser.add_argument("--verbose", "-v", action="store_true")
+    return parser.parse_args(argv)
+
+
 def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     base_dir = os.path.dirname(script_dir)
     indexes_dir = os.path.join(base_dir, "indexes")
 
-    organized_dir = ORGANIZED_DIR
+    args = _parse_args(sys.argv[1:])
+    organized_dir = corpus_config.resolve_organized_dir(base_dir, args.organized)
     if not os.path.isdir(organized_dir):
         print("ERROR: organized directory not found: {}".format(organized_dir))
+        print("  Override with --organized <dir> or NAV_ORGANIZED_DIR env var.")
         sys.exit(1)
 
-    verbose = "--verbose" in sys.argv or "-v" in sys.argv
+    verbose = args.verbose
 
     print("Building class index from: {}".format(organized_dir))
     print("")
 
     t0 = time.time()
-    classes, stats = build_class_index(base_dir, organized_dir, verbose=verbose)
+    classes, stats = build_class_index(base_dir, organized_dir, layout=args.layout, verbose=verbose)
     elapsed = time.time() - t0
 
     print_summary(classes, stats, elapsed)
@@ -378,7 +449,7 @@ def main():
 
     output = {
         "_meta": {
-            "description": "Class index for Niagara N4 decompiled modules",
+            "description": "Class index for Niagara N5 decompiled modules",
             "source": organized_dir,
             "files_processed": stats['files_processed'],
             "top_classes": stats['top_classes'],

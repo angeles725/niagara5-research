@@ -22,11 +22,14 @@ NAV = os.path.join(BASE_DIR, "tools", "module_nav.py")
 # audit (module-health). These are smoke tests, not a fast inner loop.
 DEFAULT_TIMEOUT = 180
 
-# --- Known-valid fixtures (verified against the live corpus) ----------------
-FIXTURE_CLASS = "BAlarmService"        # exists, package javax.baja.alarm
-FIXTURE_CLASS2 = "BComponent"          # framework base class
-FIXTURE_MODULE = "backup-rt"           # small module with real stream I/O
-FIXTURE_MODULE2 = "alarm-rt"           # service module
+# --- Known-valid fixtures (verified against the live N5 corpus) -------------
+# N5 note: the corpus is flat (organized/<module>/...), so module keys have
+# no -rt/-ux/-wb suffix like N4's submodule split (e.g. "backup", not
+# "backup-rt"). See module-navigator/indexes/module-inventory.json.
+FIXTURE_CLASS = "BAlarmService"        # exists, package niagara.alarm
+FIXTURE_CLASS2 = "BComponent"          # framework base class, module "baja"
+FIXTURE_MODULE = "backup"              # small module with real stream I/O
+FIXTURE_MODULE2 = "alarm"              # service module
 FIXTURE_FEATURE = "alarms"             # valid feature-brief key
 FIXTURE_METHOD = "started"             # method on BComponent
 FIXTURE_CLASS_METHOD = "BAlarmService.ackAlarm"  # valid class.method for traces

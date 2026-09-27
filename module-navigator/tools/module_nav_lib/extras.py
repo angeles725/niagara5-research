@@ -3,7 +3,9 @@ Extra commands for Module Navigator (Phase 11).
 
 Commands:
   strings          Search for string literals across source code
-  resources        List non-Java resources in module JARs
+  resources        List non-Java resources in a module (N5: from its
+                    extracted resources/ dir; falls back to opening the
+                    original .jar for the legacy N4 layout, if present)
   trace-type       Map Niagara type spec to implementing Java class
   version-diff     Compare two class-index files to find changes
 """
@@ -13,6 +15,8 @@ import os
 import re
 import sys
 import zipfile
+
+import corpus_config
 
 
 # ---------------------------------------------------------------------------
@@ -154,41 +158,83 @@ def cmd_strings(base_dir, pattern, module_filter=None, class_filter=None, limit=
 # resources: list non-Java resources in module JARs
 # ---------------------------------------------------------------------------
 
+def _iter_resource_dir_entries(resources_dir):
+    """List files under an N5 organized/<module>/resources/ dir as
+    zip-entry-style relative paths (POSIX separators), mirroring what
+    zipfile.namelist() would have returned for the original jar."""
+    entries = []
+    for root, dirs, files in os.walk(resources_dir):
+        for fname in files:
+            fpath = os.path.join(root, fname)
+            rel = os.path.relpath(fpath, resources_dir).replace(os.sep, "/")
+            entries.append(rel)
+    return sorted(entries)
+
+
 def cmd_resources(base_dir, module_name, type_filter=None, limit=100):
-    """List non-class resources inside a module JAR."""
-    # Find JAR path
-    niagara_home = os.path.dirname(base_dir)
+    """List non-class resources of a module.
+
+    N5 (default): reads organized/<module>/resources/ -- the decompile
+    pipeline already extracted every non-.class jar entry there, so no jar
+    needs to be opened.
+
+    Falls back to opening the module's original .jar (legacy N4 layout,
+    <niagara-home>/modules/<module>.jar) only if no resources/ dir is found
+    -- e.g. when running against an older/legacy corpus.
+    """
     jar_name = module_name if module_name.endswith(".jar") else module_name + ".jar"
-    jar_path = os.path.join(niagara_home, "modules", jar_name)
+    display_name = jar_name
 
-    if not os.path.isfile(jar_path):
-        print("  JAR not found: {}".format(jar_path))
-        print("  Try: modules --has-code")
-        return
+    resources_dir = None
+    inv_data = _load_json(base_dir, "module-inventory.json")
+    if inv_data:
+        organized_dir = inv_data.get("_meta", {}).get("source") or \
+            corpus_config.resolve_organized_dir(base_dir)
+        candidate = os.path.join(organized_dir, module_name, "resources")
+        if os.path.isdir(candidate):
+            resources_dir = candidate
+
+    all_entries = None
+    resources = None
+
+    if resources_dir:
+        resources = _iter_resource_dir_entries(resources_dir)
+        all_entries = resources  # resources/ already excludes .class files
+        class_files = []
+    else:
+        # Legacy N4 fallback: open the original jar next to module-navigator/.
+        niagara_home = os.path.dirname(base_dir)
+        jar_path = os.path.join(niagara_home, "modules", jar_name)
+
+        if not os.path.isfile(jar_path):
+            print("  Resources not found for module '{}'.".format(module_name))
+            print("  Tried: organized/{}/resources/ and {}".format(module_name, jar_path))
+            print("  Try: modules --has-code")
+            return
+
+        try:
+            with zipfile.ZipFile(jar_path, "r") as zf:
+                all_entries = zf.namelist()
+        except (zipfile.BadZipFile, IOError) as e:
+            print("  ERROR reading JAR: {}".format(e))
+            return
+
+        # Separate classes from resources
+        class_files = []
+        resources = []
+        for entry in all_entries:
+            if entry.endswith("/"):
+                continue  # skip directories
+            if entry.endswith(".class"):
+                class_files.append(entry)
+            else:
+                resources.append(entry)
 
     print("")
     print("  " + "=" * 65)
-    print("  RESOURCES: {}".format(jar_name))
+    print("  RESOURCES: {}".format(display_name))
     print("  " + "=" * 65)
     print("")
-
-    try:
-        with zipfile.ZipFile(jar_path, "r") as zf:
-            all_entries = zf.namelist()
-    except (zipfile.BadZipFile, IOError) as e:
-        print("  ERROR reading JAR: {}".format(e))
-        return
-
-    # Separate classes from resources
-    class_files = []
-    resources = []
-    for entry in all_entries:
-        if entry.endswith("/"):
-            continue  # skip directories
-        if entry.endswith(".class"):
-            class_files.append(entry)
-        else:
-            resources.append(entry)
 
     # Group resources by extension
     by_ext = {}

@@ -17,6 +17,8 @@ import os
 import re
 import sys
 
+import corpus_config
+
 
 # ---------------------------------------------------------------------------
 # Index loading
@@ -65,8 +67,8 @@ def _resolve_source_root(meta_source):
         user notices the mistake instead of silently getting the default.
       - If NAV_CORPUS_BASE is UNSET, the fallback chain is:
           1. meta_source (from class-index.json _meta.source)
-          2. /home/cristian/modules/Prototipos/modulos/organized (WSL native)
-          3. /mnt/c/modules/Prototipos/modulos/organized (WSL over Windows mount)
+          2. NAV_ORGANIZED_DIR environment variable
+          3. sibling organized/ directory of module-navigator/
 
     Returns (resolved_path, None) on success or (None, tried_paths) on failure.
     """
@@ -82,8 +84,8 @@ def _resolve_source_root(meta_source):
 
     for candidate in [
         meta_source,
-        "/home/cristian/modules/Prototipos/modulos/organized",
-        "/mnt/c/modules/Prototipos/modulos/organized",
+        os.environ.get("NAV_ORGANIZED_DIR"),
+        corpus_config.default_organized_dir_from_lib_file(__file__),
     ]:
         if not candidate:
             continue

@@ -246,9 +246,10 @@ def _search_module_nav(base_dir, query, limit=10):
 _bog_cache = None
 _bog_path_used = None
 
+# N5 port note: see bog_bridge.py -- the N4 "Reflow-Clean" project path is
+# dropped rather than replaced; lookup degrades gracefully when not found.
 _BOG_SEARCH_PATHS = [
     lambda base: os.path.join(os.path.dirname(base), "tools", "bog_index.json"),
-    r"/home/cristian/modules/Prototipos/Reflow-Clean/tools/bog_index.json",
     lambda base: os.path.join(os.getcwd(), "bog_index.json"),
 ]
 

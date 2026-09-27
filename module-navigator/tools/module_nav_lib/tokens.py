@@ -14,6 +14,8 @@ Commands:
 import os
 import sqlite3
 
+import corpus_config
+
 
 # ---------------------------------------------------------------------------
 # Database connection (lazy, on-demand)
@@ -67,8 +69,8 @@ def _resolve_source_root(meta_source):
 
     for candidate in [
         meta_source,
-        "/home/cristian/modules/Prototipos/modulos/organized",
-        "/mnt/c/modules/Prototipos/modulos/organized",
+        os.environ.get("NAV_ORGANIZED_DIR"),
+        corpus_config.default_organized_dir_from_lib_file(__file__),
     ]:
         if not candidate:
             continue

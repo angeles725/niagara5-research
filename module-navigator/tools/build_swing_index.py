@@ -14,7 +14,16 @@ Scans WB (197) and UX (103) modules for UI patterns:
 Input:  indexes/module-inventory.json, indexes/class-index.json
 Output: indexes/swing-index.json
 
-Source: /home/cristian/modules/Prototipos/modulos/organized/
+Source root is resolved from class-index.json's _meta.source, falling back
+to corpus_config.resolve_organized_dir() (NAV_ORGANIZED_DIR env, sibling
+organized/, or module-inventory.json's _meta.source) -- see corpus_config.py.
+
+NOTE (N5 port gap): the WB/UX module filter below keys off
+module-inventory's `type` field ("wb"/"ux"), which only exists in the
+legacy N4 submodule layout. The N5 flat corpus has no such split, so this
+filter currently yields zero WB+UX modules there -- tracked as a known gap
+rather than redesigning UI-module detection for this port.
+
 Requires: Python 3.x (stdlib only)
 """
 
@@ -24,8 +33,7 @@ import re
 import sys
 import time
 
-
-ORGANIZED_DIR = r"/home/cristian/modules/Prototipos/modulos/organized"
+import corpus_config
 
 # ---------------------------------------------------------------------------
 # Regex patterns for UI elements
@@ -294,7 +302,8 @@ def build_swing_index(base_dir):
     with open(cls_path, "r", encoding="utf-8") as f:
         class_index = json.load(f)
 
-    source_root = class_index.get("_meta", {}).get("source", ORGANIZED_DIR)
+    source_root = class_index.get("_meta", {}).get("source") or \
+        corpus_config.resolve_organized_dir(base_dir)
     modules = inventory.get("modules", {})
     classes = class_index.get("classes", {})
 

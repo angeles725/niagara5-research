@@ -63,12 +63,15 @@ size_of() { stat -c%s "$1" 2>/dev/null || echo 0; }
 [ -d "$IDX" ]     || { red "indexes/ not found at $IDX"; exit 1; }
 command -v python3 >/dev/null || { red "python3 not found"; exit 1; }
 
-# The corpus path is hardcoded inside build_class_index.py / build_module_inventory.py.
-# Extract it and verify it exists — this is the root-cause guard for the empty-index bug.
-ORGANIZED="$(grep -oE '/[^"'"'"']*organized' "$TOOLS/build_class_index.py" 2>/dev/null | head -1)"
+# The corpus dir is resolved dynamically (NAV_ORGANIZED_DIR env > sibling
+# organized/ > existing module-inventory.json source) by corpus_config.py --
+# ask build_module_inventory.py to resolve+print it and verify it exists.
+# This is the root-cause guard for the empty-index bug (a stale/missing
+# corpus root would make dependent builders write empty indexes).
+ORGANIZED="$(cd "$TOOLS" && python3 build_module_inventory.py --print-organized-dir 2>/dev/null)"
 if [ -z "$ORGANIZED" ] || [ ! -d "$ORGANIZED" ]; then
   red "Corpus dir not found or unreadable: '${ORGANIZED:-<none>}'"
-  red "Fix ORGANIZED_DIR in tools/build_class_index.py and build_module_inventory.py first."
+  red "Set NAV_ORGANIZED_DIR or pass --organized to the builders."
   exit 1
 fi
 green "Corpus: $ORGANIZED"
