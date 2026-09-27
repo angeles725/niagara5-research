@@ -2,7 +2,7 @@
 
 # Block catalog
 
-Total: **21 blocks**
+Total: **23 blocks**
 
 | Block | File | Title |
 |-------|------|-------|
@@ -27,3 +27,5 @@ Total: **21 blocks**
 | 19 | [niagara5-block19.md](niagara5-block19.md) | N5 station persistence and indexing: bog, history storage, systemDb and systemIndex |
 | 20 | [niagara5-block20.md](niagara5-block20.md) | N5 behavioural delta in control, alarm, history, schedule and kitControl |
 | 21 | [niagara5-block21.md](niagara5-block21.md) | N5 UI stack: bajaux, themes, uxBuilder, Workbench and web resources |
+| 22 | [niagara5-block22.md](niagara5-block22.md) | N5 driver framework delta: driver/ndriver, BACnet, Modbus, Fox |
+| 23 | [niagara5-block23.md](niagara5-block23.md) | N5 module loader internals: ModuleLayer topology, JPMS access patching and signature gates |
