@@ -138,6 +138,12 @@ Enum/Numeric histories (everything ColdRoomPan/CompPan/DashboardPan would realis
 backend, String histories use the record-store backend. A third backend, `BHistoryDbTable` (SQL/archive-
 provider-style storage), is a separate abstract path with its own capacity check.
 
+> **Correction (added by [Block 72], §14 cross-block).** [Block 72]'s corpus-wide subclass census found
+> `BHistoryDbTable` is not a third *separate* backend but the shared abstract ancestor: its only subclass is
+> `BFileHistoryTable`, itself the parent of the two backends above. Its extra enforcement site
+> (`BHistoryDbTable.open()`'s resize-on-open check via `BFileHistoryTable.doResize()`/`ResizePrivilegedAction`)
+> is gated by the same `isByRecordCount()` predicate, so the capacity verdict here is unchanged. See §72.3.
+
 **(a) `BFixedLengthHistoryTable` / `PageManager` — the ONLY unconditional caller of `getMaxRecords()`.**
 `createDataSection()`: `if (!capacity.isUnlimited()) { maxRecords = capacity.getMaxRecords(); } else {
 maxRecords = Integer.MAX_VALUE; }` — called for **any** non-unlimited capacity, not gated on
