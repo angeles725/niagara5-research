@@ -45,14 +45,14 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
 <!-- research-state.v1 -->
 schema: research-state.v1
 covered_blocks: 48
-gaps_closed: 74
-known_gaps: 235
-investigable_open: 127
+gaps_closed: 75
+known_gaps: 239
+investigable_open: 129
 requires_execution_open: 7
 blocked_open: 21
-deferred_open: 6
+deferred_open: 7
 undocumented_findings: 0
-blocks_since_retro: 12
+blocks_since_retro: 13
 last_iteration_ts: 2026-09-27T11:10:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
@@ -62,7 +62,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 ## Coverage
 
 - **Covered blocks**: 48 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15, B16, B17, B18, B19, B20, B21, B22, B23, B24, B25, B26, B27, B28, B29, B30, B31, B32, B33, B34, B35, B36, B37, B38, B39, B40, B41, B42, B43, B44, B46, B47, B48, B49)
-- **Coverage metric**: 74 / 235 closed
+- **Coverage metric**: 75 / 239 closed
 - **Last iteration**: 2026-09-27 — N5-G5 core API delta (B5)
 
 ## Gap-backlog
@@ -208,7 +208,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B29-G3 assertArrayEquals mapping in the port script | tools/port-junit4-to-testng.py | pending |
 | low | B25-G1 instanceof-pattern adoption (bytecode-invisible) via decompiled sources | organized/ + docSource | pending |
 | low | B25-G2 Classify the 34 ambiguous Deque-family SequencedCollection call sites | bytecode census | pending |
-| medium | B25-G3 Full 253-jar jdeprscan --for-removal pass | all jars | pending |
+| medium | B25-G3 Full 253-jar jdeprscan --for-removal pass | all jars | ✅ covered — B44 |
 | low | B25-G4 Read the switch logic of control.jar B*Writable pattern switches | control.jar | pending |
 | medium | B32-G2 Compile a program object that depends on a non-default module (readability end-to-end) | prototype run | requires-execution → §19 (needs a running station; blocked with the license gate) |
 | low | B32-G3 Confirm bin/javac ships on embedded-tier device images | device image | pending |
@@ -282,6 +282,10 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | medium | B49-G2 Trace N5 NiagaraRpc servlet/BOX dispatch for Context injection into @NiagaraRpc methods | web/box modules | pending |
 | low | B49-G3 Feasibility of a Context-taking overload in Slotomatic output | slotomatic | pending |
 | low | B49-G4 Whole-corpus census of generated action invoke wrappers | organized/ | pending |
+| low | B44-G1 The 13 cloudLink* finalize() overrides: resource, shared base class, Cleaner replacement | cloudLink family | pending |
+| medium | B44-G2 AccessController-family call sites in jetty/platform/hx: inert after SecurityManager removal or live authorization | jetty/platform/hx | pending |
+| low | B44-G4 svgBatik ThreadDeath usage | svgBatik | pending |
+| deferred | B44-G3 Re-run jdeprscan on the 29 classpath-incomplete jars with vendor SDKs (Prosys OPC UA etc.) | vendor SDKs | pending (parked; needs licensed vendor SDKs) |
 | deferred | B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only | N5 GA install | pending (parked; needs a GA build) |
 
 ## Iteration history
@@ -335,6 +339,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | 45 | 2026-09-27 | B43-G1 reversible secrets across N4→N5: keyring-mode cleared with SEVERE log, external-mode kept with passphrase; PANCCADIA = external, 3 secrets (§14 correction of B24) | B47 | yes · sonnet | 3 new — B47-G1..G3 |
 | 46 | 2026-09-27 | Public evidence: Tridium FAQ (GA target Dec 2026, JACE-9000 only, JACE-8000 not upgradable, Java 25), subscription licensing pre-dates N5; B10-G2/B13-G1/B42-G4 narrowed not closed | B48 | yes · sonnet | 5 new — B48-G1..G5 |
 | 47 | 2026-09-27 | B46-G1 which N5 writes are audited: generated setters always null Context (3,589 sites); Fox/BOX/OrdServlet thread real Context via SetOp.commit; 3-tier pattern for our modules | B49 | yes · sonnet | 4 new — B49-G1..G4 |
+| 48 | 2026-09-27 | B25-G3 full jdeprscan: 85 deprecated call sites (39 for-removal) in 16/253 jars; 3 root causes (AccessController family, cloudLink finalize, ThreadDeath); our 3 ported modules clean | B44 | yes · sonnet | 4 new — B44-G1..G4 |
 
 ## Blocked gaps (each tagged with what it needs)
 
@@ -362,7 +367,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 127
+- **Open gaps — read-only investigable**: 129
 - **Open gaps — requires-execution**: 7
 - **Open gaps — blocked**: 21
 - Consecutive iterations with empty backlog (secondary): 0/2

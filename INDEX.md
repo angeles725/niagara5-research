@@ -186,7 +186,6 @@ This index guides through the **48 blocks** of this research. The flat catalog l
 - [ ] (low) B29-G3 assertArrayEquals mapping in the port script — pending
 - [ ] (low) B25-G1 instanceof-pattern adoption (bytecode-invisible) via decompiled sources — pending
 - [ ] (low) B25-G2 Classify the 34 ambiguous Deque-family SequencedCollection call sites — pending
-- [ ] (medium) B25-G3 Full 253-jar jdeprscan --for-removal pass — pending
 - [ ] (low) B25-G4 Read the switch logic of control.jar B*Writable pattern switches — pending
 - [ ] (medium) B32-G2 Compile a program object that depends on a non-default module (readability end-to-end) — requires-execution → §19 (needs a running station; blocked with the license gate)
 - [ ] (low) B32-G3 Confirm bin/javac ships on embedded-tier device images — pending
@@ -250,6 +249,10 @@ This index guides through the **48 blocks** of this research. The flat catalog l
 - [ ] (medium) B49-G2 Trace N5 NiagaraRpc servlet/BOX dispatch for Context injection into @NiagaraRpc methods — pending
 - [ ] (low) B49-G3 Feasibility of a Context-taking overload in Slotomatic output — pending
 - [ ] (low) B49-G4 Whole-corpus census of generated action invoke wrappers — pending
+- [ ] (low) B44-G1 The 13 cloudLink* finalize() overrides: resource, shared base class, Cleaner replacement — pending
+- [ ] (medium) B44-G2 AccessController-family call sites in jetty/platform/hx: inert after SecurityManager removal or live authorization — pending
+- [ ] (low) B44-G4 svgBatik ThreadDeath usage — pending
+- [ ] (deferred) B44-G3 Re-run jdeprscan on the 29 classpath-incomplete jars with vendor SDKs (Prosys OPC UA etc.) — pending (parked; needs licensed vendor SDKs)
 - [ ] (deferred) B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only — pending (parked; needs a GA build)
 
 - [x] N5-G1 Module packaging: one jar per module + JPMS module-info.class + module.xml schemaVersion 5 — how rt/ux/wb runtime profiles are expressed without the -rt/-ux split → [Block 1]
@@ -316,6 +319,7 @@ This index guides through the **48 blocks** of this research. The flat catalog l
 - [x] B23-G1 PROGRAM ModuleType is dead code: where program objects actually load (com.tridium.program) → [Block 32]
 - [x] B24-G6 No converter exists for tagdictionary (105), kitControl (100), nrio (96) PANCCADIA objects — confirm they load unchanged in N5 (type names, slot compatibility) → [Block 31]
 - [x] B27-G3 NiagaraConstraintSecurityHandler / NiagaraAuthenticator: web authn/authz proper → [Block 41]
+- [x] B25-G3 Full 253-jar jdeprscan --for-removal pass → [Block 44]
 - [x] B35-G1 niagaraSync package semantics (standby/active RPC state machine in niagaraDriver) → [Block 37]
 - [x] B33-G3 All callers of SystemPropertiesUtil.setSystemProperty (ungated except a 24-key denylist) → [Block 40]
 - [x] B33-G4 BServerPort.adapter → nft rule-hint injection reachability → [Block 40]
