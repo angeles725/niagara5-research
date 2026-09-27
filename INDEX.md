@@ -112,8 +112,6 @@ This index guides through the **35 blocks** of this research. The flat catalog l
 - [ ] (low) B4-G4 Confirm no javadoc-shaped artifact across all 1,013 N4 jars — pending
 - [ ] (low) B4-G7 Census of N5 PDF manuals — pending
 - [ ] (low) B4-G2 Render bajadoc via HtmlCompilerMain — requires-execution → §19 (run HtmlCompilerMain on a bajadoc file)
-- [ ] (medium) B6-G1 com.tridium.nre.subscription in nre.jar (subscription bootstrap outside baja.jar) — pending
-- [ ] (low) B6-G2 Code path of the security/licenses/conf directory — pending
 - [ ] (low) B7-G2 Defining module of niagara.rpc.NiagaraRpc (claimed by NullProcessor) — pending
 - [ ] (low) B8-G1 ModifyProtectedPropertiesPermission construction sites — pending
 - [ ] (low) B8-G2 Permission-denial log filename: code vs doc discrepancy — pending
@@ -136,7 +134,6 @@ This index guides through the **35 blocks** of this research. The flat catalog l
 - [ ] (low) B12-G3 signingService Fox CSR protocol — pending
 - [ ] (low) B12-G7 LDAP v2/v3 bind details — pending
 - [ ] (low) B12-G8 SRP6 key exchange: new in N5 or carried over — pending
-- [ ] (medium) B11-G1 Capacity licensing mode: Metrics.isUsingCapacityLicensing() and resource.limit — pending
 - [ ] (low) B11-G3 Six dynamic (non-literal) checkFeature/getFeature call sites — pending
 - [ ] (low) B11-G4 Upgrade B11 bytecode-offset citations to source file:line via full decompile — pending
 - [ ] (deferred) B11-G2 OEM-branded module absence (Honeywell UI, eSignature): edition gap vs removal — pending (parked; needs an OEM N5 build)
@@ -165,8 +162,6 @@ This index guides through the **35 blocks** of this research. The flat catalog l
 - [ ] (low) B21-G1 uxBuilder ux/make + ux/fe sub-packages: new vs N4 — pending
 - [ ] (low) B21-G2 JxBrowser vs JavaFX WebView default selection in Workbench — pending
 - [ ] (low) B21-G4 Stale JxBrowser 7.30.3 log string vs 9.5.0 engine — pending
-- [ ] (high) B16-G7 Port CompPan and DashboardPan (multi-part rt/ux/wb, jakarta servlet) with the B16 recipe — requires-execution → §19 (port + build both modules against the local config-home mirror)
-- [ ] (medium) B16-G2 Does a multi-module group like DashboardPan still need a parent grouping file — pending
 - [ ] (low) B16-G3 Locate the TestNG Support in Niagara 5 doc — pending
 - [ ] (low) B16-G5 moduleTest dependency vendorVersion truncated 2.0.7 → 2.0 — pending
 - [ ] (low) B22-G2 Compile a basicDriver-based module on N5 — requires-execution → §19 (build a minimal basicDriver module against the local mirror)
@@ -210,6 +205,15 @@ This index guides through the **35 blocks** of this research. The flat catalog l
 - [ ] (medium) B33-G5 Where niagara.firewall.enabled / frontend=nft are set by default (platform template?) — pending
 - [ ] (low) B33-G1 JMX usage across the remaining modules — pending
 - [ ] (low) B33-G6 Operational impact of the firewall losing port-redirect (N4 pf) in N5 nft — pending
+- [ ] (high) B28-G7 niagara.alarm transitive dependency on javafx/batik platform modules forces stub module-info jars when compiling third-party modules on Linux — find the supported way (Windows javac.exe? SDK module path?) — pending
+- [ ] (medium) B28-G2 Batik (org.apache.xmlgraphics) provider: JavaFX confirmed in the bundled JRE release MODULES (7 javafx.* modules); batik not a JRE module and svgBatik.jar holds no org/apache classes — pending
+- [ ] (low) B28-G1 Fate of the N4 test-wb module in N5 — pending
+- [ ] (medium) B28-G3 Does the Windows jre/bin/javac.exe resolve niagara.alarm without stubs — requires-execution → §19 (build via Windows javac through interop)
+- [ ] (medium) B34-G3 Caller of AuthenticatedLicenseRetrievalUtil (perpetual LicenseAccessKey flow) — pending
+- [ ] (low) B34-G1 Backup-restoration write site for the subscription cache — pending
+- [ ] (low) B34-G4 Workbench UI consumer of the LicenseAccessKey flow — pending
+- [ ] (low) B34-G5 N4 nre.jar client-package comparator for subscription — pending
+- [ ] (low) B34-G6 Is security/licenses/conf N5-only — pending
 - [ ] (deferred) B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only — pending (parked; needs a GA build)
 
 - [x] N5-G1 Module packaging: one jar per module + JPMS module-info.class + module.xml schemaVersion 5 — how rt/ux/wb runtime profiles are expressed without the -rt/-ux split → [Block 1]
@@ -235,7 +239,9 @@ This index guides through the **35 blocks** of this research. The flat catalog l
 - [x] B1-G5 Signature-verification gate parity N4 ModuleClassLoader vs N5 ModuleSetClassLoader → [Block 23]
 - [x] B3-G4 Map N4 19 java-permissions groups onto N5 NiagaraPermission taxonomy → [Block 8]
 - [x] B4-G8 Deep-read official upgrade guides (upgradingToN5, upgradingUItoN5, upgradingJDK) + porting checklist for our modules → [Block 10]
+- [x] B6-G1 com.tridium.nre.subscription in nre.jar (subscription bootstrap outside baja.jar) → [Block 34]
 - [x] B6-G3 Full caller enumeration of LicenseManager.checkFeature across all N5 jars (license-gated features map) → [Block 11]
+- [x] B6-G2 Code path of the security/licenses/conf directory → [Block 34]
 - [x] B7-G1 Exact Gradle task-graph edge slotomatic ↔ compileJava ↔ nap processor → [Block 9]
 - [x] B8-G4 Confirm or refute that outbound HTTP/sockets from third-party modules are ungated in N5 (okhttp3/Jetty client layer) → [Block 15]
 - [x] B8-G3 Are reflection / JMX / native-library / system-property accesses gated elsewhere in N5 → [Block 33]
@@ -249,10 +255,13 @@ This index guides through the **35 blocks** of this research. The flat catalog l
 - [x] B14-G2 propMigration.jar 8 declarative converter classes → [Block 24]
 - [x] B14-G5 MigratorTypeResolver / MigratorOrdConverter / MigrationUtils → [Block 24]
 - [x] B12-G4 nftables firewall backend: N5-only? and is it PermissionManager-gated → [Block 33]
+- [x] B11-G1 Capacity licensing mode: Metrics.isUsingCapacityLicensing() and resource.limit → [Block 34]
 - [x] B20-G4 History rollover mechanism after BCapacity storage-size mode removal (migration hazard) → [Block 26]
 - [x] B21-G3 CSP / security headers served by niagara.web / jetty (static half) → [Block 27 (static half)]
 - [x] B16-G1 Run niagaraTest on the ColdRoomPan TestNG test via the Windows test.exe (WSL interop) — may hit the tridium:nre license gate → [Block 29 (test.exe blocked by license tridium:nre; plain TestNG 51/51)]
 - [x] B16-G6 Port the 5 N4 JUnit4 ColdRoomPan tests to TestNG and write a JUnit4→TestNG recipe → [Block 29]
+- [x] B16-G7 Port CompPan and DashboardPan (multi-part rt/ux/wb, jakarta servlet) with the B16 recipe → [Block 28]
+- [x] B16-G2 Does a multi-module group like DashboardPan still need a parent grouping file → [Block 28]
 - [x] B22-G1 Decompile bacnetUtil to resolve the Descriptor interface behind BC-10 → [Block 35]
 - [x] B22-G3 Which other bundled drivers still extend the deprecated basicDriver chassis → [Block 35]
 - [x] B22-G4 niagaraDriver logic diff N4→N5 → [Block 35]
