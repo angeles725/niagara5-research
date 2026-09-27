@@ -380,6 +380,8 @@ above are deduced by matching PANCCADIA's observed `t=` typespecs against each c
 `getConvertTypes()` literal list read in §24.2 — a mechanical set-intersection, not a live `n5mig` run
 (B14-G1/B24-G1 remain open for actual execution confirmation).
 
+> **§14 correction (2026-09-27, [Block 31]):** the PANCCADIA census below counted only single-quoted `t=` attributes; the full census (both quote styles) is 3,545 typed elements across 30 modules / 288 types, and the three custom modules hold 44 objects (not 34). The "no converter" categories were confirmed slot-clean by B31.
+
 **Headline finding:** of the **1,389** typed bog elements sampled (`config.bog` only — driver network
 structure, not points/histories/alarms; re-verified this session by full-count `grep`, not the per-row table
 sum), the three LARGEST custom-logic categories in PANCCADIA — `tagdictionary`
