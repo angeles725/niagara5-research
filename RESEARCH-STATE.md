@@ -45,14 +45,14 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
 <!-- research-state.v1 -->
 schema: research-state.v1
 covered_blocks: 37
-gaps_closed: 52
-known_gaps: 185
+gaps_closed: 56
+known_gaps: 189
 investigable_open: 110
 requires_execution_open: 7
 blocked_open: 14
 deferred_open: 2
 undocumented_findings: 0
-blocks_since_retro: 1
+blocks_since_retro: 2
 last_iteration_ts: 2026-09-27T11:10:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
@@ -62,7 +62,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 ## Coverage
 
 - **Covered blocks**: 37 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15, B16, B17, B18, B19, B20, B21, B22, B23, B24, B25, B26, B27, B28, B29, B30, B31, B32, B33, B34, B35, B36, B38)
-- **Coverage metric**: 52 / 185 closed
+- **Coverage metric**: 56 / 189 closed
 - **Last iteration**: 2026-09-27 — N5-G5 core API delta (B5)
 
 ## Gap-backlog
@@ -137,13 +137,13 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B15-G3 OS/platform-level egress control outside NiagaraPermission (daemon, platform firewall) | platform modules | pending |
 | low | B15-G4 Full niagara.security.dashboard module: any provider surfacing network grants | security dashboard module | pending |
 | medium | B12-G4 nftables firewall backend: N5-only? and is it PermissionManager-gated | nre.jar firewall | ✅ covered — B33 |
-| medium | B12-G5 totpAuth enrollment UI flow and secret storage path | totpAuth.jar | pending |
-| medium | B12-G6 SAML IdP servlet flow in N5 | saml.jar | pending |
+| medium | B12-G5 totpAuth enrollment UI flow and secret storage path | totpAuth.jar | ✅ covered — B38 |
+| medium | B12-G6 SAML IdP servlet flow in N5 | saml.jar | ✅ covered — B38 |
 | low | B12-G1 Location of the Nimbus OAuth SDK jar required by oauth2 | bin/ext + modules | pending |
 | low | B12-G2 platCrypto daemon protocol | platCrypto.jar | pending |
 | low | B12-G3 signingService Fox CSR protocol | signingService.jar | pending |
-| low | B12-G7 LDAP v2/v3 bind details | ldap.jar | pending |
-| low | B12-G8 SRP6 key exchange: new in N5 or carried over | baja/nre | pending |
+| low | B12-G7 LDAP v2/v3 bind details | ldap.jar | ✅ covered — B38 |
+| low | B12-G8 SRP6 key exchange: new in N5 or carried over | baja/nre | ✅ covered — B38 |
 | medium | B11-G1 Capacity licensing mode: Metrics.isUsingCapacityLicensing() and resource.limit | baja metrics + license | ✅ covered — B34 |
 | low | B11-G3 Six dynamic (non-literal) checkFeature/getFeature call sites | module bytecode | pending |
 | low | B11-G4 Upgrade B11 bytecode-offset citations to source file:line via full decompile | organized/ decompile | pending |
@@ -239,6 +239,10 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B36-G1 Read doc/js/buildingJS.html and doc/requirejs.html fully | docDeveloper.jar | pending |
 | medium | B36-G2 Live gradlew gruntBuild / gruntCi run on a JS module | prototype build | requires-execution → §19 (needs node/npm on PATH + a JS module scaffold) |
 | low | B36-G3 Locate the grunt-niagara successor npm package contents | m2 + npm | pending |
+| low | B38-G1 Account-lockout defaults: N4 vs N5 provenance | baja security | pending |
+| medium | B38-G2 SP-side SAML signature algorithm allowlist | saml.jar | pending |
+| low | B38-G3 LDAP Kerberos/GSSAPI location | ldap + kerberos | pending |
+| low | B38-G4 SRP6 group size cross-check | nre/fox | pending |
 | deferred | B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only | N5 GA install | pending (parked; needs a GA build) |
 
 ## Iteration history
@@ -281,6 +285,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | 34 | 2026-09-27 | B16-G7 CompPan + DashboardPan ported and built (rt+ux+wb merge, jakarta servlet; alarm needs javafx/batik stubs) | B28 | yes · sonnet | 7 new — B28-G1..G7 |
 | 35 | 2026-09-27 | B6-G1/G2 + B11-G1 subscription client, license conf dir, capacity licensing (§14 correction of B11) | B34 | yes · sonnet | 6 new — B34-G1..G6 |
 | 36 | 2026-09-27 | B2-G5 N5 JS pipeline (node never bundled; grunt/yarn-workspace plugins; optional for DashboardPan) | B36 | yes · sonnet | 3 new — B36-G1..G3 |
+| 37 | 2026-09-27 | B12-G5..G8 TOTP enrollment (2 paths, AES-256 reversible at rest, no gauth migration), SAML SP/IdP, LDAP bind, SRP6 (§14 correction of B12) | B38 | yes · sonnet | 4 new — B38-G1..G4 |
 
 ## Blocked gaps (each tagged with what it needs)
 

@@ -128,13 +128,9 @@ This index guides through the **37 blocks** of this research. The flat catalog l
 - [ ] (medium) B15-G2 Independent egress gate inside okhttp / jetty-client / jetty library internals — pending
 - [ ] (low) B15-G3 OS/platform-level egress control outside NiagaraPermission (daemon, platform firewall) — pending
 - [ ] (low) B15-G4 Full niagara.security.dashboard module: any provider surfacing network grants — pending
-- [ ] (medium) B12-G5 totpAuth enrollment UI flow and secret storage path — pending
-- [ ] (medium) B12-G6 SAML IdP servlet flow in N5 — pending
 - [ ] (low) B12-G1 Location of the Nimbus OAuth SDK jar required by oauth2 — pending
 - [ ] (low) B12-G2 platCrypto daemon protocol — pending
 - [ ] (low) B12-G3 signingService Fox CSR protocol — pending
-- [ ] (low) B12-G7 LDAP v2/v3 bind details — pending
-- [ ] (low) B12-G8 SRP6 key exchange: new in N5 or carried over — pending
 - [ ] (low) B11-G3 Six dynamic (non-literal) checkFeature/getFeature call sites — pending
 - [ ] (low) B11-G4 Upgrade B11 bytecode-offset citations to source file:line via full decompile — pending
 - [ ] (deferred) B11-G2 OEM-branded module absence (Honeywell UI, eSignature): edition gap vs removal — pending (parked; needs an OEM N5 build)
@@ -218,6 +214,10 @@ This index guides through the **37 blocks** of this research. The flat catalog l
 - [ ] (low) B36-G1 Read doc/js/buildingJS.html and doc/requirejs.html fully — pending
 - [ ] (medium) B36-G2 Live gradlew gruntBuild / gruntCi run on a JS module — requires-execution → §19 (needs node/npm on PATH + a JS module scaffold)
 - [ ] (low) B36-G3 Locate the grunt-niagara successor npm package contents — pending
+- [ ] (low) B38-G1 Account-lockout defaults: N4 vs N5 provenance — pending
+- [ ] (medium) B38-G2 SP-side SAML signature algorithm allowlist — pending
+- [ ] (low) B38-G3 LDAP Kerberos/GSSAPI location — pending
+- [ ] (low) B38-G4 SRP6 group size cross-check — pending
 - [ ] (deferred) B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only — pending (parked; needs a GA build)
 
 - [x] N5-G1 Module packaging: one jar per module + JPMS module-info.class + module.xml schemaVersion 5 — how rt/ux/wb runtime profiles are expressed without the -rt/-ux split → [Block 1]
@@ -260,6 +260,10 @@ This index guides through the **37 blocks** of this research. The flat catalog l
 - [x] B14-G2 propMigration.jar 8 declarative converter classes → [Block 24]
 - [x] B14-G5 MigratorTypeResolver / MigratorOrdConverter / MigrationUtils → [Block 24]
 - [x] B12-G4 nftables firewall backend: N5-only? and is it PermissionManager-gated → [Block 33]
+- [x] B12-G5 totpAuth enrollment UI flow and secret storage path → [Block 38]
+- [x] B12-G6 SAML IdP servlet flow in N5 → [Block 38]
+- [x] B12-G7 LDAP v2/v3 bind details → [Block 38]
+- [x] B12-G8 SRP6 key exchange: new in N5 or carried over → [Block 38]
 - [x] B11-G1 Capacity licensing mode: Metrics.isUsingCapacityLicensing() and resource.limit → [Block 34]
 - [x] B20-G4 History rollover mechanism after BCapacity storage-size mode removal (migration hazard) → [Block 26]
 - [x] B21-G3 CSP / security headers served by niagara.web / jetty (static half) → [Block 27 (static half)]
