@@ -45,14 +45,14 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
 <!-- research-state.v1 -->
 schema: research-state.v1
 covered_blocks: 21
-gaps_closed: 23
-known_gaps: 115
-investigable_open: 77
+gaps_closed: 25
+known_gaps: 121
+investigable_open: 81
 requires_execution_open: 5
 blocked_open: 8
 deferred_open: 2
 undocumented_findings: 0
-blocks_since_retro: 9
+blocks_since_retro: 10
 last_iteration_ts: 2026-09-27T11:10:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
@@ -62,7 +62,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 ## Coverage
 
 - **Covered blocks**: 21 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15, B16, B17, B18, B19, B20, B21)
-- **Coverage metric**: 23 / 115 closed
+- **Coverage metric**: 25 / 121 closed
 - **Last iteration**: 2026-09-27 — N5-G5 core API delta (B5)
 
 ## Gap-backlog
@@ -115,7 +115,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | medium | B8-G3 Are reflection / JMX / native-library / system-property accesses gated elsewhere in N5 | nre.jar + baja.jar | pending |
 | low | B8-G1 ModifyProtectedPropertiesPermission construction sites | module bytecode | pending |
 | low | B8-G2 Permission-denial log filename: code vs doc discrepancy | nre.jar | pending |
-| medium | B10-G1 Compile-verify the 15-item porting checklist by building DashboardPan/CompPan/ColdRoomPan against N5 | prototype build | requires-execution → §19 (port one module and gradle-build it against N5) |
+| medium | B10-G1 Compile-verify the 15-item porting checklist by building DashboardPan/CompPan/ColdRoomPan against N5 | prototype build | ✅ covered — B16 |
 | high | B10-G5 The n5mig station migration application: where it ships, what it transforms (N4 station → N5) | install bin + migration/migrator modules | ✅ covered — B14 |
 | medium | B10-G2 Locate the full Niagara 5.0 Breaking Changes list (in-jar or web-only) and diff vs B10 32-row table | docDeveloper.jar + web | pending |
 | low | B10-G3 BFoxProxySession.getRemoteNiagaraVersion signature/package | docSource + javadoc | pending |
@@ -125,7 +125,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | medium | B5-G2 Does any Tridium or our own B* type rely on the removed BObject.equals override | baja + our sources | pending |
 | medium | B5-G4 The javax.baja.web import sites in our modules vs the jakarta.servlet break | our module sources | pending |
 | low | B5-G1 HsmManager: real N5 drop or N4 OEM-baseline artifact | N4 stock vs OEM jars | pending |
-| high | B9-G2 Real niagaraTest run with a TestNG test in the PoC (settles B2-G4) | prototype build | requires-execution → §19 (add a BTestNg test to poc/n5-hello and run niagaraTest) |
+| high | B9-G2 Real niagaraTest run with a TestNG test in the PoC (settles B2-G4) | prototype build | ✅ covered — B16 (build+sign OK; niagaraTest platform-gated: test.exe Windows-only) |
 | medium | B9-G3 Is com.tridium.n-java required per module or at root (wizard template omits it) | devkit templates + PoC | pending |
 | low | B9-G4 NDriver / device-driver module scaffold on N5 | devkit templates | pending |
 | high | B14-G1 Run n5mig -premigrate (dry-run report) on a copy of a real N4.15 station backup/bog (e.g. PANCCADIA) with and without our modules installed | n5mig.exe + station copy | ✅ covered — B17 (partial: run blocked by license tridium:nre; static census substituted) |
@@ -175,6 +175,12 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B21-G2 JxBrowser vs JavaFX WebView default selection in Workbench | workbench.jar | pending |
 | medium | B21-G3 CSP / security headers served by niagara.web / jetty (static half) | web.jar + jetty | pending |
 | low | B21-G4 Stale JxBrowser 7.30.3 log string vs 9.5.0 engine | jxBrowser.jar | pending |
+| high | B16-G1 Run niagaraTest on the ColdRoomPan TestNG test via the Windows test.exe (WSL interop) — may hit the tridium:nre license gate | prototype run | requires-execution → §19 (invoke test.exe through interop with Windows paths) |
+| high | B16-G6 Port the 5 N4 JUnit4 ColdRoomPan tests to TestNG and write a JUnit4→TestNG recipe | our module tests | pending |
+| high | B16-G7 Port CompPan and DashboardPan (multi-part rt/ux/wb, jakarta servlet) with the B16 recipe | prototype build | requires-execution → §19 (port + build both modules against the local config-home mirror) |
+| medium | B16-G2 Does a multi-module group like DashboardPan still need a parent grouping file | devkit templates + build | pending |
+| low | B16-G3 Locate the TestNG Support in Niagara 5 doc | docDeveloper.jar | pending |
+| low | B16-G5 moduleTest dependency vendorVersion truncated 2.0.7 → 2.0 | n-plugin | pending |
 | deferred | B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only | N5 GA install | pending (parked; needs a GA build) |
 
 ## Iteration history
@@ -201,6 +207,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | 18 | 2026-09-27 | N5-G14 behavioural delta control/alarm/history/kitControl | B20 | yes · sonnet | 5 new — B20-G1..G5 |
 | 19 | 2026-09-27 | N5-G11 UI stack | B21 | yes · sonnet | 4 new — B21-G1..G4 |
 | 20 | 2026-09-27 | B14-G1 n5mig on PANCCADIA copy (license-blocked; static census) | B17 | yes · sonnet | 4 new — B17-G1..G4 |
+| 21 | 2026-09-27 | B10-G1 + B9-G2 ColdRoomPan ported and built on N5 (8/15 CHK confirmed, 4 unpredicted breaks) | B16 | yes · sonnet | 6 new — B16-G1..G7 |
 
 ## Blocked gaps (each tagged with what it needs)
 
@@ -215,7 +222,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 77
+- **Open gaps — read-only investigable**: 81
 - **Open gaps — requires-execution**: 5
 - **Open gaps — blocked**: 8
 - Consecutive iterations with empty backlog (secondary): 0/2

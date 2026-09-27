@@ -34,3 +34,6 @@ poc/**/.niagara_user_home/
 poc/n5mig-panccadia/
 poc/_quarantine-install-*/
 poc/**/.n5config/
+
+# Ported CLIENT module sources (ColdRoomPan) — recipe lives in niagara5-block16.md; never commit client code
+poc/coldroompan-n5/

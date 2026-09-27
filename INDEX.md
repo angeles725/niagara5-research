@@ -110,7 +110,6 @@ This index guides through the **21 blocks** of this research. The flat catalog l
 - [ ] (medium) B8-G3 Are reflection / JMX / native-library / system-property accesses gated elsewhere in N5 — pending
 - [ ] (low) B8-G1 ModifyProtectedPropertiesPermission construction sites — pending
 - [ ] (low) B8-G2 Permission-denial log filename: code vs doc discrepancy — pending
-- [ ] (medium) B10-G1 Compile-verify the 15-item porting checklist by building DashboardPan/CompPan/ColdRoomPan against N5 — requires-execution → §19 (port one module and gradle-build it against N5)
 - [ ] (medium) B10-G2 Locate the full Niagara 5.0 Breaking Changes list (in-jar or web-only) and diff vs B10 32-row table — pending
 - [ ] (low) B10-G3 BFoxProxySession.getRemoteNiagaraVersion signature/package — pending
 - [ ] (low) B10-G4 Re-run fox grep across our three modules to certify CHK-14 — pending
@@ -118,7 +117,6 @@ This index guides through the **21 blocks** of this research. The flat catalog l
 - [ ] (medium) B5-G2 Does any Tridium or our own B* type rely on the removed BObject.equals override — pending
 - [ ] (medium) B5-G4 The javax.baja.web import sites in our modules vs the jakarta.servlet break — pending
 - [ ] (low) B5-G1 HsmManager: real N5 drop or N4 OEM-baseline artifact — pending
-- [ ] (high) B9-G2 Real niagaraTest run with a TestNG test in the PoC (settles B2-G4) — requires-execution → §19 (add a BTestNg test to poc/n5-hello and run niagaraTest)
 - [ ] (medium) B9-G3 Is com.tridium.n-java required per module or at root (wizard template omits it) — pending
 - [ ] (low) B9-G4 NDriver / device-driver module scaffold on N5 — pending
 - [ ] (medium) B14-G3 Open the ~26 unread migrator.jar converter types (driver/protocol bog converters) — pending
@@ -167,6 +165,12 @@ This index guides through the **21 blocks** of this research. The flat catalog l
 - [ ] (low) B21-G2 JxBrowser vs JavaFX WebView default selection in Workbench — pending
 - [ ] (medium) B21-G3 CSP / security headers served by niagara.web / jetty (static half) — pending
 - [ ] (low) B21-G4 Stale JxBrowser 7.30.3 log string vs 9.5.0 engine — pending
+- [ ] (high) B16-G1 Run niagaraTest on the ColdRoomPan TestNG test via the Windows test.exe (WSL interop) — may hit the tridium:nre license gate — requires-execution → §19 (invoke test.exe through interop with Windows paths)
+- [ ] (high) B16-G6 Port the 5 N4 JUnit4 ColdRoomPan tests to TestNG and write a JUnit4→TestNG recipe — pending
+- [ ] (high) B16-G7 Port CompPan and DashboardPan (multi-part rt/ux/wb, jakarta servlet) with the B16 recipe — requires-execution → §19 (port + build both modules against the local config-home mirror)
+- [ ] (medium) B16-G2 Does a multi-module group like DashboardPan still need a parent grouping file — pending
+- [ ] (low) B16-G3 Locate the TestNG Support in Niagara 5 doc — pending
+- [ ] (low) B16-G5 moduleTest dependency vendorVersion truncated 2.0.7 → 2.0 — pending
 - [ ] (deferred) B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only — pending (parked; needs a GA build)
 
 - [x] N5-G1 Module packaging: one jar per module + JPMS module-info.class + module.xml schemaVersion 5 — how rt/ux/wb runtime profiles are expressed without the -rt/-ux split → [Block 1]
@@ -189,8 +193,10 @@ This index guides through the **21 blocks** of this research. The flat catalog l
 - [x] B6-G3 Full caller enumeration of LicenseManager.checkFeature across all N5 jars (license-gated features map) → [Block 11]
 - [x] B7-G1 Exact Gradle task-graph edge slotomatic ↔ compileJava ↔ nap processor → [Block 9]
 - [x] B8-G4 Confirm or refute that outbound HTTP/sockets from third-party modules are ungated in N5 (okhttp3/Jetty client layer) → [Block 15]
+- [x] B10-G1 Compile-verify the 15-item porting checklist by building DashboardPan/CompPan/ColdRoomPan against N5 → [Block 16]
 - [x] B10-G5 The n5mig station migration application: where it ships, what it transforms (N4 station → N5) → [Block 14]
 - [x] B5-G3 niagaraSync subsystem (new BINiagaraSyncCapableComplex on status types) — feeds N5-G10 → [Block 18]
+- [x] B9-G2 Real niagaraTest run with a TestNG test in the PoC (settles B2-G4) → [Block 16 (build+sign OK; niagaraTest platform-gated: test.exe Windows-only)]
 - [x] B14-G1 Run n5mig -premigrate (dry-run report) on a copy of a real N4.15 station backup/bog (e.g. PANCCADIA) with and without our modules installed → [Block 17 (partial: run blocked by license tridium:nre; static census substituted)]
 
 ## Non-investigable gaps (without a running N5 station)
