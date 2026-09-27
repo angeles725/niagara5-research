@@ -45,14 +45,14 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
 <!-- research-state.v1 -->
 schema: research-state.v1
 covered_blocks: 43
-gaps_closed: 68
-known_gaps: 214
+gaps_closed: 71
+known_gaps: 218
 investigable_open: 119
 requires_execution_open: 7
-blocked_open: 18
+blocked_open: 19
 deferred_open: 2
 undocumented_findings: 0
-blocks_since_retro: 7
+blocks_since_retro: 8
 last_iteration_ts: 2026-09-27T11:10:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
@@ -62,7 +62,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 ## Coverage
 
 - **Covered blocks**: 43 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15, B16, B17, B18, B19, B20, B21, B22, B23, B24, B25, B26, B27, B28, B29, B30, B31, B32, B33, B34, B35, B36, B37, B38, B39, B40, B41, B42, B43)
-- **Coverage metric**: 68 / 214 closed
+- **Coverage metric**: 71 / 218 closed
 - **Last iteration**: 2026-09-27 — N5-G5 core API delta (B5)
 
 ## Gap-backlog
@@ -222,9 +222,9 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | medium | B35-G1 niagaraSync package semantics (standby/active RPC state machine in niagaraDriver) | niagaraSync + niagaraDriver | ✅ covered — B37 |
 | low | B35-G2 BNiagaraEdgeLiteStation | niagaraDriver | pending |
 | low | B35-G5 BFoxClientWebsocketBehavior / BReachableStations deeper read | niagaraDriver + fox | pending |
-| medium | B33-G3 All callers of SystemPropertiesUtil.setSystemProperty (ungated except a 24-key denylist) | all modules | pending |
-| medium | B33-G4 BServerPort.adapter → nft rule-hint injection reachability | nre + baja | pending |
-| medium | B33-G5 Where niagara.firewall.enabled / frontend=nft are set by default (platform template?) | install + platform | pending |
+| medium | B33-G3 All callers of SystemPropertiesUtil.setSystemProperty (ungated except a 24-key denylist) | all modules | ✅ covered — B40 |
+| medium | B33-G4 BServerPort.adapter → nft rule-hint injection reachability | nre + baja | ✅ covered — B40 |
+| medium | B33-G5 Where niagara.firewall.enabled / frontend=nft are set by default (platform template?) | install + platform | ✅ covered — B40 |
 | low | B33-G1 JMX usage across the remaining modules | all modules | pending |
 | low | B33-G6 Operational impact of the firewall losing port-redirect (N4 pf) in N5 nft | platform docs + code | pending |
 | high | B28-G7 niagara.alarm transitive dependency on javafx/batik platform modules forces stub module-info jars when compiling third-party modules on Linux — find the supported way (Windows javac.exe? SDK module path?) | n-plugin + alarm/gx/bajaui module-info | ✅ covered — B39 |
@@ -264,6 +264,9 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B39-G2 Does the batik-awt-util version matter beyond 1.19 | prototype build | pending |
 | medium | B39-G3 Why 3 other absent gx.jar requires (batik.transcoder, swt win32, owasp.encoder) never fail compilation | javac module resolution | pending |
 | low | B39-G4 Runtime behaviour of a module that really calls JavaFX/Batik APIs with these artifacts | prototype build | requires-execution → §19 (needs a licensed station to run) |
+| low | B40-G1 OPC UA component-name charset vs ruleHintOverride validation | opcUaServer + baja | pending |
+| medium | B40-G2 Which BComponentSpace subtype a live station instantiates (decides whether BTunnelService ruleHintOverride is validated) | baja + station | pending |
+| low | B40-G4 N4 netsh / CAP_NET_ADMIN host-firewall mechanism | N4 platform | pending |
 | deferred | B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only | N5 GA install | pending (parked; needs a GA build) |
 
 ## Iteration history
@@ -312,9 +315,11 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | 40 | 2026-09-27 | B18-G2/G3/G7 cloudLink AMQP (in-memory-only offline queue, Azure fingerprint in generic chassis), provider channels, nCloudDriver retired without migrator | B42 | yes · sonnet | 6 new — B42-G1..G6 |
 | 41 | 2026-09-27 | B19-G1/G2/G4 data-at-rest crypto: KeyRing format identical to N4, DPAPI on Windows, EncryptionKeySource semantics, systemDb encrypted by default, alias-string rename | B43 | yes · sonnet | 4 new — B43-G1..G4 |
 | 42 | 2026-09-27 | B28-G7/G2/G3 alarm graph needs javafx (bundled in JRE) + batik (absent from the whole install); fix = 6 compileOnly Maven deps, no stubs; Windows javac.exe hits the same batik gap | B39 | yes · sonnet | 4 new — B39-G1..G4 |
+| 43 | 2026-09-27 | B33-G3/G4/G5 system-property writers (4, hard-coded keys; boot re-applies etc/system.properties), nft adapter dead code, firewall sysprops absent from Supervisor install (§14 correction of B33: 27 keys) | B40 | yes · sonnet | 4 new — B40-G1..G4 |
 
 ## Blocked gaps (each tagged with what it needs)
 
+- B40-G3 Firewall defaults on a JACE/embedded-Linux N5 platform — needs: a JACE-class N5 install image · tried: whole Windows Supervisor install tree + 247-module corpus (absent)
 - B39-G1 Live deploy of the rebuilt DashboardPan-rt jar — needs: a running licensed N5 station · tried: build only
 - B42-G1 Live AMQP capture against a cloud tenant — needs: tenant + running station · tried: static only
 - B41-G4 Live confirmation of audited servlet writes — needs: a running N5 station · tried: static only
@@ -338,7 +343,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 
 - **Open gaps — read-only investigable**: 119
 - **Open gaps — requires-execution**: 7
-- **Open gaps — blocked**: 18
+- **Open gaps — blocked**: 19
 - Consecutive iterations with empty backlog (secondary): 0/2
 - Budget cap (default safety net): none
 

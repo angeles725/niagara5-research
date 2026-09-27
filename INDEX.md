@@ -194,9 +194,6 @@ This index guides through the **43 blocks** of this research. The flat catalog l
 - [ ] (low) B31-G5 box HistoryChannel/AlarmChannel parent swap BBoxChannel → BWrapperBoxChannel — pending
 - [ ] (low) B35-G2 BNiagaraEdgeLiteStation — pending
 - [ ] (low) B35-G5 BFoxClientWebsocketBehavior / BReachableStations deeper read — pending
-- [ ] (medium) B33-G3 All callers of SystemPropertiesUtil.setSystemProperty (ungated except a 24-key denylist) — pending
-- [ ] (medium) B33-G4 BServerPort.adapter → nft rule-hint injection reachability — pending
-- [ ] (medium) B33-G5 Where niagara.firewall.enabled / frontend=nft are set by default (platform template?) — pending
 - [ ] (low) B33-G1 JMX usage across the remaining modules — pending
 - [ ] (low) B33-G6 Operational impact of the firewall losing port-redirect (N4 pf) in N5 nft — pending
 - [ ] (low) B28-G1 Fate of the N4 test-wb module in N5 — pending
@@ -233,6 +230,9 @@ This index guides through the **43 blocks** of this research. The flat catalog l
 - [ ] (low) B39-G2 Does the batik-awt-util version matter beyond 1.19 — pending
 - [ ] (medium) B39-G3 Why 3 other absent gx.jar requires (batik.transcoder, swt win32, owasp.encoder) never fail compilation — pending
 - [ ] (low) B39-G4 Runtime behaviour of a module that really calls JavaFX/Batik APIs with these artifacts — requires-execution → §19 (needs a licensed station to run)
+- [ ] (low) B40-G1 OPC UA component-name charset vs ruleHintOverride validation — pending
+- [ ] (medium) B40-G2 Which BComponentSpace subtype a live station instantiates (decides whether BTunnelService ruleHintOverride is validated) — pending
+- [ ] (low) B40-G4 N4 netsh / CAP_NET_ADMIN host-firewall mechanism — pending
 - [ ] (deferred) B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only — pending (parked; needs a GA build)
 
 - [x] N5-G1 Module packaging: one jar per module + JPMS module-info.class + module.xml schemaVersion 5 — how rt/ux/wb runtime profiles are expressed without the -rt/-ux split → [Block 1]
@@ -300,6 +300,9 @@ This index guides through the **43 blocks** of this research. The flat catalog l
 - [x] B24-G6 No converter exists for tagdictionary (105), kitControl (100), nrio (96) PANCCADIA objects — confirm they load unchanged in N5 (type names, slot compatibility) → [Block 31]
 - [x] B27-G3 NiagaraConstraintSecurityHandler / NiagaraAuthenticator: web authn/authz proper → [Block 41]
 - [x] B35-G1 niagaraSync package semantics (standby/active RPC state machine in niagaraDriver) → [Block 37]
+- [x] B33-G3 All callers of SystemPropertiesUtil.setSystemProperty (ungated except a 24-key denylist) → [Block 40]
+- [x] B33-G4 BServerPort.adapter → nft rule-hint injection reachability → [Block 40]
+- [x] B33-G5 Where niagara.firewall.enabled / frontend=nft are set by default (platform template?) → [Block 40]
 - [x] B28-G7 niagara.alarm transitive dependency on javafx/batik platform modules forces stub module-info jars when compiling third-party modules on Linux — find the supported way (Windows javac.exe? SDK module path?) → [Block 39]
 - [x] B28-G2 Batik (org.apache.xmlgraphics) provider: JavaFX confirmed in the bundled JRE release MODULES (7 javafx.* modules); batik not a JRE module and svgBatik.jar holds no org/apache classes → [Block 39]
 - [x] B28-G3 Does the Windows jre/bin/javac.exe resolve niagara.alarm without stubs → [Block 39]
