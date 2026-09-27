@@ -2,7 +2,7 @@
 
 # Block catalog
 
-Total: **41 blocks**
+Total: **43 blocks**
 
 | Block | File | Title |
 |-------|------|-------|
@@ -44,6 +44,8 @@ Total: **41 blocks**
 | 36 | [niagara5-block36.md](niagara5-block36.md) | The N5 JavaScript build pipeline (node, grunt, RequireJS) for module web resources |
 | 37 | [niagara5-block37.md](niagara5-block37.md) | niagaraSync internals: replication, failover and what third-party modules must do |
 | 38 | [niagara5-block38.md](niagara5-block38.md) | N5 TOTP enrollment, SAML flow, LDAP bind and SRP6 |
+| 39 | [niagara5-block39.md](niagara5-block39.md) | Building N5 modules that depend on alarm/bajaui on Linux: JavaFX and Batik |
+| 40 | [niagara5-block40.md](niagara5-block40.md) | N5 system-property writers, nftables rule-hint provenance and firewall defaults |
 | 41 | [niagara5-block41.md](niagara5-block41.md) | N5 action auditing (old→new values) and the web authentication chain |
 | 42 | [niagara5-block42.md](niagara5-block42.md) | cloudLink AMQP internals, provider channels, and the fate of N4 nCloudDriver |
 | 43 | [niagara5-block43.md](niagara5-block43.md) | N5 data-at-rest cryptography: KeyRing, EncryptionKeySource and systemDb encryption |
