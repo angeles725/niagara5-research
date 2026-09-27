@@ -45,14 +45,14 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
 <!-- research-state.v1 -->
 schema: research-state.v1
 covered_blocks: 61
-gaps_closed: 102
-known_gaps: 283
-investigable_open: 135
+gaps_closed: 104
+known_gaps: 286
+investigable_open: 136
 requires_execution_open: 8
 blocked_open: 27
 deferred_open: 10
 undocumented_findings: 0
-blocks_since_retro: 8
+blocks_since_retro: 9
 last_iteration_ts: 2026-09-27T11:10:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
@@ -62,7 +62,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 ## Coverage
 
 - **Covered blocks**: 61 (B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15, B16, B17, B18, B19, B20, B21, B22, B23, B24, B25, B26, B27, B28, B29, B30, B31, B32, B33, B34, B35, B36, B37, B38, B39, B40, B41, B42, B43, B44, B45, B46, B47, B48, B49, B50, B51, B52, B53, B54, B55, B56, B57, B58, B59, B60, B61)
-- **Coverage metric**: 102 / 283 closed
+- **Coverage metric**: 104 / 286 closed
 - **Last iteration**: 2026-09-27 — N5-G5 core API delta (B5)
 
 ## Gap-backlog
@@ -100,8 +100,8 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B3-G5 securityBridge.jar 2-class bootclasspath shim | securityBridge.jar | pending |
 | low | B2-G4 Does N5 niagaraTest still hit the N4 plugin zero-tests bug | prototype build | requires-execution → §19 (run niagaraTest on a sample module) |
 | high | B4-G8 Deep-read official upgrade guides (upgradingToN5, upgradingUItoN5, upgradingJDK) + porting checklist for our modules | docDeveloper.jar doc/upgrade | ✅ covered — B10 |
-| medium | B4-G1 Decode the help search index binary format doc/{words,postings,documents,worddocs}.dat | help.jar Searcher + dat files | pending |
-| medium | B4-G5 N5 equivalent of N4 niagara-help jdk/ JDK-class bajadoc stand-ins | docDeveloper.jar | pending |
+| medium | B4-G1 Decode the help search index binary format doc/{words,postings,documents,worddocs}.dat | help.jar Searcher + dat files | ✅ covered — B59 |
+| medium | B4-G5 N5 equivalent of N4 niagara-help jdk/ JDK-class bajadoc stand-ins | docDeveloper.jar | ✅ covered — B59 |
 | low | B4-G3 Line-count N5 vs N4 shipped source (docSource) | docSource jars | pending |
 | low | B4-G4 Confirm no javadoc-shaped artifact across all 1,013 N4 jars | N4 jars | pending |
 | low | B4-G7 Census of N5 PDF manuals | install + doc jars | pending |
@@ -324,6 +324,9 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | low | B58-G1 alarm.adb N5-side format compatibility (no N5 alarm.jar decompile yet) | alarm.jar | pending |
 | low | B58-G3 systemDb absent: unlicensed vs never-provisioned on this OEM build | install | pending |
 | low | B58-G4 Decode alarm.adb header words 0x0C-0x20 | alarm.adb + tool | pending |
+| low | B59-G1 Is niagara-help guide-search/devguide-search index-backed or linear scan | niagara-help tool | pending |
+| low | B59-G2 BajadocIndex.lookup/ensureTagsLoaded internals (rendering of java.* refs) | help.jar | pending |
+| low | B59-G4 docDeveloperAnalytics.jar own .dat index presence | docDeveloperAnalytics.jar | pending |
 | deferred | B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only | N5 GA install | pending (parked; needs a GA build) |
 
 ## Iteration history
@@ -388,6 +391,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 | 56 | 2026-09-27 | B53-G3 denylist self-override CONFIRMED but bounded to host-admin; nre.properties is a 2nd JVM-arg surface; B43-G2/G3 N4 parity: systemDb encrypted-by-default and EncryptionKeySource unchanged since N4 | B57 | yes · sonnet | 4 new — B57-G1..G4 |
 | 57 | 2026-09-27 | B39-G3 javac forces only transitive requires of non-root modules (4 controlled compiles); B15-G2 no egress gate inside okhttp 5.5 / Jetty 12.1.13 — audit-only verdict holds at library layer | B55 | yes · sonnet | 4 new — B55-G1..G4 |
 | 58 | 2026-09-27 | B24-G2/B31-G4 PANCCADIA station census: only config.bog + empty alarm.adb on the Windows path; histories/schedules/px/systemDb/.dist structurally absent | B58 | yes · sonnet | 4 new — B58-G1..G4 |
+| 59 | 2026-09-27 | B4-G1/B4-G5 help full-text index format decoded (words/worddocs/postings/documents.dat, 7,270 docs, verified reader); no JDK-class bajadoc stand-ins in N5 (javadoc links to Oracle only) | B59 | yes · sonnet | 3 new — B59-G1..G4 (G3 folds into B4-G2) |
 
 ## Blocked gaps (each tagged with what it needs)
 
@@ -421,7 +425,7 @@ last_iteration_ts: 2026-09-27T11:10:00Z
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 135
+- **Open gaps — read-only investigable**: 136
 - **Open gaps — requires-execution**: 8
 - **Open gaps — blocked**: 27
 - Consecutive iterations with empty backlog (secondary): 0/2

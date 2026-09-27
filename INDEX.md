@@ -129,8 +129,6 @@ This index guides through the **61 blocks** of this research. The flat catalog l
 - [ ] (low) B2-G3 Read the TestNG Support in Niagara 5 doc — pending
 - [ ] (low) B3-G5 securityBridge.jar 2-class bootclasspath shim — pending
 - [ ] (low) B2-G4 Does N5 niagaraTest still hit the N4 plugin zero-tests bug — requires-execution → §19 (run niagaraTest on a sample module)
-- [ ] (medium) B4-G1 Decode the help search index binary format doc/{words,postings,documents,worddocs}.dat — pending
-- [ ] (medium) B4-G5 N5 equivalent of N4 niagara-help jdk/ JDK-class bajadoc stand-ins — pending
 - [ ] (low) B4-G3 Line-count N5 vs N4 shipped source (docSource) — pending
 - [ ] (low) B4-G4 Confirm no javadoc-shaped artifact across all 1,013 N4 jars — pending
 - [ ] (low) B4-G7 Census of N5 PDF manuals — pending
@@ -277,6 +275,9 @@ This index guides through the **61 blocks** of this research. The flat catalog l
 - [ ] (low) B58-G1 alarm.adb N5-side format compatibility (no N5 alarm.jar decompile yet) — pending
 - [ ] (low) B58-G3 systemDb absent: unlicensed vs never-provisioned on this OEM build — pending
 - [ ] (low) B58-G4 Decode alarm.adb header words 0x0C-0x20 — pending
+- [ ] (low) B59-G1 Is niagara-help guide-search/devguide-search index-backed or linear scan — pending
+- [ ] (low) B59-G2 BajadocIndex.lookup/ensureTagsLoaded internals (rendering of java.* refs) — pending
+- [ ] (low) B59-G4 docDeveloperAnalytics.jar own .dat index presence — pending
 - [ ] (deferred) B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only — pending (parked; needs a GA build)
 
 - [x] N5-G1 Module packaging: one jar per module + JPMS module-info.class + module.xml schemaVersion 5 — how rt/ux/wb runtime profiles are expressed without the -rt/-ux split → [Block 1]
@@ -305,6 +306,8 @@ This index guides through the **61 blocks** of this research. The flat catalog l
 - [x] B2-G5 N5 JS build pipeline (node/yarn/grunt plugins) for -ux style web resources → [Block 36]
 - [x] B2-G6 Delta list for our build-n4-module kit templates (.gradle.kts) against N5 plugin DSL → [Block 51]
 - [x] B4-G8 Deep-read official upgrade guides (upgradingToN5, upgradingUItoN5, upgradingJDK) + porting checklist for our modules → [Block 10]
+- [x] B4-G1 Decode the help search index binary format doc/{words,postings,documents,worddocs}.dat → [Block 59]
+- [x] B4-G5 N5 equivalent of N4 niagara-help jdk/ JDK-class bajadoc stand-ins → [Block 59]
 - [x] B6-G1 com.tridium.nre.subscription in nre.jar (subscription bootstrap outside baja.jar) → [Block 34]
 - [x] B6-G3 Full caller enumeration of LicenseManager.checkFeature across all N5 jars (license-gated features map) → [Block 11]
 - [x] B6-G2 Code path of the security/licenses/conf directory → [Block 34]
