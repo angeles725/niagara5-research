@@ -203,7 +203,7 @@ public static final Set<String> PROTECTED_NATIVE_SYSTEM_PROPERTIES_LIST = ... Ar
     clientConfigurationFile,configurationPropertiesFile,configurationStatusFile,hostapdCliFile,wpaCliFile}"
 );
 ```
-`[CERT]` `SystemPropertiesUtil.java:19-51` (23 literal entries, brace-grouped above for readability — every
+`[CERT]` `SystemPropertiesUtil.java:19-51` (27 literal entries, brace-grouped above for readability — every
 one is its own full string in source). Every entry is a filesystem-path override for embedded/hardware
 subsystems (DHCP daemon, WiFi, 802.1X, NTP, platform data-recovery, firewall front-end, symlink policy) —
 **none is a security/crypto/module-verification property.** `niagara.classLoader.skipModuleValidation` is
@@ -234,7 +234,7 @@ which is the sole native contributor to this mechanism, and its ONLY contributio
 entire denylist/protected-list VALUE tables live in the two Java classes above.
 
 **Net finding, closing B23-G3:** neither of N5's two command-line-property gates — the runtime-overridable
-6-entry `niagara.commandLinePropertyDenyList` or the hardcoded 23-entry
+6-entry `niagara.commandLinePropertyDenyList` or the hardcoded 27-entry
 `PROTECTED_NATIVE_SYSTEM_PROPERTIES_LIST` — names `niagara.classLoader.skipModuleValidation` or any other
 signature/module-verification sysprop. That escape hatch remains gated only by the `developer{
 skipModuleValidation=true}` license feature [B23] already documented, not by any command-line sysprop
