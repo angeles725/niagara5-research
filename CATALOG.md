@@ -2,7 +2,7 @@
 
 # Block catalog
 
-Total: **16 blocks**
+Total: **19 blocks**
 
 | Block | File | Title |
 |-------|------|-------|
@@ -21,4 +21,7 @@ Total: **16 blocks**
 | 13 | [niagara5-block13.md](niagara5-block13.md) | N4.14 → N5 module inventory delta: removed, merged, OEM-only and new modules |
 | 14 | [niagara5-block14.md](niagara5-block14.md) | N4→N5 station migration: n5mig and the migrator SPI |
 | 15 | [niagara5-block15.md](niagara5-block15.md) | N5 outbound network access from third-party modules: gated or audit-only? |
+| 17 | [niagara5-block17.md](niagara5-block17.md) | n5mig on a copy of the PANCCADIA station: what an N4→N5 migration keeps and drops |
 | 18 | [niagara5-block18.md](niagara5-block18.md) | N5 cloud surface: cloudLink family, niagaraCloud and niagaraSync |
+| 19 | [niagara5-block19.md](niagara5-block19.md) | N5 station persistence and indexing: bog, history storage, systemDb and systemIndex |
+| 20 | [niagara5-block20.md](niagara5-block20.md) | N5 behavioural delta in control, alarm, history, schedule and kitControl |
