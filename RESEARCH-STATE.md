@@ -500,7 +500,7 @@ last_iteration_ts: 2026-09-28T11:30:00Z
 | low | B117-G4 Decompile the 14 .NET assemblies (xprotect) and map the ffmpeg JNI surface | module payloads | pending |
 | medium | B117-G5 Verify Authenticode digests of the Tridium PE binaries | bin/ | ✅ covered — orchestrator (osslsigncode provisioned; 20/20 bin/*.dll,*.exe digest match, evidence/b117/authenticode-verify.txt; B117 counted 21 — 1 PE outside bin/ top level not yet checked) |
 | low | B117-G6 Second parser for B113 Go struct sizes | NCS-Agent binary | pending |
-| high | B117-G7 Wire the extraction census + jarsigner into the pipeline and add a lint rule for native claims (sha256 + VA + two instruments) | tools/ | pending |
+| high | B117-G7 Wire the extraction census + jarsigner into the pipeline, add a lint rule for native claims (sha256 + VA + two instruments), and harden n5-extract-census per RDD review-49636f53e9119721 (per-module error isolation, exit-code collision, entry-path normalization, sweep tests, MZ check) | tools/ | pending |
 | medium | B117-G8 Move B117 evidence into the repo | evidence/ | ✅ covered — orchestrator (evidence/b117/, 4.4 MB, secrets-scanned) |
 | low | B117-G9 Provenance of paho mqttv3 1.2.5 rebuild and the 44 unidentified third-party jars | bin/ext + LIB-INF | pending |
 | low | B104-G5 Live-station confirmation of B104's static driver/sync findings | station | requires-execution → §19 |

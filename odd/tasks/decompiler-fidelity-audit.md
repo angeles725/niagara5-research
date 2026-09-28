@@ -78,7 +78,7 @@ MECHANICAL and fail closed:
       compare normalized bytecode per method with the shipped class; on mismatch try CFR/Procyon/JADX and keep the first that
       round-trips; grade per class (docsource-original / roundtrip-exact / roundtrip-normalized / compiles-mismatch / no-compile);
       write organized/<mod>/fidelity.json + committed docs/decompile-fidelity-report.md. Route: delegated writer.
-- [x] T17 Extraction + native fidelity (B117; Authenticode 20/20 verified by orchestrator): nested/multi-release jars, extracted/ byte-exactness vs jar entries, resources,
+- [x] T17 Extraction + native fidelity (B117; Authenticode 20/20 verified by orchestrator; nested-jar count cross-checked independently: 97 jars / 34,507 entries / 24,831 top-level vs B117's 98 / 34,605 / 24,896 — same units, 1-jar scope difference; tool f4e49f8 RDD review-49636f53e9119721 approved, hardening folded into B117-G7): nested/multi-release jars, extracted/ byte-exactness vs jar entries, resources,
       skipped bin/ext jars, N5 obfuscation re-check, jarsigner verification of all module jars, native inventory + every native
       claim classified single-tool vs >= 2 anchored instruments with corroboration run now. Route: delegated researcher.
 - Redundancy ladder added to T15 (user: "use everything, no limits"): kit corroborate-java.sh (java-corroboration.v1), krak2
