@@ -424,6 +424,175 @@ PY
   [ "$v2_status" = "ok" ]
 }
 
+# --- --third-party-libinf (T26b, odd/tasks/decompiler-fidelity-audit.md): the complement of
+# --extra-tridium's LIB-INF handling -- EVERY non-Tridium (n5-classify-binext.py verdict "skip")
+# nested LIB-INF jar found directly in the SOURCE module/bin-ext jars (never organized/*/extracted/,
+# which may not exist yet), decompiled ONCE per distinct jar sha256 with v2 settings into
+# organized/_lib-inf-3p/<jar-stem>-<sha256[:12]>/{extracted,vineflower2,fallback2,recon.json}.
+# T25's `missing_by_jar` (odd/tasks/decompiler-fidelity-audit.md) found this is almost the entire
+# 11,719-class corpus-wide gap: prosys-opc-ua-sdk-client-server, poi-ooxml-lite, xmlbeans,
+# kotlin-stdlib, ... none of them Tridium's own code.
+
+# Compiles one trivial REAL class (javac, not a zipfile.writestr placeholder) into a standalone
+# jar at $1 -- needed only by the idempotency test below: a garbage-bytes fixture (like every other
+# fixture in this section) always fails BOTH decompilers, and T19 fix requirement 4 ("a module
+# recorded status=failed is NEVER treated as up to date") means a failing decompile can never reach
+# the idempotency skip branch this test wants to observe.
+build_real_standalone_jar() {
+  local dest="$1" class_name="$2" pkg="$3"
+  local javac_bin="${N5_JDK25_HOME:-/home/linuxbrew/.linuxbrew/opt/openjdk@25/libexec}/bin/javac"
+  [[ -x "$javac_bin" ]] || javac_bin="$(command -v javac)"
+  local srcdir compiled_dir
+  srcdir="$(mktemp -d)"
+  compiled_dir="$(mktemp -d)"
+  mkdir -p "$srcdir/$pkg"
+  {
+    [[ -n "$pkg" ]] && printf 'package %s;\n' "${pkg//\//.}"
+    printf 'public class %s { public void m() { int x = 1; } }\n' "$class_name"
+  } > "$srcdir/$pkg/$class_name.java"
+  "$javac_bin" -d "$compiled_dir" "$srcdir/$pkg/$class_name.java"
+  python3 - "$dest" "$compiled_dir" <<'PY'
+import os, sys, zipfile
+dest, compiled_dir = sys.argv[1], sys.argv[2]
+with zipfile.ZipFile(dest, "w") as z:
+    for dirpath, _dirs, files in os.walk(compiled_dir):
+        for f in files:
+            if f.endswith(".class"):
+                full = os.path.join(dirpath, f)
+                z.write(full, os.path.relpath(full, compiled_dir))
+PY
+  rm -rf "$srcdir" "$compiled_dir"
+}
+
+@test "(a) run_third_party_libinf decompiles a non-Tridium LIB-INF jar into _lib-inf-3p/<stem>-<sha12>/ with recon.json population+found_in" {
+  local_dir="$BATS_TEST_TMPDIR/libinf3p_a"
+  mkdir -p "$local_dir/modules" "$local_dir/out"
+  make_fake_jar "$local_dir/modules/base.jar" Tridium ""
+  # 0 .class entries -> ratio 0.0, not > 0.5 -> n5-classify-binext.py verdict "skip" (third-party)
+  make_fake_jar "$local_dir/modules/modA.jar" Tridium "thirdparty-1.0.jar"
+
+  N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR=/nonexistent N5_OUT_DIR="$local_dir/out" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --prepare-libcache
+  [ "$status" -eq 0 ]
+  N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR=/nonexistent N5_OUT_DIR="$local_dir/out" \
+    N5_JDK25_HOME="$BATS_TEST_TMPDIR/fake-jdk" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --third-party-libinf
+
+  sha=$(unzip -p "$local_dir/modules/modA.jar" "LIB-INF/thirdparty-1.0.jar" | sha256sum | awk '{print $1}')
+  sha12="${sha:0:12}"
+  moddir="$local_dir/out/_lib-inf-3p/thirdparty-1.0-$sha12"
+  [ -d "$moddir" ]
+  [ -f "$moddir/recon.json" ]
+  pop=$(python3 -c "import json;print(json.load(open('$moddir/recon.json'))['population'])")
+  [ "$pop" = "lib-inf-3p" ]
+  jarsha=$(python3 -c "import json;print(json.load(open('$moddir/recon.json'))['jar_sha256'])")
+  [ "$jarsha" = "$sha" ]
+  found_in=$(python3 -c "import json;print(json.load(open('$moddir/recon.json'))['found_in'])")
+  [[ "$found_in" == *"modA!LIB-INF/thirdparty-1.0.jar"* ]]
+}
+
+@test "(c) run_third_party_libinf does NOT handle a Tridium-owned nested LIB-INF jar (belongs to --extra-tridium)" {
+  local_dir="$BATS_TEST_TMPDIR/libinf3p_c"
+  mkdir -p "$local_dir/modules" "$local_dir/out"
+  make_fake_jar "$local_dir/modules/base.jar" Tridium ""
+  python3 - "$local_dir/modules/modA.jar" <<'PY'
+import sys, zipfile, io
+inner = io.BytesIO()
+with zipfile.ZipFile(inner, "w") as iz:
+    iz.writestr("com/tridium/x/A.class", b"stub")
+with zipfile.ZipFile(sys.argv[1], "w") as z:
+    z.writestr("META-INF/module.xml", '<module vendor="Tridium"/>')
+    z.writestr("LIB-INF/tridiumlib-1.0.jar", inner.getvalue())
+PY
+
+  N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR=/nonexistent N5_OUT_DIR="$local_dir/out" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --prepare-libcache
+  [ "$status" -eq 0 ]
+  N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR=/nonexistent N5_OUT_DIR="$local_dir/out" \
+    N5_JDK25_HOME="$BATS_TEST_TMPDIR/fake-jdk" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --third-party-libinf
+
+  sha=$(unzip -p "$local_dir/modules/modA.jar" "LIB-INF/tridiumlib-1.0.jar" | sha256sum | awk '{print $1}')
+  sha12="${sha:0:12}"
+  [ ! -d "$local_dir/out/_lib-inf-3p/tridiumlib-1.0-$sha12" ]
+}
+
+@test "(b) run_third_party_libinf dedups a byte-identical LIB-INF jar embedded in two modules and lists both in found_in" {
+  local_dir="$BATS_TEST_TMPDIR/libinf3p_b"
+  mkdir -p "$local_dir/modules" "$local_dir/out"
+  make_fake_jar "$local_dir/modules/base.jar" Tridium ""
+  python3 - "$local_dir/inner.jar" <<'PY'
+import sys, zipfile
+with zipfile.ZipFile(sys.argv[1], "w") as z:
+    z.writestr("org/apache/Shared.class", b"stub")
+PY
+  for m in modA modB; do
+    python3 - "$local_dir/modules/$m.jar" "$local_dir/inner.jar" <<'PY'
+import sys, zipfile
+dest, inner = sys.argv[1], sys.argv[2]
+data = open(inner, "rb").read()
+with zipfile.ZipFile(dest, "w") as z:
+    z.writestr("META-INF/module.xml", '<module vendor="Tridium"/>')
+    z.writestr("LIB-INF/shared-1.0.jar", data)
+PY
+  done
+
+  N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR=/nonexistent N5_OUT_DIR="$local_dir/out" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --prepare-libcache
+  [ "$status" -eq 0 ]
+  N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR=/nonexistent N5_OUT_DIR="$local_dir/out" \
+    N5_JDK25_HOME="$BATS_TEST_TMPDIR/fake-jdk" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --third-party-libinf
+
+  sha=$(sha256sum "$local_dir/inner.jar" | awk '{print $1}')
+  sha12="${sha:0:12}"
+  dircount=$(find "$local_dir/out/_lib-inf-3p" -maxdepth 1 -name "shared-1.0-*" -type d | wc -l)
+  [ "$dircount" -eq 1 ]
+  moddir="$local_dir/out/_lib-inf-3p/shared-1.0-$sha12"
+  [ -d "$moddir" ]
+  found_in=$(python3 -c "import json;print(json.load(open('$moddir/recon.json'))['found_in'])")
+  [[ "$found_in" == *"modA!LIB-INF/shared-1.0.jar"* ]]
+  [[ "$found_in" == *"modB!LIB-INF/shared-1.0.jar"* ]]
+}
+
+@test "(d) run_third_party_libinf is idempotent: a rerun without --force skips the already-decompiled distinct jar" {
+  local_dir="$BATS_TEST_TMPDIR/libinf3p_d"
+  mkdir -p "$local_dir/modules" "$local_dir/out"
+  make_fake_jar "$local_dir/modules/base.jar" Tridium ""
+  build_real_standalone_jar "$local_dir/real-lib.jar" Widget org/example
+  python3 - "$local_dir/modules/modA.jar" "$local_dir/real-lib.jar" <<'PY'
+import sys, zipfile
+dest, inner = sys.argv[1], sys.argv[2]
+data = open(inner, "rb").read()
+with zipfile.ZipFile(dest, "w") as z:
+    z.writestr("META-INF/module.xml", '<module vendor="Tridium"/>')
+    z.writestr("LIB-INF/example-lib-1.0.jar", data)
+PY
+
+  N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR=/nonexistent N5_OUT_DIR="$local_dir/out" \
+    N5_JDK25_HOME="${N5_JDK25_HOME:-/home/linuxbrew/.linuxbrew/opt/openjdk@25/libexec}" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --prepare-libcache
+  [ "$status" -eq 0 ]
+
+  N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR=/nonexistent N5_OUT_DIR="$local_dir/out" \
+    N5_JDK25_HOME="${N5_JDK25_HOME:-/home/linuxbrew/.linuxbrew/opt/openjdk@25/libexec}" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --third-party-libinf
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"lib-inf-3p: decompiled=1 skipped-up-to-date=0 failed=0 distinct_jars=1"* ]]
+
+  sha=$(sha256sum "$local_dir/real-lib.jar" | awk '{print $1}')
+  sha12="${sha:0:12}"
+  moddir="$local_dir/out/_lib-inf-3p/example-lib-1.0-$sha12"
+  v2status=$(python3 -c "import json;print(json.load(open('$moddir/recon.json'))['v2']['status'])")
+  [ "$v2status" = "ok" ]
+
+  N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR=/nonexistent N5_OUT_DIR="$local_dir/out" \
+    N5_JDK25_HOME="${N5_JDK25_HOME:-/home/linuxbrew/.linuxbrew/opt/openjdk@25/libexec}" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --third-party-libinf
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"lib-inf-3p: decompiled=0 skipped-up-to-date=1 failed=0 distinct_jars=1"* ]]
+}
+
 # --- T19 fix: v2 library-context race + hardening (odd/tasks/decompiler-fidelity-audit.md) ---
 # The first --variant v2 campaign (2026-09-28 07:20-07:32Z) re-extracted 5 modules' extracted/
 # (rm -rf + unzip) WHILE other parallel workers built their -e list by scanning

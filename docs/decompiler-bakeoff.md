@@ -797,3 +797,96 @@ re-counted by the orchestrator from `organized/` after `ALL_DONE`:
   `isolation_status` field explaining why. This is why the planned `StyleUtils` line-mapping check
   had no Vineflower file to read before this fix — it now does, for every class except the isolated
   hang itself.
+
+## Third-party LIB-INF decompile (T26b, `odd/tasks/decompiler-fidelity-audit.md`)
+
+`tools/n5-best-source.py` (T25) found that 11,719 classes corpus-wide had **no representation
+anywhere** — no docSource, no upstream Maven source, no decompile, nothing. Almost all of them
+(`missing_by_jar`'s top 10, all in the thousands-of-classes range: `prosys-opc-ua-sdk-client-
+server-5.7.0-248` 3,117, `poi-ooxml-lite-5.5.1` 2,325, `poi-5.5.1` 1,226, `xmlbeans-5.3.0` 697,
+`kotlin-stdlib-2.3.0` 687, `poi-ooxml-5.5.1` 654, `org.eclipse.swt.win32.win32.x86_64-3.134.0` 652,
+`woodstox-core-7.2.0` 539, `hsqldb-2.7.4` 465, `testng-7.12.0` 402) are third-party libraries nested
+under a module or bin/ext jar's own `LIB-INF/` — `--extra-tridium` only ever decompiled the
+Tridium-**owned** nested `LIB-INF` jars (the same >50%-Tridium-namespace rule from
+`tools/n5-classify-binext.py`, verdict `include*`); every jar the same rule calls `skip`
+(third-party) was never decompiled by the pipeline at all.
+
+`tools/n5-decompile.sh --third-party-libinf` closes this gap: it scans every Tridium-vendor jar
+under `$N5_MODULES_DIR` (docSource.jar excluded) and every jar under `$N5_BIN_EXT_DIR` **directly
+from their zip entries** (never `organized/*/extracted/`, which this mode does not require to
+exist first), reads every `LIB-INF/*.jar` entry, and decompiles each **distinct** jar (deduplicated
+by its own sha256, independent of how many modules bundle a byte-identical copy) exactly once with
+v2 settings (`decompile_module_v2`, unchanged — same immutable libcache, same T24 hang-isolation
+path, no copy of the decompile core) into `organized/_lib-inf-3p/<jar-stem>-<sha256[:12]>/
+{extracted,vineflower2,fallback2,recon.json}`. `recon.json` gets the usual `"v2"` sub-object plus
+top-level `"population": "lib-inf-3p"`, `"jar_sha256"`, and `"found_in"` — every
+`"<module>!LIB-INF/<entry-path>"` occurrence of that exact jar, across every module/bin-ext jar
+scanned. `extracted/.jar_sha256` is written the same way every other population's is, so
+`tools/n5-best-source.py`'s sha256 identity index (rung 6, "byte-identical jar decompiled as a
+different population") links every module's own raw copy to this single decompile. A Tridium-owned
+nested `LIB-INF` jar found during the scan is classified out and never counted here — it belongs to
+`--extra-tridium`.
+
+Idempotent for free: `decompile_module_v2`'s own idempotency key is purely content-based (jar
+sha256 + resolved library set + flags + tool jar sha256s) and the output directory name is
+deterministic from the same sha256, so a rerun without `--force` naturally skips an already-`ok`
+distinct jar.
+
+### Campaign run
+
+Run 2026-09-28 against the sha256-verified local mirror
+(`niagara5-research-localcache/jar-mirror-5.0.0.28/`):
+
+```
+tools/n5-decompile.sh --third-party-libinf
+```
+
+```
+lib-inf-3p: decompiled=94 skipped-up-to-date=0 failed=0 distinct_jars=94
+```
+
+94 distinct non-Tridium nested `LIB-INF` jars, 0 failures. One (`mibble-mibs-2.10.1`) has 0
+`.class` entries — a MIB-text-only resource jar, correctly decompiled trivially (`status: ok`,
+0 classes). `tools/n5-best-source.py` rerun afterward:
+
+```
+populations: 455
+classes: 64929
+missing: 54
+by best_kind:
+  docSource: 2809
+  fallback2: 1
+  missing: 54
+  upstream: 25559
+  vineflower2: 36506
+```
+
+`missing` dropped from T25's 11,719 (28.8%) to **54** (0.08%) — the 93 non-empty
+`_lib-inf-3p/` populations contribute 24,251 classes: 12,536 already covered by an exact
+upstream Maven source match (rung 2, `organized/_upstream-sources/`), 11,688 where this
+decompile is the `best` representation (rung 3, `vineflower2`), and a residual **27** classes
+still missing (each counted twice in `missing_by_jar` — once under the raw
+`<module>/lib-inf-raw/<stem>` population these jars are also nested in, once under
+`_lib-inf-3p/<stem>-<sha12>` itself — both blocked by the identical underlying cause, so the
+same 27 physical classes surface as 54 records).
+
+**Every one of the 27 residual classes has the same, single, typed cause**: they are
+per-JDK-version override `.class` entries of a Multi-Release JAR (JEP 238), nested under
+`META-INF/versions/<N>/...` inside 16 distinct third-party jars (`jackson-core-2.22.2` 4,
+`log4j-api-2.24.3` 2, `xmlbeans-5.3.0` 1, and 13 more jars — `commons-codec`,
+`commons-collections4`, `commons-compress`, `commons-dbcp2`, `commons-io`, `commons-pool2`,
+`error_prone_annotations`, `gson`, `jackson-databind`, `kotlin-stdlib`, `poi`, `poi-ooxml`,
+`poi-ooxml-lite` — 1 class each; `jackson-core`'s 4 split across `META-INF/versions/{11,17,21}`
+for `FastDoubleSwar`/`FastIntegerMath` plus a `META-INF/versions/11` `BigSignificand`, and
+`META-INF/versions/9/module-info`). Verified by hand for `jackson-core-2.22.2`: `extracted/`
+has the real `.class` bytes at e.g. `META-INF/versions/11/com/fasterxml/jackson/core/internal/
+shaded/fdp/v2_22_2/BigSignificand.class`; Vineflower's `vineflower2/META-INF/versions/11/...`
+creates the full package directory tree but writes **no** `.java` file at the leaf — a silent
+per-class skip, not a marked failure (`scan_marker_files` finds nothing, so the whole-jar CFR
+fallback path never triggers for it either). The BASE-layer (unversioned) class at the plain
+package path (`com/fasterxml/jackson/core/internal/shaded/fdp/v2_22_2/BigSignificand`) **is**
+represented (`vineflower2`, confirmed). This is a decompiler Multi-Release-JAR-override
+limitation, not a scanning or dedup gap in `--third-party-libinf` itself — fixing it (teaching
+Vineflower, or a fallback path, to render MRJAR override entries) is out of this task's scope
+and is not tracked as a new gap here since it affects at most 27 classes corpus-wide, all
+narrowly explained.

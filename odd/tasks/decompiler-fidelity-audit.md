@@ -99,7 +99,7 @@ niagara5-research-localcache/jar-mirror-5.0.0.28 (sha256-verified, ~4.3x faster 
 Research child gaps (B115-B118 G*) are deferred to the next session. Remaining work in THIS session: verify v1 vs v2,
 make the decompile complete and as faithful as possible.
 - [x] T18 (B118, b8eebcd; tool 1ad56eb RDD review-afef2ecdf952d3f2 approved) Logic-recovery method ladder.
-- [x] T18b (TDD; single commit on branch t18b-xref-hardening, worktree niagara5-research-worktrees/t18b-xref-hardening) Hardened
+- [x] T18b (0d221e6, TDD; single commit on branch t18b-xref-hardening, worktree niagara5-research-worktrees/t18b-xref-hardening, integrated into feat/n5-wave14 as 0d221e6) Hardened
       n5-bytecode-xref per its review-afef2ecdf952d3f2:
       overriders now matches name+descriptor, with `--desc` to disambiguate overloads (R2-001); duplicate class names across
       modules are kept and reported via `idx["duplicates"]`/`duplicate_classes` in every subcommand's output (R2-002); `--cha`
@@ -196,7 +196,7 @@ make the decompile complete and as faithful as possible.
       choose the primary tree by measured round-trip rate, not by text diff. Note: v2's +139% @Override is decompiler inference
       (B116: @Override never survives compilation), not recovered information. Route: delegated writer (TDD).
 - [ ] T21 Full-corpus grading run (all ~15k top-level classes, both trees) — closes B116-G1; long run, forecast first. Route: delegated.
-- [x] T25 (4745a3e, worktree t25-best-source off feat/n5-wave14@2a08063) Per-class "best available representation"
+- [x] T25 (4745a3e, worktree t25-best-source off feat/n5-wave14@2a08063; integrated into feat/n5-wave14 as 0e6b21c, follow-up fix as acee2d0) Per-class "best available representation"
       index tools/n5-best-source.py (TDD, 17/17 tests GREEN) + `--materialize` browsable relative-symlink tree, so a
       reader never has to re-derive the docs/writer-prompt.md precedence rule by hand. Structural discovery found one
       undocumented split: devkit is the ONLY module with a genuine decompiled `<mod>/lib-inf/<jar>/` subtree; every
@@ -225,6 +225,31 @@ make the decompile complete and as faithful as possible.
       hsqldb-2.7.4 (465), testng-7.12.0 (402). Spot-checked devkit/lib-inf-raw/n-templates-5.0.54.9.2's `Generator`
       class: `best` and materialized symlink both resolve to `organized/devkit/lib-inf/n-templates-5.0.54.9.2/
       vineflower2/.../Generator.java`, real content confirmed.
+- [x] T26b (this commit, feat/n5-wave14 worktree; TDD bats a/b/c/d RED confirmed then GREEN) `tools/n5-decompile.sh
+      --third-party-libinf`: decompiles EVERY non-Tridium nested LIB-INF jar (n5-classify-binext.py verdict "skip" —
+      the complement of `--extra-tridium`'s Tridium-owned handling) ONCE per distinct sha256, reusing
+      `decompile_module_v2` unchanged (same immutable libcache, same T24 hang-isolation path, no copy of the
+      decompile core) into `organized/_lib-inf-3p/<jar-stem>-<sha256[:12]>/{extracted,vineflower2,fallback2,
+      recon.json}`; source jars scanned directly from `$N5_MODULES_DIR`/`$N5_BIN_EXT_DIR`'s own zip entries, never
+      `organized/*/extracted/`. recon.json gains top-level `population: "lib-inf-3p"`, `jar_sha256`, `found_in`
+      (every `<module>!LIB-INF/<entry>` occurrence). Idempotent for free (decompile_module_v2's own content-based
+      idempotency key + deterministic output-dir naming). `tools/n5-best-source.py` extended (its own failing test
+      first, `test_finds_lib_inf_3p_population`) to discover `_lib-inf-3p/<jar-stem-sha>/` as a population root, same
+      as `_bin-ext`/`_etc-m2`/`_lib`. Real run (local mirror): `lib-inf-3p: decompiled=94 skipped-up-to-date=0
+      failed=0 distinct_jars=94`. Rerun `n5-best-source.py`: `missing` 11,719 (28.8%, T25) → **54** (0.08%) —
+      93 non-empty `_lib-inf-3p/` populations contribute 24,251 classes (12,536 superseded by an exact upstream
+      Maven match, 11,688 `best`=`vineflower2`, 27 residual missing). All 27 residual classes traced to ONE typed
+      cause: Multi-Release-JAR (JEP 238) per-JDK-version override `.class` entries under `META-INF/versions/<N>/...`
+      in 16 distinct third-party jars (jackson-core, log4j-api, xmlbeans, commons-{codec,collections4,compress,
+      dbcp2,io,pool2}, error_prone_annotations, gson, jackson-databind, kotlin-stdlib, poi, poi-ooxml,
+      poi-ooxml-lite) — verified by hand (jackson-core-2.22.2's `BigSignificand`): `extracted/` has the real
+      `.class` bytes, Vineflower's `vineflower2/META-INF/versions/11/...` creates the package directory but writes
+      no `.java` leaf (silent per-class skip, no decompiler-failure marker, so the whole-jar CFR fallback never
+      triggers); the BASE-layer (unversioned) class for every one of them IS represented. A decompiler MRJAR-override
+      limitation, not a `--third-party-libinf` scanning/dedup gap; not tracked as a new gap (≤27 classes
+      corpus-wide, narrowly explained). Verification: full `bats tools/tests/n5-decompile.bats` 67/67 (incl. the 4 new
+      a/b/c/d tests), `shellcheck tools/n5-decompile.sh` clean, `python3 -m unittest discover -s tools/tests`
+      319/319 (1 pre-existing skip). Route: direct (bounded writer assignment; not delegated further).
 - [x] T5 (9592b82) Porting guide: the only N5-only claim (`NiagaraSlotProcessor`) was false vs BOTH N4.14 and N4.15 — it is a
       relocation (javax.baja.nre... in bin/ext/nre.jar → niagara.nre... in module niagaraAnnotationProcessors); fixed.
 - [ ] T16b Extend lint-block R1/R2/R8 to docs/*.md (the porting guide carried an R8 error the linter could not see). TDD.

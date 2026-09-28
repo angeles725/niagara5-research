@@ -45,7 +45,9 @@ Corpus facts this tool encodes (verified 2026-09-28 against the real, read-only
 never the git-tracked worktree, which does not carry the gitignored corpus):
   - A "population" is any directory with a sibling extracted/ dir: every module
     (organized/<mod>/), every organized/_bin-ext/<jar>/, organized/_etc-m2/<jar>/,
-    organized/_lib/<jar>/, and -- confirmed by inspection, ONE module only (devkit) --
+    organized/_lib/<jar>/, organized/_lib-inf-3p/<jar-stem>-<sha256[:12]>/ (T26b:
+    tools/n5-decompile.sh --third-party-libinf's dedup-by-sha256 decompile of every non-Tridium
+    nested LIB-INF jar), and -- confirmed by inspection, ONE module only (devkit) --
     organized/<mod>/lib-inf/<jar>/, a genuine decompiled subtree (duplicates of etc/m2 build-tool
     jars devkit also bundles).
   - Every OTHER module's LIB-INF-nested third-party jars are raw, undecompiled files at
@@ -165,7 +167,8 @@ def discover_populations(organized_root: Path) -> list[dict]:
                     pops.append({"kind": "module-lib-inf", "name": f"{module_name}/lib-inf/{sub.name}",
                                  "root": sub, "docsource_name": None, "jar_name": sub.name})
 
-    for base_name, kind in (("_bin-ext", "bin-ext"), ("_etc-m2", "etc-m2"), ("_lib", "lib")):
+    for base_name, kind in (("_bin-ext", "bin-ext"), ("_etc-m2", "etc-m2"), ("_lib", "lib"),
+                            ("_lib-inf-3p", "lib-inf-3p")):
         base = organized_root / base_name
         if not base.is_dir():
             continue

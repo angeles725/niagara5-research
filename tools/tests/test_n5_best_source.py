@@ -129,6 +129,20 @@ class DiscoverPopulationsTest(unittest.TestCase):
             self.assertIn("_lib/docletZ-1.0", names)
             self.assertIn("devkit/lib-inf/n-templates-1.0", names)
 
+    def test_finds_lib_inf_3p_population(self):
+        """T26b: organized/_lib-inf-3p/<jar-stem>-<sha256[:12]>/ (tools/n5-decompile.sh
+        --third-party-libinf's dedup-by-sha256 output for non-Tridium nested LIB-INF jars) is a
+        population root exactly like _bin-ext/_etc-m2/_lib -- discovered as "kind": "lib-inf-3p"."""
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            _write_class(root / "_lib-inf-3p" / "prosys-1.0-abc123456789" / "extracted" / "com" / "P.class")
+            pops = m.discover_populations(root)
+            names = {p["name"] for p in pops}
+            self.assertIn("_lib-inf-3p/prosys-1.0-abc123456789", names)
+            match = [p for p in pops if p["name"] == "_lib-inf-3p/prosys-1.0-abc123456789"][0]
+            self.assertEqual(match["kind"], "lib-inf-3p")
+
     def test_raw_lib_inf_nested_jar_is_its_own_population(self):
         m = _load()
         with tempfile.TemporaryDirectory() as td:

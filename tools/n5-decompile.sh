@@ -17,6 +17,8 @@
 #   tools/n5-decompile.sh --extra-tridium       # v2+cons over the 10 out-of-pipeline Tridium
 #                                                # etc/m2+lib jars AND the Tridium-owned nested
 #                                                # LIB-INF jars (see below; T22)
+#   tools/n5-decompile.sh --third-party-libinf  # v2 over EVERY non-Tridium nested LIB-INF jar,
+#                                                # deduplicated by sha256 (see below; T26b)
 #
 # --prepare-libcache (T19 fix, odd/tasks/decompiler-fidelity-audit.md): a required, explicit,
 # ONE-TIME, serial step before any --variant v2 decompile. It extracts every module/bin-ext
@@ -86,6 +88,38 @@
 #    organized/<mod>/extracted/LIB-INF/*.jar (not the deduplicated-by-sha256 libcache, so
 #    per-module identity is kept), decompiled (v2+cons) into
 #    organized/<mod>/lib-inf/<jar-stem>/{extracted,vineflower2,vineflower-cons,...}.
+#
+# --third-party-libinf (T26b, odd/tasks/decompiler-fidelity-audit.md): the complement of
+# --extra-tridium's LIB-INF handling. tools/n5-best-source.py found that 11,719 classes
+# corpus-wide have NO representation anywhere — almost entirely non-Tridium (third-party) jars
+# nested under module/bin-ext jars' LIB-INF/, which the pipeline above never decompiles at all
+# (--extra-tridium only ever picks up the Tridium-OWNED ones, verdict "include*"). This mode
+# decompiles every OTHER nested LIB-INF jar — verdict "skip" from the same
+# tools/n5-classify-binext.py >50%-rule, unchanged — with v2 settings, ONCE per distinct jar
+# sha256 regardless of how many modules bundle a byte-identical copy.
+#  - Source jars are scanned directly: every Tridium-vendor jar in $N5_MODULES_DIR (docSource.jar
+#    excluded) and every jar under $N5_BIN_EXT_DIR, reading each one's own LIB-INF/*.jar entries
+#    straight from the zip (never from organized/*/extracted/, which this mode does not require to
+#    exist first).
+#  - Dedup key is the nested jar's own sha256. The FIRST module/entry seen for a given sha256 names
+#    the output directory's <jar-stem>; every occurrence (including the first) is recorded in
+#    recon.json's "found_in" as "<module>!LIB-INF/<entry-path>".
+#  - Output: organized/_lib-inf-3p/<jar-stem>-<sha256[:12]>/{extracted,vineflower2,fallback2,
+#    recon.json} — exactly decompile_module_v2's own out_dir_name/fallback_dir_name convention (no
+#    copy of the decompile core; this mode calls decompile_module_v2 directly), so
+#    extracted/.jar_sha256 is written the same way every other population's is and
+#    tools/n5-best-source.py's sha256 identity index links every module's raw copy to it. recon.json
+#    additionally carries "population": "lib-inf-3p", "jar_sha256", and "found_in" — written by
+#    write_recon_lib_inf_3p, layered on top of decompile_module_v2's own "v2" sub-object, never
+#    replacing it.
+#  - Idempotent for free: decompile_module_v2's own idempotency key is purely content-based (jar
+#    sha256 + library set + flags + tool jar sha256s, see compute_v2_idempotency_key) and the output
+#    directory name is deterministic from the same sha256, so a rerun without --force naturally
+#    skips an already-"ok" distinct jar — no separate idempotency bookkeeping needed here.
+#  - Prints one summary line: "lib-inf-3p: decompiled=N skipped-up-to-date=N failed=N
+#    distinct_jars=N" (distinct_jars counts only non-Tridium jars; a Tridium-owned nested LIB-INF
+#    jar found during the scan is classified out before it is counted at all — it belongs to
+#    --extra-tridium instead).
 #
 # Undocumented Vineflower 1.12.0 CLI ordering requirement (verified empirically
 # 2026-09-28, not documented anywhere in --help): an "Additional option" such as
@@ -1936,6 +1970,158 @@ run_extra_tridium_libinf() {
 }
 
 # ---------------------------------------------------------------------------
+# --third-party-libinf (T26b, odd/tasks/decompiler-fidelity-audit.md) — see the header comment's
+# own "--third-party-libinf" section for the full rationale/behavior; this is the mechanical part.
+# ---------------------------------------------------------------------------
+
+# Merges "population": "lib-inf-3p", "jar_sha256" and "found_in" onto
+# $1/recon.json's TOP level (like write_recon_language, never touching the
+# "v2" sub-object decompile_module_v2 already wrote/skipped). Called
+# unconditionally after every decompile_module_v2 call in
+# run_third_party_libinf — including a call that hit the idempotency skip
+# branch — so found_in always reflects the current scan's occurrences even
+# when the decompile itself was skipped as up to date.
+write_recon_lib_inf_3p() {
+  local moddir="$1" sha="$2" found_in_json="$3"
+  RECON_PATH="$moddir/recon.json" \
+  RECON_SHA="$sha" \
+  RECON_FOUND_IN_JSON="$found_in_json" \
+  python3 <<'PYEOF'
+import json, os
+
+path = os.environ["RECON_PATH"]
+try:
+    with open(path) as fh:
+        recon = json.load(fh)
+except (OSError, json.JSONDecodeError):
+    recon = {}
+
+recon["population"] = "lib-inf-3p"
+recon["jar_sha256"] = os.environ["RECON_SHA"]
+recon["found_in"] = json.loads(os.environ["RECON_FOUND_IN_JSON"])
+
+with open(path, "w") as fh:
+    json.dump(recon, fh, indent=2)
+    fh.write("\n")
+PYEOF
+}
+
+# Every non-Tridium (n5-classify-binext.py verdict "skip") nested LIB-INF jar
+# found directly in $N5_MODULES_DIR's Tridium-vendor jars (docSource.jar
+# excluded) and every $N5_BIN_EXT_DIR jar, decompiled ONCE per distinct
+# sha256 with decompile_module_v2 (unchanged — same out_dir_name/
+# fallback_dir_name, same immutable libcache, same T24 hang-isolation path)
+# into organized/_lib-inf-3p/<jar-stem>-<sha256[:12]>/. A Tridium-owned nested
+# LIB-INF jar (verdict "include*") is classified out and never counted —
+# --extra-tridium already owns that population.
+run_third_party_libinf() {
+  local force="$1"
+  v2_libcache_ready || prepare_v2_libcache "$force"
+  local out_root="$N5_OUT_DIR/_lib-inf-3p"
+  mkdir -p "$out_root"
+
+  # Pass 1: scan every source jar's LIB-INF/*.jar entries straight from the
+  # zip (never organized/*/extracted/), recording every occurrence and, per
+  # distinct sha256, one probe copy (first module/entry seen names the
+  # output directory's jar-stem).
+  local -a source_jars=()
+  local jar modname
+  while IFS= read -r -d '' jar; do
+    modname="$(basename "$jar" .jar)"
+    [[ "$modname" == "docSource" ]] && continue
+    is_tridium_module "$jar" || continue
+    source_jars+=("$jar")
+  done < <(find -L "$N5_MODULES_DIR" -maxdepth 1 -name '*.jar' -print0 2>/dev/null)
+  if [[ -d "$N5_BIN_EXT_DIR" ]]; then
+    while IFS= read -r -d '' jar; do
+      source_jars+=("$jar")
+    done < <(find -L "$N5_BIN_EXT_DIR" -name '*.jar' -print0 2>/dev/null)
+  fi
+
+  local scratch; scratch="$(mktemp -d)"
+  mkdir -p "$scratch/probes"
+  local occurrences="$scratch/occurrences.tsv"
+  : > "$occurrences"
+  local -A STEM_BY_SHA=()
+
+  local src tmpdir entry rel stem sha
+  for src in "${source_jars[@]}"; do
+    modname="$(basename "$src" .jar)"
+    tmpdir="$(mktemp -d)"
+    unzip -o -q "$src" 'LIB-INF/*.jar' -d "$tmpdir" 2>/dev/null || true
+    while IFS= read -r -d '' entry; do
+      rel="${entry#"$tmpdir"/}"
+      stem="$(basename "$entry" .jar)"
+      sha="$(sha256_of "$entry")"
+      [[ -z "$sha" ]] && continue
+      printf '%s\t%s!%s\n' "$sha" "$modname" "$rel" >> "$occurrences"
+      if [[ -z "${STEM_BY_SHA[$sha]:-}" ]]; then
+        STEM_BY_SHA[$sha]="$stem"
+        cp "$entry" "$scratch/probes/$sha.jar"
+      fi
+    done < <(find "$tmpdir" -name '*.jar' -print0 2>/dev/null)
+    rm -rf "$tmpdir"
+  done
+
+  # Pass 2: classify + decompile each distinct sha256 once.
+  local -a shas=()
+  if [[ "${#STEM_BY_SHA[@]}" -gt 0 ]]; then
+    mapfile -t shas < <(printf '%s\n' "${!STEM_BY_SHA[@]}" | sort)
+  fi
+
+  local distinct=0 decompiled=0 skipped=0 failed=0
+  local moddir probe verdict logfile before_lines new_log found_in_json rc
+  for sha in "${shas[@]}"; do
+    probe="$scratch/probes/$sha.jar"
+    verdict="$(python3 "$SCRIPT_DIR/n5-classify-binext.py" "$probe" 2>>"$LOG_DIR/_lib-inf-3p.log" || true)"
+    if [[ "$verdict" == include* ]]; then
+      log "_lib-inf-3p" "skipping Tridium-owned LIB-INF jar ${STEM_BY_SHA[$sha]} ($sha) — handled by --extra-tridium, not --third-party-libinf ($verdict)"
+      continue
+    fi
+    distinct=$((distinct + 1))
+    stem="${STEM_BY_SHA[$sha]}"
+    moddir="$out_root/${stem}-${sha:0:12}"
+    mkdir -p "$moddir"
+    # A stem-named copy (not the raw sha256) so log filenames and recon.json's
+    # "module" field read like every other population's.
+    cp "$probe" "$scratch/${stem}.jar"
+
+    # $LOG_DIR/$stem.log (log()'s own target — NOT $stem.v2.log, which only
+    # ever gets the raw Vineflower/CFR CMD+output, never the "up to date"
+    # skip message decompile_module_variant logs via log()).
+    logfile="$LOG_DIR/$stem.log"
+    before_lines=0
+    [[ -f "$logfile" ]] && before_lines="$(wc -l < "$logfile")"
+
+    rc=0
+    decompile_module_v2 "$scratch/${stem}.jar" "$force" "$moddir" || rc=$?
+
+    new_log=""
+    [[ -f "$logfile" ]] && new_log="$(tail -n +"$((before_lines + 1))" "$logfile")"
+
+    found_in_json="$(awk -F'\t' -v sha="$sha" '$1==sha{print $2}' "$occurrences" \
+      | python3 -c 'import json, sys; print(json.dumps([l.rstrip("\n") for l in sys.stdin if l.strip()]))')"
+    write_recon_lib_inf_3p "$moddir" "$sha" "$found_in_json"
+
+    if [[ "$rc" -ne 0 ]]; then
+      failed=$((failed + 1))
+      log "_lib-inf-3p" "FAILED ${stem}-${sha:0:12} ($sha)"
+    elif [[ "$new_log" == *"up to date"* ]]; then
+      skipped=$((skipped + 1))
+    else
+      decompiled=$((decompiled + 1))
+    fi
+    rm -f "$scratch/${stem}.jar"
+  done
+
+  rm -rf "$scratch"
+  local summary="lib-inf-3p: decompiled=$decompiled skipped-up-to-date=$skipped failed=$failed distinct_jars=$distinct"
+  log "_lib-inf-3p" "$summary"
+  echo "$summary"
+  [[ "$failed" -eq 0 ]]
+}
+
+# ---------------------------------------------------------------------------
 # main
 # ---------------------------------------------------------------------------
 # Print the .java files under $1 that carry a decompiler failure marker.
@@ -1978,6 +2164,10 @@ main() {
         mode="extra-tridium"
         shift
         ;;
+      --third-party-libinf)
+        mode="third-party-libinf"
+        shift
+        ;;
       --force)
         force="true"
         shift
@@ -2004,6 +2194,11 @@ main() {
     run_extra_tridium "$force" || rc1=$?
     run_extra_tridium_libinf "$force" || rc2=$?
     [[ "$rc1" -eq 0 && "$rc2" -eq 0 ]]
+    exit $?
+  fi
+
+  if [[ "$mode" == "third-party-libinf" ]]; then
+    run_third_party_libinf "$force"
     exit $?
   fi
 
