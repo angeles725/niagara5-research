@@ -734,6 +734,9 @@ decompile_module() {
   # --- primary: Vineflower, whole jar, bounded timeout ---
   rm -rf "${moddir:?}/vineflower"
   mkdir -p "$moddir/vineflower"
+  # T27: fallback/ belongs to THIS run only (v2/cons already clear theirs); a
+  # stale CFR file from an earlier attempt would otherwise pose as current.
+  rm -rf "${moddir:?}/fallback"
   log "$module" "primary(vineflower) starting on $class_count classes"
   local t0 t1 primary_time primary_status
   t0="$(date +%s)"
@@ -1363,13 +1366,11 @@ build_cons_flags() {
 # first library-context variant run on a module that never went through v1 —
 # in that case a minimal file is created).
 #
-# KNOWN INTERACTION (pre-existing, not introduced by this refactor): v1's
-# write_recon (tools/n5-recon-helper.py) always fully overwrites recon.json —
-# it has no concept of a "v2"/"cons" key to preserve. So
-# `tools/n5-decompile.sh --force <mod>` (v1) run AFTER a --variant v2/cons run
-# silently drops that module's "v2"/"cons" sub-object. If v1 --force and
-# v2/cons data are both needed for the same module, rerun --variant v2/cons
-# again afterward to re-merge it.
+# Interaction with v1 (fixed in T27): v1's write_recon
+# (tools/n5-recon-helper.py) now carries the "v2"/"cons" sub-objects over when
+# they describe the same jar sha256, and drops (and names, under
+# "dropped_stale_variants") any that describe an older jar — rerun that
+# --variant to refresh it.
 #
 # T19 fix, requirement 7: every value that could conceivably contain a
 # double-quote, backslash, or other Python-string-literal metacharacter

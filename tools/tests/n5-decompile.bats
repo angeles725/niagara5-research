@@ -315,6 +315,8 @@ setup() {
 @test "run_extra_tridium classifies mechanically via the existing >50% Tridium-namespace rule and routes etc-m2 vs lib into separate output roots (synthetic fixtures)" {
   local_dir="$BATS_TEST_TMPDIR/extra1"
   mkdir -p "$local_dir/modules" "$local_dir/etc-m2/com/tridium/tools/foo/1.0" "$local_dir/lib" "$local_dir/out"
+  # T23: --prepare-libcache refuses a zero-jar scan, so every fixture needs one module jar.
+  make_fake_jar "$local_dir/modules/modA.jar" Tridium ""
   # a real >50%-Tridium jar (classify only inspects the zip namelist, not bytecode)
   python3 - "$local_dir/etc-m2/com/tridium/tools/foo/1.0/foo-1.0.jar" <<'PY'
 import sys, zipfile
@@ -351,6 +353,8 @@ PY
 @test "run_extra_tridium_libinf routes a Tridium-owned nested LIB-INF jar into organized/<mod>/lib-inf/<stem>/" {
   local_dir="$BATS_TEST_TMPDIR/extra2"
   mkdir -p "$local_dir/modules" "$local_dir/out/somemod/extracted/LIB-INF"
+  # T23: --prepare-libcache refuses a zero-jar scan, so every fixture needs one module jar.
+  make_fake_jar "$local_dir/modules/modA.jar" Tridium ""
   python3 - "$local_dir/out/somemod/extracted/LIB-INF/tridiumlib-1.0.jar" <<'PY'
 import sys, zipfile
 with zipfile.ZipFile(sys.argv[1], "w") as z:
@@ -1185,4 +1189,29 @@ PY
   # comments that also mention the function by name.
   call_count=$(grep -c 'vf_handle_primary_timeout "' "$REPO_ROOT/tools/n5-decompile.sh")
   [ "$call_count" -ge 2 ]
+}
+
+@test "T27: v1 --force keeps same-jar v2/cons recon sub-objects, drops stale ones, and clears a stale fallback/" {
+  local_out="$BATS_TEST_TMPDIR/t27-out"
+  N5_OUT_DIR="$local_out" run "$REPO_ROOT/tools/n5-decompile.sh" "$MODULE"
+  [ "$status" -eq 0 ]
+  recon="$local_out/$MODULE/recon.json"
+  sha=$(python3 -c "import json;print(json.load(open('$recon'))['jar_sha256'])")
+  # Simulate earlier --variant v2 (same jar) and --variant cons (a different, older jar) runs.
+  python3 - "$recon" "$sha" <<'PY'
+import json, sys
+p, sha = sys.argv[1], sys.argv[2]
+d = json.load(open(p))
+d["v2"] = {"variant": "v2", "jar_sha256": sha, "status": "ok"}
+d["cons"] = {"variant": "cons", "jar_sha256": "0" * 64, "status": "ok"}
+json.dump(d, open(p, "w"))
+PY
+  mkdir -p "$local_out/$MODULE/fallback"
+  echo "stale" > "$local_out/$MODULE/fallback/Stale.java"
+  N5_OUT_DIR="$local_out" run "$REPO_ROOT/tools/n5-decompile.sh" --force "$MODULE"
+  [ "$status" -eq 0 ]
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['v2']['status'])")" = "ok" ]
+  [ "$(python3 -c "import json;print('cons' in json.load(open('$recon')))")" = "False" ]
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['dropped_stale_variants'])")" = "['cons']" ]
+  [ ! -e "$local_out/$MODULE/fallback/Stale.java" ]
 }

@@ -112,11 +112,11 @@ make the decompile complete and as faithful as possible.
       Orchestrator verified the WARNINGs: R4-libcache-empty-scan-strips-context REAL → T23; R3 .complete removal under
       concurrent readers = by design (readers fail loudly with "run --prepare-libcache"; prepare runs serially first);
       R3 source-sha cache reload per jar = performance only; R2 readability items deferred.
-- [ ] T23 (TDD, bats T23a RED observed: exit 0 on an empty scan) `--prepare-libcache` refuses a zero-jar scan of
+- [x] T23 (8cd9467; follow-up in the T27 commit: two synthetic --extra-tridium bats fixtures had an empty modules dir, which the new guard correctly refuses — the orchestrator had run only the 13 libcache tests, not the full file, before committing T23; fixtures now carry one module jar) (TDD, bats T23a RED observed: exit 0 on an empty scan) `--prepare-libcache` refuses a zero-jar scan of
       N5_MODULES_DIR + N5_BIN_EXT_DIR with exit 2 BEFORE touching the cache, so a mistyped/unmounted path can never
       publish a "complete" cache that strips all LIB-INF context. GREEN: 13/13 libcache tests, shellcheck clean.
       Route: inline (one script + one test).
-- [x] T24 bajaui whole-module Vineflower timeout (found during the T22 line-mapping spot check; TDD, bats,
+- [x] T24 (1875258) bajaui whole-module Vineflower timeout (found during the T22 line-mapping spot check; TDD, bats,
       strict-TDD writer): root cause isolated by per-package then per-class bisection to exactly ONE class,
       `com/tridium/ui/theme/custom/nss/query/NSS2SelectionResult` (its method-local record
       `NSS2SelectionResult$1ValueAndAdvice` hangs Vineflower's ClassWriter.writeClass forever). Fix (shared by v1/v2/
@@ -137,6 +137,12 @@ make the decompile complete and as faithful as possible.
       bajaui's `module-info.class` (no package) hits — covered by a dedicated regression test (T24e) and fixed by
       not using an associative array for package dedup. Evidence: docs/decompiler-bakeoff.md's "Resolved (T24)"
       bullet; tools/tests/n5-decompile.bats T24a-T24e. Route: delegated writer (TDD, bats).
+- [x] T27 (TDD, bats T27 RED observed: `KeyError: 'v2'` after v1 --force) v1 `write_recon` replaced recon.json
+      wholesale and dropped the "v2"/"cons" sub-objects; v1 also never cleared a stale `fallback/`. Fix:
+      tools/n5-recon-helper.py carries "v2"/"cons" over only when their `jar_sha256` equals the jar v1 just rebuilt,
+      else drops them and lists them in `dropped_stale_variants`; v1 clears `fallback/` before its primary run.
+      GREEN: full `bats tools/tests/n5-decompile.bats` 63/63 (EXIT=0), `make test` OK, shellcheck clean.
+      Route: inline (script + helper + test).
 
 ## Maximum decompile fidelity (user requirement 2026-09-28: "the decompile must be right, no inventions, not tainted; try everything possible")
 - [x] T13 Integrity + completeness census [CERT-hw]: 252 recon.json (247 modules + bin/ext) — 0 jar sha256 mismatches vs the
