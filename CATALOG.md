@@ -2,7 +2,7 @@
 
 # Block catalog
 
-Total: **115 blocks**
+Total: **117 blocks**
 
 | Block | File | Title |
 |-------|------|-------|
@@ -121,3 +121,4 @@ Total: **115 blocks**
 | 113 | [niagara5-block113.md](niagara5-block113.md) | NCS-Agent's Go type-metadata table (`typelinks`) fully parsed and cross-tool-corroborated: 2,418 reflect-visible types recovered with 47 own `github.com/HON-HCE/*` struct/pointer types and their fields; `InstallSoftware`'s process-invocation path traced to a dead end — the binary links zero process-creation API anywhere |
 | 114 | [niagara5-block114.md](niagara5-block114.md) | `docDeveloper.jar`'s `bajadoc.index` root-node count is ALREADY fully accounted for by two prior blocks; MySQL/SQL-Server DDL type strings censused against HSQLDB; `BSqlType.sqlNVarchar` is dead in the NEW `ddl.Column` path but LIVE in the OLD deprecated-dialect path via `BUnicodeUpdateJob`; and `com.tridium.niagarad.license.Feature`'s call-site census extended to its true 7-file/11-site population |
 | 115 | [niagara5-block115.md](niagara5-block115.md) | Decompiler-fidelity and method-error audit: the bytecode-distinguishability matrix, version-gated resugaring confirmed on `BQudtUnitTag`, compile-time constant inlining proven docSource-vs-decompiled on a real corpus pair, B13's 18 "N5-only" modules re-baselined against N4-4.15.3.28 (platHwScanAtlas was already shipping), two B84 defects corrected, and a canonical C1-C12 method-error-class catalog mapped to lint rules R1-R8 |
+| 116 | [niagara5-block116.md](niagara5-block116.md) | What Java decompilation cannot or did not preserve: an empirical loss catalog for the N5 tree (synthetic javac-25 first principles, a 2,809-file docSource differential, a recompile-and-compare bytecode oracle, 11 confirmed semantic defects in the corpus's own decompiled text, and docSource proven byte-identical to the shipped bytecode) |

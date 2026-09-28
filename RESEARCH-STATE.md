@@ -44,16 +44,16 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
      Field names use UNDERSCORES on purpose: they must never collide with the prose greps below. -->
 <!-- research-state.v1 -->
 schema: research-state.v1
-covered_blocks: 115
-gaps_closed: 386
-known_gaps: 488
-investigable_open: 8
-requires_execution_open: 18
+covered_blocks: 116
+gaps_closed: 387
+known_gaps: 494
+investigable_open: 10
+requires_execution_open: 21
 blocked_open: 64
 deferred_open: 12
 undocumented_findings: 0
-blocks_since_retro: 0
-last_iteration_ts: 2026-09-28T08:30:00Z
+blocks_since_retro: 1
+last_iteration_ts: 2026-09-28T10:30:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
      applies to every corpus (single-focus and campaign alike); the stall-detection instrument reads it
@@ -61,9 +61,9 @@ last_iteration_ts: 2026-09-28T08:30:00Z
 
 ## Coverage
 
-- **Covered blocks**: 115 (B1..B115)
-- **Coverage metric**: 386 / 488 closed
-- **Last iteration**: 2026-09-28 — B115 decompiler-fidelity/method-error audit; lint-block R0-R8 gates + CI; §18 retro (14 kit deltas, issues #1204-#1217)
+- **Covered blocks**: 116 (B1..B116)
+- **Coverage metric**: 387 / 494 closed
+- **Last iteration**: 2026-09-28 — B116 Java decompile loss catalog (11 semantic Vineflower defects D1-D11); gate fixes aaa369d/b5814c8
 
 ## Gap-backlog
 
@@ -488,6 +488,12 @@ last_iteration_ts: 2026-09-28T08:30:00Z
 | medium | B115-G3 Extend the docSource inlining proof across the full dead-constant candidate population | organized/docSource | pending |
 | low | B115-G4 Re-check B13 §13.4.4(d-2) 49 removed modules against the N4.15 baseline | PowerB install | pending |
 | low | B115-G5 Reconcile the two /tmp-path re-counts (§115.7) with T3 audit method | corpus | pending |
+| high | B116-G1 Run the bytecode round-trip oracle over the ~12,100 classes without docSource (measured-by: tools/n5-fidelity.py) | organized/ + n5-fidelity | requires-execution → §19 |
+| high | B116-G2 Audit corpus quotes of the D1-D11 semantically-wrong methods | corpus | ✅ covered — orchestrator (rg over niagara5-block*.md: only B35 §35 cites BNrioNetwork for class hierarchy, unaffected) |
+| medium | B116-G3 Classify the 152 docSource-covered decompiled files that do not recompile | organized/docSource | requires-execution → §19 |
+| medium | B116-G4 Measure a whole-tree Vineflower re-run with library context (-e) against D1-D11 | n5-decompile v2 | requires-execution → §19 |
+| medium | B116-G5 Review the 27 typeSwitch / 10 MatchException classes decompiled as pseudo-Java | organized/ | pending |
+| low | B116-G6 Independent second review of the 113 benign SEM? verdicts | evidence/b116 | pending |
 | low | B104-G5 Live-station confirmation of B104's static driver/sync findings | station | requires-execution → §19 |
 | low | B106-G1 Gradle --info/dependencyInsight trace of which wiring puts the moduleTest jar on compileModuleTestJava | Gradle run | requires-execution → §19 |
 
@@ -610,6 +616,7 @@ last_iteration_ts: 2026-09-28T08:30:00Z
 | 113 | 2026-09-28 | B108-G2 no process creation in NCS-Agent; B108-G1 narrowed (2,418 typelinks, 47 own types) | B113 | yes · sonnet | 1 new — B113-G1 |
 | 114 | 2026-09-28 | B110-G1 MySQL/MSSQL DDL, B110-G2 sqlNVarchar live via BUnicodeUpdateJob (§14 B110), B111-G1; B109-G3 already-covered | B114 | yes · sonnet | 2 new — B114-G1..G2 |
 | 115 | 2026-09-28 | Decompiler-fidelity + method-error audit: bytecode-distinguishability matrix, version-gated resugaring, constant inlining (docSource proof), 7/18 N5-only modules ship in N4.15, B84 fixes; §14 pointers B13/B18/B84/B96/B105/B111 | B115 | yes · sonnet | 5 new — B115-G1..G5 |
+| 116 | 2026-09-28 | Java decompile loss catalog: docSource = byte-identical ground truth (3,707 classes); 30-row synthetic loss matrix over 4 decompilers; 65,136 aligned members normalized; 11 confirmed Vineflower semantic defects D1-D11 (0.030%); §14 pointer B115 | B116 | yes · opus | 6 new — B116-G1..G6 |
 
 ## Blocked gaps (each tagged with what it needs)
 
@@ -680,8 +687,8 @@ last_iteration_ts: 2026-09-28T08:30:00Z
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 8
-- **Open gaps — requires-execution**: 18
+- **Open gaps — read-only investigable**: 10
+- **Open gaps — requires-execution**: 21
 - **Open gaps — blocked**: 64
 - Consecutive iterations with empty backlog (secondary): 0/2
 - Budget cap (default safety net): none
