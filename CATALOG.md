@@ -2,7 +2,7 @@
 
 # Block catalog
 
-Total: **106 blocks**
+Total: **111 blocks**
 
 | Block | File | Title |
 |-------|------|-------|
@@ -112,3 +112,8 @@ Total: **106 blocks**
 | 104 | [niagara5-block104.md](niagara5-block104.md) | `BNiagaraStation`'s base connection-handshake bodies, the `findReachableStations` wire protocol (both hops), `BComponent`'s unconditional `isChildLegal` default, BACnet's `BLoadableNetwork`/`BLoadableDevice` chassis lineage, a full `BWrapperBoxChannel` subclass census, what actually re-arms `niagaraSync`'s license check, `BFoxProxySession.getRemoteNiagaraVersion`'s exact signature, and `BOrionDatabase`'s pluggable-RDBMS storage internals |
 | 105 | [niagara5-block105.md](niagara5-block105.md) | Census residues and dependency-graph deltas: closing eight cross-block child gaps |
 | 106 | [niagara5-block106.md](niagara5-block106.md) | Ten build-toolchain-residue and third-party-library child gaps closed: `ThreadDeath`/`finalize()` idioms, a Gradle default-capability rule, a version-gated Batik manifest attribute, okio's egress surface, and a real Windows-`javac.exe` cross-toolchain reproduction |
+| 107 | [niagara5-block107.md](niagara5-block107.md) | Four `signingService`/`platCrypto`/`*Rpc` permission-census child gaps closed: real JDK PKIX chain validation empirically confirmed (and empirically defeated) against the B99 misissuance shape, `BSelfSignedDialog` Workbench reachability traced, a new null-Context call-site sub-shape found, and the LON read-gates-write pattern confirmed non-recurring |
+| 108 | [niagara5-block108.md](niagara5-block108.md) | NCS-Agent's full 8,005-function pclntab census resolves buildinfo-blob module versions and own-package capabilities; the build-side `LIB-INF` packing task pinned to one bytecode `ldc`; a "toolchain-specific" javac warning corrected to a pre-existing artifact; Atlas narrowed to a named commercial candidate |
+| 109 | [niagara5-block109.md](niagara5-block109.md) | No first-class N5 UI command reaches `BComplex.setFacets()`'s frozen-slot branch (three independent gates, corpus-wide `setFacets(` census); N5's 3-doc-jar dual-indexing census refined; `docDeveloperAnalytics.jar`'s own `bajadoc.index` IS read at runtime, by the Help side-bar's API tree, not `BajadocIndex`; and the PowerB N4-4.15.3.28 package DOES ship `saml`, already on the same `java-saml-core-2.9.0` library as N5 |
+| 110 | [niagara5-block110.md](niagara5-block110.md) | Four B104 child gaps closed: `ValueDocDecoder`'s bog-document grammar, `BUploadParameters`/`BDownloadParameters`'s full field census, `TableBuilder`'s Property→SQL-type mapping, and a station-wide negative census for any retention/purge job over Orion-backed tables |
+| 111 | [niagara5-block111.md](niagara5-block111.md) | Four cross-block census extensions: a receiver-type-aware Feature-API script, a stratified dead-constant re-sample, six more plat*/exportTags module.xml diffs, and an exhaustive template-comment read |

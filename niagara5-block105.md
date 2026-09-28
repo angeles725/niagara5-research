@@ -468,7 +468,7 @@ now with a cheaper starting heuristic (hit-count-based pre-filtering) than "read
   agent-binding-interface redesign) to the FULL `plat*`/`html`/`file`/`fox`/`export` cluster membership
   beyond the specific modules diffed this session (`platBacnet`, `file`, `fox`, `export`, `html`) — the
   mechanism is established and cross-vendor-corroborated, but e.g. `platLon`/`platMstp`/`platNrio`/
-  `platCcn`/`platEdgeIo`/`platSerialNpsdk`/`exportTags` were not individually re-diffed. `investigable`,
+  `platCcn`/`platEdgeIo`/`platSerialNpsdk`/`exportTags` were not individually re-diffed. **[CORRECTED by [Block 111] §111.5:** plat* all show the same +19 delta, but `exportTags` does NOT reproduce the collapse (+1 wash).**]** `investigable`,
   low priority (confirmatory, not expected to change the conclusion).
 
 ## Self-verify

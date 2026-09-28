@@ -44,16 +44,16 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
      Field names use UNDERSCORES on purpose: they must never collide with the prose greps below. -->
 <!-- research-state.v1 -->
 schema: research-state.v1
-covered_blocks: 106
-gaps_closed: 355
-known_gaps: 466
-investigable_open: 20
+covered_blocks: 111
+gaps_closed: 375
+known_gaps: 477
+investigable_open: 10
 requires_execution_open: 16
-blocked_open: 63
+blocked_open: 64
 deferred_open: 12
 undocumented_findings: 0
-blocks_since_retro: 0
-last_iteration_ts: 2026-09-28T05:30:00Z
+blocks_since_retro: 5
+last_iteration_ts: 2026-09-28T06:30:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
      applies to every corpus (single-focus and campaign alike); the stall-detection instrument reads it
@@ -61,9 +61,9 @@ last_iteration_ts: 2026-09-28T05:30:00Z
 
 ## Coverage
 
-- **Covered blocks**: 106 (B1..B106)
-- **Coverage metric**: 355 / 466 closed
-- **Last iteration**: 2026-09-28 — wave 11: B99–B106 (8 delegated sonnet writers), 68 gaps closed/narrowed (7 already-covered confirmed), 5 moved to blocked
+- **Covered blocks**: 111 (B1..B111)
+- **Coverage metric**: 375 / 477 closed
+- **Last iteration**: 2026-09-28 — wave 12: B107–B111 (5 delegated sonnet writers), all 20 investigable gaps closed/narrowed, 11 child gaps (1 blocked), 4 §14 corrections (B98, B105, B106)
 
 ## Gap-backlog
 
@@ -443,30 +443,40 @@ last_iteration_ts: 2026-09-28T05:30:00Z
 | low | B98-G1 Do N4 stations run with a SecurityManager installed (reachability of JSR-105 secure validation) | N4 nre | ✅ covered — B100 |
 | low | B98-G2 Re-check B98 N4 findings on the exact 4.14.0.162 build | N4-4.14 | ✅ covered — B100 |
 | low | B98-G3 Raw deobfuscator detect log for honeywellBacnetSpyder/honeywellLonSpyder | N4 organized/ | ✅ covered — B105 |
-| low | B98-G4 saml.jar absent from the PowerB 4.15 OEM package | PowerB install | pending |
+| low | B98-G4 saml.jar absent from the PowerB 4.15 OEM package | PowerB install | ✅ covered — B109 (§14 corrects B98 §98.1: PowerB ships saml-rt/ux/wb; → B109-G1) |
 | low | B97-G2 Workbench GUI re-sign vs verify-module.sh stored check | Workbench | requires-execution → §19 (re-sign a module in Workbench, rerun --stored) |
 | deferred | B95-G1 commonsLang.jar empty in 5.0.0.28 beta: fixed in a later build? | N5 GA install | pending (parked; needs a later build) |
-| medium | B99-G1 Do downstream consumers of signingService-issued certs perform CA-chain/BasicConstraints validation (exploitability of the CA:TRUE copy-through) | crypto consumers | pending |
-| low | B99-G3 Workbench reachability of the ungated BPlatCryptoManager.generateSelfSignedCert/resetUserKeyStore | workbench + platCrypto | pending |
-| low | B99-G4 Remaining B91-G1 null-Context sub-shapes (caller/callee split, non-standard wrapper names) | organized/ | pending |
-| low | B99-G5 Does BLonworksRpc's read-gates-write pattern recur elsewhere | organized/ | pending |
-| medium | B100-G1 Census the full 8005-function / 4209-type NCS-Agent symbol table | NCS-Agent binary | pending |
-| low | B101-G4 Commercial name of the Atlas (ARM64 snap) hardware target | web | pending |
-| low | B101-G5 Build-side Gradle step that packs LIB-INF third-party jars | m2 plugins | pending |
-| medium | B103-G1 Any GUI path reaching BComplex.setFacets() frozen-slot branch | workbench + web | pending |
-| low | B103-G2 Do other doc jars share docDeveloperAnalytics' dual-indexing | doc jars | pending |
-| medium | B103-G3 Is docDeveloperAnalytics.jar's own index read at runtime by BajadocIndex | help | pending |
-| low | B104-G1 ValueDocDecoder binary grammar | baja | pending |
-| low | B104-G2 BUploadParameters/BDownloadParameters field contents | driver | pending |
-| low | B104-G3 TableBuilder Property → SQL type mapping | orion | pending |
-| low | B104-G4 Station-wide search for an Orion-table retention/purge job | organized/ | pending |
-| medium | B105-G1 Receiver-type-aware census of Feature .get()/.getb() calls to finish B11-G4 | organized/ | pending |
-| low | B105-G2 Continue dead-constant shadow-literal triage beyond the 40-candidate sample | organized/ | pending |
-| low | B105-G3 Extend the module.xml consolidation explanation to the rest of the plat*/html/file/fox/export cluster | module.xml census | pending |
-| low | B106-G2 Windows javac.exe NiagaraPermissionGrant$Type.WORKBENCH enum warning: toolchain-specific or unreported | javac | pending |
-| low | B106-G3 Exhaustive prose read of all 5,161 ndriver/videodriver template lines | devkit | pending |
+| medium | B99-G1 Do downstream consumers of signingService-issued certs perform CA-chain/BasicConstraints validation (exploitability of the CA:TRUE copy-through) | crypto consumers | ✅ covered — B107 (PKIX accepts the CA:TRUE shape; MEDIUM-HIGH confirmed, fix at issuance) |
+| low | B99-G3 Workbench reachability of the ungated BPlatCryptoManager.generateSelfSignedCert/resetUserKeyStore | workbench + platCrypto | ✅ covered — B107 |
+| low | B99-G4 Remaining B91-G1 null-Context sub-shapes (caller/callee split, non-standard wrapper names) | organized/ | ✅ narrowed — B107 (residue → B107-G1/G2) |
+| low | B99-G5 Does BLonworksRpc's read-gates-write pattern recur elsewhere | organized/ | ✅ covered — B107 (singular LON instance) |
+| medium | B100-G1 Census the full 8005-function / 4209-type NCS-Agent symbol table | NCS-Agent binary | ✅ covered — B108 (type half → B108-G1) |
+| low | B101-G4 Commercial name of the Atlas (ARM64 snap) hardware target | web | ✅ narrowed — B108 (JACE 9000 candidate [INFER]; residue → B108-G3 blocked) |
+| low | B101-G5 Build-side Gradle step that packs LIB-INF third-party jars | m2 plugins | ✅ covered — B108 |
+| medium | B103-G1 Any GUI path reaching BComplex.setFacets() frozen-slot branch | workbench + web | ✅ covered — B109 |
+| low | B103-G2 Do other doc jars share docDeveloperAnalytics' dual-indexing | doc jars | ✅ narrowed — B109 (residue → B109-G3) |
+| medium | B103-G3 Is docDeveloperAnalytics.jar's own index read at runtime by BajadocIndex | help | ✅ covered — B109 (BHelpSideBar.buildApi) |
+| low | B104-G1 ValueDocDecoder binary grammar | baja | ✅ covered — B110 |
+| low | B104-G2 BUploadParameters/BDownloadParameters field contents | driver | ✅ covered — B110 |
+| low | B104-G3 TableBuilder Property → SQL type mapping | orion | ✅ covered — B110 (→ B110-G1/G2) |
+| low | B104-G4 Station-wide search for an Orion-table retention/purge job | organized/ | ✅ covered — B110 (negative: no Orion purge) |
+| medium | B105-G1 Receiver-type-aware census of Feature .get()/.getb() calls to finish B11-G4 | organized/ | ✅ covered — B111 (→ B111-G1) |
+| low | B105-G2 Continue dead-constant shadow-literal triage beyond the 40-candidate sample | organized/ | ✅ narrowed — B111 (160/3623 sampled; heuristic confirmed, residue sampling-bounded) |
+| low | B105-G3 Extend the module.xml consolidation explanation to the rest of the plat*/html/file/fox/export cluster | module.xml census | ✅ covered — B111 (§14 corrects B105 §105.11 exportTags framing) |
+| low | B106-G2 Windows javac.exe NiagaraPermissionGrant$Type.WORKBENCH enum warning: toolchain-specific or unreported | javac | ✅ covered — B108 (§14 corrects B106 §106.8) |
+| low | B106-G3 Exhaustive prose read of all 5,161 ndriver/videodriver template lines | devkit | ✅ covered — B111 |
 | low | B99-G2 Live repro of the Sys.isStation()/getStation() permission-helper edges | station | requires-execution → §19 (offline Workbench vs station run) |
 | low | B102-G2 Flip the uxBuilder WebDev toggle on a live station and observe raw vs built serving | station | requires-execution → §19 |
+| medium | B107-G1 Does BFoxHistorySpace getPermissions(null) nav gate reach history content exposure or discovery only | history fox | pending |
+| low | B107-G2 Semantic caller/callee-split + wrapper-name null-Context shapes (non-mechanical) | organized/ | pending |
+| medium | B108-G1 Walk NCS-Agent Go type-metadata (typelinks) table: 4209 types | NCS-Agent binary | pending |
+| low | B108-G2 NCS-Agent InstallSoftware process-invocation path without os/exec (syscall/x/sys trace) | NCS-Agent binary | pending |
+| medium | B109-G1 Re-run B98 §98.1 SHA-1/secureValidation analysis on N4-4.15 com.onelogin.saml2.util.Util (defensive) | PowerB saml-rt | pending |
+| low | B109-G2 WebProperty frozen-slot metadata-sync path across third-party modules | organized/ | pending |
+| low | B109-G3 Line-by-line read of docDeveloper.jar bajadoc.index | doc jars | pending |
+| low | B110-G1 MySQL/SQL-Server RdbmsDialect DDL strings | rdb dialects | pending |
+| low | B110-G2 Whether BSqlType.sqlNVarchar is dead code in Column.makeTypeDdl or reachable via a third-party translator (deprecated dialects DO handle it — orchestrator check) | rdb | pending |
+| low | B111-G1 Extend Feature census to com.tridium.niagarad.license.Feature | organized/ | pending |
 | low | B104-G5 Live-station confirmation of B104's static driver/sync findings | station | requires-execution → §19 |
 | low | B106-G1 Gradle --info/dependencyInsight trace of which wiring puts the moduleTest jar on compileModuleTestJava | Gradle run | requires-execution → §19 |
 
@@ -580,9 +590,15 @@ last_iteration_ts: 2026-09-28T05:30:00Z
 | 104 | 2026-09-28 | B73-G1..G4 station/discovery/isChildLegal/BACnet chassis, B92-G2/G3 license fault needs remount, B10-G3; B69-G3 Orion = separate RDBMS | B104 | yes · sonnet | 5 new — B104-G1..G5 |
 | 105 | 2026-09-28 | B98-G3 ZKM detect logs, B70-G1 bajaui fallback (§14 corrects B80/B90 totals), B60-G3/G4 module.xml consolidation, B92-G1; B11-G4/B96-G2 narrowed | B105 | yes · sonnet | 3 new — B105-G1..G3 |
 | 106 | 2026-09-28 | B55-G1 real javac.exe, B55-G2 okio, B39-G2 batik ≥1.18 (§14 corrects B50), B44-G4, B64-G3, B67-G1 MET12-J-EX1; B97-G1/G3 narrowed | B106 | yes · sonnet | 3 new — B106-G1..G3 |
+| 107 | 2026-09-28 | B99-G1 PKIX accepts CA:TRUE misissued intermediate (MEDIUM-HIGH confirmed), B99-G3/G5; B99-G4 narrowed | B107 | yes · sonnet | 2 new — B107-G1..G2 |
+| 108 | 2026-09-28 | B100-G1 NCS-Agent 8005-fn census + buildinfo versions, B101-G5 LIB-INF into(), B106-G2 (§14 corrects B106); B101-G4 narrowed | B108 | yes · sonnet | 3 new — B108-G1..G3 |
+| 109 | 2026-09-28 | B103-G1 no GUI frozen setFacets, B103-G3 BHelpSideBar reads bajadoc.index, B98-G4 (§14 corrects B98); B103-G2 narrowed | B109 | yes · sonnet | 3 new — B109-G1..G3 |
+| 110 | 2026-09-28 | B104-G1 ValueDocDecoder XML grammar (+5.0 root), B104-G2 params, B104-G3 SQL mapping, B104-G4 no Orion purge | B110 | yes · sonnet | 2 new — B110-G1..G2 |
+| 111 | 2026-09-28 | B105-G1 Feature census +76 sites, B105-G3 plat* uniform +19 (§14 corrects B105), B106-G3 exhaustive template read; B105-G2 narrowed | B111 | yes · sonnet | 1 new — B111-G1 |
 
 ## Blocked gaps (each tagged with what it needs)
 
+- B108-G3 Tridium-internal source for the "Atlas" codename — needs: non-public Tridium source · tried: public JACE 8000/9000 datasheets + WebSearch (B108, JACE 9000 fingerprint match)
 - B32-G3 bin/javac on embedded-tier N5 images — needs: a JACE/embedded N5 image · tried: desktop install (javac.exe present, JDK 25.0.4, B101)
 - B45-G4 Live operator-driven link-wiring validation — needs: licensed running station (same wall as B45-G1) · tried: validator traced as dynamic ORD + ancestor walk (B106)
 - B58-G2 Where PANCCADIA's runtime histories/schedules/px live — needs: operator authorization to read the client station host · tried: not attempted (client data out of scope)
@@ -649,9 +665,9 @@ last_iteration_ts: 2026-09-28T05:30:00Z
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 20
+- **Open gaps — read-only investigable**: 10
 - **Open gaps — requires-execution**: 16
-- **Open gaps — blocked**: 63
+- **Open gaps — blocked**: 64
 - Consecutive iterations with empty backlog (secondary): 0/2
 - Budget cap (default safety net): none
 

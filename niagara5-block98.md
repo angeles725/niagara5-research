@@ -16,7 +16,7 @@
 > a live `[CERT-hw]` reproduction of any of these findings against a running station (all reads are
 > static, on decompiled/disassembled bytecode or shipped config text); a full re-derivation of every
 > other N4-4.15.3.28 module beyond the ones opened for these nine gaps; `saml.jar`'s current N4-4.15
-> implementation (this OEM package does not ship `saml.jar` at all — see §98.1's boundary note).
+> implementation (this OEM package does not ship `saml.jar` at all — see §98.1's boundary note; CORRECTED by [Block 109] §109.4: it ships `saml-rt/ux/wb.jar`).
 >
 > Subject version: **N5 5.0.0.28 (Beta)** for the N5-side re-reads (`backup.jar`/`BFormat.java`/
 > `FormatDenylist.java`/`alarm.jar`/`schedule.jar`, all already resident in
@@ -124,6 +124,11 @@ Java 8 update-level `java.security` defaults have drifted over the update train 
 periodically add `disallowAlg` entries), so this is evidence about N4's JDK-provider lineage
 continuing to not gate SHA-1 as of the latest available N4 build, not a byte-identical re-derivation of
 the exact 4.14 JDK build.
+
+> **Correction ([Block 109] §109.4):** the boundary note below is WRONG — PowerB N4-4.15.3.28 ships SAML as
+> per-layer jars `saml-rt.jar`/`saml-ux.jar`/`saml-wb.jar`/`samlEncryption-rt.jar` (not `saml.jar`), and N4 4.15 already
+> uses `com.onelogin.saml2.util.Util` from `java-saml-core-2.9.0`. The §98.1 SHA-1 reachability analysis re-read the
+> N4.14 class, not the 4.15 one; re-run tracked as **B109-G1**.
 
 **Boundary note.** This OEM ("PowerB") N4-4.15.3.28 package does **not** ship `saml.jar` at all
 (`unzip -l "$BASE/modules/saml.jar"` → file not found; `ls "$BASE/modules" | grep -i saml` → no
