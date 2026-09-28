@@ -284,6 +284,56 @@ class PrecedenceTest(unittest.TestCase):
         self.assertTrue(extracted.is_file())
         self.assertEqual(extracted.read_text(), "// upstream original\n")
 
+    def test_upstream_mrjar_override_class_wins_via_unprefixed_source(self):
+        # Real 2026-09-28 finding: a multi-release jar's binary ships
+        # "META-INF/versions/9/org/bc/Foo.class" as its own top-level class_key; the sources jar
+        # has only the un-prefixed "org/bc/Foo.java" -- same logical class, same source.
+        jar_bytes = _jar_bytes({"org/bc/Foo.java": b"package org.bc;\nclass Foo {}\n"})
+        art_dir = self.root / "_upstream-sources" / "grp" / "bcfips" / "1.0"
+        art_dir.mkdir(parents=True)
+        (art_dir / "bcfips-1.0-sources.jar").write_bytes(jar_bytes)
+        manifest = {
+            "artifacts": [{
+                "groupId": "grp", "artifactId": "bcfips", "version": "1.0", "status": "fetched",
+                "sources_jar_path": "organized/_upstream-sources/grp/bcfips/1.0/bcfips-1.0-sources.jar",
+                "classdiff": {"sources_only": [], "binary_only": [], "common": 1},
+                "content_identity": {"status": "resigned-identical"},
+            }],
+            "unidentified": [],
+        }
+        (self.root / "_upstream-sources" / "manifest.json").write_text(json.dumps(manifest))
+        m = _load()
+        name_index, sha_index, _v = m.build_upstream_index(self.root)
+        rec = self._record("META-INF/versions/9/org/bc/Foo", upstream_index=(name_index, sha_index))
+        self.assertEqual(rec["best_kind"], "upstream")
+
+    def test_upstream_kotlin_multiplatform_source_set_wins_via_declared_package(self):
+        # Real 2026-09-28 finding: kotlin-stdlib's sources jar lays .kt files out by source set
+        # (commonMain/generated/Arrays.kt), not by compiled package path -- the binary class_key
+        # "kotlin/collections/ArraysKt" can only be matched via the file's OWN declared package.
+        jar_bytes = _jar_bytes({
+            "commonMain/generated/Arrays.kt": b"package kotlin.collections\n\nfun sortedArray() {}",
+        })
+        art_dir = self.root / "_upstream-sources" / "org.jetbrains.kotlin" / "kotlin-stdlib" / "2.3.0"
+        art_dir.mkdir(parents=True)
+        (art_dir / "kotlin-stdlib-2.3.0-sources.jar").write_bytes(jar_bytes)
+        manifest = {
+            "artifacts": [{
+                "groupId": "org.jetbrains.kotlin", "artifactId": "kotlin-stdlib", "version": "2.3.0",
+                "status": "fetched",
+                "sources_jar_path": "organized/_upstream-sources/org.jetbrains.kotlin/kotlin-stdlib/2.3.0/kotlin-stdlib-2.3.0-sources.jar",
+                "classdiff": {"sources_only": [], "binary_only": [], "common": 0},
+                "content_identity": {"status": "resigned-identical"},
+            }],
+            "unidentified": [],
+        }
+        (self.root / "_upstream-sources" / "manifest.json").write_text(json.dumps(manifest))
+        m = _load()
+        name_index, sha_index, _v = m.build_upstream_index(self.root)
+        rec = self._record("kotlin/collections/ArraysKt", upstream_index=(name_index, sha_index))
+        self.assertEqual(rec["best_kind"], "upstream")
+        self.assertTrue(rec["best"].endswith(".kt"))
+
     def test_vineflower2_beats_vineflower_by_default(self):
         self.fx.add_rung("modA", "vineflower2", "pkg/V2Class", content="// v2\n")
         self.fx.add_rung("modA", "vineflower", "pkg/V2Class", content="// v1\n")
@@ -373,6 +423,108 @@ class UpstreamNonPortableNamesTest(unittest.TestCase):
             self.assertNotIn("module-info", name_index)
             self.assertNotIn("org/thing/package-info", name_index)
             self.assertIn("org/thing/Real", name_index)
+
+
+class SourceMatchRulesTest(unittest.TestCase):
+    """strip_mrjar_prefix / mrjar_variants / declared_package_of / declared_names_for_source --
+    the same matcher tools/n5-upstream-sources.py's coverage headline uses (kept independent/
+    inline, see that module's own comment)."""
+
+    def test_strips_versioned_prefix(self):
+        m = _load()
+        self.assertEqual(m.strip_mrjar_prefix("META-INF/versions/9/org/foo/Bar"), "org/foo/Bar")
+
+    def test_no_prefix_returns_none(self):
+        m = _load()
+        self.assertIsNone(m.strip_mrjar_prefix("org/foo/Bar"))
+
+    def test_variants_include_both_forms_when_prefixed(self):
+        m = _load()
+        self.assertEqual(m.mrjar_variants("META-INF/versions/17/a/B"), {"META-INF/versions/17/a/B", "a/B"})
+
+    def test_declared_package_parses_java_and_kotlin(self):
+        m = _load()
+        self.assertEqual(m.declared_package_of("package org.foo.bar;\nclass X {}"), "org/foo/bar")
+        self.assertEqual(m.declared_package_of("package org.foo.bar\nclass X"), "org/foo/bar")
+        self.assertIsNone(m.declared_package_of("class X {}"))
+
+    def test_kotlin_file_declares_stem_and_default_kt_facade(self):
+        m = _load()
+        names = m.declared_names_for_source(
+            "commonMain/generated/Arrays.kt", b"package kotlin.collections\n\nfun foo() {}")
+        self.assertEqual(names, {"kotlin/collections/Arrays", "kotlin/collections/ArraysKt"})
+
+    def test_kotlin_file_with_jvm_name_annotation(self):
+        m = _load()
+        source = b'@file:JvmName("CustomNamed")\npackage kotlin.collections\n\nfun namedThing() {}'
+        names = m.declared_names_for_source("commonMain/generated/_Named.kt", source)
+        self.assertEqual(names, {"kotlin/collections/_Named", "kotlin/collections/CustomNamed"})
+
+
+class UpstreamMrjarAndSourceSetLayoutTest(unittest.TestCase):
+    """Orchestrator follow-up (2026-09-28): the two known undercounting gaps this tool and
+    tools/n5-upstream-sources.py's coverage headline shared -- a multi-release jar's
+    META-INF/versions/<N>/ override classes, and a Kotlin Multiplatform sources jar laid out by
+    source set rather than compiled package path."""
+
+    def _manifest_for(self, root, jar_bytes, **extra_art_fields):
+        art_dir = root / "_upstream-sources" / "grp" / "art" / "1.0"
+        art_dir.mkdir(parents=True)
+        (art_dir / "art-1.0-sources.jar").write_bytes(jar_bytes)
+        art = {
+            "groupId": "grp", "artifactId": "art", "version": "1.0", "status": "fetched",
+            "sources_jar_path": "organized/_upstream-sources/grp/art/1.0/art-1.0-sources.jar",
+            "classdiff": {"sources_only": [], "binary_only": [], "common": 1},
+            "content_identity": {"status": "resigned-identical"},
+        }
+        art.update(extra_art_fields)
+        manifest = {"artifacts": [art], "unidentified": []}
+        (root / "_upstream-sources" / "manifest.json").write_text(json.dumps(manifest))
+
+    def test_mrjar_override_class_key_matches_unprefixed_source(self):
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            jar_bytes = _jar_bytes({"org/bc/Foo.java": b"package org.bc;\nclass Foo {}"})
+            self._manifest_for(root, jar_bytes)
+            name_index, sha_index, _v = m.build_upstream_index(root)
+            cand = m.find_upstream_candidate(
+                {}, "META-INF/versions/9/org/bc/Foo", name_index, sha_index)
+            self.assertIsNotNone(cand)
+            self.assertTrue(cand["trusted"])
+            self.assertEqual(cand["entry"], "org/bc/Foo.java")
+
+    def test_kotlin_multiplatform_source_set_layout_matched_via_declared_package(self):
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            jar_bytes = _jar_bytes({
+                "commonMain/generated/Arrays.kt":
+                    b"package kotlin.collections\n\nfun sortedArray() {}",
+            })
+            self._manifest_for(root, jar_bytes)
+            name_index, sha_index, _v = m.build_upstream_index(root)
+            cand = m.find_upstream_candidate(
+                {}, "kotlin/collections/ArraysKt", name_index, sha_index)
+            self.assertIsNotNone(cand)
+            self.assertTrue(cand["trusted"])
+            self.assertEqual(cand["entry"], "commonMain/generated/Arrays.kt")
+
+    def test_extracted_upstream_file_uses_kt_extension_for_a_kotlin_match(self):
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            jar_bytes = _jar_bytes({
+                "commonMain/generated/Arrays.kt":
+                    b"package kotlin.collections\n\nfun sortedArray() {}",
+            })
+            self._manifest_for(root, jar_bytes)
+            name_index, sha_index, _v = m.build_upstream_index(root)
+            cand = m.find_upstream_candidate(
+                {}, "kotlin/collections/ArraysKt", name_index, sha_index)
+            extracted = m.extract_upstream_file(cand, root / "_extract", "kotlin/collections/ArraysKt")
+            self.assertTrue(extracted.name.endswith(".kt"))
+            self.assertIn(b"sortedArray", extracted.read_bytes())
 
 
 class JarIdentityFallbackTest(unittest.TestCase):

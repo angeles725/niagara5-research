@@ -667,6 +667,109 @@ def top_level_class_of(class_entry_name: str) -> str:
     return f"{dirpart}{sep}{simple.split('$', 1)[0]}"
 
 
+# ---------------------------------------------------------------------------
+# Source-match rules shared with tools/n5-best-source.py (kept independent/inline there, same
+# convention as GRADE_RANK -- see that module's own comment -- since these are standalone,
+# hyphenated-filename CLI scripts that do not import one another; behavior MUST stay identical,
+# and each module tests it directly). Real 2026-09-28 orchestrator follow-up findings:
+#   1. MRJAR (R-mrjar-path-prefix): a multi-release jar's version-specific override class
+#      ("META-INF/versions/<N>/<pkg>/<Cls>.class") is the SAME logical class as
+#      "<pkg>/<Cls>.class" -- its source is the SAME .java/.kt file -- but the raw top-level path
+#      differs because of the prefix. Strip it (from whichever side carries it) before comparing.
+#   2. Source-set layouts (R-declared-package-fallback): a sources jar whose paths don't mirror
+#      the compiled package structure at all (Kotlin Multiplatform's `commonMain/`, `jvmMain/`,
+#      ...) can never match by path. Parse each source file's OWN `package` declaration (ignoring
+#      its zip-entry path -- a JVM .class file's path is ALWAYS package-accurate, so the BINARY
+#      side never needs this, only the SOURCES side) and index it by that instead, as a fallback
+#      ONLY used when the (always-first-choice) path-based match fails.
+# ---------------------------------------------------------------------------
+
+_MRJAR_VERSION_PREFIX_RE = re.compile(r"^META-INF/versions/\d+/")
+
+
+def strip_mrjar_prefix(path_name: str) -> Optional[str]:
+    """path_name with a leading "META-INF/versions/<N>/" stripped, or None if it doesn't have
+    one."""
+    m = _MRJAR_VERSION_PREFIX_RE.match(path_name)
+    return path_name[m.end():] if m else None
+
+
+def mrjar_variants(path_name: str) -> set[str]:
+    """path_name itself, plus its MRJAR-prefix-stripped form when it has one -- applied to BOTH
+    the binary (lookup) side and the sources (index) side, so matching works regardless of which
+    one (if either) carries the version-specific prefix (real finding: bc-fips's BINARY carries
+    it for its override classes; its sources jar does not)."""
+    stripped = strip_mrjar_prefix(path_name)
+    return {path_name, stripped} if stripped is not None else {path_name}
+
+
+_PACKAGE_DECL_RE = re.compile(r"(?m)^[ \t]*package[ \t]+([\w.]+)[ \t]*;?[ \t]*$")
+_KOTLIN_FILE_JVM_NAME_RE = re.compile(r'@file:JvmName\(\s*"([^"]+)"\s*\)')
+
+
+def declared_package_of(source_text: str) -> Optional[str]:
+    """The package THIS source file declares (its own `package ...` statement, in slash form,
+    e.g. "org/foo") -- independent of whatever path its zip entry happens to live at. "" for an
+    explicit default (no-package) file; None when no package statement is found at all (a
+    malformed/unusual file -- callers must not derive a declared-name candidate from it)."""
+    m = _PACKAGE_DECL_RE.search(source_text)
+    if not m:
+        return None
+    return m.group(1).replace(".", "/")
+
+
+def declared_names_for_source(entry_name: str, source_bytes: bytes) -> set[str]:
+    """Every top-level class name ONE `.java`/`.kt` source file could plausibly provide, derived
+    from its OWN declared package -- the fallback for a sources jar whose entry paths don't
+    mirror packages at all (real finding: Kotlin Multiplatform source sets). Returns an empty set
+    when the file isn't `.java`/`.kt`, has no package statement, or can't be decoded.
+
+    For `.java`, a file "Foo.java" declaring "package a.b" can only sensibly provide "a/b/Foo"
+    (Java requires the public top-level type to match the file's own stem).
+
+    For `.kt`, Kotlin additionally compiles the file's own TOP-LEVEL functions/properties (if
+    any) into a synthetic "facade" class -- "Foo.kt" -> "FooKt.class" by default, or the name
+    given by an `@file:JvmName("X")` annotation -> "X.class" instead. Since a .kt file may ALSO
+    contain a real class matching its own stem, or ONLY top-level declarations (no matching-name
+    class at all), this returns BOTH candidates -- "a/b/Foo" AND "a/b/FooKt" (or "a/b/X") -- since
+    an unused candidate name is harmless (nothing ever looks it up) but a missing one silently
+    loses a real match."""
+    if entry_name.endswith(".java"):
+        stem = entry_name.rsplit("/", 1)[-1][: -len(".java")]
+        is_kotlin = False
+    elif entry_name.endswith(".kt"):
+        stem = entry_name.rsplit("/", 1)[-1][: -len(".kt")]
+        is_kotlin = True
+    else:
+        return set()
+    try:
+        text = source_bytes.decode("utf-8", "replace")
+    except Exception:
+        return set()
+    pkg = declared_package_of(text)
+    if pkg is None:
+        return set()
+    prefix = f"{pkg}/" if pkg else ""
+    names = {f"{prefix}{stem}"}
+    if is_kotlin:
+        m = _KOTLIN_FILE_JVM_NAME_RE.search(text)
+        facade = m.group(1) if m else f"{stem}Kt"
+        names.add(f"{prefix}{facade}")
+    return names
+
+
+def class_has_matching_source(binary_top_level_name: str, source_names: dict) -> bool:
+    """Whether binary_top_level_name (top_level_class_of's output shape) has a matching source in
+    a `source_names` dict as sources_top_level_names/its n5-best-source.py mirror returns:
+    {"path": set[str], "declared": set[str]}. Path-based matching (including MRJAR variants) is
+    tried FIRST -- the strongest, most direct signal -- and the declared-package fallback only
+    when that fails."""
+    lookups = mrjar_variants(binary_top_level_name)
+    if lookups & source_names.get("path", set()):
+        return True
+    return bool(lookups & source_names.get("declared", set()))
+
+
 def load_binary_bytes(occurrence: dict, mod_dir: Path = N5_MOD_DIR,
                        install_dir: Path = N5_INSTALL_DIR) -> Optional[bytes]:
     """Read the installed binary jar bytes an evidence occurrence refers to. Returns None if the
@@ -911,13 +1014,17 @@ def run_identify_unidentified(plan: dict, mirror_modules_dir=MIRROR_MODULES_DIR,
     return summary
 
 
-def sources_top_level_names(art: dict) -> Optional[set[str]]:
-    """The set of top-level class names (same "path/without/extension" shape top_level_class_of
-    returns) that have a matching source file in this artifact's FETCHED sources jar -- `.java`,
-    UNIONED with `.kt` (real finding: kotlin-stdlib and friends publish `.kt` sources, no `.java`
-    at all -- a Kotlin-only sources jar must still count as source coverage). Returns None when no
-    sources jar was ever fetched for this artifact (status != "fetched") or the recorded file
-    isn't actually readable on disk."""
+def sources_top_level_names(art: dict) -> Optional[dict]:
+    """{"path": set[str], "declared": set[str]} of top-level class names (same "path/without/
+    extension" shape top_level_class_of returns) this artifact's FETCHED sources jar can match --
+    `.java` UNIONED with `.kt` (real finding: kotlin-stdlib and friends publish `.kt` sources, no
+    `.java` at all). "path" is every entry's own zip path (MRJAR-variant-expanded, see
+    mrjar_variants); "declared" is every entry's OWN `package` declaration + stem (see
+    declared_names_for_source) -- the fallback for a source-set layout whose paths don't mirror
+    packages (Kotlin Multiplatform's `commonMain/`, `jvmMain/`, ...). Use class_has_matching_source
+    to actually match a binary class against this, never a bare `in` check against one set.
+    Returns None when no sources jar was ever fetched for this artifact (status != "fetched") or
+    the recorded file isn't actually readable on disk."""
     if art.get("status") != "fetched":
         return None
     rel_path = art.get("sources_jar_path")
@@ -927,7 +1034,27 @@ def sources_top_level_names(art: dict) -> Optional[set[str]]:
     if not jar_path.exists():
         return None
     sources_bytes = jar_path.read_bytes()
-    return class_names_from_zip(sources_bytes, ".java") | class_names_from_zip(sources_bytes, ".kt")
+    path_names: set[str] = set()
+    declared_names: set[str] = set()
+    try:
+        with zipfile.ZipFile(io.BytesIO(sources_bytes)) as z:
+            for info in z.infolist():
+                if info.is_dir():
+                    continue
+                name = info.filename
+                if name.endswith(".java"):
+                    base = name[: -len(".java")]
+                elif name.endswith(".kt"):
+                    base = name[: -len(".kt")]
+                else:
+                    continue
+                if "$" in base.rsplit("/", 1)[-1]:
+                    continue
+                path_names |= mrjar_variants(base)
+                declared_names |= declared_names_for_source(name, z.read(info))
+    except (zipfile.BadZipFile, OSError):
+        return None
+    return {"path": path_names, "declared": declared_names}
 
 
 def run_all_third_party_coverage(manifest: dict, mirror_modules_dir=MIRROR_MODULES_DIR,
@@ -1008,7 +1135,8 @@ def run_all_third_party_coverage(manifest: dict, mirror_modules_dir=MIRROR_MODUL
         if proven:
             src_names = sources_top_level_names(art)
             if src_names:
-                covered += sum(1 for entry in proven if top_level_class_of(entry) in src_names)
+                covered += sum(1 for entry in proven
+                                if class_has_matching_source(top_level_class_of(entry), src_names))
     for u in manifest.get("unidentified", []):
         binary_bytes = load_binary_bytes_from_mirror(u, mirror_modules_dir, mirror_binext_dir)
         if binary_bytes is None:
@@ -1357,25 +1485,33 @@ def render_report(manifest: dict, paho_result: Optional[dict] = None,
             "(sha1-exact / identified-by-sha1 / resigned-identical) proves every class in the jar, "
             "nested/anonymous included; partially-modified proves only the specific classes found "
             "byte-identical; vendor-modified/unverifiable/mixed/unverified prove none -- AND "
-            "(b) its TOP-LEVEL class has a matching `.java` (or `.kt`, for Kotlin-only sources) in "
-            "the FETCHED sources jar, since a nested/anonymous class is declared inside its "
-            "top-level class's own source file. A bare classdiff NAME match with no identity proof "
-            "is NOT counted here -- see the separate, weaker \"Class coverage by original upstream "
-            "source\" section below for that name-only view. See T26a. This number is NOT the same "
-            "thing as `tools/n5-best-source.py`'s `by_best_kind.upstream` count and the two are "
-            "not expected to match: this one counts, per DISTINCT third-party artifact, whether a "
-            "class has PROVEN upstream source; n5-best-source.py counts per-population (module, "
-            "`_bin-ext`/`_etc-m2`/`_lib` jar, or raw LIB-INF copy) -- the same physical class can "
-            "recur across several populations (e.g. the same third-party jar bundled, undecompiled, "
-            "inside more than one module), so its `upstream` count can exceed the distinct-class "
-            "count here.\n\n"
-            "Known undercounting sources in (b)'s TOP-LEVEL path match (real 2026-09-28 findings): "
-            "a multi-release jar's `META-INF/versions/N/...` override classes carry that prefix in "
-            "the BINARY but not in the sources jar (same logical class, different top-level path) -- "
-            "e.g. bc-fips, bcprov-jdk18on; a Kotlin MULTIPLATFORM sources jar lays `.kt` files out by "
-            "source SET (`commonMain/`, `jvmMain/`, ...), not by the compiled package path -- e.g. "
-            "kotlin-stdlib, okhttp-jvm, okio-jvm. Both are real, verified gaps in THIS report's "
-            "matching method, not evidence the upstream source is actually missing or wrong."
+            "(b) its TOP-LEVEL class has a matching `.java`/`.kt` in the FETCHED sources jar, since "
+            "a nested/anonymous class is declared inside its top-level class's own source file -- "
+            "matched by PATH first (MRJAR-aware: a multi-release jar's `META-INF/versions/N/...` "
+            "override class matches its source's un-prefixed path, whichever side carries the "
+            "prefix -- real fix, 2026-09-28: bc-fips/bcprov-jdk18on went from ~52%/~82% to "
+            "~99.97%/~99.9% covered), falling back to each source file's OWN DECLARED `package` "
+            "statement when the sources jar's layout doesn't mirror packages at all (Kotlin "
+            "Multiplatform source sets -- `commonMain/`, `jvmMain/`, ... -- real fix, 2026-09-28: "
+            "kotlin-stdlib went from 0% to ~40% covered this way; a `.kt` file's own top-level "
+            "functions additionally map to its compiled `<Stem>Kt` facade class, or the name an "
+            "`@file:JvmName(\"X\")` annotation gives it). A bare classdiff NAME match with no "
+            "identity proof is NOT counted here -- see the separate, weaker \"Class coverage by "
+            "original upstream source\" section below for that name-only view. See T26a. This "
+            "number is NOT the same thing as `tools/n5-best-source.py`'s `by_best_kind.upstream` "
+            "count and the two are not expected to match: this one counts, per DISTINCT third-party "
+            "artifact, whether a class has PROVEN upstream source; n5-best-source.py counts "
+            "per-population (module, `_bin-ext`/`_etc-m2`/`_lib` jar, or raw LIB-INF copy) -- the "
+            "same physical class can recur across several populations (e.g. the same third-party "
+            "jar bundled, undecompiled, inside more than one module), so its `upstream` count can "
+            "exceed the distinct-class count here.\n\n"
+            "Residual gap in (b)'s matching (real 2026-09-28, after the MRJAR/declared-package "
+            "fixes above): kotlin-stdlib's remaining ~60% and woodstox-core are Kotlin/complex-"
+            "source-layout artifacts whose facade/declared-name heuristic doesn't capture every "
+            "compiled class (e.g. multiple functions from different files folding into one facade, "
+            "or classes this simple regex-based package parser can't attribute) -- a real, "
+            "disclosed limitation of this matching method, not evidence the upstream source is "
+            "actually missing or wrong."
         )
         lines.append("")
     lines.append("## Fetch status counts")

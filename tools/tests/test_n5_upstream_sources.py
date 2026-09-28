@@ -961,6 +961,103 @@ class ClassifyJarIdentityTest(unittest.TestCase):
         self.assertEqual(r["classes_total_local"], 0)
 
 
+class MrjarPrefixTest(unittest.TestCase):
+    def test_strips_versioned_prefix(self):
+        m = _load()
+        self.assertEqual(m.strip_mrjar_prefix("META-INF/versions/9/org/foo/Bar"), "org/foo/Bar")
+
+    def test_no_prefix_returns_none(self):
+        m = _load()
+        self.assertIsNone(m.strip_mrjar_prefix("org/foo/Bar"))
+
+    def test_variants_include_both_forms_when_prefixed(self):
+        m = _load()
+        self.assertEqual(m.mrjar_variants("META-INF/versions/17/a/B"), {"META-INF/versions/17/a/B", "a/B"})
+
+    def test_variants_is_just_itself_when_unprefixed(self):
+        m = _load()
+        self.assertEqual(m.mrjar_variants("a/B"), {"a/B"})
+
+
+class DeclaredPackageOfTest(unittest.TestCase):
+    def test_parses_java_package(self):
+        m = _load()
+        self.assertEqual(m.declared_package_of("package org.foo.bar;\n\nclass X {}"), "org/foo/bar")
+
+    def test_parses_kotlin_package_no_semicolon(self):
+        m = _load()
+        self.assertEqual(m.declared_package_of("package org.foo.bar\n\nclass X"), "org/foo/bar")
+
+    def test_default_package_is_empty_string(self):
+        m = _load()
+        self.assertIsNone(m.declared_package_of("class X {}"))
+
+    def test_skips_leading_comment_before_package(self):
+        m = _load()
+        text = "/* license header\n * more text\n */\npackage a.b.c;\nclass X {}"
+        self.assertEqual(m.declared_package_of(text), "a/b/c")
+
+
+class DeclaredNamesForSourceTest(unittest.TestCase):
+    def test_java_file_declares_package_plus_stem(self):
+        m = _load()
+        names = m.declared_names_for_source("commonMain/Foo.java", b"package org.foo;\nclass Foo {}")
+        self.assertEqual(names, {"org/foo/Foo"})
+
+    def test_kotlin_file_declares_stem_and_default_kt_facade(self):
+        # A Kotlin file "Arrays.kt" with top-level functions compiles them into a synthetic
+        # "ArraysKt" facade class -- real finding: kotlin-stdlib's commonMain/generated/
+        # _Arrays.kt declares "package kotlin.collections" and provides kotlin/collections/
+        # ArraysKt (its actual compiled facade), not kotlin/collections/_Arrays (its own path).
+        m = _load()
+        names = m.declared_names_for_source(
+            "commonMain/generated/_Arrays.kt", b"package kotlin.collections\n\nfun foo() {}")
+        self.assertEqual(names, {"kotlin/collections/_Arrays", "kotlin/collections/_ArraysKt"})
+
+    def test_kotlin_file_with_jvm_name_annotation_uses_that_name_not_stemkt(self):
+        m = _load()
+        source = b'@file:JvmName("ArraysKt")\npackage kotlin.collections\n\nfun foo() {}'
+        names = m.declared_names_for_source("commonMain/generated/_Arrays.kt", source)
+        self.assertEqual(names, {"kotlin/collections/_Arrays", "kotlin/collections/ArraysKt"})
+
+    def test_no_package_statement_yields_no_candidates(self):
+        m = _load()
+        self.assertEqual(m.declared_names_for_source("Foo.kt", b"fun foo() {}"), set())
+
+    def test_non_source_extension_yields_no_candidates(self):
+        m = _load()
+        self.assertEqual(m.declared_names_for_source("Foo.txt", b"package a.b;"), set())
+
+
+class ClassHasMatchingSourceTest(unittest.TestCase):
+    def test_direct_path_match(self):
+        m = _load()
+        src = {"path": {"org/foo/Bar"}, "declared": set()}
+        self.assertTrue(m.class_has_matching_source("org/foo/Bar", src))
+
+    def test_mrjar_stripped_binary_matches_unprefixed_source(self):
+        m = _load()
+        src = {"path": {"org/foo/Bar"}, "declared": set()}
+        self.assertTrue(m.class_has_matching_source("META-INF/versions/9/org/foo/Bar", src))
+
+    def test_unprefixed_binary_matches_mrjar_prefixed_source(self):
+        # "accept a sources jar that itself stores META-INF/versions/<N>/...java" -- sources_top_
+        # level_names already expands prefixed source entries via mrjar_variants at index time.
+        m = _load()
+        src = {"path": {"META-INF/versions/9/org/foo/Bar", "org/foo/Bar"}, "declared": set()}
+        self.assertTrue(m.class_has_matching_source("org/foo/Bar", src))
+
+    def test_declared_fallback_used_when_path_match_fails(self):
+        m = _load()
+        src = {"path": {"unrelated/path/Name"}, "declared": {"kotlin/collections/ArraysKt"}}
+        self.assertTrue(m.class_has_matching_source("kotlin/collections/ArraysKt", src))
+
+    def test_no_match_at_all(self):
+        m = _load()
+        src = {"path": {"a/B"}, "declared": {"c/D"}}
+        self.assertFalse(m.class_has_matching_source("e/F", src))
+
+
 class FetchCentralBinaryJarTest(unittest.TestCase):
     def test_fetched_and_sha1_verified(self):
         m = _load()
@@ -1682,6 +1779,64 @@ class RunAllThirdPartyCoverageTest(unittest.TestCase):
             self.assertEqual(coverage["classes_total"], 10)
             self.assertEqual(coverage["classes_with_upstream_source"], 0)
             self.assertIsNone(manifest["artifacts"][0]["class_count"])
+
+    def test_mrjar_override_class_matched_via_unprefixed_source(self):
+        # Real 2026-09-28 finding: bc-fips's binary ships a duplicate META-INF/versions/9/ copy
+        # of every class (multi-release jar); the sources jar has only the un-prefixed path. The
+        # override class is the SAME logical class -- its source IS the un-prefixed .java file.
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir, binext_dir = self._mirror(td)
+            with open(os.path.join(binext_dir, "bc-fips-2.1.2.jar"), "wb") as f:
+                f.write(_jar_bytes({
+                    "org/bc/Foo.class": b"base",
+                    "META-INF/versions/9/org/bc/Foo.class": b"override",
+                }))
+            sources_path = self._sources_jar_under_repo(
+                "bc-fips-2.1.2-sources.jar", {"org/bc/Foo.java": b"package org.bc;\nclass Foo {}"})
+            manifest = {
+                "artifacts": [
+                    {"groupId": "g", "artifactId": "bc-fips", "version": "2.1.2", "status": "fetched",
+                     "sources_jar_path": sources_path,
+                     "occurrences": [{"kind": "bin/ext", "name": "bin/ext/bc-fips-2.1.2.jar"}],
+                     "content_identity": {"status": "resigned-identical"}},
+                ],
+                "unidentified": [],
+            }
+            coverage = m.run_all_third_party_coverage(manifest, mirror_modules_dir=modules_dir, mirror_binext_dir=binext_dir)
+            self.assertEqual(coverage["classes_total"], 2)
+            self.assertEqual(coverage["classes_with_upstream_source"], 2)  # NOT 1
+
+    def test_kotlin_multiplatform_source_set_layout_matched_via_declared_package(self):
+        # Real 2026-09-28 finding: kotlin-stdlib's sources jar lays .kt files out by SOURCE SET
+        # (commonMain/generated/_Arrays.kt), not by compiled package path -- path-based matching
+        # alone can never find it. This covers both a plain top-level-functions file (default
+        # "<Stem>Kt" facade) and an @file:JvmName-renamed one.
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir, binext_dir = self._mirror(td)
+            with open(os.path.join(binext_dir, "kotlin-stdlib-2.3.0.jar"), "wb") as f:
+                f.write(_jar_bytes({
+                    "kotlin/collections/ArraysKt.class": b"facade",
+                    "kotlin/collections/CustomNamed.class": b"jvmname-facade",
+                }))
+            sources_path = self._sources_jar_under_repo("kotlin-stdlib-2.3.0-sources.jar", {
+                "commonMain/generated/Arrays.kt": b"package kotlin.collections\n\nfun sortedArray() {}",
+                "commonMain/generated/_Named.kt":
+                    b'@file:JvmName("CustomNamed")\npackage kotlin.collections\n\nfun namedThing() {}',
+            })
+            manifest = {
+                "artifacts": [
+                    {"groupId": "org.jetbrains.kotlin", "artifactId": "kotlin-stdlib", "version": "2.3.0",
+                     "status": "fetched", "sources_jar_path": sources_path,
+                     "occurrences": [{"kind": "bin/ext", "name": "bin/ext/kotlin-stdlib-2.3.0.jar"}],
+                     "content_identity": {"status": "resigned-identical"}},
+                ],
+                "unidentified": [],
+            }
+            coverage = m.run_all_third_party_coverage(manifest, mirror_modules_dir=modules_dir, mirror_binext_dir=binext_dir)
+            self.assertEqual(coverage["classes_total"], 2)
+            self.assertEqual(coverage["classes_with_upstream_source"], 2)  # NOT 0
 
 
 class RunRecheckPomIdentifiedGapsTest(unittest.TestCase):

@@ -107,6 +107,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import sys
 import zipfile
 from pathlib import Path
@@ -144,6 +145,92 @@ _NON_PORTABLE_CLASS_NAMES = {"module-info", "package-info"}
 def _is_portable_class_name(class_key: str) -> bool:
     simple = class_key.rsplit("/", 1)[-1]
     return simple not in _NON_PORTABLE_CLASS_NAMES
+
+
+# ---------------------------------------------------------------------------
+# Source-match rules shared with tools/n5-upstream-sources.py (kept independent/inline here, same
+# convention as GRADE_RANK above -- these are standalone, hyphenated-filename CLI scripts that do
+# not import one another; behavior MUST stay identical, and each module tests it directly). Real
+# 2026-09-28 orchestrator follow-up findings:
+#   1. MRJAR (R-mrjar-path-prefix): a multi-release jar's version-specific override class
+#      ("META-INF/versions/<N>/<pkg>/<Cls>.class") is the SAME logical class as
+#      "<pkg>/<Cls>.class" -- its source is the SAME .java/.kt file -- but the raw top-level path
+#      differs because of the prefix. Strip it (from whichever side carries it) before comparing.
+#   2. Source-set layouts (R-declared-package-fallback): a sources jar whose paths don't mirror
+#      the compiled package structure at all (Kotlin Multiplatform's `commonMain/`, `jvmMain/`,
+#      ...) can never match by path. Parse each source file's OWN `package` declaration (ignoring
+#      its zip-entry path -- a JVM .class file's path is ALWAYS package-accurate, so the BINARY
+#      side never needs this, only the SOURCES side) and index it by that instead, as a fallback
+#      ONLY used when the (always-first-choice) path-based match fails.
+# ---------------------------------------------------------------------------
+
+_MRJAR_VERSION_PREFIX_RE = re.compile(r"^META-INF/versions/\d+/")
+
+
+def strip_mrjar_prefix(path_name: str) -> Optional[str]:
+    """path_name with a leading "META-INF/versions/<N>/" stripped, or None if it doesn't have
+    one."""
+    m = _MRJAR_VERSION_PREFIX_RE.match(path_name)
+    return path_name[m.end():] if m else None
+
+
+def mrjar_variants(path_name: str) -> set[str]:
+    """path_name itself, plus its MRJAR-prefix-stripped form when it has one -- applied to BOTH
+    the binary (lookup) side and the sources (index) side, so matching works regardless of which
+    one (if either) carries the version-specific prefix (real finding: bc-fips's BINARY carries
+    it for its override classes; its sources jar does not)."""
+    stripped = strip_mrjar_prefix(path_name)
+    return {path_name, stripped} if stripped is not None else {path_name}
+
+
+_PACKAGE_DECL_RE = re.compile(r"(?m)^[ \t]*package[ \t]+([\w.]+)[ \t]*;?[ \t]*$")
+_KOTLIN_FILE_JVM_NAME_RE = re.compile(r'@file:JvmName\(\s*"([^"]+)"\s*\)')
+
+
+def declared_package_of(source_text: str) -> Optional[str]:
+    """The package THIS source file declares (its own `package ...` statement, in slash form,
+    e.g. "org/foo") -- independent of whatever path its zip entry happens to live at. "" for an
+    explicit default (no-package) file; None when no package statement is found at all (a
+    malformed/unusual file -- callers must not derive a declared-name candidate from it)."""
+    m = _PACKAGE_DECL_RE.search(source_text)
+    if not m:
+        return None
+    return m.group(1).replace(".", "/")
+
+
+def declared_names_for_source(entry_name: str, source_bytes: bytes) -> set[str]:
+    """Every top-level class name ONE `.java`/`.kt` source file could plausibly provide, derived
+    from its OWN declared package -- the fallback for a sources jar whose entry paths don't
+    mirror packages at all (real finding: Kotlin Multiplatform source sets). Returns an empty set
+    when the file isn't `.java`/`.kt`, has no package statement, or can't be decoded.
+
+    For `.kt`, Kotlin additionally compiles the file's own TOP-LEVEL functions/properties (if
+    any) into a synthetic "facade" class -- "Foo.kt" -> "FooKt.class" by default, or the name
+    given by an `@file:JvmName("X")` annotation -> "X.class" instead. Since a .kt file may ALSO
+    contain a real class matching its own stem, or ONLY top-level declarations, this returns BOTH
+    candidates -- an unused one is harmless, a missing one silently loses a real match."""
+    if entry_name.endswith(".java"):
+        stem = entry_name.rsplit("/", 1)[-1][: -len(".java")]
+        is_kotlin = False
+    elif entry_name.endswith(".kt"):
+        stem = entry_name.rsplit("/", 1)[-1][: -len(".kt")]
+        is_kotlin = True
+    else:
+        return set()
+    try:
+        text = source_bytes.decode("utf-8", "replace")
+    except Exception:
+        return set()
+    pkg = declared_package_of(text)
+    if pkg is None:
+        return set()
+    prefix = f"{pkg}/" if pkg else ""
+    names = {f"{prefix}{stem}"}
+    if is_kotlin:
+        m = _KOTLIN_FILE_JVM_NAME_RE.search(text)
+        facade = m.group(1) if m else f"{stem}Kt"
+        names.add(f"{prefix}{facade}")
+    return names
 
 
 # ---------------------------------------------------------------------------
@@ -512,11 +599,53 @@ def _class_trusted(verdict: dict, class_key: str) -> bool:
     return False
 
 
+def _source_candidate_entries(jar_path: Path, sources_only: set[str]) -> dict[str, str]:
+    """{candidate top-level name -> the REAL zip entry (with extension) it comes from} for one
+    sources jar -- `.java` and `.kt` both, PATH-based names FIRST (highest priority; MRJAR-
+    variant-expanded -- see mrjar_variants -- so matching works whichever side, if either, carries
+    a "META-INF/versions/<N>/" prefix), then each file's OWN DECLARED-package-derived names as a
+    fallback for a source-set layout whose paths don't mirror packages at all (Kotlin
+    Multiplatform's `commonMain/`, `jvmMain/`, ...).
+
+    `sources_only` (n5-upstream-sources.py's own classdiff, names present in the sources jar but
+    absent from the specific occurrence[0] binary it was diffed against) excludes a PATH-based
+    name only -- it cannot apply to a declared name, which was never itself a path-based name
+    classdiff compared in the first place, so it would exclude nothing there anyway. First match
+    wins per name (path-based candidates are added before declared ones, so they always win)."""
+    path_names: dict[str, str] = {}
+    declared_names: dict[str, str] = {}
+    try:
+        with zipfile.ZipFile(jar_path) as zf:
+            for info in zf.infolist():
+                if info.is_dir():
+                    continue
+                zn = info.filename
+                if zn.endswith(".java"):
+                    base = zn[: -len(".java")]
+                elif zn.endswith(".kt"):
+                    base = zn[: -len(".kt")]
+                else:
+                    continue
+                if "$" in base.rsplit("/", 1)[-1]:
+                    continue
+                for variant in mrjar_variants(base):
+                    path_names.setdefault(variant, zn)
+                for declared in declared_names_for_source(zn, zf.read(info)):
+                    declared_names.setdefault(declared, zn)
+    except (zipfile.BadZipFile, OSError):
+        return {}
+    covered: dict[str, str] = {n: e for n, e in path_names.items() if n not in sources_only}
+    for n, e in declared_names.items():
+        covered.setdefault(n, e)
+    return covered
+
+
 def build_upstream_index(organized_root: Path):
     """Returns (name_index, sha_index, artifact_verdict_counts):
       - name_index: class_key -> candidate dict, for every class name a fetched upstream sources
-        jar actually covers (per its own recorded classdiff); first match wins on a name collision
-        across artifacts (pre-existing, weaker signal -- a name match alone never proves THIS
+        jar actually covers (per its own recorded classdiff, plus MRJAR/declared-package fallback
+        matching -- see _source_candidate_entries); first match wins on a name collision across
+        artifacts (pre-existing, weaker signal -- a name match alone never proves THIS
         population's own jar is the identity-verified one).
       - sha_index: manifest artifact binary_sha256 -> {class_key: candidate dict}, for artifacts
         that recorded one (set by n5-upstream-sources.py's classdiff step). A population whose own
@@ -528,8 +657,8 @@ def build_upstream_index(organized_root: Path):
         artifacts, e.g. {"no-verdict": 81, "resigned-identical": 95, ...} -- feeds the index
         summary's `upstream_unproven_artifacts` (the "no-verdict" count).
 
-    Each candidate dict: {groupId, artifactId, version, jar_path, entry, trusted (bool),
-    verdict (str), reason (str)}."""
+    Each candidate dict: {groupId, artifactId, version, jar_path, entry (the real zip entry, with
+    its actual .java/.kt extension), trusted (bool), verdict (str), reason (str)}."""
     manifest_path = organized_root / "_upstream-sources" / "manifest.json"
     if not manifest_path.is_file():
         return {}, {}, {}
@@ -551,15 +680,11 @@ def build_upstream_index(organized_root: Path):
         if not jar_path.is_file():
             continue
         sources_only = set(art.get("classdiff", {}).get("sources_only", []))
-        try:
-            with zipfile.ZipFile(jar_path) as zf:
-                java_names = {n[: -len(".java")] for n in zf.namelist() if n.endswith(".java")}
-        except (zipfile.BadZipFile, OSError):
-            continue
-        covered = java_names - sources_only
+        covered = _source_candidate_entries(jar_path, sources_only)
         verdict = classify_upstream_identity(art)
         verdict_counts[verdict["verdict"]] = verdict_counts.get(verdict["verdict"], 0) + 1
-        portable_covered = [name for name in covered if _is_portable_class_name(name)]
+        portable_covered = {name: entry for name, entry in covered.items()
+                             if _is_portable_class_name(name)}
 
         # A "mixed" artifact (occurrences disagree -- see classify_upstream_identity) has NO
         # single artifact-wide verdict: the weak name-only index gets an untrusted placeholder
@@ -568,10 +693,10 @@ def build_upstream_index(organized_root: Path):
         # population linked to a "differs" occurrence must use THAT occurrence's verdict, never
         # another occurrence's (2026-09-28 fix, orchestrator-found defect).
         if verdict["verdict"] == "mixed":
-            for name in portable_covered:
+            for name, entry in portable_covered.items():
                 candidate = {
                     "groupId": art["groupId"], "artifactId": art["artifactId"],
-                    "version": art["version"], "jar_path": jar_path, "entry": name + ".java",
+                    "version": art["version"], "jar_path": jar_path, "entry": entry,
                     "trusted": False, "verdict": verdict["verdict"], "reason": verdict["reason"],
                 }
                 if name not in name_index:
@@ -582,10 +707,10 @@ def build_upstream_index(organized_root: Path):
                     continue
                 occ_verdict = _identity_verdict_from_ci(occ.get("content_identity"))
                 by_class_for_this_occurrence: dict[str, dict] = {}
-                for name in portable_covered:
+                for name, entry in portable_covered.items():
                     by_class_for_this_occurrence[name] = {
                         "groupId": art["groupId"], "artifactId": art["artifactId"],
-                        "version": art["version"], "jar_path": jar_path, "entry": name + ".java",
+                        "version": art["version"], "jar_path": jar_path, "entry": entry,
                         "trusted": _class_trusted(occ_verdict, name),
                         "verdict": occ_verdict["verdict"], "reason": occ_verdict["reason"],
                     }
@@ -594,10 +719,10 @@ def build_upstream_index(organized_root: Path):
 
         binary_sha256 = art.get("binary_sha256")
         by_class_for_this_artifact: dict[str, dict] = {}
-        for name in portable_covered:
+        for name, entry in portable_covered.items():
             candidate = {
                 "groupId": art["groupId"], "artifactId": art["artifactId"],
-                "version": art["version"], "jar_path": jar_path, "entry": name + ".java",
+                "version": art["version"], "jar_path": jar_path, "entry": entry,
                 "trusted": _class_trusted(verdict, name), "verdict": verdict["verdict"],
                 "reason": verdict["reason"],
             }
@@ -614,24 +739,33 @@ def find_upstream_candidate(pop: dict, class_key: str, name_index: dict, sha_ind
 
     Prefers a jar-sha256 link (this population's own jar IS the exact jar the manifest artifact's
     identity verdict was computed against -- never a name coincidence) over the weaker class-name-
-    only index. Returns None if neither index covers this class."""
+    only index. Tries class_key itself first, then its MRJAR-prefix-stripped form (mrjar_variants)
+    -- a BINARY class_key carrying a "META-INF/versions/<N>/" prefix (a multi-release jar's
+    version-specific override class) is the same logical class as its un-prefixed form, which is
+    what an ordinary (non-versioned) sources jar was indexed under. Returns None if neither index
+    covers this class under either form."""
     jar_sha256 = pop.get("jar_sha256")
-    if jar_sha256 and jar_sha256 in sha_index and class_key in sha_index[jar_sha256]:
-        cand = dict(sha_index[jar_sha256][class_key])
-        cand["link"] = (f"population jar sha256 {jar_sha256[:12]} matches manifest artifact "
-                         f"{cand['groupId']}:{cand['artifactId']}:{cand['version']}'s own "
-                         "binary_sha256 (same physical jar)")
-        return cand
-    if class_key in name_index:
-        cand = dict(name_index[class_key])
-        cand["link"] = ("matched by class name only (no jar-sha256 link between this population's "
-                         "jar and a manifest artifact)")
-        return cand
+    lookup_keys = mrjar_variants(class_key)
+    if jar_sha256 and jar_sha256 in sha_index:
+        for key in lookup_keys:
+            if key in sha_index[jar_sha256]:
+                cand = dict(sha_index[jar_sha256][key])
+                cand["link"] = (f"population jar sha256 {jar_sha256[:12]} matches manifest artifact "
+                                 f"{cand['groupId']}:{cand['artifactId']}:{cand['version']}'s own "
+                                 "binary_sha256 (same physical jar)")
+                return cand
+    for key in lookup_keys:
+        if key in name_index:
+            cand = dict(name_index[key])
+            cand["link"] = ("matched by class name only (no jar-sha256 link between this population's "
+                             "jar and a manifest artifact)")
+            return cand
     return None
 
 
 def extract_upstream_file(info: dict, extract_dir: Path, class_key: str) -> Optional[Path]:
-    dest = extract_dir / info["groupId"] / info["artifactId"] / info["version"] / (class_key + ".java")
+    ext = ".kt" if info["entry"].endswith(".kt") else ".java"
+    dest = extract_dir / info["groupId"] / info["artifactId"] / info["version"] / (class_key + ext)
     if dest.is_file():
         return dest
     try:
@@ -714,7 +848,8 @@ def build_class_record(organized_root: Path, pop: dict, class_key: str,
         for kind, path, alt_grade, _reason in candidates[1:]:
             if kind == "upstream":
                 gav = f"{up_candidate['groupId']}:{up_candidate['artifactId']}:{up_candidate['version']}"
-                alternates.append({"kind": kind, "path": f"upstream:{gav}:{class_key}.java",
+                up_ext = ".kt" if up_candidate["entry"].endswith(".kt") else ".java"
+                alternates.append({"kind": kind, "path": f"upstream:{gav}:{class_key}{up_ext}",
                                    "grade": alt_grade})
             else:
                 alternates.append({"kind": kind, "path": _rel(organized_root, path),
@@ -738,8 +873,9 @@ def build_class_record(organized_root: Path, pop: dict, class_key: str,
         alt_kind = ("upstream-different-build"
                     if up_candidate["verdict"] in ("vendor-modified", "partially-modified")
                     else "upstream-unproven")
+        up_ext = ".kt" if up_candidate["entry"].endswith(".kt") else ".java"
         alternates.append({
-            "kind": alt_kind, "path": f"upstream:{gav}:{class_key}.java", "grade": None,
+            "kind": alt_kind, "path": f"upstream:{gav}:{class_key}{up_ext}", "grade": None,
             "reason": f"{up_candidate['reason']} [{up_candidate['link']}]",
         })
 
