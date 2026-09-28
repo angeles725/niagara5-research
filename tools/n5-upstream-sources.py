@@ -127,8 +127,9 @@ KNOWN_GROUP_GUESSES: dict = {
     "resilience4j-retry": "io.github.resilience4j",
     "jna": "net.java.dev.jna",
     "jna-platform": "net.java.dev.jna",
-    "jffi": None,  # local file is the "-native" classifier variant; the plain (no-classifier)
-                   # coordinate this guess would build is a different artifact on Central
+    "jffi": "com.github.jnr",  # verified live 2026-09-28: com/github/jnr/jffi/1.4.0/jffi-1.4.0-
+                                # native.jar.sha1 exists on Central -- "native" is a CLASSIFIER
+                                # (split_classifier), not part of the version
     "mibble-mibs": None,  # Mibble's mibs bundle -- SourceForge-distributed, not on Central
     "org.eclipse.swt.win32.win32.x86_64": None,  # SWT native fragment, Eclipse's own p2 repo
     "prosys-opc-ua-sdk-client-server": None,  # Prosys/Dassault commercial OPC UA SDK
@@ -245,6 +246,42 @@ def parse_artifact_version_from_basename(basename: str):
     return m.group(1), m.group(2)
 
 
+_CLASSIFIER_RE = re.compile(r"^(?P<v>\d[\w.]*?)-(?P<c>[A-Za-z][\w.\-]*)$")
+
+
+def split_classifier(version: str):
+    """Split a Maven CLASSIFIER (e.g. "jdk11", "native") off the tail of a version string that
+    parse_artifact_version_from_basename may have swallowed whole. Orchestrator finding
+    (2026-09-28): "oauth2-oidc-sdk-11.26-jdk11" and "jffi-1.4.0-native" parse as one version
+    string ("11.26-jdk11", "1.4.0-native"), but the "-jdk11"/"-native" tail is a Maven classifier
+    -- comparing against Central's classifier-LESS binary compares the wrong bytes entirely.
+
+    A trailing "-<token>" is a classifier only when <token> starts with a LETTER, not a digit --
+    "prosys-opc-ua-sdk-client-server-5.7.0-248"'s "-248" starts with a digit, so it's part of the
+    version itself (a real, if unusual, Maven version string), not a classifier. A dot-fused
+    suffix with no dash at all (mssql-jdbc's "13.4.0.jre11", a literal Central version) is never
+    touched -- there's no dash for this pattern to match on.
+
+    Returns (real_version, classifier) -- classifier is None when no such split applies."""
+    m = _CLASSIFIER_RE.match(version)
+    if not m:
+        return version, None
+    return m.group("v"), m.group("c")
+
+
+def detect_classifier(basename: str, artifact_id: str, version: str):
+    """For an artifact whose artifactId/version are ALREADY known precisely (pom.properties-
+    identified), detect a classifier by simple prefix check against the local occurrence's own
+    basename: "oauth2-oidc-sdk-11.26-jdk11" with artifactId "oauth2-oidc-sdk" version "11.26" ->
+    "jdk11". Returns None when the basename matches "<artifact>-<version>" exactly (no
+    classifier) -- including when the "extra" text is fused into the version itself with a DOT,
+    not a dash (mssql-jdbc's "13.4.0.jre11": basename == artifact-version exactly, no classifier)."""
+    prefix = f"{artifact_id}-{version}-"
+    if basename.startswith(prefix):
+        return basename[len(prefix):] or None
+    return None
+
+
 def candidate_versions(entry_name: str, artifact_id: str, pom_version: str) -> list[str]:
     """Ordered list of Maven versions to try: the pom.properties version, then (if different) the
     version embedded in the jar's own filename.
@@ -358,11 +395,16 @@ def search_maven_central_by_sha1(sha1: str, opener: Callable, sleep: Callable = 
 
 
 def binary_sha1_from_central(group_id: str, artifact_id: str, version: str, opener: Callable,
-                              sleep: Callable = time.sleep, retries: int = 3) -> dict:
+                              sleep: Callable = time.sleep, retries: int = 3,
+                              classifier: Optional[str] = None) -> dict:
     """Fetch Central's own published `.jar.sha1` for one g:a:v -- the identity proof for a
-    filename-derived guess (or a belt-and-suspenders re-check of a sha1-search hit)."""
+    filename-derived guess (or a belt-and-suspenders re-check of a sha1-search hit). When
+    `classifier` is given, fetches the CLASSIFIER binary (<artifact>-<version>-<classifier>.jar)
+    -- comparing a classifier build against the classifier-less binary compares the wrong bytes
+    entirely (real finding: oauth2-oidc-sdk-11.26-jdk11.jar vs the classifier-less 11.26 build)."""
+    suffix = f"-{classifier}" if classifier else ""
     url = (f"{MAVEN_CENTRAL}/{group_id.replace('.', '/')}/{artifact_id}/{version}/"
-           f"{artifact_id}-{version}.jar.sha1")
+           f"{artifact_id}-{version}{suffix}.jar.sha1")
     result = fetch_with_retry(url, opener, sleep=sleep, retries=retries)
     if not result["ok"]:
         if result["kind"] == "not-found":
@@ -395,7 +437,11 @@ def identify_unidentified_entry(entry: dict, local_sha1: str, opener: Callable,
     parsed = parse_artifact_version_from_basename(basename)
     if not parsed:
         return {"status": "not-on-central", "reason": "unparseable-filename", "basename": basename}
-    guess_artifact, guess_version = parsed
+    guess_artifact, guess_version_raw = parsed
+    # A Maven CLASSIFIER build (e.g. "jffi-1.4.0-native") parses as one version string above
+    # ("1.4.0-native") -- split it so the guess-verify below compares against Central's
+    # CLASSIFIER binary, not the classifier-less one (real finding, see split_classifier).
+    guess_version, classifier = split_classifier(guess_version_raw)
     guess_group = KNOWN_GROUP_GUESSES.get(guess_artifact, "__no_entry__")
     if guess_group is None:
         return {"status": "not-on-central", "reason": "known-proprietary-or-unpublished",
@@ -404,19 +450,24 @@ def identify_unidentified_entry(entry: dict, local_sha1: str, opener: Callable,
         return {"status": "not-on-central", "reason": "no-plausible-coordinate",
                 "guessed_artifactId": guess_artifact, "guessed_version": guess_version}
     verify = binary_sha1_from_central(guess_group, guess_artifact, guess_version, opener,
-                                       sleep=sleep, retries=retries)
+                                       sleep=sleep, retries=retries, classifier=classifier)
     if verify["status"] == "network-error":
         return {"status": "network-error", "stage": "guess-verify", "detail": verify.get("detail")}
     if verify["status"] == "not-found":
         return {"status": "not-on-central", "reason": "guessed-coordinate-404",
                 "guessed_groupId": guess_group, "guessed_artifactId": guess_artifact,
-                "guessed_version": guess_version}
+                "guessed_version": guess_version, "classifier": classifier}
+    result = {"groupId": guess_group, "artifactId": guess_artifact, "version": guess_version,
+              "method": "filename-guess"}
+    if classifier:
+        result["classifier"] = classifier
     if verify["central_sha1"] == local_sha1:
-        return {"status": "identified-by-sha1", "groupId": guess_group, "artifactId": guess_artifact,
-                "version": guess_version, "method": "filename-guess"}
-    return {"status": "vendor-modified", "groupId": guess_group, "artifactId": guess_artifact,
-            "version": guess_version, "method": "filename-guess",
-            "central_sha1": verify["central_sha1"], "local_sha1": local_sha1}
+        result["status"] = "identified-by-sha1"
+        return result
+    result["status"] = "vendor-modified"
+    result["central_sha1"] = verify["central_sha1"]
+    result["local_sha1"] = local_sha1
+    return result
 
 
 def compute_vendor_modified_overlap(local_bytes: bytes, group_id: str, artifact_id: str,
@@ -438,17 +489,22 @@ def compute_vendor_modified_overlap(local_bytes: bytes, group_id: str, artifact_
 
 
 def fetch_central_binary_jar(group_id: str, artifact_id: str, version: str, opener: Callable,
-                              sleep: Callable = time.sleep, retries: int = 3) -> dict:
+                              sleep: Callable = time.sleep, retries: int = 3,
+                              classifier: Optional[str] = None) -> dict:
     """Fetch and SHA-1-verify Central's own binary jar for one g:a:v (needed for the real
     per-.class content comparison in classify_jar_identity -- a whole-jar SHA-1 mismatch alone
-    doesn't say WHICH bytes differ). Returns {"status": "fetched", "bytes": ..., "sha1": ...} or
-    a typed failure: not-found | checksum-mismatch | network-error."""
-    expect = binary_sha1_from_central(group_id, artifact_id, version, opener, sleep=sleep, retries=retries)
+    doesn't say WHICH bytes differ). When `classifier` is given, fetches the CLASSIFIER binary,
+    not the classifier-less one -- see binary_sha1_from_central's docstring. Returns
+    {"status": "fetched", "bytes": ..., "sha1": ...} or a typed failure: not-found |
+    checksum-mismatch | network-error."""
+    expect = binary_sha1_from_central(group_id, artifact_id, version, opener, sleep=sleep,
+                                       retries=retries, classifier=classifier)
     if expect["status"] == "network-error":
         return {"status": "network-error", "stage": "sha1", "detail": expect.get("detail")}
     if expect["status"] == "not-found":
         return {"status": "not-found"}
-    url = f"{MAVEN_CENTRAL}/{group_id.replace('.', '/')}/{artifact_id}/{version}/{artifact_id}-{version}.jar"
+    suffix = f"-{classifier}" if classifier else ""
+    url = f"{MAVEN_CENTRAL}/{group_id.replace('.', '/')}/{artifact_id}/{version}/{artifact_id}-{version}{suffix}.jar"
     result = fetch_with_retry(url, opener, sleep=sleep, retries=retries)
     if not result["ok"]:
         return {"status": "network-error", "stage": "jar", "detail": result}
@@ -510,12 +566,16 @@ def classify_jar_identity(local_bytes: bytes, central_bytes: bytes) -> dict:
     org.ow2.asm:asm:9.10.1 on Central, but all 39/39 .class entries are byte-identical.
 
     Returns a dict with "status" one of:
+      no-classes          -- the local jar has ZERO .class entries at all (e.g. a pure-native
+                              JNI jar like jffi-*-native.jar, or a Kotlin-Multiplatform metadata
+                              jar) -- nothing to compare, so this is NOT "vendor-modified" (which
+                              means "we compared classes and none matched").
       resigned-identical  -- every local .class entry matches Central; only non-class entries
                               differ (typically just the added signature) -- sources ARE ground
                               truth for every class in this jar.
       partially-modified  -- some .class entries match, some differ or are local-only -- only the
                               matching ones are ground-truth-covered; the rest still need decompile.
-      vendor-modified     -- no .class entry matches Central at all.
+      vendor-modified     -- the jar HAS classes, but none of them matches Central at all.
     Also records differing_non_class_entries (e.g. the added signature files) for transparency.
     """
     local_classes = all_class_entry_hashes(local_bytes)
@@ -524,7 +584,9 @@ def classify_jar_identity(local_bytes: bytes, central_bytes: bytes) -> dict:
     different = sorted(n for n, h in local_classes.items()
                         if n in central_classes and central_classes[n] != h)
     local_only = sorted(n for n in local_classes if n not in central_classes)
-    if identical and not different and not local_only:
+    if not local_classes:
+        status = "no-classes"
+    elif identical and not different and not local_only:
         status = "resigned-identical"
     elif identical:
         status = "partially-modified"
@@ -710,7 +772,7 @@ def run_identify_unidentified(plan: dict, mirror_modules_dir=MIRROR_MODULES_DIR,
     Returns counts by outcome, including "mirror-unavailable" for jars the local mirror doesn't
     have."""
     summary = {"identified-by-sha1": 0, "resigned-identical": 0, "partially-modified": 0,
-               "vendor-modified": 0, "unverifiable": 0, "not-on-central": 0,
+               "vendor-modified": 0, "no-classes": 0, "unverifiable": 0, "not-on-central": 0,
                "network-error": 0, "mirror-unavailable": 0}
     still_unidentified = []
     for u in plan["unidentified"]:
@@ -729,17 +791,21 @@ def run_identify_unidentified(plan: dict, mirror_modules_dir=MIRROR_MODULES_DIR,
             sleep(pace)
         if result["status"] == "identified-by-sha1":
             summary["identified-by-sha1"] += 1
-            plan["artifacts"].append({
+            new_art = {
                 "groupId": result["groupId"], "artifactId": result["artifactId"],
                 "version": result["version"],
                 "occurrences": [{"kind": u["kind"], "name": u["name"], "binary_sha1": local_sha1}],
                 "_candidate_versions": [result["version"]],
                 "identification_method": result["method"],
-            })
+            }
+            if result.get("classifier"):
+                new_art["classifier"] = result["classifier"]
+            plan["artifacts"].append(new_art)
         elif result["status"] == "vendor-modified":
+            classifier = result.get("classifier")
             central_fetch = fetch_central_binary_jar(result["groupId"], result["artifactId"],
                                                        result["version"], opener, sleep=sleep,
-                                                       retries=retries)
+                                                       retries=retries, classifier=classifier)
             if pace:
                 sleep(pace)
             if central_fetch["status"] == "fetched":
@@ -755,6 +821,9 @@ def run_identify_unidentified(plan: dict, mirror_modules_dir=MIRROR_MODULES_DIR,
                 }
             content_identity["local_sha1"] = local_sha1
             content_identity.setdefault("source", "live-recheck")
+            if classifier:
+                content_identity["classifier"] = classifier
+                content_identity["sources_shared_across_classifiers"] = True
             summary[content_identity["status"]] = summary.get(content_identity["status"], 0) + 1
             plan["artifacts"].append({
                 "groupId": result["groupId"], "artifactId": result["artifactId"],
@@ -842,11 +911,16 @@ def run_recheck_pom_identified_gaps(manifest: dict, evidence_entries: list,
     re-check at all -- that already IS class-level proof.
 
     Mutates each matched manifest artifact in place (adds "content_identity"); returns counts by
-    outcome, split into "reused-resigned-identical" (no network) vs the live-checked statuses."""
+    outcome, split into "reused-resigned-identical" (no network) vs the live-checked statuses.
+
+    Also detects a Maven CLASSIFIER from the local occurrence's own basename (detect_classifier):
+    real finding, oauth2.jar!LIB-INF/oauth2-oidc-sdk-11.26-jdk11.jar is the "jdk11" classifier
+    build -- comparing it against the classifier-less Central binary gives a false 0/533 match;
+    the classifier binary is 533/533 byte-identical."""
     mod_dir, install_dir = Path(mod_dir), Path(install_dir)
     evidence_by_name = {(e.get("kind"), e.get("name")): e for e in evidence_entries}
     summary = {"reused-resigned-identical": 0, "resigned-identical": 0, "partially-modified": 0,
-               "vendor-modified": 0, "unverifiable": 0}
+               "vendor-modified": 0, "no-classes": 0, "unverifiable": 0}
     for art in manifest["artifacts"]:
         if art.get("identification_method") or art.get("status") != "fetched":
             continue
@@ -869,8 +943,10 @@ def run_recheck_pom_identified_gaps(manifest: dict, evidence_entries: list,
         # already used "resolved_version" to fetch the sources jar; reuse it here too, or a plain
         # whole-jar lookup at the wrong version 404s and this reports "unverifiable" for nothing.
         lookup_version = art.get("resolved_version") or art["version"]
+        classifier = detect_classifier(jar_basename(occ["name"]), art["artifactId"], lookup_version)
         central_fetch = fetch_central_binary_jar(art["groupId"], art["artifactId"], lookup_version,
-                                                   opener, sleep=sleep, retries=retries)
+                                                   opener, sleep=sleep, retries=retries,
+                                                   classifier=classifier)
         if pace:
             sleep(pace)
         if central_fetch["status"] == "fetched":
@@ -879,6 +955,9 @@ def run_recheck_pom_identified_gaps(manifest: dict, evidence_entries: list,
         else:
             ci = {"status": "unverifiable", "reason": central_fetch["status"]}
         ci["source"] = "live-recheck"
+        if classifier:
+            ci["classifier"] = classifier
+            ci["sources_shared_across_classifiers"] = True
         art["content_identity"] = ci
         summary[ci["status"]] = summary.get(ci["status"], 0) + 1
     manifest["pom_identified_recheck_summary"] = summary
@@ -1144,7 +1223,7 @@ def render_report(manifest: dict, paho_result: Optional[dict] = None,
         lines.append("| outcome | count |")
         lines.append("|---|---|")
         for status in ("identified-by-sha1", "resigned-identical", "partially-modified",
-                       "vendor-modified", "unverifiable", "not-on-central",
+                       "vendor-modified", "no-classes", "unverifiable", "not-on-central",
                        "network-error", "mirror-unavailable"):
             lines.append(f"| {status} | {identify_summary.get(status, 0)} |")
         lines.append("")
@@ -1165,7 +1244,7 @@ def render_report(manifest: dict, paho_result: Optional[dict] = None,
         lines.append("| outcome | count |")
         lines.append("|---|---|")
         for status in ("reused-resigned-identical", "resigned-identical", "partially-modified",
-                       "vendor-modified", "unverifiable"):
+                       "vendor-modified", "no-classes", "unverifiable"):
             lines.append(f"| {status} | {pom_recheck_summary.get(status, 0)} |")
         lines.append("")
 
@@ -1177,22 +1256,41 @@ def render_report(manifest: dict, paho_result: Optional[dict] = None,
             "A whole-jar SHA-1 mismatch alone does not mean Central's sources aren't ground truth "
             "-- Niagara commonly re-signs a jar (adds META-INF/NIAGARA4.SF + .RSA) without "
             "touching a single class. This compares every `.class` entry's SHA-256 against "
-            "Central's own binary jar for the same groupId:artifactId:version. "
+            "Central's own binary jar for the same groupId:artifactId:version -- against the "
+            "CLASSIFIER binary (e.g. `-jdk11`, `-native`) when the local jar's own filename "
+            "carries one, never the classifier-less one. "
+            "`no-classes` = the local jar has zero `.class` entries at all (e.g. a pure-native "
+            "JNI jar), nothing to compare; "
             "`resigned-identical` = every class matches (sources ARE ground truth for this jar); "
             "`partially-modified` = only some classes match (only those are covered, the rest "
-            "still need decompile); `vendor-modified` = no class matched; `unverifiable` = "
-            "Central's own binary jar could not be fetched to compare against."
+            "still need decompile); `vendor-modified` = the jar HAS classes but none matched; "
+            "`unverifiable` = Central's own binary jar could not be fetched to compare against."
         )
         lines.append("")
-        lines.append("| artifact | version | status | identical | different | local-only | source |")
-        lines.append("|---|---|---|---|---|---|---|")
+        lines.append("| artifact | version | classifier | status | identical | different | local-only | source |")
+        lines.append("|---|---|---|---|---|---|---|---|")
         for a in sorted(content_checked,
                          key=lambda x: (x["content_identity"]["status"], x.get("artifactId", ""))):
             ci = a["content_identity"]
-            lines.append(f"| {a.get('artifactId')} | {a.get('version')} | {ci['status']} | "
+            lines.append(f"| {a.get('artifactId')} | {a.get('version')} | {ci.get('classifier', '-')} | "
+                         f"{ci['status']} | "
                          f"{ci.get('classes_identical', '-')} | {ci.get('classes_different', '-')} | "
                          f"{ci.get('classes_local_only', '-')} | {ci.get('source', '-')} |")
         lines.append("")
+        classifier_rows = [a for a in content_checked if a["content_identity"].get("classifier")]
+        if classifier_rows:
+            lines.append(
+                "Classifier builds (Maven's `<artifact>-<version>-<classifier>.jar` convention): "
+                "the SOURCES jar Maven publishes is shared across all classifiers of the same "
+                "artifact+version (no separate `-sources.jar` per classifier), so the fetched "
+                "sources for these jars come from the shared, classifier-less sources jar:"
+            )
+            lines.append("")
+            for a in sorted(classifier_rows, key=lambda x: x.get("artifactId", "")):
+                ci = a["content_identity"]
+                lines.append(f"- **{a.get('artifactId')} {a.get('version')}** classifier "
+                             f"`{ci['classifier']}` ({ci['status']})")
+            lines.append("")
         detail_rows = [a for a in content_checked
                        if a["content_identity"].get("different_classes")
                        or a["content_identity"].get("differing_non_class_entries")]

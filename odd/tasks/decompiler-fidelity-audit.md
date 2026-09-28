@@ -289,6 +289,26 @@ make the decompile complete and as faithful as possible.
       the T26a run had wrongly zeroed out coverage for every resigned/re-signed jar, not just the truly vendor-modified
       ones. Verification: 98 unit tests + `make test` (342, both green before AND after the two extra bug fixes), real
       run against repo1.maven.org + search.maven.org only. Route: delegated writer (TDD, hermetic HTTP mocks).
+- [x] T26c (t26a-upstream-sha1 branch, same worktree, 3rd commit) Second orchestrator correction: manually verified
+      oauth2.jar!LIB-INF/oauth2-oidc-sdk-11.26-jdk11.jar is a Maven CLASSIFIER build ("jdk11") — comparing it against
+      Central's classifier-less oauth2-oidc-sdk-11.26.jar (what T26b used) gave a false 0/533; the classifier binary
+      oauth2-oidc-sdk-11.26-jdk11.jar is 533/533 byte-identical. Fix: new `split_classifier`/`detect_classifier` +
+      classifier-aware `binary_sha1_from_central`/`fetch_central_binary_jar` (fetch `<artifact>-<version>-<classifier>.jar`,
+      never the classifier-less one, before ever calling something vendor-modified); `classifier` recorded on the
+      per-jar content_identity record, with a note that Maven's sources jar is shared across classifiers (no per-
+      classifier `-sources.jar`). Programmatically audited BOTH populations for every basename that doesn't equal
+      plain `<artifact>-<version>` (not just eyeballing the orchestrator's suffix list) — exactly 2 real classifier
+      cases total: oauth2-oidc-sdk (154-population, "jdk11") and jffi-1.4.0-native.jar (44-population, "native",
+      previously not-on-central — now identified as com.github.jnr:jffi:1.4.0 classifier=native, verified live: real
+      Central coordinate exists). mssql-jdbc's "13.4.0.jre11" is confirmed NOT a classifier (dot-fused, a literal
+      Central version, already handled by resolved_version) and the SWT win32 native fragment stays not-on-central
+      (only unofficial/wrong-version mirrors exist on Central, live-checked). Also fixed classify_jar_identity's
+      zero-class edge case while implementing this: jffi-1.4.0-native.jar and the earlier okhttp KMP-metadata jar
+      have ZERO local .class entries (pure-native/metadata-only jars) — lumping "nothing to compare" together with
+      "vendor-modified" (which means "compared classes, none matched") was misleading; new explicit "no-classes"
+      status (0 covered either way, math unchanged, only the label is now honest). New headline: 51600/60314 (85.6%),
+      up from 51067/60314 (84.7%). Verification: 113 unit tests + `make test` (357), real run against
+      repo1.maven.org + search.maven.org only. Route: delegated writer (TDD, hermetic HTTP mocks).
 - [x] T5 (9592b82) Porting guide: the only N5-only claim (`NiagaraSlotProcessor`) was false vs BOTH N4.14 and N4.15 — it is a
       relocation (javax.baja.nre... in bin/ext/nre.jar → niagara.nre... in module niagaraAnnotationProcessors); fixed.
 - [ ] T16b Extend lint-block R1/R2/R8 to docs/*.md (the porting guide carried an R8 error the linter could not see). TDD.

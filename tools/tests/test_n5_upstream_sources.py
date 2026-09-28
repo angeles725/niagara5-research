@@ -519,6 +519,60 @@ class ParseArtifactVersionFromBasenameTest(unittest.TestCase):
         self.assertIsNone(m.parse_artifact_version_from_basename("nodigitshere"))
 
 
+class SplitClassifierTest(unittest.TestCase):
+    """Orchestrator finding (2026-09-28): oauth2-oidc-sdk-11.26-jdk11.jar and
+    jffi-1.4.0-native.jar are CLASSIFIER builds (Maven's <artifact>-<version>-<classifier>.jar
+    convention), not a different version or a whole-jar content difference. A whole-jar SHA-1
+    compare against the classifier-LESS binary is comparing the wrong bytes entirely."""
+
+    def test_letter_led_suffix_is_a_classifier(self):
+        m = _load()
+        self.assertEqual(m.split_classifier("1.4.0-native"), ("1.4.0", "native"))
+
+    def test_jdk_style_classifier(self):
+        m = _load()
+        self.assertEqual(m.split_classifier("11.26-jdk11"), ("11.26", "jdk11"))
+
+    def test_digit_led_suffix_is_not_a_classifier(self):
+        # prosys-opc-ua-sdk-client-server-5.7.0-248: "248" starts with a digit -- part of the
+        # version string itself (real Maven versions can contain dashes), not a classifier.
+        m = _load()
+        self.assertEqual(m.split_classifier("5.7.0-248"), ("5.7.0-248", None))
+
+    def test_no_dash_returns_none_classifier(self):
+        m = _load()
+        self.assertEqual(m.split_classifier("9.10.1"), ("9.10.1", None))
+
+    def test_dot_fused_suffix_is_not_a_classifier(self):
+        # mssql-jdbc's "13.4.0.jre11" is a literal Central version string (dot-fused, no dash) --
+        # must not be touched by classifier splitting.
+        m = _load()
+        self.assertEqual(m.split_classifier("13.4.0.jre11"), ("13.4.0.jre11", None))
+
+
+class DetectClassifierTest(unittest.TestCase):
+    """For the ORIGINAL 154 pom.properties-identified artifacts, artifactId/version are already
+    known precisely (from pom.properties), so classifier detection is a simple prefix check
+    against the local occurrence's own basename."""
+
+    def test_extracts_classifier_when_basename_has_extra_suffix(self):
+        m = _load()
+        self.assertEqual(
+            m.detect_classifier("oauth2-oidc-sdk-11.26-jdk11", "oauth2-oidc-sdk", "11.26"),
+            "jdk11",
+        )
+
+    def test_none_when_basename_matches_exactly(self):
+        m = _load()
+        self.assertIsNone(m.detect_classifier("asm-9.10.1", "asm", "9.10.1"))
+
+    def test_none_for_dot_fused_version_not_dash_classifier(self):
+        # mssql-jdbc-13.4.0.jre11 vs artifactId "mssql-jdbc" version "13.4.0.jre11": the basename
+        # equals artifact-version exactly here (the ".jre11" is INSIDE the version), no classifier.
+        m = _load()
+        self.assertIsNone(m.detect_classifier("mssql-jdbc-13.4.0.jre11", "mssql-jdbc", "13.4.0.jre11"))
+
+
 class LoadBinaryBytesFromMirrorTest(unittest.TestCase):
     def test_reads_lib_inf_nested_jar_from_mirror_modules_dir(self):
         m = _load()
@@ -626,6 +680,17 @@ class BinarySha1FromCentralTest(unittest.TestCase):
         r = m.binary_sha1_from_central("g", "a", "v", opener, sleep=lambda s: None, retries=1)
         self.assertEqual(r["status"], "network-error")
 
+    def test_classifier_is_appended_to_the_filename(self):
+        m = _load()
+
+        def opener(url, timeout=30):
+            self.assertTrue(url.endswith("oauth2-oidc-sdk-11.26-jdk11.jar.sha1"))
+            return _FakeResponse(b"deadbeef")
+
+        r = m.binary_sha1_from_central("com.nimbusds", "oauth2-oidc-sdk", "11.26", opener,
+                                        sleep=lambda s: None, classifier="jdk11")
+        self.assertEqual(r["status"], "fetched")
+
 
 class IdentifyUnidentifiedEntryTest(unittest.TestCase):
     def test_sha1_search_hit_is_identified(self):
@@ -671,6 +736,38 @@ class IdentifyUnidentifiedEntryTest(unittest.TestCase):
         r = m.identify_unidentified_entry(entry, "360d8f9fc733d7003c152487e9b55bbe3a5ac32f", opener, sleep=lambda s: None)
         self.assertEqual(r["status"], "vendor-modified")
         self.assertEqual((r["groupId"], r["artifactId"], r["version"]), ("org.ow2.asm", "asm", "9.10.1"))
+
+    def test_filename_classifier_is_split_from_version_and_used_in_the_guess_lookup(self):
+        # Real 2026-09-28 orchestrator finding: bin/ext/system/jffi-1.4.0-native.jar is the
+        # "-native" CLASSIFIER build of com.github.jnr:jffi:1.4.0, not version "1.4.0-native".
+        m = _load()
+        local_sha1 = "matchingsha1"
+
+        def opener(url, timeout=30):
+            if "solrsearch" in url:
+                return _FakeResponse(_solr_response([]))
+            self.assertIn("com/github/jnr/jffi/1.4.0/jffi-1.4.0-native.jar.sha1", url)
+            return _FakeResponse(local_sha1.encode())
+
+        entry = {"kind": "bin/ext", "name": "bin/ext/system/jffi-1.4.0-native.jar"}
+        r = m.identify_unidentified_entry(entry, local_sha1, opener, sleep=lambda s: None)
+        self.assertEqual(r["status"], "identified-by-sha1")
+        self.assertEqual((r["groupId"], r["artifactId"], r["version"]), ("com.github.jnr", "jffi", "1.4.0"))
+        self.assertEqual(r["classifier"], "native")
+
+    def test_filename_classifier_mismatch_is_vendor_modified_with_classifier_recorded(self):
+        m = _load()
+
+        def opener(url, timeout=30):
+            if "solrsearch" in url:
+                return _FakeResponse(_solr_response([]))
+            return _FakeResponse(b"different-central-sha1")
+
+        entry = {"kind": "bin/ext", "name": "bin/ext/system/jffi-1.4.0-native.jar"}
+        r = m.identify_unidentified_entry(entry, "local-sha1", opener, sleep=lambda s: None)
+        self.assertEqual(r["status"], "vendor-modified")
+        self.assertEqual(r["version"], "1.4.0")
+        self.assertEqual(r["classifier"], "native")
 
     def test_no_hit_unknown_group_is_not_on_central(self):
         m = _load()
@@ -804,6 +901,17 @@ class ClassifyJarIdentityTest(unittest.TestCase):
         self.assertEqual(r["status"], "vendor-modified")
         self.assertEqual(r["classes_identical"], 0)
 
+    def test_no_classes_when_local_jar_has_no_class_entries_at_all(self):
+        # Real finding: bin/ext/system/jffi-1.4.0-native.jar is pure native .so/.dll (JNI) content
+        # -- ZERO .class entries. Lumping this in with "vendor-modified" (which means "we compared
+        # classes and none matched") is misleading: there is nothing to compare at all.
+        m = _load()
+        local = _jar_bytes({"jni/libfoo.so": b"native-lib", "META-INF/MANIFEST.MF": b"mf"})
+        central = _jar_bytes({"jni/libfoo.so": b"different-native-lib"})
+        r = m.classify_jar_identity(local, central)
+        self.assertEqual(r["status"], "no-classes")
+        self.assertEqual(r["classes_total_local"], 0)
+
 
 class FetchCentralBinaryJarTest(unittest.TestCase):
     def test_fetched_and_sha1_verified(self):
@@ -850,6 +958,26 @@ class FetchCentralBinaryJarTest(unittest.TestCase):
 
         r = m.fetch_central_binary_jar("g", "a", "1.0", opener, sleep=lambda s: None, retries=1)
         self.assertEqual(r["status"], "network-error")
+
+    def test_classifier_binary_is_fetched_not_the_classifier_less_one(self):
+        # Real 2026-09-28 orchestrator finding: comparing against the classifier-LESS binary for
+        # a classifier build gives a false 0/533 mismatch; the classifier binary is 533/533.
+        m = _load()
+        jar_bytes = b"classifier-jar-bytes"
+        sha1 = hashlib.sha1(jar_bytes).hexdigest()
+        seen = []
+
+        def opener(url, timeout=30):
+            seen.append(url)
+            self.assertNotIn("oauth2-oidc-sdk-11.26.jar", url)  # never the classifier-less one
+            if url.endswith(".sha1"):
+                return _FakeResponse(sha1.encode())
+            return _FakeResponse(jar_bytes)
+
+        r = m.fetch_central_binary_jar("com.nimbusds", "oauth2-oidc-sdk", "11.26", opener,
+                                        sleep=lambda s: None, classifier="jdk11")
+        self.assertEqual(r["status"], "fetched")
+        self.assertTrue(any("oauth2-oidc-sdk-11.26-jdk11.jar" in u for u in seen))
 
 
 class RunIdentifyUnidentifiedTest(unittest.TestCase):
@@ -1050,6 +1178,42 @@ class RunIdentifyUnidentifiedTest(unittest.TestCase):
                                                     opener=opener, sleep=lambda s: None, pace=0)
             self.assertEqual(summary["mirror-unavailable"], 1)
             self.assertEqual(plan["unidentified"][0]["reason"], "mirror-jar-not-found")
+
+    def test_classifier_mismatch_deep_check_fetches_the_classifier_central_binary(self):
+        # End-to-end real-shape reproduction of the jffi-1.4.0-native.jar finding: the deep
+        # per-.class check after a whole-jar mismatch must compare against Central's CLASSIFIER
+        # binary, not the classifier-less one, and record "classifier" on the artifact.
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir, binext_dir = self._mirror(td, [])
+            system_dir = os.path.join(binext_dir, "system")
+            os.makedirs(system_dir, exist_ok=True)
+            local_jar = _jar_bytes({"jni/libfoo.so": b"local-native-lib"})
+            with open(os.path.join(system_dir, "jffi-1.4.0-native.jar"), "wb") as f:
+                f.write(local_jar)
+            central_jar = _jar_bytes({"jni/libfoo.so": b"central-native-lib"})
+            central_sha1 = hashlib.sha1(central_jar).hexdigest()
+            seen_urls = []
+
+            def opener(url, timeout=30):
+                seen_urls.append(url)
+                if "solrsearch" in url:
+                    return _FakeResponse(_solr_response([]))
+                self.assertIn("jffi-1.4.0-native.jar", url)  # never the classifier-less coordinate
+                if url.endswith(".sha1"):
+                    return _FakeResponse(central_sha1.encode())
+                return _FakeResponse(central_jar)
+
+            plan = {"artifacts": [], "unidentified": [
+                {"kind": "bin/ext", "name": "bin/ext/system/jffi-1.4.0-native.jar", "reason": "no-pom-properties"},
+            ]}
+            summary = m.run_identify_unidentified(plan, mirror_modules_dir=modules_dir, mirror_binext_dir=binext_dir,
+                                                    opener=opener, sleep=lambda s: None, pace=0)
+            self.assertEqual(summary["no-classes"], 1)
+            art = plan["artifacts"][0]
+            self.assertEqual(art["groupId"], "com.github.jnr")
+            self.assertEqual(art["content_identity"]["classifier"], "native")
+            self.assertTrue(any("jffi-1.4.0-native.jar" in u for u in seen_urls))
 
 
 class RunFetchPropagatesSha1IdentificationFieldsTest(unittest.TestCase):
@@ -1324,6 +1488,44 @@ class RunRecheckPomIdentifiedGapsTest(unittest.TestCase):
             self.assertTrue(any("13.4.0.jre11" in u for u in seen_urls))
             self.assertEqual(summary["resigned-identical"], 1)
             self.assertEqual(manifest["artifacts"][0]["content_identity"]["status"], "resigned-identical")
+
+    def test_detects_classifier_from_occurrence_basename_and_compares_against_it(self):
+        # Real 2026-09-28 orchestrator finding: oauth2.jar!LIB-INF/oauth2-oidc-sdk-11.26-jdk11.jar
+        # is the "jdk11" CLASSIFIER build. Comparing against the classifier-less Central binary
+        # gives a false 0/533; the classifier binary is 533/533 byte-identical.
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            install_dir = self._install(td)
+            modules_dir = os.path.join(install_dir, "modules")
+            os.makedirs(modules_dir, exist_ok=True)
+            local_jar = _jar_bytes({"com/nimbusds/oauth2/sdk/Foo.class": b"same"})
+            with zipfile.ZipFile(os.path.join(modules_dir, "oauth2.jar"), "w") as z:
+                z.writestr("LIB-INF/oauth2-oidc-sdk-11.26-jdk11.jar", local_jar)
+            central_jar = _jar_bytes({"com/nimbusds/oauth2/sdk/Foo.class": b"same"})
+            central_sha1 = hashlib.sha1(central_jar).hexdigest()
+            seen_urls = []
+
+            def opener(url, timeout=30):
+                seen_urls.append(url)
+                self.assertNotIn("oauth2-oidc-sdk-11.26.jar", url)  # never the classifier-less one
+                if url.endswith(".sha1"):
+                    return _FakeResponse(central_sha1.encode())
+                return _FakeResponse(central_jar)
+
+            manifest = {"artifacts": [
+                {"groupId": "com.nimbusds", "artifactId": "oauth2-oidc-sdk", "version": "11.26",
+                 "resolved_version": "11.26", "status": "fetched",
+                 "occurrences": [{"kind": "LIB-INF", "name": "oauth2.jar!LIB-INF/oauth2-oidc-sdk-11.26-jdk11.jar"}]},
+            ]}
+            evidence = [{"kind": "LIB-INF", "name": "oauth2.jar!LIB-INF/oauth2-oidc-sdk-11.26-jdk11.jar",
+                         "result": "differs", "content": "differs:539"}]
+            summary = m.run_recheck_pom_identified_gaps(manifest, evidence, opener=opener,
+                                                          sleep=lambda s: None, mod_dir=modules_dir, pace=0)
+            self.assertTrue(any("oauth2-oidc-sdk-11.26-jdk11.jar" in u for u in seen_urls))
+            self.assertEqual(summary["resigned-identical"], 1)
+            ci = manifest["artifacts"][0]["content_identity"]
+            self.assertEqual(ci["status"], "resigned-identical")
+            self.assertEqual(ci["classifier"], "jdk11")
 
 
 class RenderReportAllThirdPartyHeadlineTest(unittest.TestCase):
