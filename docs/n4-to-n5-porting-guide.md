@@ -274,7 +274,10 @@ Slotomatic is **unchanged** in mechanism from N4 — same class
 (`com.tridium.slottool.Slotomatic`), same `BAJA AUTO GENERATED CODE` region markers, and it
 is **not wired into the `compileJava`/`jar` task graph** — the Gradle dry-run task graph is
 literally `compileJava → processResources → classes → writeModuleXml → jar`, with
-`slotomatic` absent [B7 §7.4][B9 §9.3]. The N5-only `NiagaraSlotProcessor` validates that
+`slotomatic` absent [B7 §7.4][B9 §9.3]. The `NiagaraSlotProcessor` (NOT N5-only: N4.14.0.162 and N4-4.15.3.28 ship it as
+`javax.baja.nre.annotations.processors.NiagaraSlotProcessor` in `bin/ext/nre.jar`; N5 relocates it to module
+`niagaraAnnotationProcessors.jar` as `niagara.nre.annotations.processors.NiagaraSlotProcessor` — verified by
+`unzip -l` over all jars of the three installs, 2026-09-28) validates that
 slot fields exist (emitting `"...have you run slot-o-matic?"` if not) but generates zero
 code itself [B7 §7.6].
 
