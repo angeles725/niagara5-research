@@ -38,7 +38,10 @@ bytecode `[CERT]`.
 
 
 def _git(repo, *args):
-    return subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True)
+    # Isolate HOME so the hook never picks up the author's real ~/investigacion/.../verify-block.sh
+    # (the test must behave the same on every machine and on CI).
+    env = dict(os.environ, HOME=os.path.join(repo, ".fake-home"))
+    return subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True, env=env)
 
 
 class _ScratchRepoTestCase(unittest.TestCase):

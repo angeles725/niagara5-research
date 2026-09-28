@@ -8,5 +8,5 @@
 | 2 | Negative: organized/ path cited | [CERT-hw] | `organized/foo/vineflower/com/foo/Bar.java:42`, this session |
 | 3 | Negative: evidence/ path cited | [CERT-live] | `evidence/b9003/probe1-output.txt`, this session |
 | 4 | Negative: not CERT-hw/live | [CERT] | `/tmp/claude-1000/scratchpad/b9003/out/Foo.kt` |
-| 5 | Positive: /tmp path WITH a line number (R3_DURABLE_RE bug) | [CERT-hw] | `/tmp/claude-1000/x/y/F.java:12`, this session |
+| 5 | Positive: /tmp path WITH a line number (R3_DURABLE_RE bug — old regex, removed in aaa369d) | [CERT-hw] | `/tmp/claude-1000/x/y/F.java:12`, this session |
 | 6 | Positive: /tmp scratchpad path WITH a line number | [CERT-hw] | `/tmp/claude-1000/x/scratchpad/F.java:12`, this session |

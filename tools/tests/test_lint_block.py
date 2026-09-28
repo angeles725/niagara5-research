@@ -86,7 +86,7 @@ class TestR3EphemeralEvidence(unittest.TestCase):
         self.assertEqual(len(hits), 3, hits)
 
     def test_tmp_path_with_trailing_line_number_still_fires(self):
-        # Regression for the R3_DURABLE_RE bug: a /tmp (or /tmp/.../scratchpad/...) path that
+        # Regression for the R3_DURABLE_RE bug — old regex, removed in aaa369d: a /tmp (or /tmp/.../scratchpad/...) path that
         # happens to carry a trailing ":<line>" must never be mistaken for a durable
         # "path:line" citation like "organized/foo/Bar.java:42".
         r = run("--audit", fx("niagara5-block9003.md"))

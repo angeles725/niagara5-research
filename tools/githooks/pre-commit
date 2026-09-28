@@ -36,10 +36,12 @@ if [ "${#staged_blocks[@]}" -gt 0 ]; then
   block_scratch="$scratch/staged-blocks"
   mkdir -p "$block_scratch"
   materialized_blocks=()
+  declare -A staged_name_of=()
   for f in "${staged_blocks[@]}"; do
     dest="$block_scratch/$(basename "$f")"
     git show ":$f" > "$dest"
     materialized_blocks+=("$dest")
+    staged_name_of["$dest"]="$f"
   done
 
   if ! python3 tools/lint-block.py "${materialized_blocks[@]}"; then
@@ -51,7 +53,7 @@ if [ "${#staged_blocks[@]}" -gt 0 ]; then
   if [ -x "$verify_block_sh" ]; then
     for dest in "${materialized_blocks[@]}"; do
       if ! "$verify_block_sh" "$dest"; then
-        echo "pre-commit: verify-block.sh failed on $dest" >&2
+        echo "pre-commit: verify-block.sh failed on ${staged_name_of[$dest]} (staged content)" >&2
         status=1
       fi
     done
