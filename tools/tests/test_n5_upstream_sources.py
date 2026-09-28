@@ -470,8 +470,6 @@ class MainPlanSubcommandTest(unittest.TestCase):
             self.assertEqual(len(plan["unidentified"]), 1)
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 class TestJavapFailureIsNeverAMatch(unittest.TestCase):
@@ -485,7 +483,7 @@ class TestJavapFailureIsNeverAMatch(unittest.TestCase):
     def test_run_javap_raises_when_javap_binary_is_missing(self):
         # CI runners have no JDK at the local path: a missing javap must be a typed JavapError too.
         mod = _load()
-        with self.assertRaises(mod.JavapError):
+        with self.assertRaisesRegex(mod.JavapError, "javap not runnable"):
             mod.run_javap("/nonexistent/X.class", javap_bin="/nonexistent/bin/javap")
 
     def test_run_javap_raises_on_empty_output(self):
@@ -497,3 +495,7 @@ class TestJavapFailureIsNeverAMatch(unittest.TestCase):
             os.chmod(fake, 0o755)
             with self.assertRaises(mod.JavapError):
                 mod.run_javap(os.path.join(d, "X.class"), javap_bin=fake)
+
+
+if __name__ == "__main__":
+    unittest.main()
