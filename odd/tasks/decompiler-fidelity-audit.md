@@ -130,6 +130,12 @@ make the decompile complete and as faithful as possible.
 - [ ] T16 Make the grade visible where claims are made: lint rule R9 — a [CERT] citation into organized/<mod>/vineflower/<cls>
       whose class grade is compiles-mismatch/no-compile needs a bytecode (javap) or docSource co-citation. Route: after T15.
 
+## Performance (2026-09-28)
+- Grading/decompiling read ~440 jars from /mnt/c (WSL 9p) per javac call — the dominant cost. Local mirror created and
+  sha256-verified: niagara5-research-localcache/jar-mirror-5.0.0.28/{modules,bin-ext} (+ modules.sha256, bin-ext.sha256).
+- Next session: n5-upstream-sources run_recompile_check integration test for the javap-error → None path (review
+  review-8361cb6c548924c1 R3-recompile-integration-unproved).
+
 ## Additional failure classes observed during this feature (fold into T3/T6)
 - C9 Gap opened without an ALREADY-COVERED check at open time: B109-G3 was already answered by B4 §4.2 + B109 §109.3 (B114).
 - C10 A figure carried forward from one tool/method into a gap text without its method: "4,209 types" (Ghidra count) vs
