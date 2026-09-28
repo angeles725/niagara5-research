@@ -43,7 +43,7 @@ docs/, tools/ header comments, RESEARCH-STATE; one new block (B115); retro kit-d
       - Ephemeral: 151 /tmp paths near CERT-hw/live, 13 already gone.
       - Beta-vs-GA: sample clean.
       - Not done: full prose-vs-raw sweep (only the known B106 instance).
-- [ ] T4 (delegated writer running) Write B115 (fidelity matrix + audit results) and §14 pointers in affected blocks. Route: delegated writer
+- [x] T4 (ce7b266) Write B115 (fidelity matrix + audit results) and §14 pointers in affected blocks. Route: delegated writer
       if 2+ non-trivial blocks change, else inline.
 - [ ] T5 Add the fidelity rule to docs/decompiler-bakeoff.md, docs/n4-to-n5-porting-guide.md, tools/README.md,
       tools/n5-decompile.sh header, and the writer prompt. Route: inline (mechanical once T1-T3 known).
@@ -53,32 +53,32 @@ docs/, tools/ header comments, RESEARCH-STATE; one new block (B115); retro kit-d
 ## Prevention (user requirement 2026-09-28: "these same errors must not happen again")
 Prose rules already failed once (B84 was written after B90 established the resugaring rule). Prevention must be
 MECHANICAL and fail closed:
-- [ ] T8 (delegated writer running; R7 constant-inlining + R8 baseline-attribution added) tools/lint-block.py (TDD, fixtures): rules R1 syntax-adoption/N4-N5 syntax-delta claim without bytecode/docSource
+- [x] T8 (d458bc1 + fix aaa369d; RDD review-ff9661ae41472f13 approved on d458bc1; fix under review) tools/lint-block.py (TDD, fixtures): rules R1 syntax-adoption/N4-N5 syntax-delta claim without bytecode/docSource
       evidence token; R2 absence claim without class-level census token; R3 [CERT-hw]/[CERT-live] evidence only under /tmp;
       R4 child-gap bullet without coverage-check + measured-by clauses; R5 null-argument/fail-open permission claim without a
       resolved dispatch target; R6 comparison against another block without citing its raw artifact. Enforced (FAIL) for
       blocks >= 115; older blocks in --audit mode (report only) to drive T4 fixes. Explicit per-line waiver token with reason.
       Route: delegated writer (2+ non-trivial files).
-- [ ] T9 Wiring: tools/githooks/pre-commit (lint staged blocks + check-gap-drift + verify-block), `make install-hooks`
+- [x] T9 (d458bc1, aaa369d: hook lints staged blobs, integration-tested) Wiring: tools/githooks/pre-commit (lint staged blocks + check-gap-drift + verify-block), `make install-hooks`
       (core.hooksPath), SessionStart hook warns if hooks not installed, GitHub Actions CI (make test + lint). No branch
       protection on this private plan, so the orchestrator merge step MUST wait for green checks (gh pr checks --watch).
-- [ ] T10 Durable evidence: evidence/b<N>/ in repo for small [CERT-hw] artifacts (size cap), writer prompt updated.
-- [ ] T11 Versioned writer prompt docs/writer-prompt.md (replaces the session-scratch common.txt) with the checklist.
+- [x] T10 (evidence/b115, README LVT fact corrected in aaa369d) Durable evidence: evidence/b<N>/ in repo for small [CERT-hw] artifacts (size cap), writer prompt updated.
+- [x] T11 (d458bc1) Versioned writer prompt docs/writer-prompt.md (replaces the session-scratch common.txt) with the checklist.
 - [ ] T12 Orchestrator-side memory: feedback memory + engram; retro kit deltas (T6) mirror R1-R6 into METHODOLOGY proposals.
 
 ## Maximum decompile fidelity (user requirement 2026-09-28: "the decompile must be right, no inventions, not tainted; try everything possible")
 - [x] T13 Integrity + completeness census [CERT-hw]: 252 recon.json (247 modules + bin/ext) — 0 jar sha256 mismatches vs the
-      installed jars, 0 missing jars; 14,894 top-level classes, 0 without a .java (vineflower or fallback); CFR fallback used in
+      installed jars, 0 missing jars; 14,894 top-level classes, 0 without a .java (CORRECTED by B117: this counted only top-level classes of the module jars — 24,896 classes in 98 nested LIB-INF jars and 958 classes in 10 out-of-pipeline Tridium jars were never decompiled; orchestrator verified 0 .java under any LIB-INF) (vineflower or fallback); CFR fallback used in
       6 modules (andoverAC256, backup, bajaui, ccn, ffmpeg, opcUaClient); obfuscation heuristic > 0.2 in none.
       docSource originals cover 2,776 of 7,284 top-level classes in docSource-eligible modules. Route: inline.
-- [ ] T14 Lossy-aspects catalog (answers "what else is not faithful"): synthetic javac-25 experiments for every candidate loss
+- [x] T14 (B116, 9523a9e) Lossy-aspects catalog (answers "what else is not faithful"): synthetic javac-25 experiments for every candidate loss
       class + EMPIRICAL differential of Vineflower output vs the 2,776 docSource originals (normalized), taxonomy with counts.
       Output: B116. Route: delegated researcher.
 - [ ] T15 Semantic fidelity grader tools/n5-fidelity.py (TDD): recompile each decompiled class against the original jars and
       compare normalized bytecode per method with the shipped class; on mismatch try CFR/Procyon/JADX and keep the first that
       round-trips; grade per class (docsource-original / roundtrip-exact / roundtrip-normalized / compiles-mismatch / no-compile);
       write organized/<mod>/fidelity.json + committed docs/decompile-fidelity-report.md. Route: delegated writer.
-- [ ] T17 Extraction + native fidelity (B117): nested/multi-release jars, extracted/ byte-exactness vs jar entries, resources,
+- [x] T17 Extraction + native fidelity (B117; Authenticode 20/20 verified by orchestrator): nested/multi-release jars, extracted/ byte-exactness vs jar entries, resources,
       skipped bin/ext jars, N5 obfuscation re-check, jarsigner verification of all module jars, native inventory + every native
       claim classified single-tool vs >= 2 anchored instruments with corroboration run now. Route: delegated researcher.
 - Redundancy ladder added to T15 (user: "use everything, no limits"): kit corroborate-java.sh (java-corroboration.v1), krak2
@@ -88,6 +88,16 @@ MECHANICAL and fail closed:
       M2 bytecode-level analysis (Joern jimple2cpg / SootUp / OPAL call graphs, dispatch resolution), M3 differential execution of
       pure station-independent classes (original vs recompiled), M4 runtime tracing of license-free Tridium CLIs, M5 dataflow
       (CodeQL buildless / Joern), M6 krak2 round-trip, M7 others. Hard limits: no live station, no license bypass. Route: delegated.
+- [ ] T19 Pipeline v2 (from reviewing the user-supplied external niagara_decomp.py + a decompilation survey, 2026-09-28):
+      verified defect tools/n5-decompile.sh:199 — Vineflower ran with NO library context (no --add-external for other N5 jars,
+      no JDK runtime) and CFR fallback without --extraclasspath. v2 variant → organized/<mod>/vineflower2/ with library context +
+      explicit fidelity flags (condy conversion off, rename off, LVT/MethodParameters names); v1 kept for comparison; the grader
+      grades both trees. Route: delegated writer (TDD, bats).
+      Adopted from the external review: exclude own jar from classpath; argfiles; reference-not-replace fallback; forensic
+      Vineflower flags; CFR git-master pinned; meta-decompilation per method (Harrand et al. 2019/2020); japicmp; jqwik; ASM>=9.8;
+      JEP 513/456, condy, preview 65535, Kotlin metadata, Maven SHA-1 lookup. REJECTED from it: difflib similarity >= 0.90 as a
+      verdict and branch-target erasure ("L") in its normalizer (hides control-flow changes); -parameters (Tridium classes have no
+      MethodParameters, verified); re-signing/redistribution steps (out of scope: research is read-only).
 - [ ] T16 Make the grade visible where claims are made: lint rule R9 — a [CERT] citation into organized/<mod>/vineflower/<cls>
       whose class grade is compiles-mismatch/no-compile needs a bytecode (javap) or docSource co-citation. Route: after T15.
 

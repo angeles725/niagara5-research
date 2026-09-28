@@ -1,0 +1,373 @@
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/aaphp.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/aapup.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/abstractMqttDriver.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/ace.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/aceEdge.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/alarm.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/alarmOrion.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/analytics.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/analyticsLibs.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/andoverAC256.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/andoverInfinity.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/apachePoi.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/awsUtils.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/axvelocity.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/azureUtils.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/backup.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/bacnet.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/bacnetAws.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/bacnetEDE.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/bacnetUtil.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/baja.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/bajaScript.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/bajaui.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/bajaux.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/baseRtsp.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/basicDriver.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/batchJob.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/box.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/bql.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/brick.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/ccn.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/chart.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/clientCertAuth.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/cloudLink.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/cloudLinkAzure.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/cloudLinkExtensionBacnet.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/cloudLinkExtensionEbi.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/cloudLinkExtensionNiagara.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/cloudLinkForge.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/cloudLinkHonSbp.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/cloudLinkNcs.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/commonsCompress.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/commonsIo.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/commonsLang.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/control.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/converters.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/csmgrbase.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/dashboard.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/devDriver.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/devHttpDriver.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/devIpDriver.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/devkit.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/devSerialDriver.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/docDeveloper.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/docDeveloperAnalytics.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/docSource.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/driver.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/driverUpgrade.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/edgeIo.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/email.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/entityIo.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/event.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/export.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/exportTags.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/ffmpeg.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/file.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/flexSerial.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/fonts.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/fox.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/gx.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/haystack.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/help.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/hierarchy.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/history.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/html.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/httpClient.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/hx.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/icons.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/jetty.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/jodaTime.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/js.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/jsonSmart.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/jsonToolkit.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/jxBrowser.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/kitControl.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/kitIo.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/kitLon.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/kitPx.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/kitPxGraphics.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/kitPxHvac.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/kitPxN4svg.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/ldap.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/lonDevices.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/lonHoneywell.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/lonHoneywellXfl800.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/lonIp.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/lontunnel.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/lonWattStopper.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/lonworks.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/maxpro.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/mbus.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/mcquay.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/migration.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/migrator.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/modbusAsync.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/modbusCore.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/modbusSlave.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/modbusTcp.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/modbusTcpSlave.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/naxisVideo.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/ndriver.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/neql.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/net.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraCloud.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraDriver.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconAl.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconAr.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconBe.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconBg.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconCa.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconCs.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconDa.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconDe.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconEl.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconEs.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconEt.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconFi.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconFr.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconHi.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconHr.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconHu.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconIn.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconIs.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconIt.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconIw.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconJa.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconKo.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconLt.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconLv.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconMk.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconNl.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconNo.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconPl.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconPt.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconRo.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconRu.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconSk.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconSl.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconSq.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconSr.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconSv.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconTh.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconTr.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconUk.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconVi.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconZh.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraLexiconZhcn.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraSync.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraSystemIndex.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraTest.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/niagaraVirtual.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/nmilestone.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/nrio.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/nsh.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/nSnmp.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/nss.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/nurio.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/nvideo.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/oauth2.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/obix.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/obixDriver.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/obixSeriesTransform.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/onCall.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/opcUaClient.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/opcUaCore.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/opcUaServer.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/orientSystemDb.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/orion.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/pdf.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/platAceIpc.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/platBacnet.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/platCcn.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/platCrypto.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/platDaemon.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/platDataRecovery.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/platEdgeIo.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/platform.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/platHwScan.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/platHwScanAtlas.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/platIEEE8021X.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/platLon.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/platMstp.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/platNrio.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/platNurio.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/platSerial.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/platSerialNpsdk.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/platWifi.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/portalApi.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/program.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/propMigration.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/provisioningNiagara.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/pxEditor.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/query.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/queryTable.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/raster.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/rdb.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/rdbHsqlDb.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/rdbMySQL.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/rdbSqlServer.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/remoteVideo.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/report.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/saml.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/samlEncryption.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/schedule.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/search.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/serial.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/seriesTransform.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/signingService.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/silk.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/smartTableHx.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/sms.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/snmpLibs.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/svg.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/svgBatik.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/systemDb.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/systemIndex.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/systemMonitor.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/tagdictionary.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/template.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/templateBulk.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/test.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/themeLucid.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/themeN5.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/themeZebra.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/tls.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/totpAuth.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/tunnel.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/uxBuilder.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/videoDriver.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/wbutil.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/weather.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/web.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/webChart.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/webEditors.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/wiresheet.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/workbench.jar
+/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/xprotect.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/javadoc/niagaraJavadoc.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/lib/tridium-niagara-baja-doclet-5.0.4.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/angus-activation-2.0.3.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/annotations-13.0.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/asm-9.10.1.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/asm-commons-9.10.1.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/asm-tree-9.10.1.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/byte-buddy-1.18.12.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/commons-codec-1.22.1.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/commons-lang3-3.20.0.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/commons-logging-1.4.0.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/encoder-1.4.0.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/httpclient5-5.6.4.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/httpcore5-5.4.3.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/httpcore5-h2-5.4.3.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jakarta.activation-api-2.1.4.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jakarta.annotation-api-3.0.0.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jakarta.el-api-6.0.1.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jakarta.enterprise.cdi-api-4.1.0.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jakarta.enterprise.lang-model-4.1.0.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jakarta.inject-api-2.0.1.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jakarta.interceptor-api-2.2.0.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jakarta.servlet-api-6.1.0.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jakarta.transaction-api-2.0.1.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jakarta.xml.bind-api-4.0.5.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jetty-alpn-client-12.1.13.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jetty-annotations-12.1.13.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jetty-client-12.1.13.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jetty-compression-common-12.1.13.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jetty-compression-gzip-12.1.13.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jetty-compression-server-12.1.13.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jetty-deploy-12.1.13.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jetty-ee-webapp-12.1.13.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jetty-ee11-annotations-12.1.13.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jetty-ee11-plus-12.1.13.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jetty-ee11-servlet-12.1.13.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jetty-ee11-servlets-12.1.13.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jetty-ee11-webapp-12.1.13.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jetty-ee11-websocket-jetty-server-12.1.13.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jetty-ee11-websocket-servlet-12.1.13.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jetty-http-12.1.13.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jetty-io-12.1.13.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jetty-jmx-12.1.13.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jetty-jndi-12.1.13.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jetty-plus-12.1.13.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jetty-security-12.1.13.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jetty-server-12.1.13.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jetty-session-12.1.13.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jetty-util-12.1.13.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jetty-websocket-core-client-12.1.13.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jetty-websocket-core-common-12.1.13.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jetty-websocket-core-server-12.1.13.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jetty-websocket-jetty-api-12.1.13.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jetty-websocket-jetty-client-12.1.13.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jetty-websocket-jetty-common-12.1.13.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jetty-websocket-jetty-server-12.1.13.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jetty-xml-12.1.13.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jose4j-0.9.6.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/json-20260814.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/kotlin-stdlib-2.4.10.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/kotlin-stdlib-jdk7-2.4.10.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/kotlin-stdlib-jdk8-2.4.10.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/libthrift-0.24.0.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/niagara-remote-client-1.0.5.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/niagaraAnnotationProcessors.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/niagarad.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/nre.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/okhttp-5.5.0.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/okhttp-jvm-5.5.0.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/okio-jvm-3.18.1.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/resilience4j-core-2.4.0.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/resilience4j-retry-2.4.0.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/slf4j-api-2.0.18.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/slf4j-jdk14-2.0.18.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/splash.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/bcfips/bc-bcfkswrapprov-1.0.0.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/bcfips/bc-fips-2.1.2.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/bcfips/bcpkix-fips-2.1.12.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/bcfips/bctls-fips-2.1.24.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/bcfips/bcutil-fips-2.1.7.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/bcstd/bcpkix-jdk18on-1.85.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/bcstd/bcprov-jdk18on-1.85.2.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/bcstd/bctls-jdk18on-1.85.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/bcstd/bcutil-jdk18on-1.85.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jxbrowser/jxbrowser-9.5.0.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jxbrowser/jxbrowser-javafx-9.5.0.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jxbrowser/jxbrowser-swing-9.5.0.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jxbrowser/jxbrowser-swt-9.5.0.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/jxbrowser/jxbrowser-win64-9.5.0.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/securityBridge/securityBridge.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/system/asm-analysis-9.10.1.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/system/asm-util-9.10.1.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/system/concurrentlinkedhashmap-lru-1.4.2.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/system/istack-commons-runtime-4.2.0.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/system/jaxb-core-4.0.9.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/system/jaxb-runtime-4.0.9.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/system/jffi-1.4.0-native.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/system/jffi-1.4.0.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/system/jna-5.19.1.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/system/jna-platform-5.19.1.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/system/jnr-a64asm-1.0.0.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/system/jnr-constants-0.11.0.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/system/jnr-ffi-2.3.1.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/system/jnr-posix-3.2.2.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/system/jnr-x86asm-1.0.2.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/system/lz4-java-1.11.2.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/system/orientdb-client-3.2.55.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/system/orientdb-core-3.2.55.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/system/orientdb-server-3.2.55.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/system/orientdb-tools-3.2.55.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext/system/txw2-4.0.9.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/etc/m2/repository/commons-codec/commons-codec/1.18.0/commons-codec-1.18.0.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/etc/m2/repository/com/fasterxml/jackson/module/jackson-module-kotlin/2.22.0/jackson-module-kotlin-2.22.0.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/etc/m2/repository/org/jetbrains/kotlin/kotlin-reflect/2.1.21/kotlin-reflect-2.1.21.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/etc/m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.22/jackson-annotations-2.22.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/etc/m2/repository/com/fasterxml/jackson/core/jackson-core/2.22.0/jackson-core-2.22.0.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/etc/m2/repository/com/fasterxml/jackson/core/jackson-databind/2.22.0/jackson-databind-2.22.0.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/etc/m2/repository/com/tridium/xelem/4.0.3/xelem-4.0.3.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/etc/m2/repository/com/tridium/tools/filetypes/1.0.2/filetypes-1.0.2.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/etc/m2/repository/com/tridium/tools/java-utils/7.6.2/java-utils-7.6.2.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/etc/m2/repository/com/tridium/tools/n-conv-plugin/5.0.54.9.2/n-conv-plugin-5.0.54.9.2.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/etc/m2/repository/com/tridium/tools/n-plugin/5.0.54.9.2/n-plugin-5.0.54.9.2.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/etc/m2/repository/com/tridium/tools/n-templates/5.0.54.9.2/n-templates-5.0.54.9.2.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/etc/m2/repository/com/tridium/tools/settings/5.0.9.8.14/settings-5.0.9.8.14.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/etc/m2/repository/com/tridium/tools/tridium-niagara-slotomatic-library/5.0.2/tridium-niagara-slotomatic-library-5.0.2.jar
+/mnt/c/Program Files/Niagara/5.0.0.28/etc/m2/repository/com/tridium/tools/utils/5.0.7.8.14/utils-5.0.7.8.14.jar

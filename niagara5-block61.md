@@ -180,6 +180,8 @@ only still-open half of that finding.
 
 ## 61.2 — B57-G2 ADVANCED, not closed: `station.exe`'s own native library (`nre.dll`) imports `CreateProcessA` AND Windows-Service-registration APIs; `niagarad.exe`'s own native library (`njre.dll`) imports NEITHER — narrowing, not resolving, which binary actually spawns a station process `[CERT-hw]`+`[INFER]`
 
+> **Correction (added by [Block 117], §14 cross-block, §117.x).** `nre.dll` ADVAPI32 imports 7 registry calls (adds `RegDeleteValueA`), not 6.
+
 [Block 57] §57.1 found zero `ProcessBuilder`/argument-list construction anywhere in the N5 Java corpus and
 named the actual station-spawn mechanism "native-code-mediated or outside the decompiled tree entirely" —
 **B57-G2**. This session probes the two most plausible native binaries directly on the live install, using

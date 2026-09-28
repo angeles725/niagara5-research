@@ -75,6 +75,8 @@
 
 ## 113.1 — B108-G1 CLOSED (as the `typelinks`-registered subset; full 4,209-type closure narrowed to B113-G1): `runtime.firstmoduledata` located by an 8-byte VA backref scan, its 2,418-entry `typelinks` table fully parsed into `abi.Type` headers, yielding 47 own `github.com/HON-HCE/*` struct/pointer types across 11 packages with field-level detail for 41 of them — including a previously-undocumented `tflagExtraStar` name-mangling rule this session had to reverse-discover to read the data correctly `[CERT-hw]`
 
+> **Correction (added by [Block 117], §14 cross-block, §117.x).** the `typelinks` slice pointer is at `firstmoduledata+0x160` (length at `+0x168`), not `+0x158`; the block's moduledata.py already reads `+0x160`, so derived values stand — only the prose offset is wrong.
+
 **Parent gap, quoted verbatim** ([Block 108] §108.x): *"walk NCS-Agent's separate Go type-metadata table
 (`moduledata.types`/`typelinks`, reachable from `firstmoduledata`, a DIFFERENT structure than the pclntab
 function table this session and [Block 100] §100.1 both parsed) to census the '4,209 types' half of the

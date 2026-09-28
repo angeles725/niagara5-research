@@ -44,16 +44,16 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
      Field names use UNDERSCORES on purpose: they must never collide with the prose greps below. -->
 <!-- research-state.v1 -->
 schema: research-state.v1
-covered_blocks: 116
-gaps_closed: 387
-known_gaps: 494
-investigable_open: 10
+covered_blocks: 117
+gaps_closed: 389
+known_gaps: 503
+investigable_open: 17
 requires_execution_open: 21
 blocked_open: 64
 deferred_open: 12
 undocumented_findings: 0
-blocks_since_retro: 1
-last_iteration_ts: 2026-09-28T10:30:00Z
+blocks_since_retro: 2
+last_iteration_ts: 2026-09-28T11:30:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
      applies to every corpus (single-focus and campaign alike); the stall-detection instrument reads it
@@ -61,9 +61,9 @@ last_iteration_ts: 2026-09-28T10:30:00Z
 
 ## Coverage
 
-- **Covered blocks**: 116 (B1..B116)
-- **Coverage metric**: 387 / 494 closed
-- **Last iteration**: 2026-09-28 — B116 Java decompile loss catalog (11 semantic Vineflower defects D1-D11); gate fixes aaa369d/b5814c8
+- **Covered blocks**: 117 (B1..B117)
+- **Coverage metric**: 389 / 503 closed
+- **Last iteration**: 2026-09-28 — B117 extraction + native-binary fidelity audit; Authenticode verified (osslsigncode)
 
 ## Gap-backlog
 
@@ -494,6 +494,15 @@ last_iteration_ts: 2026-09-28T10:30:00Z
 | medium | B116-G4 Measure a whole-tree Vineflower re-run with library context (-e) against D1-D11 | n5-decompile v2 | requires-execution → §19 |
 | medium | B116-G5 Review the 27 typeSwitch / 10 MatchException classes decompiled as pseudo-Java | organized/ | pending |
 | low | B116-G6 Independent second review of the 113 benign SEM? verdicts | evidence/b116 | pending |
+| high | B117-G1 Durable decompile of the 10 out-of-pipeline Tridium jars (etc/m2, lib doclet) and devkit LIB-INF Tridium jars | etc/m2 + devkit | pending |
+| medium | B117-G2 Audit corpus claims read from Java decompiles of the 4 Kotlin-compiled Tridium jars | corpus + etc/m2 | pending |
+| medium | B117-G3 Tag claims resting on minified JS; check the 86 .map files for original sources | module resources | pending |
+| low | B117-G4 Decompile the 14 .NET assemblies (xprotect) and map the ffmpeg JNI surface | module payloads | pending |
+| medium | B117-G5 Verify Authenticode digests of the Tridium PE binaries | bin/ | ✅ covered — orchestrator (osslsigncode provisioned; 20/20 bin/*.dll,*.exe digest match, evidence/b117/authenticode-verify.txt; B117 counted 21 — 1 PE outside bin/ top level not yet checked) |
+| low | B117-G6 Second parser for B113 Go struct sizes | NCS-Agent binary | pending |
+| high | B117-G7 Wire the extraction census + jarsigner into the pipeline and add a lint rule for native claims (sha256 + VA + two instruments) | tools/ | pending |
+| medium | B117-G8 Move B117 evidence into the repo | evidence/ | ✅ covered — orchestrator (evidence/b117/, 4.4 MB, secrets-scanned) |
+| low | B117-G9 Provenance of paho mqttv3 1.2.5 rebuild and the 44 unidentified third-party jars | bin/ext + LIB-INF | pending |
 | low | B104-G5 Live-station confirmation of B104's static driver/sync findings | station | requires-execution → §19 |
 | low | B106-G1 Gradle --info/dependencyInsight trace of which wiring puts the moduleTest jar on compileModuleTestJava | Gradle run | requires-execution → §19 |
 
@@ -617,6 +626,7 @@ last_iteration_ts: 2026-09-28T10:30:00Z
 | 114 | 2026-09-28 | B110-G1 MySQL/MSSQL DDL, B110-G2 sqlNVarchar live via BUnicodeUpdateJob (§14 B110), B111-G1; B109-G3 already-covered | B114 | yes · sonnet | 2 new — B114-G1..G2 |
 | 115 | 2026-09-28 | Decompiler-fidelity + method-error audit: bytecode-distinguishability matrix, version-gated resugaring, constant inlining (docSource proof), 7/18 N5-only modules ship in N4.15, B84 fixes; §14 pointers B13/B18/B84/B96/B105/B111 | B115 | yes · sonnet | 5 new — B115-G1..G5 |
 | 116 | 2026-09-28 | Java decompile loss catalog: docSource = byte-identical ground truth (3,707 classes); 30-row synthetic loss matrix over 4 decompilers; 65,136 aligned members normalized; 11 confirmed Vineflower semantic defects D1-D11 (0.030%); §14 pointer B115 | B116 | yes · opus | 6 new — B116-G1..G6 |
+| 117 | 2026-09-28 | Extraction + native fidelity: 21,751 classes byte-exact, 356 signed jars verified, 0 obfuscation (ZKM positive control), 24,896 nested-jar + 958 out-of-pipeline Tridium classes never decompiled, 45/46 single-instrument native claims corroborated; §14 pointers B30/B43/B61/B63/B87/B94/B113 | B117 | yes · opus | 9 new — B117-G1..G9 |
 
 ## Blocked gaps (each tagged with what it needs)
 
@@ -687,7 +697,7 @@ last_iteration_ts: 2026-09-28T10:30:00Z
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 10
+- **Open gaps — read-only investigable**: 17
 - **Open gaps — requires-execution**: 21
 - **Open gaps — blocked**: 64
 - Consecutive iterations with empty backlog (secondary): 0/2

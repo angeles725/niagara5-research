@@ -89,6 +89,8 @@
 
 ## 87.1 — B76-G1 CLOSED: the boot-time `.jar.sig` verifier is `SignatureUtil::checkFileSignature`, compiled into BOTH `njre.dll` and `nre.dll`, invoked from `JavaLauncherWin32::initPaths()`/`NreLauncherWin32::initPaths()` via a `DirectoryListing`-driven loop that filters `*.jar` under five `bin/ext` subpaths, verifies each with a "Tridium Public Key" RSA check through Windows CNG, and hard-exits the process on any failure `[CERT-hw]`
 
+> **Correction (added by [Block 117], §14 cross-block, §117.x).** self-verify row 3: the 249/250 exits are in `initPaths` after the loop returns -1, not inside the signature loop (the section prose already says so).
+
 [Block 76] §76.1 established the *format* of the 73 `bin/ext/*.jar.sig` sidecars (fixed 256 bytes, RSA-2048-
 shaped, structurally distinct from the in-module CMS/BouncyCastle `ArchiveVerifier` signing) but explicitly did
 not locate the boot-time code that reads and checks them, naming this **B76-G1** and guessing "likely in

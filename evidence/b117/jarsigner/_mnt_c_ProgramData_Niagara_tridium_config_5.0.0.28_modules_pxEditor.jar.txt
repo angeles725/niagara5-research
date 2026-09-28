@@ -1,0 +1,11 @@
+
+jar verified, with signer errors.
+
+Error: 
+This jar contains entries whose certificate chain is invalid. Reason: PKIX path building failed: sun.security.provider.certpath.SunCertPathBuilderException: unable to find valid certification path to requested target
+
+This JAR file contains internal inconsistencies that may result in different contents when reading via JarFile and JarInputStream:
+- Entry META-INF/ is present when reading via JarFile but missing when reading via JarInputStream
+
+Re-run with the -verbose and -certs options for more details.
+rc=4
