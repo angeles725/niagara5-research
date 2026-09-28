@@ -74,7 +74,7 @@ MECHANICAL and fail closed:
 - [x] T14 (B116, 9523a9e) Lossy-aspects catalog (answers "what else is not faithful"): synthetic javac-25 experiments for every candidate loss
       class + EMPIRICAL differential of Vineflower output vs the 2,776 docSource originals (normalized), taxonomy with counts.
       Output: B116. Route: delegated researcher.
-- [ ] T15 Semantic fidelity grader tools/n5-fidelity.py (TDD): recompile each decompiled class against the original jars and
+- [x] T15 (16fc6a8; orchestrator re-ran svg+lonWattStopper: 6/6 roundtrip-exact, matches report) Semantic fidelity grader tools/n5-fidelity.py (TDD): recompile each decompiled class against the original jars and
       compare normalized bytecode per method with the shipped class; on mismatch try CFR/Procyon/JADX and keep the first that
       round-trips; grade per class (docsource-original / roundtrip-exact / roundtrip-normalized / compiles-mismatch / no-compile);
       write organized/<mod>/fidelity.json + committed docs/decompile-fidelity-report.md. Route: delegated writer.
@@ -88,7 +88,7 @@ MECHANICAL and fail closed:
       M2 bytecode-level analysis (Joern jimple2cpg / SootUp / OPAL call graphs, dispatch resolution), M3 differential execution of
       pure station-independent classes (original vs recompiled), M4 runtime tracing of license-free Tridium CLIs, M5 dataflow
       (CodeQL buildless / Joern), M6 krak2 round-trip, M7 others. Hard limits: no live station, no license bypass. Route: delegated.
-- [ ] T19 Pipeline v2 (from reviewing the user-supplied external niagara_decomp.py + a decompilation survey, 2026-09-28):
+- [x] T19 (1791db1; orchestrator verified the Vineflower option-order quirk and the D4 fix `map.remove(Integer.valueOf(this.index))`) Pipeline v2 (from reviewing the user-supplied external niagara_decomp.py + a decompilation survey, 2026-09-28):
       verified defect tools/n5-decompile.sh:199 — Vineflower ran with NO library context (no --add-external for other N5 jars,
       no JDK runtime) and CFR fallback without --extraclasspath. v2 variant → organized/<mod>/vineflower2/ with library context +
       explicit fidelity flags (condy conversion off, rename off, LVT/MethodParameters names); v1 kept for comparison; the grader
@@ -98,6 +98,19 @@ MECHANICAL and fail closed:
       JEP 513/456, condy, preview 65535, Kotlin metadata, Maven SHA-1 lookup. REJECTED from it: difflib similarity >= 0.90 as a
       verdict and branch-target erasure ("L") in its normalizer (hides control-flow changes); -parameters (Tridium classes have no
       MethodParameters, verified); re-signing/redistribution steps (out of scope: research is read-only).
+- [ ] T19b (delegated, TDD) Harden v2 after RDD review-4091d4df000d0cae: orchestrator verified a real library-context race —
+      5 modules (analyticsLibs, apachePoi, commonsIo, commonsLang, niagaraTest) were rm -rf/unzip-ed 07:20-07:31Z while parallel
+      workers scanned */extracted/LIB-INF/*.jar. Fix: immutable libcache prepared serially, idempotency key over the full
+      library set, failed runs never cached as success, fallback2/ cleared, stale-extract check, no shell→Python interpolation.
+      The first v2 tree is superseded until the clean rerun lands.
+- [ ] T15b (folded into T20 writer) Grader normalizer holes from RDD review-a849ade48da9b9ae, orchestrator-verified with javac 25:
+      switch-case regex drops negative keys (javap `-5: 40`) → possible FALSE roundtrip-exact; iinc `2, 3` comma form not
+      canonicalized (conservative). Plus: masked module failures, truncated runs cached as complete, no subprocess timeouts,
+      harness failures graded as no-compile, tautological test. The 120/186 exact figure is provisional until re-graded.
+- [ ] T20 Per-tree fidelity files (fidelity.<tree>.json) and grade vineflower2 vs vineflower on the identical 43-module sample;
+      choose the primary tree by measured round-trip rate, not by text diff. Note: v2's +139% @Override is decompiler inference
+      (B116: @Override never survives compilation), not recovered information. Route: delegated writer (TDD).
+- [ ] T21 Full-corpus grading run (all ~15k top-level classes, both trees) — closes B116-G1; long run, forecast first. Route: delegated.
 - [ ] T16 Make the grade visible where claims are made: lint rule R9 — a [CERT] citation into organized/<mod>/vineflower/<cls>
       whose class grade is compiles-mismatch/no-compile needs a bytecode (javap) or docSource co-citation. Route: after T15.
 

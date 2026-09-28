@@ -86,7 +86,10 @@ See `odd/tasks/decompiler-fidelity-audit.md` for the full experiment and evidenc
 - NEVER assert that Tridium "uses/adopted/rewrote to" a Java language feature, and NEVER report an
   N4<->N5 syntax delta, from decompiled source. Quoting decompiled code to explain BEHAVIOR is fine EXCEPT when the claim depends on overload binding, boxing/unboxing, numeric conversion or casts, `finally`/return control flow, varargs arguments, or whether a name is a local or a field — Vineflower 1.12 gets exactly these wrong in 11 of 36,977 recompiled Tridium methods (niagara5-block116.md, D1-D11; e.g. BDevice.checkFatalFault turns a local into the field `network`). For those, cite javap (`javap -c -p organized/<mod>/extracted/...class`) or the docSource original. CFR is not a semantic oracle either.
 - Bytecode-identical (javap cannot decide; only docSource originals or a non-resugaring decompiler
-  like CFR): `instanceof` patterns, `var`, text blocks, string concatenation form.
+  like CFR): `instanceof` patterns, `var`, text blocks, string concatenation form. For `instanceof` patterns the
+  LineNumberTable (`javap -l`) usually decides (classic instanceof/checkcast on different lines; niagara5-block118.md).
+  CFR is NOT a syntax oracle (git master resugars; 0.152 un-sugars real patterns). For "who calls X" use bytecode
+  (`python3 tools/n5-bytecode-xref.py callers ...`), never module-navigator alone (it missed 5 of 5 callers in B118).
 - Bytecode-visible (use `javap -v -p` on `organized/<mod>/extracted/...class`): records (Record
   attr), sealed (PermittedSubclasses), pattern switch (typeSwitch/SwitchBootstraps indy), lambdas
   (LambdaMetafactory vs `$1` inner class), array/Iterable for-each (Tridium ships `-g`, so

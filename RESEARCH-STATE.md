@@ -44,16 +44,16 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
      Field names use UNDERSCORES on purpose: they must never collide with the prose greps below. -->
 <!-- research-state.v1 -->
 schema: research-state.v1
-covered_blocks: 117
+covered_blocks: 118
 gaps_closed: 389
-known_gaps: 503
-investigable_open: 17
-requires_execution_open: 21
+known_gaps: 510
+investigable_open: 22
+requires_execution_open: 23
 blocked_open: 64
 deferred_open: 12
 undocumented_findings: 0
-blocks_since_retro: 2
-last_iteration_ts: 2026-09-28T11:30:00Z
+blocks_since_retro: 3
+last_iteration_ts: 2026-09-28T12:30:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
      applies to every corpus (single-focus and campaign alike); the stall-detection instrument reads it
@@ -61,9 +61,9 @@ last_iteration_ts: 2026-09-28T11:30:00Z
 
 ## Coverage
 
-- **Covered blocks**: 117 (B1..B117)
-- **Coverage metric**: 389 / 503 closed
-- **Last iteration**: 2026-09-28 — B117 extraction + native-binary fidelity audit; Authenticode verified (osslsigncode)
+- **Covered blocks**: 118 (B1..B118)
+- **Coverage metric**: 389 / 510 closed
+- **Last iteration**: 2026-09-28 — B118 logic-recovery method ladder; research child gaps deferred to next session by user (focus: decompile fidelity)
 
 ## Gap-backlog
 
@@ -503,6 +503,13 @@ last_iteration_ts: 2026-09-28T11:30:00Z
 | high | B117-G7 Wire the extraction census + jarsigner into the pipeline, add a lint rule for native claims (sha256 + VA + two instruments), and harden n5-extract-census per RDD review-49636f53e9119721 (per-module error isolation, exit-code collision, entry-path normalization, sweep tests, MZ check) | tools/ | pending |
 | medium | B117-G8 Move B117 evidence into the repo | evidence/ | ✅ covered — orchestrator (evidence/b117/, 4.4 MB, secrets-scanned) |
 | low | B117-G9 Provenance of paho mqttv3 1.2.5 rebuild and the 44 unidentified third-party jars | bin/ext + LIB-INF | pending |
+| high | B118-G1 Triage the 66 BHistorySpace.getNavChildren call sites (null-Context folder filter on station-side spaces) — defensive | history + callers | pending (deferred to next session by user 2026-09-28) |
+| medium | B118-G2 Conservative line-mapped Vineflower view for the whole tree, graded by n5-fidelity | organized/ | requires-execution → §19 |
+| medium | B118-G3 Root cause of CodeQL buildless missing the unguarded CSR flow | CodeQL | pending (deferred to next session by user 2026-09-28) |
+| medium | B118-G4 Differential generator over the 4,813 offline-loadable classes | organized/ | requires-execution → §19 |
+| low | B118-G5 Kit jvm-callgraph fails silently on class-file 69 (SootUp 2.0.0 / ASM <= V24) | kit toolbelt | pending (deferred; kit issue via retro) |
+| low | B118-G6 Extend the LineNumberTable discriminator to other resugarings (var, text blocks, switch expressions) | organized/ | pending (deferred to next session by user 2026-09-28) |
+| low | B118-G7 Launcher runtime trace (refused: license gate + config-home writes) | launchers | pending (refused; recorded wall) |
 | low | B104-G5 Live-station confirmation of B104's static driver/sync findings | station | requires-execution → §19 |
 | low | B106-G1 Gradle --info/dependencyInsight trace of which wiring puts the moduleTest jar on compileModuleTestJava | Gradle run | requires-execution → §19 |
 
@@ -627,6 +634,7 @@ last_iteration_ts: 2026-09-28T11:30:00Z
 | 115 | 2026-09-28 | Decompiler-fidelity + method-error audit: bytecode-distinguishability matrix, version-gated resugaring, constant inlining (docSource proof), 7/18 N5-only modules ship in N4.15, B84 fixes; §14 pointers B13/B18/B84/B96/B105/B111 | B115 | yes · sonnet | 5 new — B115-G1..G5 |
 | 116 | 2026-09-28 | Java decompile loss catalog: docSource = byte-identical ground truth (3,707 classes); 30-row synthetic loss matrix over 4 decompilers; 65,136 aligned members normalized; 11 confirmed Vineflower semantic defects D1-D11 (0.030%); §14 pointer B115 | B116 | yes · opus | 6 new — B116-G1..G6 |
 | 117 | 2026-09-28 | Extraction + native fidelity: 21,751 classes byte-exact, 356 signed jars verified, 0 obfuscation (ZKM positive control), 24,896 nested-jar + 958 out-of-pipeline Tridium classes never decompiled, 45/46 single-instrument native claims corroborated; §14 pointers B30/B43/B61/B63/B87/B94/B113 | B117 | yes · opus | 9 new — B117-G1..G9 |
+| 118 | 2026-09-28 | Logic-recovery method ladder: conservative line-mapped Vineflower (669/669 lines match docSource), LineNumberTable pattern discriminator, SootUp/Joern bytecode call graphs on class-file 69, differential execution + jqwik + JaCoCo, CodeQL traced vs Joern dataflow, krak2 -r 20,724/20,724 byte-identical; §14 pointers B107, B115 | B118 | yes · opus | 7 new — B118-G1..G7 |
 
 ## Blocked gaps (each tagged with what it needs)
 
@@ -697,8 +705,8 @@ last_iteration_ts: 2026-09-28T11:30:00Z
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 17
-- **Open gaps — requires-execution**: 21
+- **Open gaps — read-only investigable**: 22
+- **Open gaps — requires-execution**: 23
 - **Open gaps — blocked**: 64
 - Consecutive iterations with empty backlog (secondary): 0/2
 - Budget cap (default safety net): none

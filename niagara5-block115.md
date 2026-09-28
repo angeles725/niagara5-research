@@ -46,6 +46,12 @@
 
 ## 115.1 — Bytecode-distinguishability matrix: 9 old-vs-new Java idiom pairs, `javac 25 --release 25`, `javap -c -p` with and without `-g` `[CERT-hw]`
 
+> **Correction (added by [Block 118], §14 cross-block).** Row 1 ("javap cannot decide instanceof-pattern vs classic")
+> is too strong: with `-g` the LineNumberTable usually decides it — classic `instanceof` and `checkcast` sit on different
+> source lines, a pattern on one (validated 326/326 classic casts on docSource originals, 1/93 patterns misflagged; e.g.
+> BQudtUnitTag: instanceof pc1 line 89, checkcast pc8 line 91 — orchestrator re-checked). CFR is not a syntax oracle either
+> (CFR master resugars; 0.152 un-sugars a docSource-proven pattern). See [Block 118] §118.2-§118.3.
+
 > **Correction (added by [Block 116], §14 cross-block).** This matrix covers SYNTAX distinguishability only. Neither
 > Vineflower nor CFR is a semantic oracle: [Block 116] confirmed 11 semantically wrong Vineflower methods in the N5 tree
 > (overload binding, boxing, numeric widening, `finally` return, pattern-variable scoping) and CFR drops `(Object)null`

@@ -1,0 +1,9 @@
+# M3 offline static-init census (sandboxed plain JVM, JDK 25.0.4.1, no niagara.home, no network; 246 config-home modules, top-level classes)
+source: m3/census-all.tsv sha256 70f8084ee825191bb07af521f96768f874276b42a587cfb601908fcdd1e6dc3c
+classes: 14308
+      1 
+   9494 INIT-FAIL
+   4813 INIT-OK
+INIT-FAIL whose chain names niagara.home or a cascaded Nre/B-class init failure: 9266
+INIT-FAIL from missing third-party (LIB-INF) classes not on the probe classpath: 229
+root wall (first frame): NoSuchElementException: niagara.home not found @com.tridium.nre.security.permissions.PermissionFactory.lambda$fileMapper$0(PermissionFactory.java:88) <- NiagaraPermission.isGrantedTo(NiagaraPermission.java:60) <- niagara.sys.BObject.<clinit>

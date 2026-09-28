@@ -1,0 +1,46 @@
+ public niagara/tag.Tag getTag(niagara/tag.Entity);
+ Code:
+ 0: aload_1
+ 1: instanceof #N // class niagara/control/BNumericPoint
+ 4: ifeq 74
+ 7: aload_1
+ 8: checkcast #N // class niagara/control/BNumericPoint
+ 11: astore_2
+ 12: aload_2
+ 13: invokevirtual #N // Method niagara/control/BNumericPoint.getFacets:()Lniagara/sys/BFacets;
+ 16: astore_3
+ 17: aload_3
+ 18: ldc #N // String units
+ 20: invokevirtual #N // Method niagara/sys/BFacets.get:(Ljava/lang/String;)Lniagara/sys/BObject;
+ 23: checkcast #N // class niagara/units/BUnit
+ 26: astore 4
+ 28: aload 4
+ 30: ifnull 74
+ 33: aload 4
+ 35: invokevirtual #N // Method niagara/units/BUnit.isNull:()Z
+ 38: ifne 74
+ 41: new #N // class niagara/tag/Tag
+ 44: dup
+ 45: aload_0
+ 46: invokevirtual #N // Method getTagId:()Lniagara/tag/Id;
+ 49: aload 4
+ 51: invokevirtual #N // Method niagara/units/BUnit.getQudtName:()Ljava/lang/String;
+ 54: ifnull 65
+ 57: aload 4
+ 59: invokevirtual #N // Method niagara/units/BUnit.getQudtName:()Ljava/lang/String;
+ 62: goto 67
+ 65: ldc #N // String UNKNOWN
+ 67: invokestatic #N // Method niagara/sys/BString.make:(Ljava/lang/String;)Lniagara/sys/BString;
+ 70: invokespecial #N // Method niagara/tag/Tag."<init>":(Lniagara/tag/Id;Lniagara/data/BIDataValue;)V
+ 73: areturn
+ 74: aconst_null
+ 75: areturn
+ LineNumberTable:
+ line 89: 0
+ line 91: 7
+ line 92: 12
+ line 93: 17
+ line 94: 28
+ line 96: 41
+ line 99: 74
+ LocalVariableTable:

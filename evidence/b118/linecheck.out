@@ -1,0 +1,5 @@
+ValueDocDecoder: mapped-lines=409 token-overlap-hits=409 (100.0%) misses=[]
+Column: mapped-lines=78 token-overlap-hits=78 (100.0%) misses=[]
+StyleUtils: mapped-lines=45 token-overlap-hits=45 (100.0%) misses=[]
+BNumericWritable: mapped-lines=137 token-overlap-hits=137 (100.0%) misses=[]
+TOTAL 669/669 = 100.00%

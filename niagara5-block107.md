@@ -179,6 +179,10 @@ as the accurate bound, now demonstrated across every first-party UI path rather 
 
 ## 107.3 — B99-G4 ADVANCED, not fully closed: a NEW null-Context sub-shape — a literal `.getPermissions(null)` argument at the call site (distinct from [Block 99] §99.2's own declared-variable census) — is found at 12 call sites across 7 files; one of them (`BFoxHistorySpace`'s fox-protocol nav-folder gate) drops an ALREADY-IN-SCOPE non-null `cx` in favor of `null`, opened as a new, more concretely scoped child gap; the caller/callee-split shape itself remains untraced `[CERT]`
 
+> **Correction (added by [Block 118], §14 cross-block).** There are 5 `getPermissions(null)` call sites into
+> `BRootHistoryFolder`, not 3: two more in `BHistorySpace.getNavChildren()` (vineflower lines 116, 124 — orchestrator
+> re-checked), found by bytecode call-graph (SootUp, Joern, tools/n5-bytecode-xref.py agree; module-navigator found 0).
+
 > **Correction (added by [Block 112], §14 cross-block).** The "no-op / drops `cx`" reading of the three
 > `BFoxHistorySpace` `getPermissions(null)` sites is WRONG: they dispatch to `BRootHistoryFolder.getPermissions(Context)`
 > (`organized/history/vineflower/com/tridium/history/BRootHistoryFolder.java:42-49`), which ignores `cx` and fetches the
