@@ -67,6 +67,16 @@ DEFAULT_JAVA = "/home/linuxbrew/.linuxbrew/opt/openjdk@25/bin/java"
 
 NIAGARA_HELP_SCRIPT = REPO_ROOT / "niagara-help" / "tools" / "niagara_help.py"
 
+# Subprocess timeouts (R4-no-subprocess-timeouts): every javac/javap/decompiler/
+# krak2 invocation is capped so one hung or pathological class can never wedge
+# an entire grading run. A timeout produces the typed "timeout" grade (see
+# _GRADE_RANK), never a silent hang or an uncaught TimeoutExpired.
+DEFAULT_JAVAC_TIMEOUT_SECONDS = 120
+DEFAULT_JAVAP_TIMEOUT_SECONDS = 60
+DEFAULT_DECOMPILE_TIMEOUT_SECONDS = 120
+DEFAULT_KRAK2_TIMEOUT_SECONDS = 30
+DEFAULT_NIAGARA_HELP_TIMEOUT_SECONDS = 30
+
 
 # ---------------------------------------------------------------------------
 # Stage 1: bytecode normalizer
@@ -99,7 +109,7 @@ _SLOT_SHORTFORM_RE = re.compile(
 _SLOT_LONGFORM_RE = re.compile(
     r"^(aload|astore|iload|istore|lload|lstore|fload|fstore|dload|dstore|ret)$"
 )
-_IINC_RE = re.compile(r"^\s*iinc\s+(\d+)\s+(-?\d+)\s*$")
+_IINC_RE = re.compile(r"^\s*iinc\s+(\d+)\s*,?\s*(-?\d+)\s*$")
 
 _INSTR_LINE_RE = re.compile(r"^\s*(\d+):\s*(\S+)(.*)$")
 
@@ -129,7 +139,15 @@ def _slot_of(mnemonic: str, operand: str) -> Optional[int]:
     return None
 
 
-_SWITCH_CASE_RE = re.compile(r"^\s*(\d+|default)\s*:\s*(\d+)\s*$")
+# javap prints a negative case key bare (e.g. "-5: 36", verified against a real
+# javac 25 compile of a `switch` with negative int case labels) -- the target
+# offset itself is never negative in practice, but "-?\d+" is used for both so
+# a malformed/unexpected negative offset is captured (and compared) rather than
+# silently dropped, which is the false-exact bug this regex previously caused:
+# an unmatched row was skipped by _parse_code_stream instead of being added to
+# `entries`, so two switches differing ONLY in a negative-key arm's target
+# could normalize identical.
+_SWITCH_CASE_RE = re.compile(r"^\s*(-?\d+|default)\s*:\s*(-?\d+)\s*$")
 
 
 def _parse_code_stream(raw_lines: list[str]) -> list[dict]:
@@ -267,7 +285,10 @@ def normalize_method_instructions(raw_lines: list[str]) -> list[str]:
                 mnemonic = base
                 rest = f" {canon}"
         elif mnemonic == "iinc":
-            im = re.match(r"^\s*(\d+)\s+(-?\d+)\s*(.*)$", rest)
+            # javap prints "iinc          2, 3" (comma-separated, verified
+            # against a real javac 25 compile) -- a plain-whitespace-only
+            # pattern never matched, so the slot leaked through uncanonicalized.
+            im = re.match(r"^\s*(\d+)\s*,?\s*(-?\d+)\s*(.*)$", rest)
             if im:
                 canon = canonical_slot(int(im.group(1)))
                 rest = f" {canon} {im.group(2)}{im.group(3)}"
@@ -324,8 +345,15 @@ def _indent_of(line: str) -> int:
     return len(line) - len(line.lstrip(" "))
 
 
-def run_javap_verbose(classfile: str, javap_bin: str = DEFAULT_JAVAP) -> str:
-    proc = subprocess.run([javap_bin, "-v", "-p", classfile], capture_output=True, text=True)
+def run_javap_verbose(
+    classfile: str, javap_bin: str = DEFAULT_JAVAP, timeout: Optional[float] = DEFAULT_JAVAP_TIMEOUT_SECONDS
+) -> str:
+    # subprocess.TimeoutExpired is intentionally NOT caught here (this function's
+    # contract stays "returns javap's stdout, or raises") -- callers that need a
+    # typed "timeout" grade instead of a propagating exception catch it
+    # themselves (see recompile_and_grade), since only they know what grade
+    # dict shape to return for their call site.
+    proc = subprocess.run([javap_bin, "-v", "-p", classfile], capture_output=True, text=True, timeout=timeout)
     return proc.stdout
 
 
@@ -585,12 +613,102 @@ class AllowlistEntry:
     predicate: Callable[[list[str], list[str]], bool]
 
 
-# Seeded empty on purpose: every entry here must be backed by a real, observed
-# mismatch pattern plus a unit test proving the predicate is actually safe (see
-# docs/decompile-fidelity-report.md "Allowlist" section for what the corpus run
-# actually found, if anything). An empty allowlist is an honest starting point,
-# not a placeholder to silently fill.
-ALLOWLIST: list[AllowlistEntry] = []
+# ---------------------------------------------------------------------------
+# Allowlist entries: narrow/wide instruction-variant pairs.
+#
+# JVMS 6.5 defines each of these pairs as performing the IDENTICAL runtime
+# operation — the compiler's choice between the narrow and wide form is a pure
+# encoding decision driven by how large that specific compile's constant pool
+# (ldc/ldc_w) or branch-offset range (goto/goto_w, jsr/jsr_w) happened to grow,
+# never a semantic one:
+#   - ldc / ldc_w:   both push the SAME resolved constant-pool entry; ldc's
+#     operand is a 1-byte index (pool slots 0-255), ldc_w's is 2-byte (wide).
+#   - goto / goto_w: both perform an unconditional jump to the same target;
+#     goto's branch offset is a signed 16-bit value, goto_w's is signed 32-bit.
+#   - jsr / jsr_w:   both push a return address and jump to a subroutine (the
+#     instruction is deprecated/never emitted since Java 7, but the JVMS
+#     equivalence argument is identical to goto/goto_w).
+#
+# Recompiling ONE decompiled class standalone (this grader's method — see
+# recompile_and_grade) gives javac a SMALLER classpath-local constant pool
+# than the original whole-module compile built for that same class, so javac
+# can pick the narrow form (ldc) where the shipped class needed the wide form
+# (ldc_w) for the exact same constant — a pure recompile-isolation artifact
+# this grader's own methodology introduces, not a decompiler-fidelity defect.
+# See docs/decompile-fidelity-report.md "Allowlist" for the measured effect.
+# ---------------------------------------------------------------------------
+
+_WIDE_VARIANT_PAIRS = (("ldc", "ldc_w"), ("goto", "goto_w"), ("jsr", "jsr_w"))
+
+
+def _make_wide_variant_collapser(narrow: str, wide: str) -> Callable[[str], str]:
+    pattern = re.compile(rf"^(insn\d+:\s*){re.escape(wide)}\b(.*)$")
+
+    def _collapse(line: str) -> str:
+        m = pattern.match(line)
+        if m:
+            return f"{m.group(1)}{narrow}{m.group(2)}"
+        return line
+
+    return _collapse
+
+
+def _make_wide_variant_predicate(narrow: str, wide: str) -> Callable[[list[str], list[str]], bool]:
+    """Build the allowlist predicate for one narrow/wide instruction pair (see
+    _WIDE_VARIANT_PAIRS). True iff `a_code`/`b_code` (two methods' normalized
+    instruction lists, equal length required — a genuine missing/extra
+    instruction is never allowlisted here) differ ONLY on lines where one side
+    uses `narrow` and the other `wide`, and every OTHER part of that line
+    (operand/symbolic-comment — i.e. WHICH constant/target, not how it's
+    encoded) is identical. A line pair that both fail to collapse-equal for
+    any other reason (a genuinely different constant, a different target, an
+    unrelated opcode change) fails the predicate, so the base grade
+    (compiles-mismatch) still applies.
+    """
+    collapse = _make_wide_variant_collapser(narrow, wide)
+    narrow_prefix_re = re.compile(rf"^insn\d+:\s*{re.escape(narrow)}\b")
+    wide_prefix_re = re.compile(rf"^insn\d+:\s*{re.escape(wide)}\b")
+
+    def _predicate(a_code: list[str], b_code: list[str]) -> bool:
+        if len(a_code) != len(b_code) or a_code == b_code:
+            return False
+        saw_a_variant_line = False
+        for la, lb in zip(a_code, b_code):
+            if la == lb:
+                continue
+            if collapse(la) != collapse(lb):
+                return False
+            # at least one side of a differing line must actually BE this
+            # pair's narrow/wide mnemonic -- guards against two unrelated
+            # already-identical-after-collapse lines being miscounted (can't
+            # happen given the anchored per-pair regex, but keep it explicit).
+            is_variant_line = (
+                narrow_prefix_re.match(la) or wide_prefix_re.match(la)
+                or narrow_prefix_re.match(lb) or wide_prefix_re.match(lb)
+            )
+            if not is_variant_line:
+                return False
+            saw_a_variant_line = True
+        return saw_a_variant_line
+
+    return _predicate
+
+
+ALLOWLIST: list[AllowlistEntry] = [
+    AllowlistEntry(
+        name=f"{narrow}-vs-{wide}-width",
+        justification=(
+            f"JVMS 6.5: `{narrow}`/`{wide}` perform the identical runtime operation on the identical "
+            f"operand — only the encoding width differs, chosen purely by the compiler's constant-pool/"
+            f"branch-offset size at compile time. Recompiling one decompiled class standalone (this "
+            f"grader's own method) gives javac a smaller local pool/offset range than the shipped "
+            f"module-wide compile, so the two can legitimately pick different widths for the SAME "
+            f"constant/target. See docs/decompile-fidelity-report.md 'Allowlist'."
+        ),
+        predicate=_make_wide_variant_predicate(narrow, wide),
+    )
+    for narrow, wide in _WIDE_VARIANT_PAIRS
+]
 
 
 def grade_class_result(compiled_ok: bool, diff: Optional[dict], first_error: Optional[str]) -> dict:
@@ -645,6 +763,8 @@ def grade_class_result(compiled_ok: bool, diff: Optional[dict], first_error: Opt
 
 _GRADE_RANK = {
     "no-compile": 0,
+    "timeout": 0,  # a harness/subprocess timeout, not a fidelity finding -- see recompile_and_grade
+    "harness-error": 0,  # missing ground-truth/source file -- a corpus/setup bug, not a fidelity finding
     "compiles-mismatch": 1,
     "bytecode-only": 1,  # same rank as compiles-mismatch; distinct meaning (see compute_consensus)
     "roundtrip-equivalent": 2,
@@ -745,7 +865,12 @@ def _extract_krak2_method_block(krak2_text: str, method_name: str, descriptor: s
 
 
 def krak2_cross_check(
-    classfile: str, normalized_instructions: list[str], method_name: str, descriptor: str, krak2_bin: str = "krak2"
+    classfile: str,
+    normalized_instructions: list[str],
+    method_name: str,
+    descriptor: str,
+    krak2_bin: str = "krak2",
+    timeout: float = DEFAULT_KRAK2_TIMEOUT_SECONDS,
 ) -> dict:
     """Independent check that our own javap-based normalizer did not drop or
     reorder an instruction, by disassembling the SAME .class with a completely
@@ -764,7 +889,10 @@ def krak2_cross_check(
         return {"status": "unavailable", "reason": "krak2 binary or class file not found"}
 
     with tempfile.TemporaryDirectory() as td:
-        proc = subprocess.run([resolved, "dis", "-o", td, classfile], capture_output=True, text=True)
+        try:
+            proc = subprocess.run([resolved, "dis", "-o", td, classfile], capture_output=True, text=True, timeout=timeout)
+        except subprocess.TimeoutExpired:
+            return {"status": "unavailable", "reason": f"krak2 timed out after {timeout}s"}
         if proc.returncode != 0:
             return {"status": "unavailable", "reason": f"krak2 exited {proc.returncode}: {proc.stderr.strip()[:200]}"}
         # krak2 writes under <td>/<package-path>/<Class>.j, exactly like javac's
@@ -846,10 +974,13 @@ def niagara_help_member_lookup(fqcn: str, niagara_help_script: str = str(NIAGARA
     if not os.path.isfile(niagara_help_script):
         return None
     short_name = fqcn.rsplit(".", 1)[-1].rsplit("/", 1)[-1]
-    proc = subprocess.run(
-        [sys.executable, niagara_help_script, "class", short_name],
-        capture_output=True, text=True,
-    )
+    try:
+        proc = subprocess.run(
+            [sys.executable, niagara_help_script, "class", short_name],
+            capture_output=True, text=True, timeout=DEFAULT_NIAGARA_HELP_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired:
+        return None
     if proc.returncode != 0 or not proc.stdout.strip():
         return None
     if "not found in class-index" in proc.stdout:
@@ -914,18 +1045,49 @@ def recompile_and_grade(
     out_dir: str,
     javac_bin: str = DEFAULT_JAVAC,
     javap_bin: str = DEFAULT_JAVAP,
+    javac_timeout: float = DEFAULT_JAVAC_TIMEOUT_SECONDS,
+    javap_timeout: float = DEFAULT_JAVAP_TIMEOUT_SECONDS,
 ) -> dict:
     """Recompile one decompiled .java (top-level class `class_name`, may define
     nested classes too) and grade the top-level class's .class against
     `ground_truth_class`. This is the single-engine grading step the
     redundancy ladder calls once per engine (vineflower/cfr/procyon/jd-cli).
     """
+    # A missing ground-truth class or missing decompiled source is a HARNESS
+    # problem (a corpus/setup bug -- e.g. a class the extraction step never
+    # wrote, or a decompile pass that silently produced nothing) -- checked
+    # BEFORE attempting to compile, so it can never be misreported as "the
+    # decompiled source doesn't compile" (no-compile), which is a decompiler-
+    # fidelity finding, a completely different claim.
+    if not os.path.isfile(ground_truth_class):
+        return {
+            "grade": "harness-error",
+            "first_error": f"ground truth class file missing: {ground_truth_class}",
+            "mismatched_methods": [],
+            "allowlist_matches": [],
+        }
+    if not os.path.isfile(java_file):
+        return {
+            "grade": "harness-error",
+            "first_error": f"decompiled source file missing: {java_file}",
+            "mismatched_methods": [],
+            "allowlist_matches": [],
+        }
+
     os.makedirs(out_dir, exist_ok=True)
     cmd = [javac_bin, "--release", "25", "-g", "-implicit:none", "-proc:none", "-nowarn", "-d", out_dir]
     if classpath:
         cmd += ["-cp", classpath]
     cmd.append(java_file)
-    proc = subprocess.run(cmd, capture_output=True, text=True)
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=javac_timeout)
+    except subprocess.TimeoutExpired:
+        return {
+            "grade": "timeout",
+            "first_error": f"javac timed out after {javac_timeout}s",
+            "mismatched_methods": [],
+            "allowlist_matches": [],
+        }
 
     if proc.returncode != 0:
         return {
@@ -948,16 +1110,17 @@ def recompile_and_grade(
             "allowlist_matches": [],
         }
     recompiled_class = str(candidates[0])
-    if not os.path.isfile(ground_truth_class):
+
+    try:
+        a = parse_javap_verbose(run_javap_verbose(ground_truth_class, javap_bin=javap_bin, timeout=javap_timeout))
+        b = parse_javap_verbose(run_javap_verbose(recompiled_class, javap_bin=javap_bin, timeout=javap_timeout))
+    except subprocess.TimeoutExpired:
         return {
-            "grade": "no-compile",
-            "first_error": f"ground truth class file missing: {ground_truth_class}",
+            "grade": "timeout",
+            "first_error": "javap timed out",
             "mismatched_methods": [],
             "allowlist_matches": [],
         }
-
-    a = parse_javap_verbose(run_javap_verbose(ground_truth_class, javap_bin=javap_bin))
-    b = parse_javap_verbose(run_javap_verbose(recompiled_class, javap_bin=javap_bin))
     diff = diff_normalized_classes(a, b)
     return grade_class_result(compiled_ok=True, diff=diff, first_error=None)
 
@@ -1049,7 +1212,14 @@ def discover_top_level_classes(extracted_dir: Path) -> list[tuple[str, Path]]:
     return out
 
 
-def _decompile_one_class_with(java_bin: str, tool_jar: Path, classfile: Path, out_dir: Path) -> Optional[Path]:
+def _decompile_one_class_with(
+    java_bin: str,
+    engine: str,
+    tool_jar: Path,
+    classfile: Path,
+    out_dir: Path,
+    timeout: float = DEFAULT_DECOMPILE_TIMEOUT_SECONDS,
+) -> tuple[Optional[Path], Optional[str]]:
     """Decompile ONE .class with a specific engine jar. Each engine has its own
     CLI contract (verified against the actual jars in tools/decompilers/ / the
     scratch-provisioned JD-CLI — see docs/decompile-fidelity-report.md):
@@ -1058,20 +1228,37 @@ def _decompile_one_class_with(java_bin: str, tool_jar: Path, classfile: Path, ou
       JD-CLI:   java -jar jd-cli.jar -od <dir> <class>
     All three preserve (or, for JD-CLI's flat -od, simply don't need) the
     package path in their output; `rglob` finds the produced file either way.
+
+    `engine` (one of "cfr", "procyon", "jd-cli") is supplied EXPLICITLY by the
+    caller — never inferred from `tool_jar`'s filename. The previous
+    filename-substring dispatch (`"cfr" in name` / `"jd-cli" in name` / else
+    procyon) meant a renamed or differently-versioned jar silently picked the
+    WRONG CLI contract, and anything unmatched silently fell through to
+    Procyon's flags rather than failing. An unrecognized `engine` now raises
+    instead of guessing.
+
+    Returns (java_source_path_or_None, failure_reason_or_None): `failure_reason`
+    is "timeout" when the subprocess itself timed out (see
+    DEFAULT_DECOMPILE_TIMEOUT_SECONDS), None otherwise (including the ordinary
+    "ran fine but produced no .java" case, which is not itself a timeout).
     """
+    if engine not in ("cfr", "procyon", "jd-cli"):
+        raise ValueError(f"_decompile_one_class_with: unrecognized engine {engine!r} (expected cfr/procyon/jd-cli)")
     if not tool_jar.is_file():
-        return None
+        return None, None
     out_dir.mkdir(parents=True, exist_ok=True)
-    name = tool_jar.name.lower()
-    if "cfr" in name:
+    if engine == "cfr":
         cmd = [java_bin, "-jar", str(tool_jar), str(classfile), "--outputdir", str(out_dir), "--silent", "true"]
-    elif "jd-cli" in name:
+    elif engine == "jd-cli":
         cmd = [java_bin, "-jar", str(tool_jar), "-od", str(out_dir), str(classfile)]
     else:  # procyon
         cmd = [java_bin, "-jar", str(tool_jar), str(classfile), "-o", str(out_dir)]
-    subprocess.run(cmd, capture_output=True, text=True)
+    try:
+        subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        return None, "timeout"
     candidates = list(Path(out_dir).rglob(f"{classfile.stem}.java"))
-    return candidates[0] if candidates else None
+    return (candidates[0] if candidates else None), None
 
 
 def grade_module(
@@ -1118,8 +1305,12 @@ def grade_module(
         docsource_roundtrip = None
 
         if source_java is None:
+            # a missing decompiled source is a HARNESS problem (the corpus's
+            # decompile pass never ran / never wrote this tree), never
+            # "no-compile" (which claims the decompiled source itself failed
+            # to compile — a decompiler-fidelity finding, not a setup bug).
             per_class[fqcn] = {
-                "grade": "no-compile",
+                "grade": "harness-error",
                 "first_error": "no decompiled source found (vineflower/fallback both missing)",
                 "best_decompiler": None,
                 "attempted": [],
@@ -1130,25 +1321,28 @@ def grade_module(
             continue
 
         with tempfile.TemporaryDirectory(prefix=f"n5fid-{class_short}-") as td:
-            ladder = [("vineflower", lambda sj=source_java, td=td, cs=class_short: recompile_and_grade(
-                str(sj), cs, classpath, str(classfile), td, javac_bin, javap_bin))]
-
-            def cfr_thunk(classfile=classfile, class_short=class_short):
+            def _decompile_retry_thunk(engine, tool_jar, engine_label, classfile=classfile, class_short=class_short):
                 with tempfile.TemporaryDirectory() as decompile_td, tempfile.TemporaryDirectory() as compile_td:
-                    java_src = _decompile_one_class_with(java_bin, cfr_jar, classfile, Path(decompile_td))
+                    java_src, reason = _decompile_one_class_with(java_bin, engine, tool_jar, classfile, Path(decompile_td))
                     if java_src is None:
-                        return {"grade": "no-compile", "first_error": "CFR retry decompile failed", "mismatched_methods": [], "allowlist_matches": []}
+                        grade = "timeout" if reason == "timeout" else "no-compile"
+                        suffix = " (timeout)" if reason == "timeout" else ""
+                        return {"grade": grade, "first_error": f"{engine_label} retry decompile failed{suffix}", "mismatched_methods": [], "allowlist_matches": []}
                     return recompile_and_grade(str(java_src), class_short, classpath, str(classfile), compile_td, javac_bin, javap_bin)
 
-            def procyon_thunk(classfile=classfile, class_short=class_short):
-                with tempfile.TemporaryDirectory() as decompile_td, tempfile.TemporaryDirectory() as compile_td:
-                    java_src = _decompile_one_class_with(java_bin, procyon_jar, classfile, Path(decompile_td))
-                    if java_src is None:
-                        return {"grade": "no-compile", "first_error": "Procyon retry decompile failed", "mismatched_methods": [], "allowlist_matches": []}
-                    return recompile_and_grade(str(java_src), class_short, classpath, str(classfile), compile_td, javac_bin, javap_bin)
+            def cfr_thunk():
+                return _decompile_retry_thunk("cfr", cfr_jar, "CFR")
 
-            first = ladder[0][1]()
-            attempted = [("vineflower", first)]
+            def procyon_thunk():
+                return _decompile_retry_thunk("procyon", procyon_jar, "Procyon")
+
+            # first rung of the ladder is whatever tree grade_module was asked
+            # to grade (`primary_tree`) -- labeling it the literal string
+            # "vineflower" regardless of `--tree` misattributed a vineflower2
+            # (or any other tree's) result to vineflower in `attempted`/
+            # `per_engine_mismatched_methods`.
+            first = recompile_and_grade(str(source_java), class_short, classpath, str(classfile), td, javac_bin, javap_bin)
+            attempted = [(primary_tree, first)]
             if not _is_clean(first["grade"]):
                 cfr_result = cfr_thunk()
                 attempted.append(("cfr", cfr_result))
@@ -1157,12 +1351,8 @@ def grade_module(
                     attempted.append(("procyon", procyon_result))
                     if not _is_clean(procyon_result["grade"]) and jd_cli_jar is not None:
 
-                        def jdcli_thunk(classfile=classfile, class_short=class_short):
-                            with tempfile.TemporaryDirectory() as decompile_td, tempfile.TemporaryDirectory() as compile_td:
-                                java_src = _decompile_one_class_with(java_bin, jd_cli_jar, classfile, Path(decompile_td))
-                                if java_src is None:
-                                    return {"grade": "no-compile", "first_error": "JD-CLI retry decompile failed", "mismatched_methods": [], "allowlist_matches": []}
-                                return recompile_and_grade(str(java_src), class_short, classpath, str(classfile), compile_td, javac_bin, javap_bin)
+                        def jdcli_thunk():
+                            return _decompile_retry_thunk("jd-cli", jd_cli_jar, "JD-CLI")
 
                         attempted.append(("jd-cli", jdcli_thunk()))
 
@@ -1214,13 +1404,73 @@ def grade_module(
         "class_count": len(classes),
         "grade_counts": grade_counts,
         "classes": per_class,
+        # a --limit-per-module run graded only a PREFIX of the module's real
+        # classes -- is_module_up_to_date must never treat that partial run as
+        # equivalent to (or an up-to-date cache for) a full run, or a later
+        # unlimited invocation would silently skip the module and keep
+        # reporting the truncated grade_counts as if they were complete
+        # (R4-limited-run-cached-as-complete).
+        "limit_per_module": limit,
     }
 
 
-def is_module_up_to_date(mod_dir: Path, primary_tree: str = "vineflower") -> bool:
-    fidelity_path = mod_dir / "fidelity.json"
-    recon_path = mod_dir / "recon.json"
-    if not fidelity_path.is_file() or not recon_path.is_file():
+# ---------------------------------------------------------------------------
+# Per-tree output files (fidelity.<tree>.json) + legacy fidelity.json migration
+# ---------------------------------------------------------------------------
+
+def fidelity_output_path(mod_dir: Path, tree: str) -> Path:
+    """Where grading `tree` for this module is WRITTEN. Always tree-specific —
+    two trees graded for the same module produce two distinct files, neither
+    overwriting the other (see fidelity_read_path for the legacy-name fallback
+    used only when READING).
+    """
+    return Path(mod_dir) / f"fidelity.{tree}.json"
+
+
+def fidelity_read_path(mod_dir: Path, tree: str) -> Optional[Path]:
+    """Where grading `tree` for this module is READ from, or None if no grade
+    exists yet. Prefers the tree-specific name; for "vineflower" specifically,
+    falls back to the pre-per-tree-files legacy name `fidelity.json` (every
+    fidelity.json ever written by this tool, before --tree existed, graded the
+    vineflower tree) so an already-graded corpus is never force-re-graded just
+    because this migration landed. See migrate_legacy_fidelity_json for the
+    one-time on-disk rename that retires the legacy name going forward.
+    """
+    mod_dir = Path(mod_dir)
+    named = fidelity_output_path(mod_dir, tree)
+    if named.is_file():
+        return named
+    if tree == "vineflower":
+        legacy = mod_dir / "fidelity.json"
+        if legacy.is_file():
+            return legacy
+    return None
+
+
+def migrate_legacy_fidelity_json(mod_dir: Path) -> bool:
+    """One-time migration: organized/<mod>/fidelity.json (the pre-per-tree-
+    files name, always a vineflower grade) is renamed to
+    organized/<mod>/fidelity.vineflower.json when the new name doesn't already
+    exist. Returns True if a rename happened. Idempotent and safe to call
+    unconditionally: a no-op once migrated, and never overwrites/discards
+    either file when BOTH already exist (an ambiguous state this function
+    refuses to silently resolve by deleting one).
+    """
+    mod_dir = Path(mod_dir)
+    legacy = mod_dir / "fidelity.json"
+    target = mod_dir / "fidelity.vineflower.json"
+    if legacy.is_file() and not target.is_file():
+        legacy.rename(target)
+        return True
+    return False
+
+
+def is_module_up_to_date(
+    mod_dir: Path, primary_tree: str = "vineflower", limit_per_module: Optional[int] = None
+) -> bool:
+    fidelity_path = fidelity_read_path(mod_dir, primary_tree)
+    recon_path = Path(mod_dir) / "recon.json"
+    if fidelity_path is None or not recon_path.is_file():
         return False
     try:
         fidelity = json.loads(fidelity_path.read_text())
@@ -1234,6 +1484,11 @@ def is_module_up_to_date(mod_dir: Path, primary_tree: str = "vineflower") -> boo
         # must never be mistaken for an up-to-date cache of THIS tree's grade —
         # default "vineflower" for pre-existing files written before this field existed
         and fidelity.get("primary_tree", "vineflower") == primary_tree
+        # a limited run (--limit-per-module N) must never be mistaken for an
+        # up-to-date cache of a run with a DIFFERENT (or no) limit — default
+        # None for pre-existing files written before this field existed,
+        # which were always full (unlimited) runs.
+        and fidelity.get("limit_per_module") == limit_per_module
     )
 
 
@@ -1296,9 +1551,19 @@ def generate_report(module_results: list[dict], cross_checks: Optional[dict] = N
     compile_isolation_only_classes = []
     mixed_classes = []
 
+    failed_modules = [mr for mr in module_results if mr.get("module_error")]
+
     lines.append("| Module | Classes | roundtrip-exact | roundtrip-equivalent | compiles-mismatch | no-compile | bytecode-only |")
     lines.append("|---|---:|---:|---:|---:|---:|---:|")
     for mr in sorted(module_results, key=lambda r: r["module"]):
+        if mr.get("module_error"):
+            # a module that raised during grading must NEVER render as an
+            # indistinguishable all-zero row (which reads as "0 classes, all
+            # clean" — the OPPOSITE of what happened): it is excluded from
+            # every count/total below and surfaced in its own row and its own
+            # "Module failures" section instead (R4-module-failure-masked).
+            lines.append(f"| {mr['module']} | **GRADING FAILED** — see failure details below | | | | | |")
+            continue
         counts = mr["grade_counts"]
         for k, v in counts.items():
             total_counts[k] = total_counts.get(k, 0) + v
@@ -1326,6 +1591,21 @@ def generate_report(module_results: list[dict], cross_checks: Optional[dict] = N
                     compile_isolation_only_classes.append(entry)
                 elif has_mismatch or has_nocompile:
                     mixed_classes.append(entry)
+
+    lines.append("")
+    lines.append(f"## Module failures ({len(failed_modules)})")
+    lines.append("")
+    if failed_modules:
+        lines.append(
+            "These modules raised an unexpected exception during grading (bad module name, corrupt "
+            "recon.json, a decompiler crash, ...) and were graded ZERO classes — this is a harness/tooling "
+            "failure, not a fidelity finding, and is excluded from every count and total below. `main()` "
+            "exits non-zero when this list is non-empty."
+        )
+        for mr in sorted(failed_modules, key=lambda r: r["module"]):
+            lines.append(f"- **{mr['module']}**: {mr.get('module_error', '(no error recorded)')}")
+    else:
+        lines.append("None.")
 
     lines.append("")
     lines.append("## Overall")
@@ -1520,6 +1800,271 @@ def generate_report(module_results: list[dict], cross_checks: Optional[dict] = N
 
 
 # ---------------------------------------------------------------------------
+# T20: v1-vs-v2 (or any tree-vs-tree) comparison — per-class grade transition
+# ---------------------------------------------------------------------------
+
+def load_tree_results(organized_dir: Path, modules: list[str], tree: str) -> list[dict]:
+    """Read each module's ALREADY-GRADED fidelity.<tree>.json (or its legacy
+    fidelity.json for "vineflower" — see fidelity_read_path). Never grades
+    anything itself: --compare is a pure reporting mode over existing runs.
+    """
+    out = []
+    for module in modules:
+        p = fidelity_read_path(Path(organized_dir) / module, tree)
+        if p is None:
+            continue
+        try:
+            out.append(json.loads(p.read_text()))
+        except (json.JSONDecodeError, OSError):
+            continue
+    return out
+
+
+def compare_tree_grades(results_a: list[dict], results_b: list[dict], label_a: str, label_b: str) -> dict:
+    """Per-class grade transition from tree `label_a` to tree `label_b`, over
+    the classes present AND graded in BOTH module-results lists (a class or an
+    entire module graded in only one tree contributes nothing — there is no
+    transition to report for it). `results_a`/`results_b` are grade_module's
+    own output shape: a list of {"module": ..., "classes": {fqcn: {"grade": ...}}}.
+
+    Uses `_GRADE_RANK` (worst to best: no-compile/timeout/harness-error <
+    compiles-mismatch/bytecode-only < roundtrip-equivalent < roundtrip-exact)
+    to classify each transition as WORSE (rank went down), better (rank went
+    up), or unchanged (same rank — including a same-rank grade RELABEL, e.g.
+    compiles-mismatch->bytecode-only, which is not itself a regression).
+    """
+    a_by_module = {r["module"]: r["classes"] for r in results_a}
+    b_by_module = {r["module"]: r["classes"] for r in results_b}
+
+    transition_counts: dict[str, int] = {}
+    per_module_transition_counts: dict[str, dict[str, int]] = {}
+    worse: list[dict] = []
+    better: list[dict] = []
+    unchanged_count = 0
+    common_class_count = 0
+
+    modules_common = sorted(set(a_by_module) & set(b_by_module))
+    for module in modules_common:
+        a_classes = a_by_module[module]
+        b_classes = b_by_module[module]
+        common_fqcns = sorted(set(a_classes) & set(b_classes))
+        for fqcn in common_fqcns:
+            common_class_count += 1
+            grade_a = a_classes[fqcn]["grade"]
+            grade_b = b_classes[fqcn]["grade"]
+            key = f"{grade_a}->{grade_b}"
+            transition_counts[key] = transition_counts.get(key, 0) + 1
+            per_module_transition_counts.setdefault(module, {})
+            per_module_transition_counts[module][key] = per_module_transition_counts[module].get(key, 0) + 1
+
+            rank_a = _GRADE_RANK.get(grade_a, -1)
+            rank_b = _GRADE_RANK.get(grade_b, -1)
+            entry = {"module": module, "class": fqcn, "from": grade_a, "to": grade_b}
+            if rank_b < rank_a:
+                worse.append(entry)
+            elif rank_b > rank_a:
+                better.append(entry)
+            else:
+                unchanged_count += 1
+
+    return {
+        "tree_a": label_a,
+        "tree_b": label_b,
+        "modules_common": modules_common,
+        "common_class_count": common_class_count,
+        "transition_counts": transition_counts,
+        "per_module_transition_counts": per_module_transition_counts,
+        "worse": worse,
+        "better": better,
+        "unchanged_count": unchanged_count,
+    }
+
+
+def _tree_clean_count(comparison: dict, side: str) -> int:
+    """Count of classes graded roundtrip-exact/roundtrip-equivalent on one
+    side (`side` is "from" for tree_a, "to" for tree_b) of every recorded
+    transition -- the measured round-trip rate a primary-tree recommendation
+    is based on (see generate_compare_report), never a textual/line-count diff.
+    """
+    idx = 0 if side == "from" else 1
+    clean = 0
+    for key, n in comparison["transition_counts"].items():
+        grade = key.split("->")[idx]
+        if grade in ("roundtrip-exact", "roundtrip-equivalent"):
+            clean += n
+    return clean
+
+
+def generate_compare_report(
+    comparison: dict,
+    title: str = "tree comparison",
+    include_heading: bool = True,
+    notes: Optional[list[str]] = None,
+) -> str:
+    """`include_heading` is False when the caller (main()'s --compare branch)
+    is about to hand this body to upsert_markdown_section, which is the sole
+    owner of the `## {title}` heading it inserts -- emitting the heading here
+    TOO produced a literal duplicated `## {title}` line (regression, see
+    TestCompareCLIWritesReportSection.test_compare_report_never_duplicates_the_heading).
+    Defaults True so a standalone/direct call (as in TestGenerateCompareReport)
+    still gets a complete, self-contained markdown section.
+
+    `notes` are free-text caveats the CALLER supplies (e.g. classpath/jar
+    provenance for this specific run, or a fixed methodology caveat like
+    "@Override is decompiler inference, not recovered information") -- this
+    function never invents them, it only renders what it's given.
+    """
+    tree_a = comparison["tree_a"]
+    tree_b = comparison["tree_b"]
+    lines = [f"## {title}", ""] if include_heading else []
+    lines.append(
+        f"Per-class grade transition from `{tree_a}` to `{tree_b}` on the "
+        f"{comparison['common_class_count']} classes present and graded in BOTH trees, "
+        f"across {len(comparison['modules_common'])} common modules "
+        f"({', '.join(comparison['modules_common'])})."
+    )
+    lines.append("")
+    lines.append(f"| Transition (`{tree_a}` -> `{tree_b}`) | Count |")
+    lines.append("|---|---:|")
+    for key in sorted(comparison["transition_counts"]):
+        lines.append(f"| `{key}` | {comparison['transition_counts'][key]} |")
+    lines.append("")
+    lines.append("### Per-module transition counts")
+    lines.append("")
+    any_module_line = False
+    for module in comparison["modules_common"]:
+        counts = comparison["per_module_transition_counts"].get(module, {})
+        if not counts:
+            continue
+        any_module_line = True
+        lines.append(f"- **{module}**: " + ", ".join(f"`{k}`: {v}" for k, v in sorted(counts.items())))
+    if not any_module_line:
+        lines.append("None.")
+    lines.append("")
+
+    worse = comparison["worse"]
+    lines.append(f"### Classes that got WORSE in {tree_b} ({len(worse)})")
+    lines.append("")
+    lines.append(
+        f"These matter most: a regression `{tree_b}` introduced relative to `{tree_a}`."
+    )
+    lines.append("")
+    if worse:
+        for w in sorted(worse, key=lambda w: (w["module"], w["class"])):
+            lines.append(f"- {w['module']}/{w['class']}: `{w['from']}` -> `{w['to']}`")
+    else:
+        lines.append("None.")
+    lines.append("")
+
+    better = comparison["better"]
+    lines.append(f"### Classes that got better in {tree_b} ({len(better)})")
+    lines.append("")
+    if better:
+        for b in sorted(better, key=lambda b: (b["module"], b["class"])):
+            lines.append(f"- {b['module']}/{b['class']}: `{b['from']}` -> `{b['to']}`")
+    else:
+        lines.append("None.")
+    lines.append("")
+    lines.append(f"Unchanged grade: {comparison['unchanged_count']}")
+    lines.append("")
+
+    total = comparison["common_class_count"]
+    clean_a = _tree_clean_count(comparison, "from")
+    clean_b = _tree_clean_count(comparison, "to")
+    rate_a = (clean_a / total) if total else 0.0
+    rate_b = (clean_b / total) if total else 0.0
+
+    lines.append("### Recommendation")
+    lines.append("")
+    lines.append(
+        f"- `{tree_a}` round-trip rate (roundtrip-exact + roundtrip-equivalent): "
+        f"{clean_a}/{total} ({rate_a:.1%})"
+    )
+    lines.append(
+        f"- `{tree_b}` round-trip rate (roundtrip-exact + roundtrip-equivalent): "
+        f"{clean_b}/{total} ({rate_b:.1%})"
+    )
+    if worse:
+        lines.append(
+            f"- **Recommendation: keep `{tree_a}` as the primary tree.** `{tree_b}` introduced "
+            f"{len(worse)} regression(s) (see 'got WORSE' above) — a non-empty worse-list disqualifies "
+            f"a tree as primary regardless of its overall round-trip rate."
+        )
+    elif rate_b > rate_a:
+        lines.append(
+            f"- **Recommendation: adopt `{tree_b}` as the primary tree.** Strictly higher measured "
+            f"round-trip rate ({rate_b:.1%} vs {rate_a:.1%}) and zero regressions."
+        )
+    elif rate_a > rate_b:
+        lines.append(
+            f"- **Recommendation: keep `{tree_a}` as the primary tree.** Higher (or equal) measured "
+            f"round-trip rate ({rate_a:.1%} vs {rate_b:.1%})."
+        )
+    else:
+        lines.append(
+            f"- **Recommendation: no change.** `{tree_a}` and `{tree_b}` have identical measured "
+            f"round-trip rates and zero regressions on this sample."
+        )
+    lines.append(
+        "- This recommendation is based ONLY on the measured round-trip rate and the worse-list above — "
+        "NEVER on textual similarity, line count, or any feature-adoption diff between the two trees' "
+        "decompiled source (see 'No textual-similarity grade' in Methodology notes)."
+    )
+    lines.append("")
+
+    if notes:
+        lines.append("### Notes")
+        lines.append("")
+        for note in notes:
+            lines.append(f"- {note}")
+        lines.append("")
+
+    return "\n".join(lines) + "\n"
+
+
+def upsert_markdown_section(doc_text: str, heading_line: str, body: str) -> str:
+    """Insert or replace ONE `## `-level section (identified by its exact
+    heading line, e.g. "## v1 vs v2 (library context)") inside `doc_text`,
+    leaving every other section byte-for-byte untouched (this is how --compare
+    adds its section to an existing docs/decompile-fidelity-report.md without
+    a full --report regenerate, which would need BOTH trees' complete grading
+    data just to reproduce the unrelated single-tree tables). `body` replaces
+    everything between the heading line and the next `## ` heading (or EOF).
+    Appended at the end (with a preceding blank line) when the heading is not
+    already present.
+    """
+    heading_line = heading_line.rstrip("\n")
+    body = body.rstrip("\n")
+    lines = doc_text.split("\n")
+
+    heading_idx = None
+    for i, line in enumerate(lines):
+        if line.strip() == heading_line.strip():
+            heading_idx = i
+            break
+
+    section_lines = [heading_line, "", body, ""]
+
+    if heading_idx is None:
+        new_lines = list(lines)
+        while new_lines and new_lines[-1] == "":
+            new_lines.pop()
+        new_lines += [""] + section_lines
+        return "\n".join(new_lines) + "\n"
+
+    end_idx = len(lines)
+    for j in range(heading_idx + 1, len(lines)):
+        if lines[j].startswith("## "):
+            end_idx = j
+            break
+    while end_idx > heading_idx + 1 and lines[end_idx - 1] == "":
+        end_idx -= 1
+
+    new_lines = lines[:heading_idx] + section_lines + lines[end_idx:]
+    return "\n".join(new_lines) + "\n"
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
@@ -1553,8 +2098,22 @@ def main(argv: Optional[list[str]] = None) -> int:
                          help="with --report: also run krak2/niagara_help.py cross-checks on N sampled graded classes")
     parser.add_argument("--tree", default="vineflower",
                          help="decompiled source tree to grade, e.g. vineflower (default) or vineflower2 — "
-                              "see grade_module docstring. Output is still organized/<mod>/fidelity.json, so "
-                              "grading a second tree for the same module overwrites the first run's file.")
+                              "see grade_module docstring. Output is organized/<mod>/fidelity.<tree>.json — "
+                              "grading a second tree for the same module writes a SEPARATE file, never "
+                              "overwriting the first tree's grade (see fidelity_output_path).")
+    parser.add_argument("--compare", default=None, metavar="TREE_A,TREE_B",
+                         help="report mode: read each already-graded module's fidelity.<tree>.json for BOTH "
+                              "trees (no grading is performed) and report the per-class grade transition "
+                              "between them over the --modules/--all selection. With --report, upserts a "
+                              "comparison section into docs/decompile-fidelity-report.md instead of touching "
+                              "the rest of the file (see --compare-title).")
+    parser.add_argument("--compare-title", default=None,
+                         help="heading text for the --compare --report section (default: '<TREE_A> vs "
+                              "<TREE_B> (library context)')")
+    parser.add_argument("--compare-note", action="append", default=None,
+                         help="free-text caveat rendered under a 'Notes' subsection of the --compare --report "
+                              "output (repeatable) — e.g. classpath/jar provenance for this run, or a fixed "
+                              "methodology caveat. Never invented by this tool; the caller supplies the facts.")
     args = parser.parse_args(argv)
 
     organized_dir = Path(args.organized_dir)
@@ -1566,6 +2125,33 @@ def main(argv: Optional[list[str]] = None) -> int:
         parser.error("pass --modules a,b,c or --all")
         return 2
 
+    if args.compare:
+        parts = [p.strip() for p in args.compare.split(",") if p.strip()]
+        if len(parts) != 2:
+            parser.error("--compare requires exactly two comma-separated tree names, e.g. vineflower,vineflower2")
+            return 2
+        tree_a, tree_b = parts
+        results_a = load_tree_results(organized_dir, modules, tree_a)
+        results_b = load_tree_results(organized_dir, modules, tree_b)
+        comparison = compare_tree_grades(results_a, results_b, tree_a, tree_b)
+        print(
+            f"[compare {tree_a} -> {tree_b}] {comparison['common_class_count']} common classes across "
+            f"{len(comparison['modules_common'])} common modules, {len(comparison['worse'])} worse, "
+            f"{len(comparison['better'])} better, {comparison['unchanged_count']} unchanged",
+            file=sys.stderr,
+        )
+        if args.report:
+            title = args.compare_title or f"{tree_a} vs {tree_b} (library context)"
+            report_path = REPO_ROOT / "docs" / "decompile-fidelity-report.md"
+            existing = report_path.read_text() if report_path.is_file() else "# Decompile fidelity report\n"
+            section_body = generate_compare_report(
+                comparison, title=title, include_heading=False, notes=args.compare_note
+            )
+            updated = upsert_markdown_section(existing, f"## {title}", section_body)
+            report_path.write_text(updated)
+            print(f"wrote '{title}' section into {report_path}", file=sys.stderr)
+        return 0
+
     cache_dir = Path(args.classpath_cache_dir) if args.classpath_cache_dir else Path(tempfile.gettempdir()) / "n5-fidelity-classpath-cache"
     classpath = build_classpath(cache_dir, Path(args.modules_dir), Path(args.bin_ext_dir))
 
@@ -1574,7 +2160,10 @@ def main(argv: Optional[list[str]] = None) -> int:
     to_run = []
     for module in modules:
         mod_dir = organized_dir / module
-        if not args.force and is_module_up_to_date(mod_dir, primary_tree=args.tree):
+        migrate_legacy_fidelity_json(mod_dir)
+        if not args.force and is_module_up_to_date(
+            mod_dir, primary_tree=args.tree, limit_per_module=args.limit_per_module
+        ):
             print(f"[{module}] up to date, skipping", file=sys.stderr)
             continue
         to_run.append(module)
@@ -1585,7 +2174,10 @@ def main(argv: Optional[list[str]] = None) -> int:
         # One module's unexpected failure (bad module name, corrupt recon.json,
         # decompiler crash, ...) must never silently drop every OTHER module's
         # already-computed grade or skip report generation entirely for the
-        # whole batch — record the failure and keep going.
+        # whole batch — record the failure and keep going. It must also never
+        # be rendered as an indistinguishable all-zero row in the report, or
+        # silently exit 0 (R4-module-failure-masked) — see generate_report's
+        # "Module failures" section and this function's caller.
         try:
             result = grade_module(
                 module,
@@ -1595,14 +2187,16 @@ def main(argv: Optional[list[str]] = None) -> int:
                 jd_cli_jar=jd_cli_jar,
                 primary_tree=args.tree,
             )
-            (organized_dir / module / "fidelity.json").write_text(json.dumps(result, indent=2, default=list) + "\n")
+            fidelity_output_path(organized_dir / module, args.tree).write_text(
+                json.dumps(result, indent=2, default=list) + "\n"
+            )
             print(f"[{module}] {result['grade_counts']}", file=sys.stderr)
             return result
         except Exception as exc:  # noqa: BLE001 — deliberately broad: see comment above
             print(f"[{module}] FAILED: {exc!r}", file=sys.stderr)
             return {
                 "module": module, "schema_version": SCHEMA_VERSION, "jar_sha256": None,
-                "primary_tree": args.tree, "class_count": 0,
+                "primary_tree": args.tree, "class_count": 0, "limit_per_module": args.limit_per_module,
                 "grade_counts": {}, "classes": {}, "module_error": repr(exc),
             }
 
@@ -1615,9 +2209,11 @@ def main(argv: Optional[list[str]] = None) -> int:
     # include already-up-to-date modules in the report too
     for module in modules:
         if module not in to_run:
-            fp = organized_dir / module / "fidelity.json"
-            if fp.is_file():
+            fp = fidelity_read_path(organized_dir / module, args.tree)
+            if fp is not None:
                 results.append(json.loads(fp.read_text()))
+
+    failed_modules = [r["module"] for r in results if r.get("module_error")]
 
     if args.report:
         cross_checks = None
@@ -1628,6 +2224,10 @@ def main(argv: Optional[list[str]] = None) -> int:
         report_path = REPO_ROOT / "docs" / "decompile-fidelity-report.md"
         report_path.write_text(generate_report(results, cross_checks=cross_checks))
         print(f"wrote {report_path}", file=sys.stderr)
+
+    if failed_modules:
+        print(f"FAILED: {len(failed_modules)} module(s) raised during grading: {failed_modules}", file=sys.stderr)
+        return 1
 
     return 0
 

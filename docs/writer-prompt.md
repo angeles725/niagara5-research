@@ -141,3 +141,13 @@ gaps opened (ID · priority · investigable|requires-execution|blocked-on-X). Co
 blocks (block §). New external artifacts cited (path/URL + sha256) for `sources/SOURCES.md`.
 `verify-block.sh` result. `tools/lint-block.py` result (must be a clean exit 0, or the exact waivers
 used and why).
+
+## Source precedence for code claims (decided 2026-09-28, T20; measured, not assumed)
+Cite the most faithful representation available, in this order:
+1. `organized/docSource/...` original Tridium source (recompiles byte-identical to the shipped bytecode, B116).
+2. Third-party code: the upstream `-sources.jar` under `organized/_upstream-sources/<g>/<a>/<v>/` (SHA-1 verified, B117/T22).
+3. `organized/<mod>/vineflower2/` (library-context decompile; 125/192 sampled classes round-trip exactly vs 124 for
+   `vineflower/`, zero regressions — docs/decompile-fidelity-report.md). Existing citations to `vineflower/` stay valid.
+4. `organized/<mod>/vineflower-cons/` when you need ORIGINAL line numbers or classic (non-resugared) syntax (B118 §118.1).
+5. Bytecode (`javap -c -p -l` on `organized/<mod>/extracted/...class`, or `krak2 dis -r`) — mandatory for any class graded
+   `bytecode-only` in `organized/<mod>/fidelity.vineflower2.json`, and for overload/boxing/numeric/finally/local-vs-field claims.

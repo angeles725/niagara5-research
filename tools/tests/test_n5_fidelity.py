@@ -99,7 +99,10 @@ class TestNormalizeMethodInstructions(unittest.TestCase):
         ]
         out = self.mod.normalize_method_instructions(raw)
         # both slot-bearing instructions become the same canonical opcode shape
-        self.assertEqual(out[0], out[0])  # sanity: deterministic, see next assert
+        # -- falsifiable: slot 2 is the FIRST use, so it must become canonical
+        # slot 0 ("aload_0"), not stay "aload_2" (the raw form) or become
+        # slot 1 (aload_1's raw number).
+        self.assertEqual(out[0], "insn0: aload_0")
         self.assertNotEqual(out[0], raw[0])
         # re-running normalization on an equivalent method that swaps the raw
         # slot numbers (long operand form, since only slots 0-3 have a short
@@ -219,6 +222,73 @@ class TestNormalizeMethodInstructions(unittest.TestCase):
         out_a = self.mod.normalize_method_instructions(raw_a)
         out_b = self.mod.normalize_method_instructions(raw_b)
         self.assertNotEqual(out_a, out_b)
+
+    def test_negative_switch_case_keys_are_not_silently_dropped(self):
+        # javap prints negative case keys bare, e.g. "-5: 36" (verified against
+        # a real javac 25 compile) -- the old case-row regex only matched
+        # \d+ keys, so a negative-key arm's "<key>: <target>" row failed to
+        # match _SWITCH_CASE_RE and was silently skipped by _parse_code_stream
+        # (never added to `entries`). Two methods differing ONLY in a
+        # negative-key arm's target must NOT normalize equal (regression: the
+        # old code produced this false-exact by dropping the row entirely).
+        raw_a = [
+            "0: iload_1",
+            "1: lookupswitch  { // 2",
+            "              -5: 36",
+            "              -1: 41",
+            "         default: 46",
+            "      }",
+            "36: bipush        1",
+            "38: ireturn",
+            "41: bipush        2",
+            "43: ireturn",
+            "46: iconst_m1",
+            "47: ireturn",
+        ]
+        raw_b = [
+            "0: iload_1",
+            "1: lookupswitch  { // 2",
+            "              -5: 41",  # -5 now targets what -1 used to target
+            "              -1: 36",
+            "         default: 46",
+            "      }",
+            "36: bipush        1",
+            "38: ireturn",
+            "41: bipush        2",
+            "43: ireturn",
+            "46: iconst_m1",
+            "47: ireturn",
+        ]
+        out_a = self.mod.normalize_method_instructions(raw_a)
+        out_b = self.mod.normalize_method_instructions(raw_b)
+        self.assertNotEqual(out_a, out_b)
+        # the negative key itself is semantic and must survive literally
+        self.assertIn("-5", "\n".join(out_a))
+        self.assertIn("-1", "\n".join(out_a))
+
+    def test_iinc_with_comma_separated_operand_is_slot_canonicalized(self):
+        # javap prints iinc as "iinc          2, 3" (comma-separated, verified
+        # against a real javac 25 compile) -- the old regex required plain
+        # whitespace between the slot and the increment amount, so it never
+        # matched and the raw slot number leaked through uncanonicalized. Two
+        # methods referencing the SAME local in the SAME first-use order, but
+        # assigned different raw slot numbers by their respective compiles,
+        # must still normalize identically once the iinc slot is canonicalized.
+        raw_a = [
+            "0: iload_1",
+            "1: iinc          1, 3",
+            "4: ireturn",
+        ]
+        raw_b = [
+            "0: iload         4",  # javap has no short form past slot 3
+            "1: iinc          4, 3",
+            "4: ireturn",
+        ]
+        out_a = self.mod.normalize_method_instructions(raw_a)
+        out_b = self.mod.normalize_method_instructions(raw_b)
+        self.assertEqual(out_a, out_b)
+        # the increment amount is semantic and must survive literally
+        self.assertIn("3", "\n".join(out_a))
 
     def test_switch_case_target_shift_is_normalized_equal(self):
         # same key->target STRUCTURE, shifted absolute byte offsets
@@ -512,6 +582,96 @@ class TestGradeFromDiff(unittest.TestCase):
         self.assertEqual(grade["grade"], "compiles-mismatch")
 
 
+class TestWideVariantAllowlist(unittest.TestCase):
+    """JVMS 6.5: ldc/ldc_w, goto/goto_w, jsr/jsr_w each perform the IDENTICAL
+    runtime operation -- only the operand-encoding WIDTH differs, a pure
+    compiler encoding choice (constant-pool size for ldc, branch-offset range
+    for goto/jsr), never semantic. A standalone single-class recompile (this
+    grader's method) has a different local pool/offset size than the shipped
+    module-wide compile, so it can legitimately pick a different width for
+    the SAME constant/target -- a recompile-isolation artifact, not a
+    decompiler-fidelity defect. See ALLOWLIST in tools/n5-fidelity.py.
+    """
+
+    def setUp(self):
+        self.mod = _load()
+
+    def test_ldc_vs_ldc_w_on_the_same_constant_is_allowlisted(self):
+        entry = next(e for e in self.mod.ALLOWLIST if e.name == "ldc-vs-ldc_w-width")
+        a = ["insn0: ldc // String foo", "insn1: areturn"]
+        b = ["insn0: ldc_w // String foo", "insn1: areturn"]
+        self.assertTrue(entry.predicate(a, b))
+
+    def test_ldc_vs_ldc_w_on_a_DIFFERENT_constant_is_not_allowlisted(self):
+        # falsifiable negative: same instruction pair, but the loaded
+        # constant genuinely differs -- must NOT be waved through
+        entry = next(e for e in self.mod.ALLOWLIST if e.name == "ldc-vs-ldc_w-width")
+        a = ["insn0: ldc // String foo", "insn1: areturn"]
+        b = ["insn0: ldc_w // String bar", "insn1: areturn"]
+        self.assertFalse(entry.predicate(a, b))
+
+    def test_goto_vs_goto_w_on_the_same_target_is_allowlisted(self):
+        entry = next(e for e in self.mod.ALLOWLIST if e.name == "goto-vs-goto_w-width")
+        a = ["insn0: iconst_0", "insn1: goto rel+2", "insn2: nop", "insn3: return"]
+        b = ["insn0: iconst_0", "insn1: goto_w rel+2", "insn2: nop", "insn3: return"]
+        self.assertTrue(entry.predicate(a, b))
+
+    def test_goto_vs_goto_w_to_a_DIFFERENT_target_is_not_allowlisted(self):
+        entry = next(e for e in self.mod.ALLOWLIST if e.name == "goto-vs-goto_w-width")
+        a = ["insn0: iconst_0", "insn1: goto rel+2", "insn2: nop", "insn3: return"]
+        b = ["insn0: iconst_0", "insn1: goto_w rel+1", "insn2: nop", "insn3: return"]
+        self.assertFalse(entry.predicate(a, b))
+
+    def test_jsr_vs_jsr_w_on_the_same_target_is_allowlisted(self):
+        entry = next(e for e in self.mod.ALLOWLIST if e.name == "jsr-vs-jsr_w-width")
+        a = ["insn0: jsr rel+3", "insn1: return"]
+        b = ["insn0: jsr_w rel+3", "insn1: return"]
+        self.assertTrue(entry.predicate(a, b))
+
+    def test_jsr_vs_jsr_w_to_a_DIFFERENT_target_is_not_allowlisted(self):
+        entry = next(e for e in self.mod.ALLOWLIST if e.name == "jsr-vs-jsr_w-width")
+        a = ["insn0: jsr rel+3", "insn1: return"]
+        b = ["insn0: jsr_w rel+9", "insn1: return"]
+        self.assertFalse(entry.predicate(a, b))
+
+    def test_an_unrelated_opcode_change_alongside_ldc_width_is_not_allowlisted(self):
+        # the predicate must not accidentally wave through a genuine mismatch
+        # just because an ldc/ldc_w pair ALSO happens to be present
+        entry = next(e for e in self.mod.ALLOWLIST if e.name == "ldc-vs-ldc_w-width")
+        a = ["insn0: ldc // String foo", "insn1: ireturn"]
+        b = ["insn0: ldc_w // String foo", "insn1: areturn"]
+        self.assertFalse(entry.predicate(a, b))
+
+    def test_different_instruction_counts_are_never_allowlisted(self):
+        entry = next(e for e in self.mod.ALLOWLIST if e.name == "ldc-vs-ldc_w-width")
+        a = ["insn0: ldc // String foo", "insn1: areturn"]
+        b = ["insn0: ldc_w // String foo", "insn1: nop", "insn2: areturn"]
+        self.assertFalse(entry.predicate(a, b))
+
+    def test_identical_code_is_not_matched_by_the_predicate(self):
+        # not a mismatch at all -- grade_class_result never even consults the
+        # allowlist for a clean diff, but the predicate itself should not
+        # claim credit for "explaining" a non-difference
+        entry = next(e for e in self.mod.ALLOWLIST if e.name == "ldc-vs-ldc_w-width")
+        same = ["insn0: ldc // String foo", "insn1: areturn"]
+        self.assertFalse(entry.predicate(list(same), list(same)))
+
+    def test_end_to_end_ldc_width_mismatch_grades_roundtrip_equivalent(self):
+        diff = {
+            "fields_match": True, "attrs_match": True,
+            "mismatched_methods": [("bar", "()Ljava/lang/String;")], "missing_methods": [], "extra_methods": [],
+            "method_bodies": {
+                ("bar", "()Ljava/lang/String;"): {
+                    "a": ["insn0: ldc // String foo", "insn1: areturn"],
+                    "b": ["insn0: ldc_w // String foo", "insn1: areturn"],
+                }
+            },
+        }
+        grade = self.mod.grade_class_result(compiled_ok=True, diff=diff, first_error=None)
+        self.assertEqual(grade["grade"], "roundtrip-equivalent")
+        self.assertIn("ldc-vs-ldc_w-width", grade["allowlist_matches"])
+
+
 # ---------------------------------------------------------------------------
 # Stage 4: fallback / redundancy ladder selection
 # ---------------------------------------------------------------------------
@@ -594,7 +754,7 @@ class TestDecompileOneClassWithCliContract(unittest.TestCase):
     def setUp(self):
         self.mod = _load()
 
-    def _run_with_fake_tool(self, jar_name):
+    def _run_with_fake_tool(self, jar_name, engine):
         with tempfile.TemporaryDirectory() as td:
             tool_jar = Path(td) / jar_name
             tool_jar.write_bytes(b"not a real jar, just needs to exist")
@@ -603,28 +763,66 @@ class TestDecompileOneClassWithCliContract(unittest.TestCase):
             out_dir = Path(td) / "out"
             with mock.patch.object(self.mod.subprocess, "run") as run_mock:
                 run_mock.return_value = mock.Mock(returncode=0, stdout="", stderr="")
-                self.mod._decompile_one_class_with("java", tool_jar, classfile, out_dir)
+                self.mod._decompile_one_class_with("java", engine, tool_jar, classfile, out_dir)
             self.assertEqual(run_mock.call_count, 1)
             return run_mock.call_args[0][0]
 
     def test_cfr_uses_outputdir_flag(self):
-        argv = self._run_with_fake_tool("cfr-0.152.jar")
+        argv = self._run_with_fake_tool("cfr-0.152.jar", "cfr")
         self.assertIn("--outputdir", argv)
         self.assertNotIn("-od", argv)
 
     def test_procyon_uses_bare_dash_o_flag(self):
-        argv = self._run_with_fake_tool("procyon-decompiler-0.6.0.jar")
+        argv = self._run_with_fake_tool("procyon-decompiler-0.6.0.jar", "procyon")
         self.assertIn("-o", argv)
         self.assertNotIn("--outputdir", argv)
         self.assertNotIn("-od", argv)
 
     def test_jd_cli_uses_dash_od_before_the_class_argument(self):
-        argv = self._run_with_fake_tool("jd-cli.jar")
+        argv = self._run_with_fake_tool("jd-cli.jar", "jd-cli")
         self.assertIn("-od", argv)
         # jd-cli's own CLI contract: -od <dir> must precede the file argument,
         # and the class file (last positional) must come after it
         self.assertTrue(argv[-1].endswith("Foo.class"))
         self.assertLess(argv.index("-od"), len(argv) - 1)
+
+    def test_engine_selection_ignores_jar_filename_and_uses_the_explicit_engine_argument(self):
+        # regression: engine selection used to be inferred from a substring
+        # match on the jar's OWN filename ("cfr" in name / "jd-cli" in name /
+        # else procyon) -- a jar renamed or differently pinned than expected
+        # silently got the WRONG CLI contract. This jar's name says nothing
+        # about which engine it is; only the explicit `engine` argument may
+        # decide the CLI contract.
+        argv = self._run_with_fake_tool("totally-unrelated-name.jar", "cfr")
+        self.assertIn("--outputdir", argv)
+
+    def test_unrecognized_engine_raises_instead_of_silently_defaulting_to_procyon(self):
+        # the old filename-substring dispatch fell through to Procyon's flags
+        # for ANYTHING that didn't match "cfr"/"jd-cli" -- silently. An
+        # unrecognized engine must fail loudly, never guess.
+        with tempfile.TemporaryDirectory() as td:
+            tool_jar = Path(td) / "whatever.jar"
+            tool_jar.write_bytes(b"not a real jar")
+            classfile = Path(td) / "Foo.class"
+            classfile.write_bytes(b"")
+            with self.assertRaises(ValueError):
+                self.mod._decompile_one_class_with("java", "not-a-real-engine", tool_jar, classfile, Path(td) / "out")
+
+    def test_subprocess_timeout_returns_typed_timeout_reason(self):
+        with tempfile.TemporaryDirectory() as td:
+            tool_jar = Path(td) / "cfr.jar"
+            tool_jar.write_bytes(b"not a real jar")
+            classfile = Path(td) / "Foo.class"
+            classfile.write_bytes(b"")
+            with mock.patch.object(
+                self.mod.subprocess, "run",
+                side_effect=self.mod.subprocess.TimeoutExpired(cmd="java", timeout=1),
+            ):
+                result_path, reason = self.mod._decompile_one_class_with(
+                    "java", "cfr", tool_jar, classfile, Path(td) / "out"
+                )
+            self.assertIsNone(result_path)
+            self.assertEqual(reason, "timeout")
 
 
 class TestKrak2CrossCheck(unittest.TestCase):
@@ -906,6 +1104,11 @@ class TestMainSurvivesOneModuleFailure(unittest.TestCase):
     regression: an uncaught exception inside the ThreadPoolExecutor's mapped
     function previously propagated and killed the entire run before any
     report was written, even when N-1 other modules had already graded fine.
+
+    It must ALSO be impossible to miss: main() exits non-zero
+    (R4-module-failure-masked — the old code always returned 0, silently
+    treating a grading failure as success), and the report shows the failure
+    explicitly rather than an indistinguishable all-zero row.
     """
 
     def setUp(self):
@@ -937,12 +1140,19 @@ class TestMainSurvivesOneModuleFailure(unittest.TestCase):
                     "--classpath-cache-dir", str(organized_dir / "_cp"),
                     "--report",
                 ])
-            self.assertEqual(rc, 0)
-            good_fidelity = json.loads((organized_dir / "good" / "fidelity.json").read_text())
+            # a module failure must make the run exit non-zero, never silently 0
+            self.assertEqual(rc, 1)
+            good_fidelity = json.loads((organized_dir / "good" / "fidelity.vineflower.json").read_text())
             self.assertEqual(good_fidelity["module"], "good")
+            self.assertFalse((organized_dir / "bad" / "fidelity.vineflower.json").exists())
             self.assertFalse((organized_dir / "bad" / "fidelity.json").exists())
             written_report = (organized_dir.parent / "docs" / "decompile-fidelity-report.md").read_text()
             self.assertIn("good", written_report)
+            # the failure must be visible, not an indistinguishable zero row
+            self.assertIn("Module failures", written_report)
+            self.assertIn("bad", written_report.split("Module failures")[1])
+            self.assertIn("simulated corpus failure", written_report)
+            self.assertIn("GRADING FAILED", written_report)
 
 
 class TestPrimaryTreeSelection(unittest.TestCase):
@@ -1000,6 +1210,92 @@ class TestPrimaryTreeSelection(unittest.TestCase):
             )
             self.assertEqual(result["primary_tree"], "vineflower2")
             self.assertEqual(result["classes"]["p/Foo"]["grade"], "roundtrip-exact")
+            # regression: the redundancy ladder's first rung used to be
+            # hardcoded as the literal string "vineflower" regardless of
+            # --tree, so a vineflower2 grade was misattributed to vineflower
+            # in `attempted` / `per_engine_mismatched_methods`.
+            self.assertEqual(result["classes"]["p/Foo"]["attempted"][0][0], "vineflower2")
+
+    @unittest.skipUnless(_jdk_available(), "JDK 25 not installed")
+    def test_grade_module_reports_harness_error_when_source_tree_is_missing(self):
+        with tempfile.TemporaryDirectory() as td:
+            mod_dir = Path(td) / "fakemod"
+            (mod_dir / "extracted" / "p").mkdir(parents=True)
+            source = "package p;\npublic class Foo { public int get() { return 42; } }\n"
+            ground_dir = Path(td) / "ground"
+            ground_src_dir = Path(td) / "ground_src" / "p"
+            ground_src_dir.mkdir(parents=True)
+            ground_src = ground_src_dir / "Foo.java"
+            ground_src.write_text(source)
+            subprocess.run([JDK25_JAVAC, "--release", "25", "-g", "-d", str(ground_dir), str(ground_src)],
+                            check=True, capture_output=True)
+            shutil.copy(ground_dir / "p" / "Foo.class", mod_dir / "extracted" / "p" / "Foo.class")
+            # deliberately no "vineflower" (or any tree) dir at all
+            result = self.mod.grade_module(
+                "fakemod", organized_dir=Path(td), classpath="", primary_tree="vineflower",
+                javac_bin=JDK25_JAVAC, javap_bin=JDK25_JAVAP,
+            )
+            self.assertEqual(result["classes"]["p/Foo"]["grade"], "harness-error")
+
+
+class TestHarnessErrorsAndTimeouts(unittest.TestCase):
+    """Missing ground-truth/source files and subprocess timeouts are HARNESS
+    problems, never a decompiler-fidelity finding -- distinct typed grades
+    ("harness-error", "timeout") so a corpus/setup bug is never misread as
+    "the decompiled source doesn't compile" (no-compile). None of these need
+    a real JDK: the missing-file checks return before any subprocess call,
+    and the timeout case mocks subprocess.run directly.
+    """
+
+    def setUp(self):
+        self.mod = _load()
+
+    def test_missing_ground_truth_class_is_harness_error_not_no_compile(self):
+        with tempfile.TemporaryDirectory() as td:
+            java_file = Path(td) / "Foo.java"
+            java_file.write_text("public class Foo {}\n")
+            result = self.mod.recompile_and_grade(
+                java_file=str(java_file), class_name="Foo", classpath="",
+                ground_truth_class=str(Path(td) / "does-not-exist.class"),
+                out_dir=str(Path(td) / "out"),
+            )
+        self.assertEqual(result["grade"], "harness-error")
+        self.assertIn("ground truth class file missing", result["first_error"])
+
+    def test_missing_decompiled_source_is_harness_error_not_no_compile(self):
+        with tempfile.TemporaryDirectory() as td:
+            ground_truth = Path(td) / "Foo.class"
+            ground_truth.write_bytes(b"not real bytecode, never reached")
+            result = self.mod.recompile_and_grade(
+                java_file=str(Path(td) / "does-not-exist.java"), class_name="Foo", classpath="",
+                ground_truth_class=str(ground_truth),
+                out_dir=str(Path(td) / "out"),
+            )
+        self.assertEqual(result["grade"], "harness-error")
+        self.assertIn("decompiled source file missing", result["first_error"])
+
+    def test_javac_timeout_returns_typed_timeout_grade(self):
+        with tempfile.TemporaryDirectory() as td:
+            java_file = Path(td) / "Foo.java"
+            java_file.write_text("public class Foo {}\n")
+            ground_truth = Path(td) / "Foo.class"
+            ground_truth.write_bytes(b"not real bytecode, never reached")
+            with mock.patch.object(
+                self.mod.subprocess, "run",
+                side_effect=self.mod.subprocess.TimeoutExpired(cmd="javac", timeout=1),
+            ):
+                result = self.mod.recompile_and_grade(
+                    java_file=str(java_file), class_name="Foo", classpath="",
+                    ground_truth_class=str(ground_truth), out_dir=str(Path(td) / "out"),
+                    javac_timeout=1,
+                )
+        self.assertEqual(result["grade"], "timeout")
+
+    def test_harness_error_and_timeout_are_never_clean_and_rank_with_no_compile(self):
+        self.assertFalse(self.mod._is_clean("harness-error"))
+        self.assertFalse(self.mod._is_clean("timeout"))
+        self.assertEqual(self.mod._GRADE_RANK["harness-error"], self.mod._GRADE_RANK["no-compile"])
+        self.assertEqual(self.mod._GRADE_RANK["timeout"], self.mod._GRADE_RANK["no-compile"])
 
 
 class TestEndToEndRecompile(unittest.TestCase):
@@ -1149,6 +1445,13 @@ class TestEndToEndRecompile(unittest.TestCase):
         self.assertNotIn("decoy", " ".join(str(v) for v in result_altered.values()))
 
     def test_source_with_syntax_error_grades_no_compile(self):
+        # a REAL (existing) ground-truth class is required here so this test
+        # isolates "genuinely broken source" (no-compile) from "missing
+        # ground-truth file" (harness-error, see TestHarnessErrorsAndTimeouts)
+        # -- those are two different claims and must not be conflated.
+        ground_dir = os.path.join(self.tmpdir, "ground")
+        os.makedirs(ground_dir)
+        self._compile("Broken.java", "public class Broken {}\n", ground_dir)
         java_file = os.path.join(self.tmpdir, "Broken.java")
         with open(java_file, "w") as f:
             f.write("public class Broken { this is not java }\n")
@@ -1156,8 +1459,8 @@ class TestEndToEndRecompile(unittest.TestCase):
             java_file=java_file,
             class_name="Broken",
             classpath="",
-            ground_truth_class="/nonexistent/Broken.class",
-            out_dir=self.tmpdir,
+            ground_truth_class=os.path.join(ground_dir, "Broken.class"),
+            out_dir=os.path.join(self.tmpdir, "out"),
             javac_bin=JDK25_JAVAC,
             javap_bin=JDK25_JAVAP,
         )
@@ -1205,6 +1508,386 @@ class TestEndToEndRecompile(unittest.TestCase):
         )
         self.assertEqual(result["grade"], "compiles-mismatch")
         self.assertIn(("compute", "(I)I"), result["mismatched_methods"])
+
+
+# ---------------------------------------------------------------------------
+# T20: per-tree output files + legacy migration + limit-per-module caching
+# ---------------------------------------------------------------------------
+class TestFidelityOutputPaths(unittest.TestCase):
+    def setUp(self):
+        self.mod = _load()
+
+    def test_output_path_is_tree_specific(self):
+        with tempfile.TemporaryDirectory() as td:
+            mod_dir = Path(td)
+            self.assertEqual(
+                self.mod.fidelity_output_path(mod_dir, "vineflower"),
+                mod_dir / "fidelity.vineflower.json",
+            )
+            self.assertEqual(
+                self.mod.fidelity_output_path(mod_dir, "vineflower2"),
+                mod_dir / "fidelity.vineflower2.json",
+            )
+
+    def test_read_path_falls_back_to_legacy_fidelity_json_for_vineflower_only(self):
+        with tempfile.TemporaryDirectory() as td:
+            mod_dir = Path(td)
+            (mod_dir / "fidelity.json").write_text("{}")
+            self.assertEqual(self.mod.fidelity_read_path(mod_dir, "vineflower"), mod_dir / "fidelity.json")
+            self.assertIsNone(self.mod.fidelity_read_path(mod_dir, "vineflower2"))
+
+    def test_read_path_prefers_new_name_over_legacy(self):
+        with tempfile.TemporaryDirectory() as td:
+            mod_dir = Path(td)
+            (mod_dir / "fidelity.json").write_text('{"which": "legacy"}')
+            (mod_dir / "fidelity.vineflower.json").write_text('{"which": "new"}')
+            p = self.mod.fidelity_read_path(mod_dir, "vineflower")
+            self.assertEqual(json.loads(p.read_text())["which"], "new")
+
+    def test_migrate_legacy_fidelity_json_renames_when_target_absent(self):
+        with tempfile.TemporaryDirectory() as td:
+            mod_dir = Path(td)
+            (mod_dir / "fidelity.json").write_text('{"m": 1}')
+            migrated = self.mod.migrate_legacy_fidelity_json(mod_dir)
+            self.assertTrue(migrated)
+            self.assertFalse((mod_dir / "fidelity.json").exists())
+            self.assertEqual(json.loads((mod_dir / "fidelity.vineflower.json").read_text())["m"], 1)
+
+    def test_migrate_legacy_fidelity_json_is_a_noop_when_target_already_exists(self):
+        with tempfile.TemporaryDirectory() as td:
+            mod_dir = Path(td)
+            (mod_dir / "fidelity.json").write_text('{"m": "legacy"}')
+            (mod_dir / "fidelity.vineflower.json").write_text('{"m": "new"}')
+            migrated = self.mod.migrate_legacy_fidelity_json(mod_dir)
+            self.assertFalse(migrated)
+            # both files preserved untouched — never silently discard either
+            self.assertTrue((mod_dir / "fidelity.json").exists())
+            self.assertEqual(json.loads((mod_dir / "fidelity.vineflower.json").read_text())["m"], "new")
+
+    def test_migrate_legacy_fidelity_json_is_a_noop_when_legacy_absent(self):
+        with tempfile.TemporaryDirectory() as td:
+            mod_dir = Path(td)
+            migrated = self.mod.migrate_legacy_fidelity_json(mod_dir)
+            self.assertFalse(migrated)
+
+    def test_is_module_up_to_date_rejects_a_differently_limited_run(self):
+        # a --limit-per-module run must never be mistaken for an up-to-date
+        # cache of a full (or differently limited) run (R4-limited-run-cached-as-complete)
+        with tempfile.TemporaryDirectory() as td:
+            mod_dir = Path(td)
+            (mod_dir / "recon.json").write_text(json.dumps({"jar_sha256": "abc"}))
+            (mod_dir / "fidelity.vineflower.json").write_text(json.dumps({
+                "schema_version": self.mod.SCHEMA_VERSION, "jar_sha256": "abc",
+                "primary_tree": "vineflower", "limit_per_module": 6,
+            }))
+            self.assertTrue(self.mod.is_module_up_to_date(mod_dir, primary_tree="vineflower", limit_per_module=6))
+            self.assertFalse(self.mod.is_module_up_to_date(mod_dir, primary_tree="vineflower", limit_per_module=None))
+            self.assertFalse(self.mod.is_module_up_to_date(mod_dir, primary_tree="vineflower", limit_per_module=3))
+
+    def test_is_module_up_to_date_defaults_missing_limit_per_module_to_none(self):
+        # a legacy fidelity.json written before this field existed was always
+        # a FULL run -- it must be recognized as up to date for an unlimited
+        # (limit_per_module=None) request, not force a re-run.
+        with tempfile.TemporaryDirectory() as td:
+            mod_dir = Path(td)
+            (mod_dir / "recon.json").write_text(json.dumps({"jar_sha256": "abc"}))
+            (mod_dir / "fidelity.json").write_text(json.dumps({
+                "schema_version": self.mod.SCHEMA_VERSION, "jar_sha256": "abc",
+            }))
+            self.assertTrue(self.mod.is_module_up_to_date(mod_dir, primary_tree="vineflower", limit_per_module=None))
+
+
+class TestPerTreeGradingWritesSeparateFiles(unittest.TestCase):
+    def setUp(self):
+        self.mod = _load()
+
+    def test_grading_two_trees_for_the_same_module_produces_two_files(self):
+        with tempfile.TemporaryDirectory() as td:
+            organized_dir = Path(td)
+            mod_dir = organized_dir / "m"
+            (mod_dir / "extracted").mkdir(parents=True)
+            (mod_dir / "recon.json").write_text(json.dumps({"jar_sha256": "sha-m"}))
+
+            def fake_grade_module(module, primary_tree="vineflower", limit=None, **kwargs):
+                return {
+                    "module": module, "schema_version": self.mod.SCHEMA_VERSION,
+                    "jar_sha256": "sha-m", "primary_tree": primary_tree, "limit_per_module": limit,
+                    "class_count": 1, "grade_counts": {"roundtrip-exact": 1},
+                    "classes": {"p/X": {"grade": "roundtrip-exact"}},
+                }
+
+            with mock.patch.object(self.mod, "grade_module", side_effect=fake_grade_module), \
+                 mock.patch.object(self.mod, "build_classpath", return_value=""):
+                rc1 = self.mod.main([
+                    "--modules", "m", "--tree", "vineflower",
+                    "--organized-dir", str(organized_dir),
+                    "--classpath-cache-dir", str(organized_dir / "_cp"),
+                ])
+                rc2 = self.mod.main([
+                    "--modules", "m", "--tree", "vineflower2",
+                    "--organized-dir", str(organized_dir),
+                    "--classpath-cache-dir", str(organized_dir / "_cp"),
+                ])
+            self.assertEqual(rc1, 0)
+            self.assertEqual(rc2, 0)
+            vf_path = mod_dir / "fidelity.vineflower.json"
+            vf2_path = mod_dir / "fidelity.vineflower2.json"
+            self.assertTrue(vf_path.is_file())
+            self.assertTrue(vf2_path.is_file())
+            self.assertEqual(json.loads(vf_path.read_text())["primary_tree"], "vineflower")
+            self.assertEqual(json.loads(vf2_path.read_text())["primary_tree"], "vineflower2")
+            # neither run overwrote the other, and no legacy file was created
+            self.assertFalse((mod_dir / "fidelity.json").exists())
+
+
+# ---------------------------------------------------------------------------
+# T20: --compare (per-class grade transition between two trees)
+# ---------------------------------------------------------------------------
+class TestCompareTreeGrades(unittest.TestCase):
+    def setUp(self):
+        self.mod = _load()
+
+    def test_transition_counts_and_worse_better_split(self):
+        results_a = [{
+            "module": "m1",
+            "classes": {
+                "p/A": {"grade": "roundtrip-exact"},
+                "p/B": {"grade": "compiles-mismatch"},
+                "p/C": {"grade": "bytecode-only"},
+                "p/D": {"grade": "no-compile"},
+            },
+        }, {
+            "module": "m2",
+            "classes": {
+                "p/E": {"grade": "roundtrip-exact"},
+            },
+        }]
+        results_b = [{
+            "module": "m1",
+            "classes": {
+                "p/A": {"grade": "roundtrip-exact"},   # unchanged: exact->exact
+                "p/B": {"grade": "bytecode-only"},      # same rank (1->1): unchanged
+                "p/C": {"grade": "roundtrip-exact"},    # got BETTER: bytecode-only->exact
+                "p/D": {"grade": "no-compile"},         # unchanged: no-compile->no-compile
+            },
+        }, {
+            "module": "m2",
+            "classes": {
+                "p/E": {"grade": "bytecode-only"},      # got WORSE: exact->bytecode-only
+            },
+        }]
+        cmp_result = self.mod.compare_tree_grades(results_a, results_b, "vineflower", "vineflower2")
+        self.assertEqual(cmp_result["tree_a"], "vineflower")
+        self.assertEqual(cmp_result["tree_b"], "vineflower2")
+        self.assertEqual(cmp_result["common_class_count"], 5)
+        self.assertEqual(cmp_result["transition_counts"]["roundtrip-exact->roundtrip-exact"], 1)
+        self.assertEqual(cmp_result["transition_counts"]["bytecode-only->roundtrip-exact"], 1)
+        self.assertEqual(cmp_result["transition_counts"]["no-compile->no-compile"], 1)
+        self.assertEqual(cmp_result["transition_counts"]["roundtrip-exact->bytecode-only"], 1)
+        worse_classes = {(w["module"], w["class"]) for w in cmp_result["worse"]}
+        better_classes = {(b["module"], b["class"]) for b in cmp_result["better"]}
+        self.assertIn(("m2", "p/E"), worse_classes)
+        self.assertIn(("m1", "p/C"), better_classes)
+        # p/B: compiles-mismatch (rank1) -> bytecode-only (rank1) same rank => neither
+        self.assertNotIn(("m1", "p/B"), worse_classes)
+        self.assertNotIn(("m1", "p/B"), better_classes)
+        self.assertEqual(
+            cmp_result["per_module_transition_counts"]["m2"]["roundtrip-exact->bytecode-only"], 1
+        )
+
+    def test_class_present_in_only_one_tree_is_excluded(self):
+        results_a = [{"module": "m", "classes": {"p/Only": {"grade": "roundtrip-exact"}}}]
+        results_b = [{"module": "m", "classes": {}}]
+        cmp_result = self.mod.compare_tree_grades(results_a, results_b, "a", "b")
+        self.assertEqual(cmp_result["common_class_count"], 0)
+        self.assertEqual(cmp_result["worse"], [])
+        self.assertEqual(cmp_result["better"], [])
+
+    def test_module_present_only_in_one_tree_is_excluded(self):
+        results_a = [{"module": "only_a", "classes": {"p/X": {"grade": "roundtrip-exact"}}}]
+        results_b = [{"module": "only_b", "classes": {"p/Y": {"grade": "roundtrip-exact"}}}]
+        cmp_result = self.mod.compare_tree_grades(results_a, results_b, "a", "b")
+        self.assertEqual(cmp_result["modules_common"], [])
+        self.assertEqual(cmp_result["common_class_count"], 0)
+
+
+class TestGenerateCompareReport(unittest.TestCase):
+    def setUp(self):
+        self.mod = _load()
+
+    def test_report_lists_transitions_and_worse_before_better(self):
+        comparison = {
+            "tree_a": "vineflower", "tree_b": "vineflower2",
+            "modules_common": ["m1", "m2"],
+            "common_class_count": 3,
+            "transition_counts": {
+                "roundtrip-exact->roundtrip-exact": 1,
+                "roundtrip-exact->bytecode-only": 1,
+                "bytecode-only->roundtrip-exact": 1,
+            },
+            "per_module_transition_counts": {
+                "m1": {"roundtrip-exact->roundtrip-exact": 1, "bytecode-only->roundtrip-exact": 1},
+                "m2": {"roundtrip-exact->bytecode-only": 1},
+            },
+            "worse": [{"module": "m2", "class": "p/E", "from": "roundtrip-exact", "to": "bytecode-only"}],
+            "better": [{"module": "m1", "class": "p/C", "from": "bytecode-only", "to": "roundtrip-exact"}],
+            "unchanged_count": 1,
+        }
+        report = self.mod.generate_compare_report(comparison, title="v1 vs v2 (library context)")
+        self.assertIn("v1 vs v2 (library context)", report)
+        self.assertIn("vineflower", report)
+        self.assertIn("vineflower2", report)
+        self.assertIn("roundtrip-exact->bytecode-only", report)
+        self.assertIn("p/E", report)
+        self.assertIn("p/C", report)
+        worse_idx = report.index("got WORSE")
+        better_idx = report.index("got better")
+        self.assertLess(worse_idx, better_idx)
+        self.assertIn("Recommendation", report)
+
+    def test_recommendation_keeps_tree_a_when_tree_b_has_any_regression(self):
+        # even if tree_b's overall round-trip rate looks equal or better,
+        # a single regression disqualifies it as primary -- the worse-list
+        # takes precedence over the raw rate.
+        comparison = {
+            "tree_a": "vineflower", "tree_b": "vineflower2",
+            "modules_common": ["m"], "common_class_count": 2,
+            "transition_counts": {
+                "roundtrip-exact->bytecode-only": 1,
+                "bytecode-only->roundtrip-exact": 1,
+            },
+            "per_module_transition_counts": {"m": {"roundtrip-exact->bytecode-only": 1, "bytecode-only->roundtrip-exact": 1}},
+            "worse": [{"module": "m", "class": "p/A", "from": "roundtrip-exact", "to": "bytecode-only"}],
+            "better": [{"module": "m", "class": "p/B", "from": "bytecode-only", "to": "roundtrip-exact"}],
+            "unchanged_count": 0,
+        }
+        report = self.mod.generate_compare_report(comparison, title="t")
+        self.assertIn("keep `vineflower`", report)
+        self.assertIn("regression", report)
+
+    def test_recommendation_adopts_tree_b_when_strictly_higher_rate_and_no_regressions(self):
+        comparison = {
+            "tree_a": "vineflower", "tree_b": "vineflower2",
+            "modules_common": ["m"], "common_class_count": 2,
+            "transition_counts": {
+                "roundtrip-exact->roundtrip-exact": 1,
+                "bytecode-only->roundtrip-exact": 1,
+            },
+            "per_module_transition_counts": {"m": {"roundtrip-exact->roundtrip-exact": 1, "bytecode-only->roundtrip-exact": 1}},
+            "worse": [],
+            "better": [{"module": "m", "class": "p/B", "from": "bytecode-only", "to": "roundtrip-exact"}],
+            "unchanged_count": 1,
+        }
+        report = self.mod.generate_compare_report(comparison, title="t")
+        self.assertIn("adopt `vineflower2`", report)
+
+    def test_recommendation_no_change_when_rates_identical_and_no_regressions(self):
+        comparison = {
+            "tree_a": "vineflower", "tree_b": "vineflower2",
+            "modules_common": ["m"], "common_class_count": 1,
+            "transition_counts": {"roundtrip-exact->roundtrip-exact": 1},
+            "per_module_transition_counts": {"m": {"roundtrip-exact->roundtrip-exact": 1}},
+            "worse": [], "better": [], "unchanged_count": 1,
+        }
+        report = self.mod.generate_compare_report(comparison, title="t")
+        self.assertIn("no change", report.lower())
+
+    def test_notes_are_rendered_when_supplied_and_omitted_when_not(self):
+        comparison = {
+            "tree_a": "a", "tree_b": "b", "modules_common": ["m"], "common_class_count": 1,
+            "transition_counts": {"roundtrip-exact->roundtrip-exact": 1},
+            "per_module_transition_counts": {"m": {"roundtrip-exact->roundtrip-exact": 1}},
+            "worse": [], "better": [], "unchanged_count": 1,
+        }
+        with_notes = self.mod.generate_compare_report(comparison, title="t", notes=["custom caveat text"])
+        self.assertIn("### Notes", with_notes)
+        self.assertIn("custom caveat text", with_notes)
+        without_notes = self.mod.generate_compare_report(comparison, title="t")
+        self.assertNotIn("### Notes", without_notes)
+
+
+class TestUpsertMarkdownSection(unittest.TestCase):
+    def setUp(self):
+        self.mod = _load()
+
+    def test_appends_when_heading_absent(self):
+        doc = "# Title\n\nSome content.\n"
+        out = self.mod.upsert_markdown_section(doc, "## New Section", "Body text.\n")
+        self.assertIn("## New Section", out)
+        self.assertIn("Body text.", out)
+        self.assertTrue(out.startswith("# Title"))
+
+    def test_replaces_existing_section_in_place_preserving_surrounding_content(self):
+        doc = (
+            "# Title\n\n"
+            "## Before\n\nkeep this\n\n"
+            "## Target\n\nold body\nmore old\n\n"
+            "## After\n\nkeep this too\n"
+        )
+        out = self.mod.upsert_markdown_section(doc, "## Target", "new body\n")
+        self.assertIn("## Before", out)
+        self.assertIn("keep this\n", out)
+        self.assertIn("## After", out)
+        self.assertIn("keep this too", out)
+        self.assertIn("new body", out)
+        self.assertNotIn("old body", out)
+        self.assertLess(out.index("## Before"), out.index("## Target"))
+        self.assertLess(out.index("## Target"), out.index("## After"))
+
+
+class TestCompareCLIWritesReportSection(unittest.TestCase):
+    def setUp(self):
+        self.mod = _load()
+
+    def test_compare_flag_upserts_section_into_existing_report(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            organized_dir = root / "organized"
+            mod_dir = organized_dir / "m"
+            mod_dir.mkdir(parents=True)
+            (mod_dir / "fidelity.vineflower.json").write_text(json.dumps({
+                "module": "m", "classes": {"p/X": {"grade": "roundtrip-exact"}},
+            }))
+            (mod_dir / "fidelity.vineflower2.json").write_text(json.dumps({
+                "module": "m", "classes": {"p/X": {"grade": "bytecode-only"}},
+            }))
+            docs_dir = root / "docs"
+            docs_dir.mkdir(parents=True)
+            report_path = docs_dir / "decompile-fidelity-report.md"
+            report_path.write_text("# Decompile fidelity report\n\n## Overall\n\nsomething\n")
+
+            with mock.patch.object(self.mod, "REPO_ROOT", root):
+                rc = self.mod.main([
+                    "--modules", "m",
+                    "--organized-dir", str(organized_dir),
+                    "--compare", "vineflower,vineflower2",
+                    "--compare-title", "v1 vs v2 (library context)",
+                    "--report",
+                ])
+            self.assertEqual(rc, 0)
+            written = report_path.read_text()
+            self.assertIn("v1 vs v2 (library context)", written)
+            self.assertIn("p/X", written)
+            self.assertIn("## Overall", written)  # untouched pre-existing section preserved
+            # regression: generate_compare_report emits its own leading
+            # "## {title}" heading, and upsert_markdown_section ALSO prepends
+            # the heading it was given -- together these doubled the heading
+            # line in the real docs/decompile-fidelity-report.md write.
+            self.assertEqual(
+                written.count("## v1 vs v2 (library context)"), 1,
+                "the section heading must appear exactly once, not duplicated",
+            )
+
+    def test_compare_requires_exactly_two_trees(self):
+        with tempfile.TemporaryDirectory() as td:
+            organized_dir = Path(td) / "organized"
+            (organized_dir / "m").mkdir(parents=True)
+            with self.assertRaises(SystemExit):
+                self.mod.main([
+                    "--modules", "m",
+                    "--organized-dir", str(organized_dir),
+                    "--compare", "onlyone",
+                ])
 
 
 if __name__ == "__main__":

@@ -116,11 +116,11 @@ make the decompile complete and as faithful as possible.
       workers scanned */extracted/LIB-INF/*.jar. Fix: immutable libcache prepared serially, idempotency key over the full
       library set, failed runs never cached as success, fallback2/ cleared, stale-extract check, no shell→Python interpolation.
       The first v2 tree is superseded until the clean rerun lands.
-- [ ] T15b (folded into T20 writer) Grader normalizer holes from RDD review-a849ade48da9b9ae, orchestrator-verified with javac 25:
+- [x] T15b (done in T20) Grader normalizer holes from RDD review-a849ade48da9b9ae, orchestrator-verified with javac 25:
       switch-case regex drops negative keys (javap `-5: 40`) → possible FALSE roundtrip-exact; iinc `2, 3` comma form not
       canonicalized (conservative). Plus: masked module failures, truncated runs cached as complete, no subprocess timeouts,
       harness failures graded as no-compile, tautological test. The 120/186 exact figure is provisional until re-graded.
-- [ ] T20 Per-tree fidelity files (fidelity.<tree>.json) and grade vineflower2 vs vineflower on the identical 43-module sample;
+- [x] T20 (grader fixes T15b included; 46-module/192-class sample on the local mirror: v1 124/192 exact, v2 125/192, 0 worse, 1 better; ldc/ldc_w allowlist moved 1 class; orchestrator diffed v1 before/after: 191/192 unchanged, 0 exact→non-exact, so no false exacts from the negative-switch bug in this sample; decision: vineflower2 = recommended tree, precedence recorded in docs/writer-prompt.md) Per-tree fidelity files (fidelity.<tree>.json) and grade vineflower2 vs vineflower on the identical 43-module sample;
       choose the primary tree by measured round-trip rate, not by text diff. Note: v2's +139% @Override is decompiler inference
       (B116: @Override never survives compilation), not recovered information. Route: delegated writer (TDD).
 - [ ] T21 Full-corpus grading run (all ~15k top-level classes, both trees) — closes B116-G1; long run, forecast first. Route: delegated.
