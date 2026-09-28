@@ -62,6 +62,20 @@ class TestPortJunit4ToTestng(unittest.TestCase):
         self.assertEqual(mod.unported_calls(self.out), 0)
         self.assertEqual(mod.unported_calls("assertArrayEquals(a, b); Assert.assertEquals(c, d);"), 1)
 
+    def test_main_exits_nonzero_when_calls_are_left_unported(self):
+        import subprocess, sys, tempfile
+        with tempfile.TemporaryDirectory() as d:
+            src, dst = os.path.join(d, "A.java"), os.path.join(d, "B.java")
+            with open(src, "w") as f:
+                f.write("class A { void t() { fail(); assertThat(x); assertEquals(1, 2); } }")
+            ok = subprocess.run([sys.executable, os.path.join(TOOLS_DIR, "port-junit4-to-testng.py"), src, dst],
+                                capture_output=True, text=True)
+            self.assertEqual(ok.returncode, 0, ok.stdout)
+            mod = _load()
+            self.assertEqual(mod.exit_code(n_before=2, n_after=2, left=1), 1)
+            self.assertEqual(mod.exit_code(n_before=2, n_after=1, left=0), 1)
+            self.assertEqual(mod.exit_code(n_before=2, n_after=2, left=0), 0)
+
 
 if __name__ == "__main__":
     unittest.main()
