@@ -1,0 +1,1636 @@
+#!/usr/bin/env python3
+"""n5-fidelity.py — per-class, machine-checked semantic decompiler fidelity grader.
+
+Ground truth is the shipped Tridium .class files under organized/<mod>/extracted/.
+For every top-level class C, the decompiled Vineflower .java is recompiled with
+`javac --release 25` against a classpath of ALL N5 jars (classpath/unnamed-module
+mode — everything except C binds to the ORIGINAL bytecode) and the resulting
+.class is compared to the shipped .class with a normalizer built over
+`javap -v -p` output: constant-pool indices are dropped in favor of the symbolic
+comments javap already resolves, LineNumberTable/LocalVariableTable/StackMapTable
+are ignored entirely, local-variable slots are canonicalized by first-use order,
+and branch targets are canonicalized to a position relative to the branching
+instruction. See docs/decompile-fidelity-report.md for the aggregate results and
+docs/decompiler-bakeoff.md for the sibling recompile methodology this reuses
+(javac --release 25, classpath = all module jars + bin/ext jars).
+
+Redundancy ladder for a class that does not round-trip under Vineflower: retry
+the SAME class recompiled from CFR 0.152, then Procyon 0.6.0, then (if
+provisioned — see --jd-cli-jar) JD-CLI, keeping the first engine that reaches
+roundtrip-exact/equivalent (`best_decompiler`). Every attempted engine's grade
+is recorded (`attempted`) so disagreement between engines is visible, and
+`consensus.count` records how many independently reached round-trip.
+
+Grades (worst to best): no-compile, compiles-mismatch, bytecode-only (recorded
+only when redundancy was exhausted and nothing round-tripped — see
+compute_consensus), roundtrip-equivalent, roundtrip-exact.
+
+Usage:
+  python3 tools/n5-fidelity.py --modules control,alarm,schedule [--report]
+  python3 tools/n5-fidelity.py --all --jobs 6 [--limit-per-module 50]
+
+Resumable: a module is skipped when organized/<mod>/fidelity.json already
+records the module jar's current sha256 and this tool's SCHEMA_VERSION.
+"""
+from __future__ import annotations
+
+import argparse
+import concurrent.futures
+import hashlib
+import json
+import os
+import random
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+import zipfile
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Callable, Optional
+
+SCHEMA_VERSION = 1
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_ORGANIZED_DIR = REPO_ROOT / "organized"
+DEFAULT_MODULES_DIR = Path("/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules")
+DEFAULT_BIN_EXT_DIR = Path("/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext")
+
+DEFAULT_JAVAC = "/home/linuxbrew/.linuxbrew/opt/openjdk@25/bin/javac"
+DEFAULT_JAVAP = "/home/linuxbrew/.linuxbrew/opt/openjdk@25/bin/javap"
+
+DECOMPILERS_DIR = REPO_ROOT / "tools" / "decompilers"
+DEFAULT_CFR_JAR = DECOMPILERS_DIR / "cfr-0.152.jar"
+DEFAULT_PROCYON_JAR = DECOMPILERS_DIR / "procyon-decompiler-0.6.0.jar"
+DEFAULT_JAVA = "/home/linuxbrew/.linuxbrew/opt/openjdk@25/bin/java"
+
+NIAGARA_HELP_SCRIPT = REPO_ROOT / "niagara-help" / "tools" / "niagara_help.py"
+
+
+# ---------------------------------------------------------------------------
+# Stage 1: bytecode normalizer
+# ---------------------------------------------------------------------------
+
+# A bare "#<digits>" or "#<digits>.#<digits>" constant-pool index token. javap -v
+# already resolves what it refers to into an adjacent symbolic comment (or, for
+# most non-Code lines, into the printed name itself) — dropping the index loses
+# nothing semantic and removes noise that differs purely because two compiles
+# built their constant pools in a different order.
+_CP_INDEX_RE = re.compile(r"#\d+(?:\.#\d+)?")
+
+_BRANCH_OPCODES = {
+    "goto", "goto_w", "jsr", "jsr_w",
+    "ifeq", "ifne", "iflt", "ifge", "ifgt", "ifle",
+    "ifnull", "ifnonnull",
+    "if_icmpeq", "if_icmpne", "if_icmplt", "if_icmpge", "if_icmpgt", "if_icmple",
+    "if_acmpeq", "if_acmpne",
+}
+
+# mnemonic -> True if it addresses a local-variable slot via an explicit operand
+# (e.g. "aload 4"); the _0.._3 short forms are handled separately since the slot
+# is embedded in the mnemonic itself.
+_SLOT_OPCODE_PREFIXES = ("aload", "astore", "iload", "istore", "lload", "lstore",
+                          "fload", "fstore", "dload", "dstore", "ret")
+
+_SLOT_SHORTFORM_RE = re.compile(
+    r"^(aload|astore|iload|istore|lload|lstore|fload|fstore|dload|dstore)_([0-3])$"
+)
+_SLOT_LONGFORM_RE = re.compile(
+    r"^(aload|astore|iload|istore|lload|lstore|fload|fstore|dload|dstore|ret)$"
+)
+_IINC_RE = re.compile(r"^\s*iinc\s+(\d+)\s+(-?\d+)\s*$")
+
+_INSTR_LINE_RE = re.compile(r"^\s*(\d+):\s*(\S+)(.*)$")
+
+
+def strip_cp_indices(line: str) -> str:
+    """Drop constant-pool index tokens from one javap output line.
+
+    javap already prints the symbolic name/comment for anything a CP index
+    points to (e.g. ``invokespecial #1  // Method Foo."<init>":()V``), so the
+    numeric index itself carries no information the corpus needs to compare
+    two compiles of "the same" code — it only encodes constant-pool build
+    order, which is compiler-internal, not semantic.
+    """
+    out = _CP_INDEX_RE.sub("", line)
+    out = re.sub(r"[ \t]+", " ", out).strip()
+    return out
+
+
+def _slot_of(mnemonic: str, operand: str) -> Optional[int]:
+    m = _SLOT_SHORTFORM_RE.match(mnemonic)
+    if m:
+        return int(m.group(2))
+    if _SLOT_LONGFORM_RE.match(mnemonic):
+        operand = operand.strip().split()[0] if operand.strip() else ""
+        if operand.isdigit():
+            return int(operand)
+    return None
+
+
+_SWITCH_CASE_RE = re.compile(r"^\s*(\d+|default)\s*:\s*(\d+)\s*$")
+
+
+def _parse_code_stream(raw_lines: list[str]) -> list[dict]:
+    """Parse raw ``Code`` lines into a list of instruction records.
+
+    javap prints ``tableswitch``/``lookupswitch`` as a MULTI-LINE block::
+
+        1: lookupswitch  { // 2
+                       5: 28
+                     200: 31
+                 default: 34
+              }
+
+    Each ``<key>: <target>`` row inside that block is switch OPERAND data, not
+    a separate instruction — but it is syntactically indistinguishable from a
+    regular ``<offset>: <mnemonic>`` line by regex alone. Treating it as one
+    (the previous implementation's bug) corrupts offset->position numbering
+    for every instruction that follows: a switch with an arm at raw offset 28
+    would register a *second*, bogus "instruction" at offset 5 (the case key)
+    before the real instruction at offset 28 is ever seen. This function
+    explicitly consumes a switch's block as part of the switch record instead.
+    """
+    records: list[dict] = []
+    i = 0
+    while i < len(raw_lines):
+        m = _INSTR_LINE_RE.match(raw_lines[i])
+        if not m:
+            i += 1
+            continue
+        offset = int(m.group(1))
+        mnemonic = m.group(2)
+        rest = m.group(3)
+        if mnemonic in ("tableswitch", "lookupswitch"):
+            entries: list[tuple[int, int]] = []
+            default_target = None
+            i += 1
+            while i < len(raw_lines):
+                line = raw_lines[i].strip()
+                if line == "}":
+                    i += 1
+                    break
+                cm = _SWITCH_CASE_RE.match(line)
+                if cm:
+                    key, target = cm.group(1), int(cm.group(2))
+                    if key == "default":
+                        default_target = target
+                    else:
+                        entries.append((int(key), target))
+                i += 1
+            records.append({
+                "kind": "switch", "offset": offset, "mnemonic": mnemonic,
+                "entries": entries, "default": default_target,
+            })
+        else:
+            records.append({"kind": "insn", "offset": offset, "mnemonic": mnemonic, "rest": rest})
+            i += 1
+    return records
+
+
+def _offset_to_pos_map(records: list[dict]) -> dict[int, int]:
+    return {r["offset"]: i for i, r in enumerate(records)}
+
+
+def normalize_method_instructions(raw_lines: list[str]) -> list[str]:
+    """Canonicalize one method's disassembled instruction stream.
+
+    ``raw_lines`` are the ``<offset>: <mnemonic> [operand] [// comment]`` lines
+    of a single method's ``Code`` body (LineNumberTable/LocalVariableTable/
+    StackMapTable/Exception table and the ``stack=.., locals=.., args_size=..``
+    header line already excluded by the caller — see ``parse_javap_verbose``;
+    the exception table gets its own comparable representation via
+    ``normalize_exception_table``, using this same offset->position mapping).
+
+    Canonicalizations that make two semantically-identical compiles compare
+    equal even when the raw bytes differ:
+
+    1. constant-pool indices dropped (``strip_cp_indices``);
+    2. local-variable slot numbers renumbered by FIRST USE order, so two
+       methods that reference the same locals in the same order compare equal
+       regardless of which raw slot number either compiler happened to pick;
+    3. branch targets (goto/if*/jsr) rewritten as a position *relative to the
+       branching instruction's own position in the instruction sequence*, so a
+       shift in absolute byte offsets (e.g. from a wide/narrow instruction
+       encoding difference elsewhere in the method) does not, by itself, make
+       two otherwise-identical methods compare unequal;
+    4. tableswitch/lookupswitch: each case KEY is kept literal (it is
+       semantic — which input value selects which branch), only its TARGET is
+       relativized the same way; the default target is relativized too.
+    """
+    records = _parse_code_stream(raw_lines)
+    offset_to_pos = _offset_to_pos_map(records)
+
+    slot_map: dict[int, int] = {}
+
+    def canonical_slot(raw_slot: int) -> int:
+        if raw_slot not in slot_map:
+            slot_map[raw_slot] = len(slot_map)
+        return slot_map[raw_slot]
+
+    def _relabel(target_offset: Optional[int], pos: int) -> str:
+        if target_offset is None:
+            return "none"
+        target_pos = offset_to_pos.get(target_offset)
+        if target_pos is None:
+            return f"abs{target_offset}"
+        return f"rel{target_pos - pos:+d}"
+
+    out: list[str] = []
+    for pos, rec in enumerate(records):
+        if rec["kind"] == "switch":
+            entries_str = ", ".join(f"{k}:{_relabel(t, pos)}" for k, t in sorted(rec["entries"]))
+            default_str = _relabel(rec["default"], pos)
+            line = f"insn{pos}: {rec['mnemonic']} {{{entries_str}, default:{default_str}}}"
+            out.append(strip_cp_indices(line))
+            continue
+
+        mnemonic = rec["mnemonic"]
+        rest = rec["rest"]
+
+        # local-slot canonicalization: the OUTPUT form (short "aload_N" vs long
+        # "aload N") depends only on the canonical slot number, never on
+        # whether the raw instruction happened to use the short or long form —
+        # otherwise two semantically-identical methods that differ only in
+        # which literal slot numbers the compiler picked (and therefore which
+        # form is syntactically available) would normalize to different text.
+        slot = _slot_of(mnemonic, rest)
+        if slot is not None:
+            canon = canonical_slot(slot)
+            shortform_m = _SLOT_SHORTFORM_RE.match(mnemonic)
+            base = shortform_m.group(1) if shortform_m else mnemonic
+            if canon <= 3:
+                mnemonic = f"{base}_{canon}"
+                rest = ""
+            else:
+                mnemonic = base
+                rest = f" {canon}"
+        elif mnemonic == "iinc":
+            im = re.match(r"^\s*(\d+)\s+(-?\d+)\s*(.*)$", rest)
+            if im:
+                canon = canonical_slot(int(im.group(1)))
+                rest = f" {canon} {im.group(2)}{im.group(3)}"
+
+        # branch-target canonicalization (relative to this instruction's position)
+        if mnemonic in _BRANCH_OPCODES:
+            tm = re.match(r"^\s*(\d+)(.*)$", rest)
+            if tm:
+                rest = f" {_relabel(int(tm.group(1)), pos)}{tm.group(2)}"
+
+        line = f"insn{pos}: {mnemonic}{rest}"
+        out.append(strip_cp_indices(line))
+    return out
+
+
+def normalize_exception_table(raw_lines: list[str], rows: list[tuple[int, int, int, str]]) -> list[str]:
+    """Canonicalize a method's exception table (try/catch/finally wiring).
+
+    ``rows`` are ``(from_offset, to_offset, target_offset, type)`` as parsed
+    from javap's ``Exception table:`` section (``type`` already symbolic,
+    e.g. ``"Class java/lang/ArithmeticException"`` or ``"any"`` for finally).
+    ``raw_lines`` is the SAME method's Code lines, reused only to rebuild the
+    offset->position map — the handler TYPE is never normalized away (which
+    exception a range is protected against is semantic), and the from/to/target
+    offsets are relativized to instruction position the same way branch
+    targets are, so a byte-offset shift elsewhere doesn't spuriously differ.
+    """
+    records = _parse_code_stream(raw_lines)
+    offset_to_pos = _offset_to_pos_map(records)
+
+    def pos_of(offset: int) -> str:
+        p = offset_to_pos.get(offset)
+        return f"insn{p}" if p is not None else f"abs{offset}"
+
+    out = [f"[{pos_of(frm)}-{pos_of(to)}) -> {pos_of(target)}: {etype}" for frm, to, target, etype in rows]
+    return sorted(out)
+
+
+# ---------------------------------------------------------------------------
+# Stage 2: javap -v -p parsing + structural comparator
+# ---------------------------------------------------------------------------
+
+# "Exception table:" and "MethodParameters:" are handled explicitly (captured,
+# not skipped) — see _parse_member_block.
+_SKIP_SUBSECTION_HEADERS = (
+    "LineNumberTable:", "LocalVariableTable:", "LocalVariableTypeTable:",
+    "StackMapTable:", "RuntimeVisibleAnnotations:", "RuntimeInvisibleAnnotations:",
+    "RuntimeVisibleParameterAnnotations:", "RuntimeInvisibleParameterAnnotations:",
+    "AnnotationDefault:",
+)
+
+
+def _indent_of(line: str) -> int:
+    return len(line) - len(line.lstrip(" "))
+
+
+def run_javap_verbose(classfile: str, javap_bin: str = DEFAULT_JAVAP) -> str:
+    proc = subprocess.run([javap_bin, "-v", "-p", classfile], capture_output=True, text=True)
+    return proc.stdout
+
+
+def parse_javap_verbose(text: str) -> dict:
+    """Parse `javap -v -p` output into the comparable structural dict used by
+    diff_normalized_classes: fields, methods (with normalized Code), and the
+    class attributes that matter (Record/PermittedSubclasses/NestMembers/
+    InnerClasses). Annotation content and the constant-pool table itself are
+    intentionally out of scope (see module docstring / task spec).
+    """
+    lines = text.splitlines()
+
+    # class declaration: first non-volatile line before "  minor version:"
+    class_decl = ""
+    for line in lines:
+        if line.startswith("  minor version:"):
+            break
+        if line.startswith(("Classfile ", "  Last modified", "  SHA-256 checksum", "  Compiled from")):
+            continue
+        if line.strip():
+            class_decl = line.strip()
+
+    try:
+        body_start = lines.index("{")
+        body_end = lines.index("}", body_start)
+    except ValueError:
+        body_start = body_end = -1
+
+    fields: dict = {}
+    methods: dict = {}
+
+    if body_start != -1:
+        i = body_start + 1
+        while i < body_end:
+            line = lines[i]
+            if not line.strip():
+                i += 1
+                continue
+            if _indent_of(line) == 2:
+                block_end = i + 1
+                while block_end < body_end and (not lines[block_end].strip() or _indent_of(lines[block_end]) > 2):
+                    block_end += 1
+                _parse_member_block(lines[i:block_end], fields, methods)
+                i = block_end
+            else:
+                i += 1
+
+    trailer = lines[body_end + 1:] if body_end != -1 else []
+    attributes = _parse_trailer_attributes(trailer)
+
+    return {
+        "class_decl": class_decl,
+        "fields": fields,
+        "methods": methods,
+        "attributes": attributes,
+    }
+
+
+def _parse_member_block(block: list[str], fields: dict, methods: dict) -> None:
+    decl = block[0].strip().rstrip(";")
+    descriptor = ""
+    flags: list[str] = []
+    idx = 1
+    if idx < len(block) and block[idx].strip().startswith("descriptor:"):
+        descriptor = block[idx].strip().split("descriptor:", 1)[1].strip()
+        idx += 1
+    if idx < len(block) and block[idx].strip().startswith("flags:"):
+        flags_part = block[idx].split(")", 1)
+        if len(flags_part) == 2:
+            flags = [f.strip() for f in flags_part[1].split(",") if f.strip()]
+        idx += 1
+
+    is_method = descriptor.startswith("(")
+    name = _member_name_from_decl(decl, is_method)
+
+    if is_method:
+        exceptions: list[str] = []
+        code: list[str] = []
+        exception_table: list[str] = []
+        has_method_parameters = False
+        j = idx
+        while j < len(block):
+            line = block[j]
+            stripped = line.strip()
+            indent = _indent_of(line)
+            if indent == 4 and stripped == "Code:":
+                j += 1
+                # optional stack=/locals=/args_size= line — informational, skipped
+                if j < len(block) and block[j].strip().startswith("stack="):
+                    j += 1
+                raw_instr_lines = []
+                raw_exception_rows: list[tuple[int, int, int, str]] = []
+                while j < len(block):
+                    inner = block[j]
+                    inner_indent = _indent_of(inner)
+                    inner_stripped = inner.strip()
+                    if inner_indent <= 4:
+                        break
+                    if inner_stripped.startswith("Exception table:"):
+                        header_indent = inner_indent
+                        j += 1
+                        while j < len(block) and (not block[j].strip() or _indent_of(block[j]) > header_indent):
+                            row = block[j].strip()
+                            j += 1
+                            if row.startswith("from") or not row:
+                                continue
+                            rm = re.match(r"^(\d+)\s+(\d+)\s+(\d+)\s+(.+)$", row)
+                            if rm:
+                                raw_exception_rows.append(
+                                    (int(rm.group(1)), int(rm.group(2)), int(rm.group(3)), strip_cp_indices(rm.group(4)))
+                                )
+                        continue
+                    if any(inner_stripped.startswith(h) for h in _SKIP_SUBSECTION_HEADERS):
+                        header_indent = inner_indent
+                        j += 1
+                        while j < len(block) and (not block[j].strip() or _indent_of(block[j]) > header_indent):
+                            j += 1
+                        continue
+                    raw_instr_lines.append(inner_stripped)
+                    j += 1
+                code = normalize_method_instructions(raw_instr_lines)
+                exception_table = normalize_exception_table(raw_instr_lines, raw_exception_rows)
+            elif indent == 4 and stripped == "Exceptions:":
+                j += 1
+                while j < len(block) and (not block[j].strip() or _indent_of(block[j]) > 4):
+                    ex = block[j].strip()
+                    if ex.startswith("throws"):
+                        exceptions = [t.strip() for t in ex[len("throws"):].split(",") if t.strip()]
+                    j += 1
+            elif indent == 4 and stripped.startswith("MethodParameters:"):
+                has_method_parameters = True
+                header_indent = indent
+                j += 1
+                while j < len(block) and (not block[j].strip() or _indent_of(block[j]) > header_indent):
+                    j += 1
+            elif indent == 4 and any(stripped.startswith(h) for h in _SKIP_SUBSECTION_HEADERS):
+                header_indent = indent
+                j += 1
+                while j < len(block) and (not block[j].strip() or _indent_of(block[j]) > header_indent):
+                    j += 1
+            else:
+                j += 1
+        methods[(name, descriptor)] = {
+            "flags": sorted(flags),
+            "code": code,
+            "exceptions": sorted(exceptions),
+            "exception_table": exception_table,
+            "has_method_parameters": has_method_parameters,
+        }
+    else:
+        constant_value = None
+        j = idx
+        while j < len(block):
+            stripped = block[j].strip()
+            if stripped.startswith("ConstantValue:"):
+                constant_value = strip_cp_indices(stripped.split("ConstantValue:", 1)[1].strip())
+            j += 1
+        fields[(name, descriptor)] = {"flags": sorted(flags), "constant_value": constant_value}
+
+
+def _member_name_from_decl(decl: str, is_method: bool) -> str:
+    # decl examples:
+    #   "public static final niagara.sys.Property in1"          (field)
+    #   "public niagara.status.BStatusNumeric getIn1()"          (method)
+    #   "public niagara.control.BNumericWritable()"              (constructor)
+    #   "static {}"                                              (static initializer, <clinit>)
+    if is_method:
+        if decl.strip() == "static {}":
+            return "<clinit>"
+        m = re.search(r"([A-Za-z_$][A-Za-z0-9_$]*)\s*\([^)]*\)\s*(throws.*)?$", decl)
+        if m:
+            return m.group(1)
+        return decl
+    m = re.search(r"([A-Za-z_$][A-Za-z0-9_$]*)$", decl)
+    return m.group(1) if m else decl
+
+
+def _parse_trailer_attributes(trailer: list[str]) -> dict:
+    attrs = {
+        "record": False,
+        "permitted_subclasses": None,
+        "nest_members": None,
+        "inner_classes": None,
+    }
+    i = 0
+    while i < len(trailer):
+        line = trailer[i]
+        stripped = line.strip()
+        if _indent_of(line) == 0 and stripped:
+            header = stripped
+            j = i + 1
+            body: list[str] = []
+            while j < len(trailer) and (not trailer[j].strip() or _indent_of(trailer[j]) > 0):
+                if trailer[j].strip():
+                    body.append(strip_cp_indices(trailer[j].strip()))
+                j += 1
+            if header.startswith("PermittedSubclasses:"):
+                attrs["permitted_subclasses"] = sorted(body)
+            elif header.startswith("NestMembers:"):
+                attrs["nest_members"] = sorted(body)
+            elif header.startswith("InnerClasses:"):
+                attrs["inner_classes"] = sorted(body)
+            elif header.startswith("Record:"):
+                attrs["record"] = True
+            i = j
+        else:
+            i += 1
+    return attrs
+
+
+def diff_normalized_classes(a: dict, b: dict) -> dict:
+    """Structural + per-method diff between two parsed classes (see
+    parse_javap_verbose). Does not itself decide a grade — see grade_class_result.
+    """
+    fields_match = a["fields"] == b["fields"]
+    attrs_match = a["attributes"] == b["attributes"]
+
+    a_methods = a["methods"]
+    b_methods = b["methods"]
+    common = set(a_methods) & set(b_methods)
+    missing = sorted(set(a_methods) - set(b_methods))
+    extra = sorted(set(b_methods) - set(a_methods))
+
+    mismatched = []
+    method_bodies = {}
+    for key in sorted(common):
+        am = a_methods[key]
+        bm = b_methods[key]
+        if (
+            am["flags"] != bm["flags"]
+            or am["code"] != bm["code"]
+            or am["exceptions"] != bm["exceptions"]
+            or am.get("exception_table", []) != bm.get("exception_table", [])
+            or am.get("has_method_parameters", False) != bm.get("has_method_parameters", False)
+        ):
+            mismatched.append(key)
+            method_bodies[key] = {"a": am["code"], "b": bm["code"]}
+
+    return {
+        "fields_match": fields_match,
+        "attrs_match": attrs_match,
+        "mismatched_methods": mismatched,
+        "missing_methods": missing,
+        "extra_methods": extra,
+        "method_bodies": method_bodies,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Stage 3: allowlist + grader decisions
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class AllowlistEntry:
+    name: str
+    justification: str
+    predicate: Callable[[list[str], list[str]], bool]
+
+
+# Seeded empty on purpose: every entry here must be backed by a real, observed
+# mismatch pattern plus a unit test proving the predicate is actually safe (see
+# docs/decompile-fidelity-report.md "Allowlist" section for what the corpus run
+# actually found, if anything). An empty allowlist is an honest starting point,
+# not a placeholder to silently fill.
+ALLOWLIST: list[AllowlistEntry] = []
+
+
+def grade_class_result(compiled_ok: bool, diff: Optional[dict], first_error: Optional[str]) -> dict:
+    if not compiled_ok:
+        return {"grade": "no-compile", "first_error": first_error, "mismatched_methods": [], "allowlist_matches": []}
+
+    if diff["fields_match"] and diff["attrs_match"] and not diff["mismatched_methods"] \
+            and not diff["missing_methods"] and not diff["extra_methods"]:
+        return {"grade": "roundtrip-exact", "first_error": None, "mismatched_methods": [], "allowlist_matches": []}
+
+    # missing/extra members and field/attribute mismatches are never allowlist-eligible:
+    # the allowlist only ever downgrades a *method-body* mismatch, never a structural one.
+    if not diff["fields_match"] or not diff["attrs_match"] or diff["missing_methods"] or diff["extra_methods"]:
+        return {
+            "grade": "compiles-mismatch",
+            "first_error": None,
+            "mismatched_methods": list(diff["mismatched_methods"]),
+            "allowlist_matches": [],
+        }
+
+    allowlist_matches = []
+    all_allowed = True
+    method_bodies = diff.get("method_bodies", {})
+    for key in diff["mismatched_methods"]:
+        bodies = method_bodies.get(key)
+        matched_this_method = False
+        if bodies:
+            for entry in ALLOWLIST:
+                if entry.predicate(bodies["a"], bodies["b"]):
+                    if entry.name not in allowlist_matches:
+                        allowlist_matches.append(entry.name)
+                    matched_this_method = True
+                    break
+        if not matched_this_method:
+            all_allowed = False
+
+    if all_allowed and diff["mismatched_methods"]:
+        return {
+            "grade": "roundtrip-equivalent",
+            "first_error": None,
+            "mismatched_methods": list(diff["mismatched_methods"]),
+            "allowlist_matches": allowlist_matches,
+        }
+
+    return {
+        "grade": "compiles-mismatch",
+        "first_error": None,
+        "mismatched_methods": list(diff["mismatched_methods"]),
+        "allowlist_matches": allowlist_matches,
+    }
+
+
+_GRADE_RANK = {
+    "no-compile": 0,
+    "compiles-mismatch": 1,
+    "bytecode-only": 1,  # same rank as compiles-mismatch; distinct meaning (see compute_consensus)
+    "roundtrip-equivalent": 2,
+    "roundtrip-exact": 3,
+}
+
+
+def _is_clean(grade: str) -> bool:
+    return grade in ("roundtrip-exact", "roundtrip-equivalent")
+
+
+# ---------------------------------------------------------------------------
+# Stage 4: redundancy / fallback ladder
+# ---------------------------------------------------------------------------
+
+def run_redundancy_ladder(ladder: list[tuple[str, Callable[[], dict]]]) -> dict:
+    """Run each (name, thunk) in order, stopping at the first clean grade.
+
+    Every engine actually invoked is recorded in `attempted` (for disagreement
+    visibility), but engines after a clean hit are never run — this is the
+    "keep the first that round-trips" rule from the task spec, made cheap.
+    """
+    attempted: list[tuple[str, dict]] = []
+    for name, thunk in ladder:
+        result = thunk()
+        attempted.append((name, result))
+        if _is_clean(result["grade"]):
+            break
+    return select_best_decompiler(attempted)
+
+
+def select_best_decompiler(attempts: list[tuple[str, dict]]) -> dict:
+    best_name = None
+    best_result = None
+    for name, result in attempts:
+        if _is_clean(result["grade"]):
+            best_name = name
+            best_result = result
+            break
+    if best_result is None:
+        grade = "bytecode-only"
+    else:
+        grade = best_result["grade"]
+    return {"best_decompiler": best_name, "grade": grade, "attempted": attempts}
+
+
+def compute_consensus(attempted: list[tuple[str, dict]]) -> dict:
+    reaching = [name for name, result in attempted if _is_clean(result["grade"])]
+    return {"reaching_roundtrip": reaching, "count": len(reaching)}
+
+
+# ---------------------------------------------------------------------------
+# Stage 5: krak2 independent bytecode-disassembly cross-check
+# ---------------------------------------------------------------------------
+
+_KRAK2_MNEMONIC_RE = re.compile(r"^\s*[A-Za-z_][A-Za-z0-9_]*\s*:\s*([a-z][a-z0-9_]*)")
+
+
+def _krak2_mnemonic_sequence(krak2_text: str) -> list[str]:
+    """Best-effort extraction of the bare opcode mnemonic sequence from a krak2
+    `.j` disassembly listing (one 'LABEL: mnemonic ...' line per instruction).
+    """
+    out = []
+    for line in krak2_text.splitlines():
+        m = _KRAK2_MNEMONIC_RE.match(line)
+        if m:
+            out.append(m.group(1))
+    return out
+
+
+_NORMALIZED_MNEMONIC_RE = re.compile(r"^insn\d+:\s*(\S+)")
+
+
+def _normalized_mnemonic_sequence(normalized: list[str]) -> list[str]:
+    out = []
+    for line in normalized:
+        m = _NORMALIZED_MNEMONIC_RE.match(line)
+        if m:
+            out.append(m.group(1))
+    return out
+
+
+_KRAK2_METHOD_HEADER_RE = re.compile(r"^\.method\b.*?\s([A-Za-z_$<][A-Za-z0-9_$>]*)\s*:\s*(\([^)]*\)\S+)\s*$")
+
+
+def _extract_krak2_method_block(krak2_text: str, method_name: str, descriptor: str) -> Optional[str]:
+    lines = krak2_text.splitlines()
+    for i, line in enumerate(lines):
+        m = _KRAK2_METHOD_HEADER_RE.match(line.strip())
+        if m and m.group(1) == method_name and m.group(2) == descriptor:
+            block = []
+            for j in range(i + 1, len(lines)):
+                if lines[j].strip() == ".end method":
+                    break
+                block.append(lines[j])
+            return "\n".join(block)
+    return None
+
+
+def krak2_cross_check(
+    classfile: str, normalized_instructions: list[str], method_name: str, descriptor: str, krak2_bin: str = "krak2"
+) -> dict:
+    """Independent check that our own javap-based normalizer did not drop or
+    reorder an instruction, by disassembling the SAME .class with a completely
+    different tool (Krakatau2's krak2, a Rust bytecode disassembler that has no
+    dependency on javap or the JDK's own class-file reader) and comparing the
+    bare opcode mnemonic sequence for ONE method (`method_name`/`descriptor`,
+    JVM-descriptor form e.g. "(II)I") — krak2 disassembles the whole class, so
+    the comparison is scoped to that method's block to avoid picking up
+    unrelated methods (e.g. the implicit constructor).
+
+    This validates the *normalizer*, not the decompiler — it never itself
+    produces a fidelity grade.
+    """
+    resolved = shutil.which(krak2_bin) or (krak2_bin if os.path.isfile(krak2_bin) else None)
+    if resolved is None or not os.path.isfile(classfile):
+        return {"status": "unavailable", "reason": "krak2 binary or class file not found"}
+
+    with tempfile.TemporaryDirectory() as td:
+        proc = subprocess.run([resolved, "dis", "-o", td, classfile], capture_output=True, text=True)
+        if proc.returncode != 0:
+            return {"status": "unavailable", "reason": f"krak2 exited {proc.returncode}: {proc.stderr.strip()[:200]}"}
+        # krak2 writes under <td>/<package-path>/<Class>.j, exactly like javac's
+        # own -d output — every real N5 class is packaged, so this must be
+        # recursive (see recompile_and_grade's identical fix for javac output).
+        j_files = list(Path(td).rglob("*.j"))
+        if not j_files:
+            return {"status": "unavailable", "reason": "krak2 produced no .j output"}
+        krak2_text = j_files[0].read_text(errors="replace")
+
+    method_block = _extract_krak2_method_block(krak2_text, method_name, descriptor)
+    if method_block is None and method_name not in ("<init>", "<clinit>"):
+        # parse_javap_verbose keys a constructor by the enclosing class's
+        # simple name (javap prints "public Ctor(int);"), but krak2 always
+        # names it "<init>" — retry once under that name before giving up.
+        method_block = _extract_krak2_method_block(krak2_text, "<init>", descriptor)
+    if method_block is None:
+        return {"status": "unavailable", "reason": f"krak2 output has no method {method_name}:{descriptor}"}
+
+    krak2_seq = _krak2_mnemonic_sequence(method_block)
+    our_seq = _normalized_mnemonic_sequence(normalized_instructions)
+
+    def _base(op: str) -> str:
+        for prefix in ("aload_", "astore_", "iload_", "istore_", "lload_", "lstore_",
+                        "fload_", "fstore_", "dload_", "dstore_"):
+            if op.startswith(prefix):
+                return prefix[:-1]
+        return op
+
+    krak2_norm = [_base(o) for o in krak2_seq]
+    our_norm = [_base(o) for o in our_seq]
+
+    if krak2_norm == our_norm:
+        return {"status": "match", "krak2_count": len(krak2_norm), "our_count": len(our_norm)}
+    return {
+        "status": "mismatch",
+        "krak2_count": len(krak2_norm),
+        "our_count": len(our_norm),
+        "krak2_sample": krak2_norm[:20],
+        "our_sample": our_norm[:20],
+    }
+
+
+# ---------------------------------------------------------------------------
+# Stage 6: member-set agreement against niagara_help.py (bajadoc index)
+# ---------------------------------------------------------------------------
+
+def member_set_agreement(ours: set[tuple[str, str]], theirs: set[str]) -> dict:
+    """`ours` = {(name, descriptor)} extracted from bytecode; `theirs` = bare
+    member names from niagara_help.py's independent bajadoc/javadoc index.
+    Agreement is computed on bare names (bajadoc does not expose JVM
+    descriptors), so this is a coarse, intentionally conservative check.
+    """
+    our_names = {name for name, _ in ours}
+    if not our_names:
+        return {"ratio": 1.0, "missing_from_docs": [], "extra_in_docs": sorted(theirs)}
+    missing = sorted(our_names - theirs)
+    ratio = (len(our_names) - len(missing)) / len(our_names)
+    return {
+        "ratio": ratio,
+        "missing_from_docs": missing,
+        "extra_in_docs": sorted(theirs - our_names),
+    }
+
+
+_NIAGARA_HELP_SLOT_RE = re.compile(r"^\s{2}([A-Za-z_][A-Za-z0-9_]*)\s*[:(]")
+
+
+def niagara_help_member_lookup(fqcn: str, niagara_help_script: str = str(NIAGARA_HELP_SCRIPT)) -> Optional[set[str]]:
+    """Independent member-set source: niagara_help.py's `class <ShortName>`
+    command reads the bajadoc/javadoc index (a pipeline entirely separate from
+    decompilation) and lists a Niagara BComponent's PROPERTIES/ACTIONS/TOPICS —
+    the framework "slots" that correspond 1:1 to the `public static final
+    niagara.sys.{Property,Action,Topic}` fields our own bytecode extraction
+    finds (see `slot_field_names`). `niagara_help.py class` takes the bare
+    class name, not the FQCN (its own CLI contract — see its --help), so this
+    strips the package.
+    """
+    if not os.path.isfile(niagara_help_script):
+        return None
+    short_name = fqcn.rsplit(".", 1)[-1].rsplit("/", 1)[-1]
+    proc = subprocess.run(
+        [sys.executable, niagara_help_script, "class", short_name],
+        capture_output=True, text=True,
+    )
+    if proc.returncode != 0 or not proc.stdout.strip():
+        return None
+    if "not found in class-index" in proc.stdout:
+        return None
+    names = set()
+    for line in proc.stdout.splitlines():
+        m = _NIAGARA_HELP_SLOT_RE.match(line)
+        if m:
+            names.add(m.group(1))
+    return names
+
+
+_SLOT_FIELD_TYPES = (
+    "niagara.sys.Property", "niagara.sys.Action", "niagara.sys.Topic",
+    "Lniagara/sys/Property;", "Lniagara/sys/Action;", "Lniagara/sys/Topic;",
+)
+
+
+def slot_field_names(parsed_class: dict) -> set[tuple[str, str]]:
+    """The (name, descriptor) pairs among `parsed_class["fields"]` whose
+    declared type is a Niagara Property/Action/Topic slot field — the bytecode
+    counterpart to niagara_help.py's PROPERTIES/ACTIONS/TOPICS listing.
+    """
+    return {
+        (name, descriptor)
+        for (name, descriptor) in parsed_class["fields"]
+        if descriptor in _SLOT_FIELD_TYPES
+    }
+
+
+# ---------------------------------------------------------------------------
+# Recompile orchestration (uses the JDK directly; real N5 classpath is only
+# needed for real corpus classes, not for the self-contained unit tests)
+# ---------------------------------------------------------------------------
+
+def run_javap_instructions(classfile: str, method_name: str, descriptor: str, javap_bin: str = DEFAULT_JAVAP) -> list[str]:
+    text = run_javap_verbose(classfile, javap_bin=javap_bin)
+    parsed = parse_javap_verbose(text)
+    method = parsed["methods"].get((method_name, descriptor))
+    if method is None:
+        return []
+    # method["code"] is already normalized by parse_javap_verbose's call into
+    # normalize_method_instructions; re-derive the pre-normalization raw lines
+    # is not needed by callers that only want the normalized form, so this
+    # helper exists for callers (like the krak2 cross-check test) that want
+    # the *normalized* instruction list keyed by a specific method signature.
+    return method["code"]
+
+
+def _first_javac_error(stderr: str) -> Optional[str]:
+    for line in stderr.splitlines():
+        if "error:" in line:
+            return line.strip()
+    return stderr.strip().splitlines()[0] if stderr.strip() else "javac failed with no diagnostic output"
+
+
+def recompile_and_grade(
+    java_file: str,
+    class_name: str,
+    classpath: str,
+    ground_truth_class: str,
+    out_dir: str,
+    javac_bin: str = DEFAULT_JAVAC,
+    javap_bin: str = DEFAULT_JAVAP,
+) -> dict:
+    """Recompile one decompiled .java (top-level class `class_name`, may define
+    nested classes too) and grade the top-level class's .class against
+    `ground_truth_class`. This is the single-engine grading step the
+    redundancy ladder calls once per engine (vineflower/cfr/procyon/jd-cli).
+    """
+    os.makedirs(out_dir, exist_ok=True)
+    cmd = [javac_bin, "--release", "25", "-g", "-implicit:none", "-proc:none", "-nowarn", "-d", out_dir]
+    if classpath:
+        cmd += ["-cp", classpath]
+    cmd.append(java_file)
+    proc = subprocess.run(cmd, capture_output=True, text=True)
+
+    if proc.returncode != 0:
+        return {
+            "grade": "no-compile",
+            "first_error": _first_javac_error(proc.stderr),
+            "mismatched_methods": [],
+            "allowlist_matches": [],
+        }
+
+    # javac writes to <out_dir>/<package-path-from-the-source's-`package`-decl>/<Class>.class,
+    # not flat into out_dir — search for it by simple name rather than assuming
+    # a flat layout (a flat assumption silently false-negatived every
+    # non-default-package class, i.e. nearly the entire real corpus).
+    candidates = list(Path(out_dir).rglob(f"{class_name}.class"))
+    if not candidates:
+        return {
+            "grade": "no-compile",
+            "first_error": f"javac exited 0 but no {class_name}.class was produced anywhere under {out_dir}",
+            "mismatched_methods": [],
+            "allowlist_matches": [],
+        }
+    recompiled_class = str(candidates[0])
+    if not os.path.isfile(ground_truth_class):
+        return {
+            "grade": "no-compile",
+            "first_error": f"ground truth class file missing: {ground_truth_class}",
+            "mismatched_methods": [],
+            "allowlist_matches": [],
+        }
+
+    a = parse_javap_verbose(run_javap_verbose(ground_truth_class, javap_bin=javap_bin))
+    b = parse_javap_verbose(run_javap_verbose(recompiled_class, javap_bin=javap_bin))
+    diff = diff_normalized_classes(a, b)
+    return grade_class_result(compiled_ok=True, diff=diff, first_error=None)
+
+
+# ---------------------------------------------------------------------------
+# Classpath cache: extract every module jar + bin/ext jar + nested LIB-INF
+# jars ONCE into a scratch cache dir, return a ':'-joined javac classpath.
+# ---------------------------------------------------------------------------
+
+def sha256_of(path: Path) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def build_classpath(
+    cache_dir: Path,
+    modules_dir: Path = DEFAULT_MODULES_DIR,
+    bin_ext_dir: Path = DEFAULT_BIN_EXT_DIR,
+    force: bool = False,
+) -> str:
+    """Idempotent: on a cache hit (manifest recorded and every listed jar still
+    present) this only reads a file; nested LIB-INF jars are extracted at most
+    once per cache dir. Intended cache_dir: a scratch/session directory, not
+    the repo (see module docstring / task spec: "extract once to a cache dir
+    under the scratchpad").
+    """
+    cache_dir = Path(cache_dir)
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    manifest_path = cache_dir / "classpath.txt"
+    if not force and manifest_path.is_file():
+        entries = [line.strip() for line in manifest_path.read_text().splitlines() if line.strip()]
+        if entries and all(os.path.isfile(e) for e in entries):
+            return ":".join(entries)
+
+    entries: list[str] = []
+    nested_dir = cache_dir / "_nested-libinf"
+    nested_dir.mkdir(parents=True, exist_ok=True)
+
+    for jar_dir in (modules_dir, bin_ext_dir):
+        if not jar_dir.is_dir():
+            continue
+        for jar in sorted(jar_dir.glob("*.jar")):
+            entries.append(str(jar))
+            entries.extend(_extract_nested_libinf(jar, nested_dir))
+
+    manifest_path.write_text("\n".join(entries) + "\n")
+    return ":".join(entries)
+
+
+def _extract_nested_libinf(jar: Path, nested_dir: Path) -> list[str]:
+    out = []
+    try:
+        with zipfile.ZipFile(jar) as zf:
+            for name in zf.namelist():
+                if name.startswith("LIB-INF/") and name.endswith(".jar"):
+                    dest = nested_dir / jar.stem / Path(name).name
+                    if not dest.is_file():
+                        dest.parent.mkdir(parents=True, exist_ok=True)
+                        with zf.open(name) as src, open(dest, "wb") as dst:
+                            shutil.copyfileobj(src, dst)
+                    out.append(str(dest))
+    except zipfile.BadZipFile:
+        pass
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Module-level orchestration
+# ---------------------------------------------------------------------------
+
+def discover_top_level_classes(extracted_dir: Path) -> list[tuple[str, Path]]:
+    """Return [(fqcn_with_slashes, class_file_path)] for every TOP-LEVEL class
+    under extracted_dir (a class file whose basename has no '$').
+    """
+    out = []
+    if not extracted_dir.is_dir():
+        return out
+    for class_file in sorted(extracted_dir.rglob("*.class")):
+        if "$" in class_file.stem:
+            continue
+        if class_file.stem == "module-info":
+            continue
+        rel = class_file.relative_to(extracted_dir).with_suffix("")
+        fqcn = str(rel).replace(os.sep, "/")
+        out.append((fqcn, class_file))
+    return out
+
+
+def _decompile_one_class_with(java_bin: str, tool_jar: Path, classfile: Path, out_dir: Path) -> Optional[Path]:
+    """Decompile ONE .class with a specific engine jar. Each engine has its own
+    CLI contract (verified against the actual jars in tools/decompilers/ / the
+    scratch-provisioned JD-CLI — see docs/decompile-fidelity-report.md):
+      CFR:      java -jar cfr.jar <class> --outputdir <dir> --silent true
+      Procyon:  java -jar procyon.jar <class> -o <dir>
+      JD-CLI:   java -jar jd-cli.jar -od <dir> <class>
+    All three preserve (or, for JD-CLI's flat -od, simply don't need) the
+    package path in their output; `rglob` finds the produced file either way.
+    """
+    if not tool_jar.is_file():
+        return None
+    out_dir.mkdir(parents=True, exist_ok=True)
+    name = tool_jar.name.lower()
+    if "cfr" in name:
+        cmd = [java_bin, "-jar", str(tool_jar), str(classfile), "--outputdir", str(out_dir), "--silent", "true"]
+    elif "jd-cli" in name:
+        cmd = [java_bin, "-jar", str(tool_jar), "-od", str(out_dir), str(classfile)]
+    else:  # procyon
+        cmd = [java_bin, "-jar", str(tool_jar), str(classfile), "-o", str(out_dir)]
+    subprocess.run(cmd, capture_output=True, text=True)
+    candidates = list(Path(out_dir).rglob(f"{classfile.stem}.java"))
+    return candidates[0] if candidates else None
+
+
+def grade_module(
+    module: str,
+    organized_dir: Path = DEFAULT_ORGANIZED_DIR,
+    classpath: str = "",
+    javac_bin: str = DEFAULT_JAVAC,
+    javap_bin: str = DEFAULT_JAVAP,
+    java_bin: str = DEFAULT_JAVA,
+    cfr_jar: Path = DEFAULT_CFR_JAR,
+    procyon_jar: Path = DEFAULT_PROCYON_JAR,
+    jd_cli_jar: Optional[Path] = None,
+    limit: Optional[int] = None,
+    krak2_bin: str = "krak2",
+    member_sample_size: int = 0,
+    primary_tree: str = "vineflower",
+) -> dict:
+    """`primary_tree` names the decompiled source tree to grade as the FIRST
+    rung of the redundancy ladder — normally "vineflower" (tools/n5-decompile.sh's
+    primary output), but any sibling tree under organized/<mod>/ with the same
+    <package/Class>.java layout works (e.g. "vineflower2", a library-context-aware
+    second decompile pass some other writer may produce), so two trees can be
+    graded and compared on identical classes via two separate invocations.
+    """
+    mod_dir = organized_dir / module
+    extracted_dir = mod_dir / "extracted"
+    vineflower_dir = mod_dir / primary_tree
+    fallback_dir = mod_dir / "fallback"
+    docsource_dir = organized_dir / "docSource" / module
+
+    classes = discover_top_level_classes(extracted_dir)
+    if limit is not None:
+        classes = classes[:limit]
+
+    per_class = {}
+    for i, (fqcn, classfile) in enumerate(classes):
+        vf_java = vineflower_dir / f"{fqcn}.java"
+        fb_java = fallback_dir / f"{fqcn}.java"
+        source_java = vf_java if vf_java.is_file() else (fb_java if fb_java.is_file() else None)
+        class_short = fqcn.rsplit("/", 1)[-1]
+
+        docsource_java = docsource_dir / f"{fqcn}.java"
+        docsource_available = docsource_java.is_file()
+        docsource_roundtrip = None
+
+        if source_java is None:
+            per_class[fqcn] = {
+                "grade": "no-compile",
+                "first_error": "no decompiled source found (vineflower/fallback both missing)",
+                "best_decompiler": None,
+                "attempted": [],
+                "consensus": {"reaching_roundtrip": [], "count": 0},
+                "docsource_available": docsource_available,
+                "docsource_roundtrip": docsource_roundtrip,
+            }
+            continue
+
+        with tempfile.TemporaryDirectory(prefix=f"n5fid-{class_short}-") as td:
+            ladder = [("vineflower", lambda sj=source_java, td=td, cs=class_short: recompile_and_grade(
+                str(sj), cs, classpath, str(classfile), td, javac_bin, javap_bin))]
+
+            def cfr_thunk(classfile=classfile, class_short=class_short):
+                with tempfile.TemporaryDirectory() as decompile_td, tempfile.TemporaryDirectory() as compile_td:
+                    java_src = _decompile_one_class_with(java_bin, cfr_jar, classfile, Path(decompile_td))
+                    if java_src is None:
+                        return {"grade": "no-compile", "first_error": "CFR retry decompile failed", "mismatched_methods": [], "allowlist_matches": []}
+                    return recompile_and_grade(str(java_src), class_short, classpath, str(classfile), compile_td, javac_bin, javap_bin)
+
+            def procyon_thunk(classfile=classfile, class_short=class_short):
+                with tempfile.TemporaryDirectory() as decompile_td, tempfile.TemporaryDirectory() as compile_td:
+                    java_src = _decompile_one_class_with(java_bin, procyon_jar, classfile, Path(decompile_td))
+                    if java_src is None:
+                        return {"grade": "no-compile", "first_error": "Procyon retry decompile failed", "mismatched_methods": [], "allowlist_matches": []}
+                    return recompile_and_grade(str(java_src), class_short, classpath, str(classfile), compile_td, javac_bin, javap_bin)
+
+            first = ladder[0][1]()
+            attempted = [("vineflower", first)]
+            if not _is_clean(first["grade"]):
+                cfr_result = cfr_thunk()
+                attempted.append(("cfr", cfr_result))
+                if not _is_clean(cfr_result["grade"]):
+                    procyon_result = procyon_thunk()
+                    attempted.append(("procyon", procyon_result))
+                    if not _is_clean(procyon_result["grade"]) and jd_cli_jar is not None:
+
+                        def jdcli_thunk(classfile=classfile, class_short=class_short):
+                            with tempfile.TemporaryDirectory() as decompile_td, tempfile.TemporaryDirectory() as compile_td:
+                                java_src = _decompile_one_class_with(java_bin, jd_cli_jar, classfile, Path(decompile_td))
+                                if java_src is None:
+                                    return {"grade": "no-compile", "first_error": "JD-CLI retry decompile failed", "mismatched_methods": [], "allowlist_matches": []}
+                                return recompile_and_grade(str(java_src), class_short, classpath, str(classfile), compile_td, javac_bin, javap_bin)
+
+                        attempted.append(("jd-cli", jdcli_thunk()))
+
+            best = select_best_decompiler(attempted)
+            consensus = compute_consensus(attempted)
+
+            if docsource_available:
+                with tempfile.TemporaryDirectory() as ds_td:
+                    ds_result = recompile_and_grade(str(docsource_java), class_short, classpath, str(classfile), ds_td, javac_bin, javap_bin)
+                    docsource_roundtrip = _is_clean(ds_result["grade"])
+
+            per_class[fqcn] = {
+                "grade": best["grade"],
+                "best_decompiler": best["best_decompiler"],
+                "attempted": [(n, r["grade"]) for n, r in attempted],
+                "first_error": next((r.get("first_error") for _, r in attempted if r["grade"] == "no-compile"), None),
+                "mismatched_methods": [list(k) for k in (attempted[0][1].get("mismatched_methods") or [])],
+                "allowlist_matches": attempted[0][1].get("allowlist_matches", []),
+                # per-engine, per-method round-trip data — NOT a merge (an unsound
+                # per-method Frankenstein class is never assembled here; see
+                # docs/decompile-fidelity-report.md's Meta-decompilation section /
+                # Harrand et al. arXiv:2005.11315), just the raw material a later,
+                # separately-validated merge step would need.
+                "per_engine_mismatched_methods": {
+                    n: [list(k) for k in (r.get("mismatched_methods") or [])] for n, r in attempted
+                },
+                "consensus": consensus,
+                "docsource_available": docsource_available,
+                "docsource_roundtrip": docsource_roundtrip,
+            }
+
+    grade_counts: dict[str, int] = {}
+    for c in per_class.values():
+        grade_counts[c["grade"]] = grade_counts.get(c["grade"], 0) + 1
+
+    jar_path = None
+    jar_sha256 = None
+    recon_path = mod_dir / "recon.json"
+    if recon_path.is_file():
+        recon = json.loads(recon_path.read_text())
+        jar_path = recon.get("jar_path")
+        jar_sha256 = recon.get("jar_sha256")
+
+    return {
+        "module": module,
+        "schema_version": SCHEMA_VERSION,
+        "jar_sha256": jar_sha256,
+        "primary_tree": primary_tree,
+        "class_count": len(classes),
+        "grade_counts": grade_counts,
+        "classes": per_class,
+    }
+
+
+def is_module_up_to_date(mod_dir: Path, primary_tree: str = "vineflower") -> bool:
+    fidelity_path = mod_dir / "fidelity.json"
+    recon_path = mod_dir / "recon.json"
+    if not fidelity_path.is_file() or not recon_path.is_file():
+        return False
+    try:
+        fidelity = json.loads(fidelity_path.read_text())
+        recon = json.loads(recon_path.read_text())
+    except (json.JSONDecodeError, OSError):
+        return False
+    return (
+        fidelity.get("schema_version") == SCHEMA_VERSION
+        and fidelity.get("jar_sha256") == recon.get("jar_sha256")
+        # a fidelity.json from grading a DIFFERENT tree (e.g. "vineflower2")
+        # must never be mistaken for an up-to-date cache of THIS tree's grade —
+        # default "vineflower" for pre-existing files written before this field existed
+        and fidelity.get("primary_tree", "vineflower") == primary_tree
+    )
+
+
+# ---------------------------------------------------------------------------
+# Sampled independent cross-checks (krak2 + niagara_help.py) — run once at
+# report time over a capped, seeded-random sample of already-graded classes,
+# not inline in the per-class grading loop (which only needs the recompile
+# comparison to produce a grade).
+# ---------------------------------------------------------------------------
+
+def sample_independent_cross_checks(
+    module_results: list[dict],
+    organized_dir: Path = DEFAULT_ORGANIZED_DIR,
+    sample_size: int = 30,
+    seed: int = 20260928,
+    javap_bin: str = DEFAULT_JAVAP,
+    krak2_bin: str = "krak2",
+) -> dict:
+    all_classes = [(mr["module"], fqcn) for mr in module_results for fqcn in mr["classes"]]
+    rng = random.Random(seed)
+    rng.shuffle(all_classes)
+    sampled = all_classes[:sample_size]
+
+    member_checks = []
+    krak2_checks = []
+    for module, fqcn in sampled:
+        classfile = organized_dir / module / "extracted" / f"{fqcn}.class"
+        if not os.path.isfile(str(classfile)):
+            continue
+        parsed = parse_javap_verbose(run_javap_verbose(str(classfile), javap_bin=javap_bin))
+
+        ours = slot_field_names(parsed)
+        if ours:
+            short = fqcn.rsplit("/", 1)[-1]
+            docs_members = niagara_help_member_lookup(short.replace("/", "."))
+            if docs_members is not None:
+                agreement = member_set_agreement(ours, docs_members)
+                member_checks.append({"class": f"{module}/{fqcn}", "agreement": agreement})
+
+        if parsed["methods"]:
+            (mname, mdesc), mdata = next(iter(parsed["methods"].items()))
+            result = krak2_cross_check(str(classfile), mdata["code"], mname, mdesc, krak2_bin=krak2_bin)
+            krak2_checks.append({"class": f"{module}/{fqcn}", "method": f"{mname}{mdesc}", "status": result["status"]})
+
+    return {"sampled": sampled, "member_checks": member_checks, "krak2_checks": krak2_checks}
+
+
+# ---------------------------------------------------------------------------
+# Report generation
+# ---------------------------------------------------------------------------
+
+def generate_report(module_results: list[dict], cross_checks: Optional[dict] = None) -> str:
+    lines = ["# Decompile fidelity report", "", "Generated by `tools/n5-fidelity.py --report`.", ""]
+    total_counts: dict[str, int] = {}
+    total_classes = 0
+    docsource_checked = 0
+    docsource_roundtripped = 0
+    no_engine_reaches_equivalence = []
+    genuine_mismatch_classes = []
+    compile_isolation_only_classes = []
+    mixed_classes = []
+
+    lines.append("| Module | Classes | roundtrip-exact | roundtrip-equivalent | compiles-mismatch | no-compile | bytecode-only |")
+    lines.append("|---|---:|---:|---:|---:|---:|---:|")
+    for mr in sorted(module_results, key=lambda r: r["module"]):
+        counts = mr["grade_counts"]
+        for k, v in counts.items():
+            total_counts[k] = total_counts.get(k, 0) + v
+        total_classes += mr["class_count"]
+        lines.append(
+            f"| {mr['module']} | {mr['class_count']} | {counts.get('roundtrip-exact', 0)} | "
+            f"{counts.get('roundtrip-equivalent', 0)} | {counts.get('compiles-mismatch', 0)} | "
+            f"{counts.get('no-compile', 0)} | {counts.get('bytecode-only', 0)} |"
+        )
+        for fqcn, c in mr["classes"].items():
+            if c.get("docsource_roundtrip") is not None:
+                docsource_checked += 1
+                if c["docsource_roundtrip"]:
+                    docsource_roundtripped += 1
+            if c["grade"] in ("no-compile", "compiles-mismatch", "bytecode-only"):
+                no_engine_reaches_equivalence.append(f"{mr['module']}/{fqcn}")
+            if c["grade"] == "bytecode-only":
+                attempt_grades = {g for _, g in c.get("attempted", [])}
+                has_mismatch = "compiles-mismatch" in attempt_grades
+                has_nocompile = "no-compile" in attempt_grades
+                entry = f"{mr['module']}/{fqcn}"
+                if has_mismatch and not has_nocompile:
+                    genuine_mismatch_classes.append(entry)
+                elif has_nocompile and not has_mismatch:
+                    compile_isolation_only_classes.append(entry)
+                elif has_mismatch or has_nocompile:
+                    mixed_classes.append(entry)
+
+    lines.append("")
+    lines.append("## Overall")
+    lines.append("")
+    for grade in ("roundtrip-exact", "roundtrip-equivalent", "compiles-mismatch", "no-compile", "bytecode-only"):
+        n = total_counts.get(grade, 0)
+        pct = (100.0 * n / total_classes) if total_classes else 0.0
+        lines.append(f"- {grade}: {n}/{total_classes} ({pct:.1f}%)")
+
+    lines.append("")
+    lines.append("## Harness validation (docSource originals)")
+    lines.append("")
+    if docsource_checked:
+        rate = 100.0 * docsource_roundtripped / docsource_checked
+        lines.append(
+            f"{docsource_roundtripped}/{docsource_checked} ({rate:.1f}%) of classes with a docSource original "
+            "round-trip the ORIGINAL Tridium source through the same recompile+compare harness. A class where "
+            "the original itself does not round-trip indicates a harness/normalizer gap or a stale docSource "
+            "copy, not a decompiler fidelity problem."
+        )
+    else:
+        lines.append("No classes with an available docSource original were graded in this run.")
+
+    lines.append("")
+    lines.append(f"## Classes where NO decompiler reached round-trip (\"use bytecode only\") — {len(no_engine_reaches_equivalence)}")
+    lines.append("")
+    for c in no_engine_reaches_equivalence[:200]:
+        lines.append(f"- {c}")
+    if len(no_engine_reaches_equivalence) > 200:
+        lines.append(f"- ... and {len(no_engine_reaches_equivalence) - 200} more")
+
+    lines.append("")
+    lines.append("### Why these are bytecode-only: genuine mismatch vs. compile-isolation artifact")
+    lines.append("")
+    lines.append(
+        "Every attempted engine's grade is kept per class (`attempted`, `per_engine_mismatched_methods` in "
+        "`fidelity.json`), which splits the `bytecode-only` set into two very different failure modes: a class "
+        "whose decompiled source COMPILED on every attempted engine but whose recompiled bytecode genuinely "
+        "differs from the shipped class on at least one method (a real decompiler-fidelity gap — see "
+        "`docs/decompiler-bakeoff.md`'s methodology note on isolated single-class compilation for why this "
+        "reading still needs care), versus a class that never even compiled on any engine (most often the "
+        "known single-class-isolation limitation — e.g. `SecurityUtil.doPrivileged` overload ambiguity that "
+        "resolves fine when the whole module compiles together but not one class at a time; see "
+        "docs/decompiler-bakeoff.md \"Other recompile-blocking issues found\")."
+    )
+    lines.append(
+        f"- genuine semantic mismatch (compiled on every attempted engine, bytecode differs): "
+        f"{len(genuine_mismatch_classes)}"
+    )
+    for c in genuine_mismatch_classes[:50]:
+        lines.append(f"  - {c}")
+    if len(genuine_mismatch_classes) > 50:
+        lines.append(f"  - ... and {len(genuine_mismatch_classes) - 50} more")
+    lines.append(
+        f"- compile-isolation failure only (never compiled on any attempted engine): "
+        f"{len(compile_isolation_only_classes)}"
+    )
+    lines.append(
+        f"- mixed (some engines compile-mismatch, some no-compile): {len(mixed_classes)}"
+    )
+
+    lines.append("")
+    lines.append("## Allowlist")
+    lines.append("")
+    if ALLOWLIST:
+        for entry in ALLOWLIST:
+            lines.append(f"- `{entry.name}`: {entry.justification}")
+    else:
+        lines.append("No allowlist entries are seeded. The mechanism exists (see `ALLOWLIST` in "
+                      "`tools/n5-fidelity.py`) but no observed mismatch pattern has yet been confirmed "
+                      "provably-semantics-preserving; every method-body mismatch currently grades "
+                      "`compiles-mismatch`, never `roundtrip-equivalent`.")
+
+    lines.append("")
+    lines.append("## Redundancy: independent cross-checks (krak2, niagara_help.py)")
+    lines.append("")
+    lines.append(
+        "Beyond the vineflower/CFR/Procyon(/JD-CLI) recompile ladder, two independent, "
+        "non-decompiler sources validate the pipeline itself on a sampled subset of graded classes:"
+    )
+    lines.append("")
+    if cross_checks is None or not cross_checks.get("sampled"):
+        lines.append("- Not run in this invocation (pass `--report` after a grading run with "
+                      "`--cross-check-sample N > 0`, or krak2 is not installed).")
+    else:
+        krak2_checks = cross_checks.get("krak2_checks", [])
+        member_checks = cross_checks.get("member_checks", [])
+        krak2_match = sum(1 for c in krak2_checks if c["status"] == "match")
+        krak2_mismatch = [c for c in krak2_checks if c["status"] == "mismatch"]
+        lines.append(
+            f"- **krak2 (Krakatau2) normalizer cross-check**: {krak2_match}/{len(krak2_checks)} sampled "
+            "methods' independently-disassembled opcode sequence (krak2, a Rust bytecode disassembler "
+            "with no dependency on javap or the JDK's class reader) agrees with `normalize_method_instructions`'s "
+            "own opcode sequence. This validates the *normalizer*, not decompiler fidelity — a mismatch here "
+            "would mean the grader itself is untrustworthy, independent of what any decompiler produced."
+        )
+        for c in krak2_mismatch[:20]:
+            lines.append(f"  - MISMATCH: {c['class']} {c['method']}")
+        if member_checks:
+            ratios = [c["agreement"]["ratio"] for c in member_checks]
+            avg = sum(ratios) / len(ratios)
+            lines.append(
+                f"- **niagara_help.py (bajadoc/javadoc index) member-set cross-check**: {len(member_checks)} sampled "
+                f"classes with Property/Action/Topic slot fields, average agreement ratio {avg:.2f} against the "
+                "independently-indexed bajadoc PROPERTIES/ACTIONS listing (see `slot_field_names` / "
+                "`niagara_help_member_lookup`)."
+            )
+            for c in member_checks:
+                if c["agreement"]["ratio"] < 1.0:
+                    lines.append(
+                        f"  - {c['class']}: ratio {c['agreement']['ratio']:.2f}, "
+                        f"missing from docs: {c['agreement']['missing_from_docs']}"
+                    )
+        else:
+            lines.append("- **niagara_help.py member-set cross-check**: no sampled class had both a "
+                          "Property/Action/Topic slot field and a resolvable niagara_help.py entry.")
+
+    lines.append("")
+    lines.append("## Toolbelt alignment (research-sdd kit) — for the T6 retro, not applied here")
+    lines.append("")
+    lines.append(
+        "`~/investigacion/sdd-investigacion/research-sdd/toolbelt/corroborate-java.sh` "
+        "(`java-corroboration.v1`) runs Vineflower + CFR + Procyon + `javap` + `jdeps` as sandboxed, "
+        "hash-pinned adapters over a whole JAR and publishes class/member/dependency inventories and "
+        "pairwise textual/hash agreement — the same three decompiler engines this grader uses, plus a "
+        "trust/isolation model (Bubblewrap, digest pinning) this grader does not have. The two tools are "
+        "complementary, not overlapping in what they measure: the kit's `java-corroboration.v1` compares "
+        "decompiler OUTPUT to decompiler output (never recompiles, never touches ground-truth bytecode "
+        "beyond `javap`/`jdeps` coverage), while this grader's recompile-and-compare-to-original-bytecode "
+        "method is strictly stronger evidence of semantic fidelity but is per-class, N5-corpus-specific, "
+        "and has no sandboxing. Gap for the retro (T6): `corroborate-java.sh` currently has no recompile "
+        "step and no per-class grade; `tools/n5-fidelity.py`'s method could be proposed as an addition to "
+        "`java-corroboration.v1`'s schema (or as a sibling wrapper) rather than staying niagara5-research-local — "
+        "proposed, not applied, from this task's authorized scope."
+    )
+    lines.append("")
+    lines.append("## JD-CLI (4th decompiler) provisioning")
+    lines.append("")
+    lines.append(
+        "Provisioned from the official GitHub release `intoolswetrust/jd-cli` (the JD-Core CLI wrapper; "
+        "`java-decompiler/jd-cli` is a dead redirect, `intoolswetrust/jd-cli` — formerly `kwart/jd-cmd` — "
+        "is the maintained fork) tag `jd-cli-1.3.0-beta-1`, asset `jd-cli-1.3.0-beta-1-dist.zip`, "
+        "sha256 `dfebe88fc906362e50049151ca8c764d1d4860d4e7d81ba657025a12ef406353`. Downloaded to this "
+        "session's scratchpad (not committed — `tools/decompilers/` is out of this task's write scope and "
+        "its `*.jar`/`*.zip` are gitignored anyway); used via `--jd-cli-jar <path>` as the 4th rung of the "
+        "redundancy ladder when a path is passed, never by default. Fernflower (the other candidate) "
+        "remains genuinely unavailable as a standalone jar — see `tools/decompilers/README.md`, unchanged "
+        "from the original bake-off finding."
+    )
+
+    lines.append("")
+    lines.append("## Methodology notes")
+    lines.append("")
+    lines.append(
+        "- **No textual-similarity grade.** This grader never scores a `difflib`-style similarity ratio "
+        "as (or as a substitute for) a fidelity grade — a single flipped comparison operator, or one wrong "
+        "constant, keeps a method at roughly 0.99 textual similarity while being semantically wrong. Grades "
+        "come only from javac recompilation + normalized-bytecode equality (this file's `grade_class_result`). "
+        "A similarity score, if ever surfaced, would be for human triage ordering only, never the grade itself."
+    )
+    lines.append(
+        "- **Attribute mirroring.** Tridium N5 classes are compiled with `-g` (LineNumberTable + "
+        "LocalVariableTable present — confirmed T1, `control.jar` `BNumericWritable`: 62 LVT + 63 LNT entries) "
+        "and WITHOUT `-parameters` (`javap -v` on that same class: 0 `MethodParameters` attributes). This "
+        "grader compiles with `-g` and never passes `-parameters`, and separately records/compares "
+        "`has_method_parameters` per method (see `parse_javap_verbose`) so a decompiler/recompile path that "
+        "somehow acquired one would be caught rather than silently ignored."
+    )
+    lines.append(
+        "- **Grade vocabulary vs. Harrand et al.** (\"Java Decompiler Diversity and its Application to "
+        "Meta-decompilation\", arXiv:2005.11315 [CERT-web], who found their meta-decompiler Arlecchino "
+        "recovered classes no single decompiler handled — 37.6% in their sample): their three-tier vocabulary "
+        "(syntactically correct / semantically equivalent modulo inputs / strictly equivalent bytecode) maps "
+        "onto this grader's grades roughly as: their \"strictly equivalent bytecode\" ~ `roundtrip-exact`; "
+        "their \"semantically equivalent\" ~ `roundtrip-equivalent` (this grader's allowlist mechanism, "
+        "currently empty — see Allowlist above); their \"syntactically correct\" has no direct equivalent here "
+        "since this grader never accepts syntactic correctness alone as a passing grade (a `compiles-mismatch` "
+        "is syntactically correct AND still fails). Per-engine, per-method round-trip data is recorded in "
+        "`fidelity.json`'s `per_engine_mismatched_methods` as raw material for a possible future sound "
+        "per-method merge step (in Arlecchino's spirit) — this tool does not itself assemble a merged class, "
+        "since doing so soundly needs its own validation the corpus doesn't yet have."
+    )
+    lines.append(
+        "- **Exception tables and switch tables are part of the compared representation**, not just straight-"
+        "line bytecode: try/catch/finally ranges are compared with handler type preserved (canonicalized "
+        "position, not raw byte offset) and `tableswitch`/`lookupswitch` case KEYS are kept literal while only "
+        "their jump targets are relativized — two methods differing only in which exception type a handler "
+        "catches, or in a swapped switch-case target, are never graded as matching."
+    )
+
+    return "\n".join(lines) + "\n"
+
+
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
+
+def _list_all_modules(organized_dir: Path) -> list[str]:
+    out = []
+    for p in sorted(organized_dir.iterdir()):
+        if not p.is_dir() or p.name.startswith("_"):
+            continue
+        if p.name == "docSource":
+            continue
+        if (p / "recon.json").is_file():
+            out.append(p.name)
+    return out
+
+
+def main(argv: Optional[list[str]] = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--modules", help="comma-separated module names")
+    parser.add_argument("--all", action="store_true", help="grade every module with a recon.json")
+    parser.add_argument("--jobs", type=int, default=1)
+    parser.add_argument("--limit-per-module", type=int, default=None)
+    parser.add_argument("--report", action="store_true", help="(re)write docs/decompile-fidelity-report.md")
+    parser.add_argument("--organized-dir", default=str(DEFAULT_ORGANIZED_DIR))
+    parser.add_argument("--modules-dir", default=str(DEFAULT_MODULES_DIR))
+    parser.add_argument("--bin-ext-dir", default=str(DEFAULT_BIN_EXT_DIR))
+    parser.add_argument("--classpath-cache-dir", default=None,
+                         help="default: a scratch dir under $TMPDIR (see task: 'extract once to a cache dir under the scratchpad')")
+    parser.add_argument("--force", action="store_true", help="ignore fidelity.json's up-to-date cache")
+    parser.add_argument("--jd-cli-jar", default=None)
+    parser.add_argument("--cross-check-sample", type=int, default=0,
+                         help="with --report: also run krak2/niagara_help.py cross-checks on N sampled graded classes")
+    parser.add_argument("--tree", default="vineflower",
+                         help="decompiled source tree to grade, e.g. vineflower (default) or vineflower2 — "
+                              "see grade_module docstring. Output is still organized/<mod>/fidelity.json, so "
+                              "grading a second tree for the same module overwrites the first run's file.")
+    args = parser.parse_args(argv)
+
+    organized_dir = Path(args.organized_dir)
+    if args.all:
+        modules = _list_all_modules(organized_dir)
+    elif args.modules:
+        modules = [m.strip() for m in args.modules.split(",") if m.strip()]
+    else:
+        parser.error("pass --modules a,b,c or --all")
+        return 2
+
+    cache_dir = Path(args.classpath_cache_dir) if args.classpath_cache_dir else Path(tempfile.gettempdir()) / "n5-fidelity-classpath-cache"
+    classpath = build_classpath(cache_dir, Path(args.modules_dir), Path(args.bin_ext_dir))
+
+    jd_cli_jar = Path(args.jd_cli_jar) if args.jd_cli_jar else None
+
+    to_run = []
+    for module in modules:
+        mod_dir = organized_dir / module
+        if not args.force and is_module_up_to_date(mod_dir, primary_tree=args.tree):
+            print(f"[{module}] up to date, skipping", file=sys.stderr)
+            continue
+        to_run.append(module)
+
+    results = []
+
+    def _run_one(module: str) -> dict:
+        # One module's unexpected failure (bad module name, corrupt recon.json,
+        # decompiler crash, ...) must never silently drop every OTHER module's
+        # already-computed grade or skip report generation entirely for the
+        # whole batch — record the failure and keep going.
+        try:
+            result = grade_module(
+                module,
+                organized_dir=organized_dir,
+                classpath=classpath,
+                limit=args.limit_per_module,
+                jd_cli_jar=jd_cli_jar,
+                primary_tree=args.tree,
+            )
+            (organized_dir / module / "fidelity.json").write_text(json.dumps(result, indent=2, default=list) + "\n")
+            print(f"[{module}] {result['grade_counts']}", file=sys.stderr)
+            return result
+        except Exception as exc:  # noqa: BLE001 — deliberately broad: see comment above
+            print(f"[{module}] FAILED: {exc!r}", file=sys.stderr)
+            return {
+                "module": module, "schema_version": SCHEMA_VERSION, "jar_sha256": None,
+                "primary_tree": args.tree, "class_count": 0,
+                "grade_counts": {}, "classes": {}, "module_error": repr(exc),
+            }
+
+    if args.jobs > 1 and len(to_run) > 1:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=args.jobs) as pool:
+            results = list(pool.map(_run_one, to_run))
+    else:
+        results = [_run_one(m) for m in to_run]
+
+    # include already-up-to-date modules in the report too
+    for module in modules:
+        if module not in to_run:
+            fp = organized_dir / module / "fidelity.json"
+            if fp.is_file():
+                results.append(json.loads(fp.read_text()))
+
+    if args.report:
+        cross_checks = None
+        if args.cross_check_sample > 0:
+            cross_checks = sample_independent_cross_checks(
+                results, organized_dir=organized_dir, sample_size=args.cross_check_sample
+            )
+        report_path = REPO_ROOT / "docs" / "decompile-fidelity-report.md"
+        report_path.write_text(generate_report(results, cross_checks=cross_checks))
+        print(f"wrote {report_path}", file=sys.stderr)
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
