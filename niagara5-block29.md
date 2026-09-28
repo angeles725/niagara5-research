@@ -200,6 +200,11 @@ below; never changed. `git -C <n4-worktree> status --short` confirmed clean befo
 | 2 | `JAVA_HOME=.../openjdk@25 ./gradlew :ColdRoomPan-rt:moduleTestJar` | **BUILD SUCCESSFUL** — `compileModuleTestJava` ran (not UP-TO-DATE — real recompile with the 5 new files), `moduleTestClasses`→`writeTestModuleXml`→`moduleTestJar` all completed; the produced `ColdRoomPan-rt-module-test.jar` has all **6** expected `.class` files (5 new + `ColdRoomControlN5Test` — confirmed by `unzip -l`, §29.4.1 below) |
 
 **29.4.1 — A benign, unexplained anomaly in `compileModuleTestJava`'s own output, not a real failure**
+
+> **Correction (added by [Block 89], §14 cross-block).** The `[INFER]` below ("no `module-info.class`") is
+> wrong. [Block 89] traced JDK 25 javac source: the error fires when a jar's `Automatic-Module-Name` manifest
+> header fails `isModuleName()` validation. The PoC jar's header `com.angeles.ColdRoomPan-rtTest` contains a
+> hyphen, which is invalid. Why the task still succeeds is child gap B89-G1.
 `[CERT-hw]`: attempt 2's console output for that task printed
 `error: cannot determine module name for /home/cristian/niagara5-research/poc/coldroompan-n5/.n5config/
 modules/ColdRoomPan-rtTest.jar` followed by a bare `1 error` line — yet the task did NOT fail (no

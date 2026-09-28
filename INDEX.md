@@ -117,6 +117,35 @@ This index guides through the **61 blocks** of this research. The flat catalog l
 | 59 | The N5 help full-text index format and JDK doc coverage | [block59](niagara5-block59.md) |
 | 60 | N5 kit lint facts: Flags, profile splits, version constants and dependency counts | [block60](niagara5-block60.md) |
 | 61 | Closing three named gaps: the live station's `BComponentSpace` identity, `nre.dll`/`njre.dll`'s native process-creation capability split, and the SP-side SAML signature-algorithm allowlist buried in the bundled `java-saml-core` jar | [block61](niagara5-block61.md) |
+| 62 | Closing the SAML deprecated-algorithm security cluster (B61-G3), reaffirming the CSRF timing-comparison finding (B52-G1), and settling two low-priority provenance… | [block62](niagara5-block62.md) |
+| 63 | `nre.dll`'s ONE `CreateProcessA` call site is `NativePlatformProvider.restartPlatformDaemon0()`, spawning `plat.exe restartdaemon` from an HTTP-servlet-reachable,… | [block63](niagara5-block63.md) |
+| 64 | Fresh 2026 Tridium sources close B28-G1 (`test-wb`→`test`), name two concrete BACnet casualties for B13-G1, and locate (but cannot pass) the login gate behind… | [block64](niagara5-block64.md) |
+| 65 | Opening `SecurityAgent`/`SecurityProviderAdvice` directly: the full ByteBuddy interception map, the `Module`-keyed enforcement chain (never… | [block65](niagara5-block65.md) |
+| 66 | The migrator internals census: `MigrationUtils`'s 40-method surface, the four `-premigrate` bodies, the 180-entry zwave removal list, and a bytecode-level close of… | [block66](niagara5-block66.md) |
+| 67 | cloudLink retry/throttle mechanics, the Forge message-handler census, vestigial `finalize()` overrides, and the three driver-extension satellites | [block67](niagara5-block67.md) |
+| 68 | Closing the web/servlet-auth cluster: first-party N5 servlet write-audit census, JAAS `Subject` contents, Jetty `LoginService`/`UserIdentity`, and… | [block68](niagara5-block68.md) |
+| 69 | `NiagaraDaemon.Main()` structurally cannot be reached through `Bootstrap`/`Nre.main`'s `nreMain` dispatch, closing B65-G1's exact question; plus three closed… | [block69](niagara5-block69.md) |
+| 70 | Source-level citation upgrade for N5 control/alarm/kitControl/schedule: the `Action`-typed pattern-switch, an `instanceof`-pattern census, and AMBIG… | [block70](niagara5-block70.md) |
+| 71 | Closing the licensing/subscription/portalApi cluster: the dead `LicenseDownload` `Nre.runClass` exemption, the backup-restoration re-registration write site, the… | [block71](niagara5-block71.md) |
+| 72 | Four named child gaps closed: the `fieldEditor`-facet raw-string bypass for `BCapacity`, `BHistoryDbTable`'s real place in the class hierarchy (not a third backend),… | [block72](niagara5-block72.md) |
+| 73 | `BNiagaraEdgeLiteStation` licensing/identity gating, the Fox-websocket-behavior enum plus `BReachableStations` topology discovery, three trivial `niagaraSync`… | [block73](niagara5-block73.md) |
+| 74 | Closing the build-toolchain/devkit cluster: the wizard's greenfield driver scaffold, the `native`/`npsdk-native` Gradle plugin's real (property-driven) compiler… | [block74](niagara5-block74.md) |
+| 75 | Closing five named gaps across the help/doc-tooling and Workbench-UI clusters: `BajadocIndex.lookup()`'s exact-then-wildcard match, the `niagara-help` guide-search… | [block75](niagara5-block75.md) |
+| 76 | The `bin/ext` detached `.jar.sig` sidecar format, `niagarad.exe`'s minimal-service native confirmation, the N4-vs-N5 ZKM census (with a base64 false-positive trap),… | [block76](niagara5-block76.md) |
+| 77 | Closing the entitlement/portal/cert cluster: `PortalLicenseUtil.getPortalUpdates()`'s real HTTP body, the subscription-API field-level request/response schema, the… | [block77](niagara5-block77.md) |
+| 78 | The `box` "Building Object eXchange Protocol" is an N4-carryover modernized onto Jetty-ee11 WebSocket + Fox dual transport, plus the on-disk `alarm.adb` header format… | [block78](niagara5-block78.md) |
+| 79 | Closing three named gaps and narrowing a fourth: TeamDev jxbrowser's actual shipped version vs. a stale Tridium log string, `uxBuilder.jar`'s built AMD bundle… | [block79](niagara5-block79.md) |
+| 80 | Corpus-wide census of the two Java-21 `SequencedCollection` adoption forms, the JMX/MXBean surface, and the state of the N4-4.15 slot-diff prerequisite | [block80](niagara5-block80.md) |
+| 81 | Closing the security-residual cluster: `FilePermission`/`RuntimeExecPermission`/`NiagaraBasicPermission`'s grant-matching bodies, `securityBridge.jar`'s unmodularized… | [block81](niagara5-block81.md) |
+| 82 | Closing the migrator/backup residual cluster: `BFormat.ReflectCall.eval()`'s permission-gated reflection semantics, `AxPasswordUtil.usesPasswordEncodings`'s… | [block82](niagara5-block82.md) |
+| 83 | Closing box's WebSocket filter ordering and wire-format opcodes, Jetty's MBeanContainer diagnostic scope, and the servlet Context-threading census tail | [block83](niagara5-block83.md) |
+| 84 | Closing four cross-corpus N4-vs-N5 diff gaps using a freshly-located, on-host N4 4.15.3.28 install: the `nre.jar` physical location, its `nre.subscription` byte-diff,… | [block84](niagara5-block84.md) |
+| 85 | `PortalApi.getOnlineLicenseRequestPortalAddress()`'s real (and only) caller inside the `LicenseProcedure` wizard, the wizard's full subscription+legacy flow, and… | [block85](niagara5-block85.md) |
+| 86 | Closing the ORD-permission, JAAS-chain, and grant-matching residual gaps: `BOrdScheme.resolve()` is mostly caller-gated (a few schemes enforce their own), a… | [block86](niagara5-block86.md) |
+| 87 | The boot-time `.jar.sig` verifier is `SignatureUtil::checkFileSignature` (njre.dll/nre.dll), it is the SAME routine that assembles `--module-path=%s`;… | [block87](niagara5-block87.md) |
+| 88 | `MessageWrapper` retry-count gate, the Forge/Azure Blob upload backend, the cloudLink version-lag explained, and the nCloudDriver→cloudLink lineage statement | [block88](niagara5-block88.md) |
+| 89 | Nine build-toolchain/devkit/test gaps closed by fresh decompiles: `lateinit` native platforms, a triply-inert `compact3` flag, a real javac module-naming defect,… | [block89](niagara5-block89.md) |
+| 90 | Closing five source-level census gaps: a full receiver-type classification of the 211 `getFirst`/`getLast` call sites, a decisive `instanceof`-pattern… | [block90](niagara5-block90.md) |
 
 ---
 
@@ -466,6 +495,20 @@ This index guides through the **61 blocks** of this research. The flat catalog l
 
 - [x] B69-G1 niagarad.exe = 24KB njre.dll-hosted Windows service, no CreateProcess/SCM/LoadLibrary imports → [Block 76]
 - [x] B30-G1 bin/ext .jar.sig = 73 detached 256-byte (RSA-2048) sidecars; in-module signing = CMS/BouncyCastle → [Block 76]
+
+- [x] B78-G1 box contextPath /wsbox; auth filter chain injected by BJettyWebServer precedes the WS upgrade → [Block 83]
+- [x] B78-G4 box wire format: single 'F' fragment opcode; plain JSON otherwise → [Block 83]
+- [x] B80-G2 Jetty MBeanContainer opt-in on the platform MBean server; no first-party remote connector → [Block 83]
+- [x] B68-G1 remaining first-party servlets censused (oBIX third Context-threaded write path) → [Block 83]
+- [x] B80-G3/B31-G1 5 version-gap types slot-identical in N4-4.15.3.28 vs N5 → [Block 84]
+- [x] B71-G4/G5 N4 bin/ext/nre.jar; N5 replaces reflective license validation with an injected LicenseValidator → [Block 84]
+- [x] B78-G2 alarm.adb header byte-identical N4-4.15 vs N5 → [Block 84]
+- [x] B77-G1/G3/G5 + B71-G2 portal address caller, getScope zero readers, canCheckTpk deliberate flag, LicenseProcedure flow → [Block 85]
+- [x] B68-G3/G4/G5 + B81-G2 + B8-G1/G2 ORD schemes, single LoginModule, super-session, permission bodies → [Block 86]
+- [x] B76-G1 boot .jar.sig verifier SignatureUtil::checkFileSignature (CNG) + B63-G2/G4 + B81-G1/B65-G4 + B17-G3 → [Block 87]
+- [x] B67-G2/G3/G5 + B13-G2 cloudLink retry, Azure IoT Hub/Blob protocol, network helper, independent versioning → [Block 88]
+- [x] B2-G2/G3, B16-G3, B29-G5, B60-G1/G2, B74-G3 toolchain facts (doc/test.html; Automatic-Module-Name hyphen) → [Block 89]
+- [x] B80-G1, B70-G2/G4, B25-G1, B76-G2, B11-G3 census (instanceof = decompiler resugaring; N4 ZKM 16 modules) → [Block 90]
 
 ## Non-investigable gaps (without a running N5 station)
 
