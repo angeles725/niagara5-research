@@ -248,6 +248,15 @@ def parse_artifact_version_from_basename(basename: str):
 
 _CLASSIFIER_RE = re.compile(r"^(?P<v>\d[\w.]*?)-(?P<c>[A-Za-z][\w.\-]*)$")
 
+# Real 2026-09-28 finding (R3-split-classifier-qualifier / R4-001): a standard Maven PRE-RELEASE
+# QUALIFIER also starts with a letter -- "1.5.0-RC1", "2.0.0-beta", "3.1.0-SNAPSHOT", "4.2.0-M1"
+# are each one real, whole Central version, not a classifier-less version plus a classifier. Only
+# a trailing token that is ENTIRELY one of these well-known qualifier words (optionally followed
+# by digits, e.g. "RC1", "beta2", "M1") is excluded from being treated as a classifier; a genuine
+# classifier like "native" or "jdk11" does not match this list and still splits normally.
+_MAVEN_QUALIFIER_RE = re.compile(
+    r"^(alpha|beta|milestone|m|rc|cr|snapshot|ga|final|release|sp)\d*$", re.IGNORECASE)
+
 
 def split_classifier(version: str):
     """Split a Maven CLASSIFIER (e.g. "jdk11", "native") off the tail of a version string that
@@ -260,13 +269,18 @@ def split_classifier(version: str):
     "prosys-opc-ua-sdk-client-server-5.7.0-248"'s "-248" starts with a digit, so it's part of the
     version itself (a real, if unusual, Maven version string), not a classifier. A dot-fused
     suffix with no dash at all (mssql-jdbc's "13.4.0.jre11", a literal Central version) is never
-    touched -- there's no dash for this pattern to match on.
+    touched -- there's no dash for this pattern to match on. A letter-led token that is itself a
+    well-known Maven PRE-RELEASE QUALIFIER (see _MAVEN_QUALIFIER_RE) is likewise never a
+    classifier -- "1.5.0-RC1" is one real Central version, not "1.5.0" plus classifier "RC1".
 
     Returns (real_version, classifier) -- classifier is None when no such split applies."""
     m = _CLASSIFIER_RE.match(version)
     if not m:
         return version, None
-    return m.group("v"), m.group("c")
+    candidate = m.group("c")
+    if _MAVEN_QUALIFIER_RE.match(candidate):
+        return version, None
+    return m.group("v"), candidate
 
 
 def detect_classifier(basename: str, artifact_id: str, version: str):
@@ -410,7 +424,14 @@ def binary_sha1_from_central(group_id: str, artifact_id: str, version: str, open
         if result["kind"] == "not-found":
             return {"status": "not-found"}
         return {"status": "network-error", "detail": result}
-    central_sha1 = result["bytes"].decode("utf-8", "replace").split()[0].strip()
+    # Real 2026-09-28 finding (R3-empty-sha1-body-crash): an empty or whitespace-only 200 body
+    # used to crash `.split()[0]` with IndexError instead of degrading to a typed failure like
+    # every other malformed-response case in this module.
+    tokens = result["bytes"].decode("utf-8", "replace").split()
+    if not tokens:
+        return {"status": "network-error",
+                "detail": {"kind": "empty-response", "url": url}}
+    central_sha1 = tokens[0].strip()
     return {"status": "fetched", "central_sha1": central_sha1}
 
 
@@ -472,12 +493,16 @@ def identify_unidentified_entry(entry: dict, local_sha1: str, opener: Callable,
 
 def compute_vendor_modified_overlap(local_bytes: bytes, group_id: str, artifact_id: str,
                                      version: str, opener: Callable, sleep: Callable = time.sleep,
-                                     retries: int = 3) -> dict:
+                                     retries: int = 3, classifier: Optional[str] = None) -> dict:
     """For a "vendor-modified" identification (same g:a:v on Central, different bytes), fetch
     Central's binary jar and record the top-level class-name overlap % against the local jar --
     NOT a claim of ground truth, just how much of the local jar the same-coordinate upstream
-    binary still resembles."""
-    url = f"{MAVEN_CENTRAL}/{group_id.replace('.', '/')}/{artifact_id}/{version}/{artifact_id}-{version}.jar"
+    binary still resembles. When `classifier` is given, fetches the CLASSIFIER binary -- real
+    2026-09-28 finding (R3-identified-classifier-propagation): this fallback used to always build
+    the classifier-LESS URL even when the local jar IS a classifier build, comparing against the
+    wrong Central coordinate entirely."""
+    suffix = f"-{classifier}" if classifier else ""
+    url = f"{MAVEN_CENTRAL}/{group_id.replace('.', '/')}/{artifact_id}/{version}/{artifact_id}-{version}{suffix}.jar"
     result = fetch_with_retry(url, opener, sleep=sleep, retries=retries)
     if not result["ok"]:
         return {"status": "network-error", "detail": result}
@@ -817,7 +842,7 @@ def run_identify_unidentified(plan: dict, mirror_modules_dir=MIRROR_MODULES_DIR,
                     "detail": central_fetch.get("detail"),
                     "name_overlap": compute_vendor_modified_overlap(
                         local_bytes, result["groupId"], result["artifactId"], result["version"],
-                        opener, sleep=sleep, retries=retries),
+                        opener, sleep=sleep, retries=retries, classifier=classifier),
                 }
             content_identity["local_sha1"] = local_sha1
             content_identity.setdefault("source", "live-recheck")
@@ -836,9 +861,19 @@ def run_identify_unidentified(plan: dict, mirror_modules_dir=MIRROR_MODULES_DIR,
         else:
             summary[result["status"]] += 1
             reason_detail = result.get("reason") or result.get("stage") or ""
-            still_unidentified.append(dict(u, reason=f"{result['status']}:{reason_detail}"
-                                            if reason_detail else result["status"],
-                                            local_sha1=local_sha1))
+            if result["status"] == "network-error":
+                # Real 2026-09-28 finding (R3-sticky-transient-failure /
+                # R4-identify-transient-failure-not-retryable): a TRANSIENT failure must not
+                # become a permanent, non-retryable verdict. Keeping reason == "no-pom-properties"
+                # means the next identify-unidentified pass's guard above still re-processes this
+                # entry instead of skipping it forever; the failure detail is preserved separately
+                # for visibility.
+                still_unidentified.append(dict(u, reason="no-pom-properties", local_sha1=local_sha1,
+                                                last_network_error=reason_detail or "network-error"))
+            else:
+                still_unidentified.append(dict(u, reason=f"{result['status']}:{reason_detail}"
+                                                if reason_detail else result["status"],
+                                                local_sha1=local_sha1))
     plan["unidentified"] = still_unidentified
     plan["sha1_identify_summary"] = summary
     return summary
@@ -849,13 +884,27 @@ def run_all_third_party_coverage(manifest: dict, mirror_modules_dir=MIRROR_MODUL
     """T26a headline fix: the class-coverage percentage must state its denominator over ALL
     third-party classes (identified + unidentified), not only artifacts with a fetched sources
     jar. Numerator: classes_with_upstream_source. For an artifact with a real per-.class
-    content_identity check (see classify_jar_identity): resigned-identical counts every class as
-    covered, partially-modified counts only its classes_identical, vendor-modified/unverifiable
-    counts none -- but its classes still count toward the denominator (content_identity's own
-    classes_total_local is preferred; classdiff's binary_total is the fallback). Without a
-    content_identity (whole-jar-identical artifacts -- proven ground truth by the exact SHA-1
-    match itself), classdiff's name-based common/binary_total is used as before. Denominator adds
-    the local mirror's own class count for every jar that never got an upstream match at all."""
+    content_identity check (see classify_jar_identity): resigned-identical/sha1-exact count every
+    class as covered, partially-modified counts only its classes_identical, vendor-modified/
+    unverifiable/mixed/unverified counts none -- but its classes still count toward the
+    denominator (content_identity's own classes_total_local is preferred; classdiff's binary_total
+    is the fallback).
+
+    UNIT (real 2026-09-28 finding, R3-coverage-unit-mix): content_identity's classes_total_local
+    counts EVERY .class entry in the jar, including nested/anonymous classes
+    (all_class_entry_hashes) -- that is the unit this function's denominator uses wherever it can.
+    Without a content_identity, this now first tries the LOCAL MIRROR's own raw .class-entry count
+    for the artifact's first occurrence, in that SAME all-classes unit (no network) -- an artifact
+    whose sources jar was never fetched (status != "fetched": no-sources-published /
+    checksum-mismatch / network-error, so run_classdiff never even runs for it) used to be
+    `continue`-d out of the denominator ENTIRELY (real 2026-09-28 finding,
+    R3-headline-denominator-silent-omission / R4-coverage-denominator-silently-shrinks) -- its
+    real shipped classes just vanished from the headline instead of counting as uncovered. Only
+    when the mirror doesn't have the jar either does this fall back to classdiff's own
+    binary_total/common, a DIFFERENT, smaller unit (class_names_from_zip deliberately excludes
+    nested/anonymous classes -- it's a source-file-name comparison), and only as a last resort
+    (better an undercounted number than a silently missing one). An artifact this function truly
+    cannot count at all gets "class_count": None, so the gap stays visible instead of silent."""
     covered = 0
     total = 0
     for art in manifest["artifacts"]:
@@ -875,16 +924,31 @@ def run_all_third_party_coverage(manifest: dict, mirror_modules_dir=MIRROR_MODUL
             # trusted verdict (see run_recheck_pom_identified_gaps), so it's conservatively
             # treated the same as an unproven one here too.
             continue
-        if not cd or "binary_total" not in cd:
+        occurrences = art.get("occurrences") or []
+        binary_bytes = (load_binary_bytes_from_mirror(occurrences[0], mirror_modules_dir, mirror_binext_dir)
+                         if occurrences else None)
+        if binary_bytes is not None:
+            n = len(all_class_entry_hashes(binary_bytes))
+            art["class_count"] = n
+            total += n
+            if cd and "binary_total" in cd:
+                covered += cd["common"]
+            # No content_identity and no per-class proof exists otherwise -- a name-based
+            # classdiff match alone is not proof of byte-identical content for the classes it
+            # can't even see (nested/anonymous ones), so nothing beyond cd["common"] is covered.
             continue
-        total += cd["binary_total"]
-        covered += cd["common"]
+        if cd and "binary_total" in cd:
+            total += cd["binary_total"]
+            covered += cd["common"]
+            art["class_count"] = None
+            continue
+        art["class_count"] = None
     for u in manifest.get("unidentified", []):
         binary_bytes = load_binary_bytes_from_mirror(u, mirror_modules_dir, mirror_binext_dir)
         if binary_bytes is None:
             u["class_count"] = None
             continue
-        n = len(class_names_from_zip(binary_bytes, ".class"))
+        n = len(all_class_entry_hashes(binary_bytes))
         u["class_count"] = n
         total += n
     coverage = {"classes_with_upstream_source": covered, "classes_total": total}
@@ -1217,9 +1281,11 @@ def render_report(manifest: dict, paho_result: Optional[dict] = None,
         pct = f"{100*covered/total:.1f}%" if total else "n/a"
         lines.append(
             f"**Coverage over ALL third-party classes: {covered} of {total} classes ({pct}) have "
-            "a byte-adjacent original upstream source.** Denominator = every class in every "
-            "third-party jar in this corpus (identified + still-unidentified), not only "
-            "artifacts with a fetched sources jar; numerator excludes vendor-modified artifacts "
+            "a byte-adjacent original upstream source.** Denominator = every `.class` entry in "
+            "every third-party jar in this corpus (identified + still-unidentified), INCLUDING "
+            "nested/anonymous classes -- not only artifacts with a fetched sources jar, and not "
+            "only the top-level classes a `.java`-source-file-name match can see; numerator "
+            "excludes vendor-modified artifacts "
             "(same coordinate on Central, different bytes -- their \"source\" is for a different "
             "build, not ground truth for these classes). See T26a. This number is NOT the same "
             "thing as `tools/n5-best-source.py`'s `by_best_kind.upstream` count and the two are "

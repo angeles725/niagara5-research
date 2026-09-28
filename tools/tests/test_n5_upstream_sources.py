@@ -549,6 +549,32 @@ class SplitClassifierTest(unittest.TestCase):
         m = _load()
         self.assertEqual(m.split_classifier("13.4.0.jre11"), ("13.4.0.jre11", None))
 
+    def test_release_candidate_qualifier_is_not_a_classifier(self):
+        # Real finding (R3-split-classifier-qualifier / R4-001): a Maven pre-release qualifier
+        # like "-RC1" also starts with a letter, so the naive letter-led-suffix rule wrongly
+        # split it off as a classifier -- "1.5.0-RC1" is one real Central version, not version
+        # "1.5.0" with classifier "RC1".
+        m = _load()
+        self.assertEqual(m.split_classifier("1.5.0-RC1"), ("1.5.0-RC1", None))
+
+    def test_snapshot_qualifier_is_not_a_classifier(self):
+        m = _load()
+        self.assertEqual(m.split_classifier("3.1.0-SNAPSHOT"), ("3.1.0-SNAPSHOT", None))
+
+    def test_beta_qualifier_is_not_a_classifier(self):
+        m = _load()
+        self.assertEqual(m.split_classifier("2.0.0-beta"), ("2.0.0-beta", None))
+
+    def test_numbered_milestone_qualifier_is_not_a_classifier(self):
+        m = _load()
+        self.assertEqual(m.split_classifier("4.2.0-M1"), ("4.2.0-M1", None))
+
+    def test_native_classifier_still_splits_despite_qualifier_guard(self):
+        # Guardrail: the qualifier denylist must not swallow real classifiers that happen to
+        # share a letter-led shape.
+        m = _load()
+        self.assertEqual(m.split_classifier("1.4.0-native"), ("1.4.0", "native"))
+
 
 class DetectClassifierTest(unittest.TestCase):
     """For the ORIGINAL 154 pom.properties-identified artifacts, artifactId/version are already
@@ -690,6 +716,28 @@ class BinarySha1FromCentralTest(unittest.TestCase):
         r = m.binary_sha1_from_central("com.nimbusds", "oauth2-oidc-sdk", "11.26", opener,
                                         sleep=lambda s: None, classifier="jdk11")
         self.assertEqual(r["status"], "fetched")
+
+    def test_empty_body_is_a_typed_network_error_not_a_crash(self):
+        # Real 2026-09-28 finding (R3-empty-sha1-body-crash): a 200 response with an empty (or
+        # whitespace-only) body used to crash `.split()[0]` with IndexError instead of returning
+        # a typed failure -- a malformed/empty server response should degrade to network-error,
+        # never an unhandled exception.
+        m = _load()
+
+        def opener(url, timeout=30):
+            return _FakeResponse(b"")
+
+        r = m.binary_sha1_from_central("g", "a", "v", opener, sleep=lambda s: None)
+        self.assertEqual(r["status"], "network-error")
+
+    def test_whitespace_only_body_is_a_typed_network_error_not_a_crash(self):
+        m = _load()
+
+        def opener(url, timeout=30):
+            return _FakeResponse(b"   \n")
+
+        r = m.binary_sha1_from_central("g", "a", "v", opener, sleep=lambda s: None)
+        self.assertEqual(r["status"], "network-error")
 
 
 class IdentifyUnidentifiedEntryTest(unittest.TestCase):
@@ -1147,6 +1195,43 @@ class RunIdentifyUnidentifiedTest(unittest.TestCase):
             self.assertEqual(len(plan["unidentified"]), 1)
             self.assertNotEqual(plan["unidentified"][0]["reason"], "no-pom-properties")
 
+    def test_network_error_stays_retryable_no_pom_properties(self):
+        # Real 2026-09-28 finding (R3-sticky-transient-failure / R4-identify-transient-failure-
+        # not-retryable): a transient network error used to be written back with reason
+        # "network-error:...", which no longer equals "no-pom-properties" -- the NEXT
+        # identify-unidentified pass would then permanently SKIP this jar (the reason guard at
+        # the top of the loop only re-processes entries whose reason IS "no-pom-properties")
+        # instead of retrying what was just a network blip. "not-on-central" (a real, final
+        # verdict) must still change the reason -- see the sibling test above.
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir, binext_dir = self._mirror(td, [])
+            with open(os.path.join(binext_dir, "flaky-1.0.jar"), "wb") as f:
+                f.write(b"flaky-bytes")
+
+            calls = []
+
+            def opener(url, timeout=30):
+                calls.append(url)
+                raise TimeoutError("slow")
+
+            plan = {"artifacts": [], "unidentified": [
+                {"kind": "bin/ext", "name": "bin/ext/flaky-1.0.jar", "reason": "no-pom-properties"},
+            ]}
+            summary1 = m.run_identify_unidentified(plan, mirror_modules_dir=modules_dir,
+                                                     mirror_binext_dir=binext_dir, opener=opener,
+                                                     sleep=lambda s: None, retries=1, pace=0)
+            self.assertEqual(summary1["network-error"], 1)
+            self.assertEqual(plan["unidentified"][0]["reason"], "no-pom-properties")
+
+            calls_before_second_pass = len(calls)
+            summary2 = m.run_identify_unidentified(plan, mirror_modules_dir=modules_dir,
+                                                     mirror_binext_dir=binext_dir, opener=opener,
+                                                     sleep=lambda s: None, retries=1, pace=0)
+            self.assertEqual(summary2["network-error"], 1)
+            self.assertGreater(len(calls), calls_before_second_pass,
+                                "second pass must actually retry the network call, not skip it")
+
     def test_entries_with_other_reasons_are_left_untouched(self):
         m = _load()
         with tempfile.TemporaryDirectory() as td:
@@ -1214,6 +1299,44 @@ class RunIdentifyUnidentifiedTest(unittest.TestCase):
             self.assertEqual(art["groupId"], "com.github.jnr")
             self.assertEqual(art["content_identity"]["classifier"], "native")
             self.assertTrue(any("jffi-1.4.0-native.jar" in u for u in seen_urls))
+
+    def test_classifier_propagates_to_the_overlap_fallback_when_central_jar_fetch_fails(self):
+        # Real finding (R3-identified-classifier-propagation): when the classifier binary itself
+        # can't be fetched (network/404, as opposed to a checksum mismatch), the code falls back
+        # to compute_vendor_modified_overlap for a diagnostic class-name overlap -- but that
+        # fallback used to build its URL WITHOUT the classifier suffix, comparing the local
+        # classifier jar against the wrong (classifier-less) Central coordinate.
+        m = _load()
+        import urllib.error
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir, binext_dir = self._mirror(td, [])
+            local_jar = _jar_bytes({"a/Foo.class": b"local"})
+            with open(os.path.join(binext_dir, "widget-1.0-native.jar"), "wb") as f:
+                f.write(local_jar)
+            central_sha1 = hashlib.sha1(b"central-bytes-not-matching-local").hexdigest()
+            seen_urls = []
+
+            def opener(url, timeout=30):
+                seen_urls.append(url)
+                if "solrsearch" in url:
+                    return _FakeResponse(_solr_response([]))
+                if url.endswith(".sha1"):
+                    return _FakeResponse(central_sha1.encode())
+                raise urllib.error.HTTPError(url, 404, "Not Found", {}, None)
+
+            plan = {"artifacts": [], "unidentified": [
+                {"kind": "bin/ext", "name": "bin/ext/widget-1.0-native.jar", "reason": "no-pom-properties"},
+            ]}
+            m.KNOWN_GROUP_GUESSES["widget"] = "com.example"
+            self.addCleanup(m.KNOWN_GROUP_GUESSES.pop, "widget", None)
+            summary = m.run_identify_unidentified(plan, mirror_modules_dir=modules_dir,
+                                                    mirror_binext_dir=binext_dir, opener=opener,
+                                                    sleep=lambda s: None, pace=0)
+            self.assertEqual(summary["unverifiable"], 1)
+            jar_fetch_urls = [u for u in seen_urls if not u.endswith(".sha1") and "solrsearch" not in u]
+            self.assertTrue(jar_fetch_urls, "the overlap fallback never attempted a jar fetch")
+            self.assertTrue(all(u.endswith("widget-1.0-native.jar") for u in jar_fetch_urls),
+                             f"a jar fetch used the classifier-less coordinate: {jar_fetch_urls}")
 
 
 class RunFetchPropagatesSha1IdentificationFieldsTest(unittest.TestCase):
@@ -1388,6 +1511,65 @@ class RunAllThirdPartyCoverageTest(unittest.TestCase):
             coverage = m.run_all_third_party_coverage(manifest, mirror_modules_dir=modules_dir, mirror_binext_dir=binext_dir)
             self.assertEqual(coverage["classes_with_upstream_source"], 0)
             self.assertEqual(coverage["classes_total"], 0)  # NOT 999
+
+    def test_artifact_without_content_identity_or_classdiff_is_not_silently_omitted(self):
+        # Real 2026-09-28 finding (R3-headline-denominator-silent-omission /
+        # R4-coverage-denominator-silently-shrinks): an artifact identified via pom.properties
+        # whose sources jar was never fetched (status != "fetched": no-sources-published /
+        # checksum-mismatch / network-error) never gets a "classdiff" key at all (run_classdiff
+        # only processes status == "fetched") and, without a content_identity either, used to be
+        # `continue`-d out of the denominator entirely -- its real, shipped classes just vanished
+        # from the headline instead of counting as uncovered.
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir = os.path.join(td, "modules")
+            binext_dir = os.path.join(td, "bin-ext")
+            os.makedirs(modules_dir)
+            os.makedirs(binext_dir)
+            with open(os.path.join(binext_dir, "orphan-2.0.jar"), "wb") as f:
+                f.write(_jar_bytes({"a/One.class": b"", "a/Two.class": b"", "a/Three.class": b""}))
+            manifest = {
+                "artifacts": [
+                    {"groupId": "g", "artifactId": "orphan", "version": "2.0",
+                     "status": "no-sources-published",
+                     "occurrences": [{"kind": "bin/ext", "name": "bin/ext/orphan-2.0.jar"}]},
+                ],
+                "unidentified": [],
+            }
+            coverage = m.run_all_third_party_coverage(manifest, mirror_modules_dir=modules_dir, mirror_binext_dir=binext_dir)
+            self.assertEqual(coverage["classes_with_upstream_source"], 0)
+            self.assertEqual(coverage["classes_total"], 3)  # NOT 0 / silently omitted
+            self.assertEqual(manifest["artifacts"][0]["class_count"], 3)
+
+    def test_classdiff_only_artifact_counts_every_class_not_only_source_matchable_ones(self):
+        # Real 2026-09-28 finding (R3-coverage-unit-mix): without a content_identity, this
+        # function used to fall back to classdiff's own "binary_total", which deliberately
+        # EXCLUDES nested/anonymous classes (it's a source-file-name comparison via
+        # class_names_from_zip). content_identity's own "classes_total_local" (the unit used for
+        # the vast majority of artifacts) counts EVERY .class entry, nested/anonymous included.
+        # Mixing the two units in the same total silently undercounts artifacts that only have a
+        # classdiff. When the local mirror has the jar, this must count every real .class entry.
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir = os.path.join(td, "modules")
+            binext_dir = os.path.join(td, "bin-ext")
+            os.makedirs(modules_dir)
+            os.makedirs(binext_dir)
+            # 2 top-level classes (name-matchable against sources) + 1 nested class the name-based
+            # classdiff excludes -- 3 real .class entries in the shipped jar.
+            with open(os.path.join(binext_dir, "libx-1.0.jar"), "wb") as f:
+                f.write(_jar_bytes({"a/One.class": b"", "a/Two.class": b"", "a/Two$Inner.class": b""}))
+            manifest = {
+                "artifacts": [
+                    {"groupId": "g", "artifactId": "libx", "version": "1.0", "status": "fetched",
+                     "classdiff": {"common": 2, "binary_total": 2},
+                     "occurrences": [{"kind": "bin/ext", "name": "bin/ext/libx-1.0.jar"}]},
+                ],
+                "unidentified": [],
+            }
+            coverage = m.run_all_third_party_coverage(manifest, mirror_modules_dir=modules_dir, mirror_binext_dir=binext_dir)
+            self.assertEqual(coverage["classes_with_upstream_source"], 2)  # cd["common"], unchanged
+            self.assertEqual(coverage["classes_total"], 3)  # NOT 2 (cd["binary_total"]) -- the nested class counts too
 
 
 class RunRecheckPomIdentifiedGapsTest(unittest.TestCase):
