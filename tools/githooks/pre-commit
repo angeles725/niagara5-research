@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# pre-commit — mechanical gate for the decompiler-fidelity / method-blind-spot rules.
+#
+# Installed by `make install-hooks` (sets git config core.hooksPath tools/githooks). Runs only
+# against STAGED files, so it stays fast and never blocks on unrelated pre-existing corpus state:
+#
+#   - every staged niagara5-block*.md:
+#       * tools/lint-block.py <file>  (enforced mode: R1-R8, only blocks >= its --min-block apply)
+#       * ~/investigacion/sdd-investigacion/research-sdd/toolbelt/verify-block.sh <file>,
+#         if that script exists on this machine (it is not part of this repo)
+#   - if RESEARCH-STATE.md is staged:
+#       * tools/check-gap-drift.py  must report suspects=0
+#
+# Any of the above failing blocks the commit (exit 1). Emergency bypass is git's own `--no-verify`
+# (`git commit --no-verify`) — this hook does not add a second bypass mechanism.
+set -euo pipefail
+
+repo_root=$(git rev-parse --show-toplevel)
+cd "$repo_root"
+
+status=0
+
+mapfile -t staged_blocks < <(git diff --cached --name-only --diff-filter=ACM -- 'niagara5-block*.md')
+
+verify_block_sh="$HOME/investigacion/sdd-investigacion/research-sdd/toolbelt/verify-block.sh"
+
+if [ "${#staged_blocks[@]}" -gt 0 ]; then
+  if ! python3 tools/lint-block.py "${staged_blocks[@]}"; then
+    echo "pre-commit: tools/lint-block.py found enforced findings above — fix or waive with" >&2
+    echo "  <!-- lint-ok: R<n> <reason> --> before committing (or 'git commit --no-verify')." >&2
+    status=1
+  fi
+
+  if [ -x "$verify_block_sh" ]; then
+    for f in "${staged_blocks[@]}"; do
+      if [ -f "$f" ] && ! "$verify_block_sh" "$f"; then
+        echo "pre-commit: verify-block.sh failed on $f" >&2
+        status=1
+      fi
+    done
+  fi
+fi
+
+if git diff --cached --name-only --diff-filter=ACM -- RESEARCH-STATE.md | grep -q .; then
+  if ! python3 tools/check-gap-drift.py; then
+    echo "pre-commit: check-gap-drift.py reported suspects — fix RESEARCH-STATE.md drift before" >&2
+    echo "  committing (or 'git commit --no-verify')." >&2
+    status=1
+  fi
+fi
+
+exit "$status"

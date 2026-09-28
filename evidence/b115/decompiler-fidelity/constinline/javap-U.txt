@@ -1,0 +1,13 @@
+Compiled from "U.java"
+public class U {
+  public U();
+    Code:
+         0: aload_0
+         1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+         4: return
+
+  java.lang.String h();
+    Code:
+         0: ldc           #9                  // String cloud.example.test
+         2: areturn
+}
