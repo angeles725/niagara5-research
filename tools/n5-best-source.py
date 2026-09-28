@@ -20,7 +20,20 @@ Precedence, most faithful first:
                                           bytecode-only < roundtrip-equivalent < roundtrip-exact).
   5. organized/<pop>/fallback2/... then fallback/...  -- CFR fallback (only ever populated for the
                                           specific classes vineflower/vineflower2 failed to produce).
-  6. missing -- no representation anywhere; still listed (never silently dropped).
+  6. a BYTE-IDENTICAL jar decompiled as a DIFFERENT population (fixed 2026-09-28, orchestrator-
+                                          found defect): when a population has none of the above
+                                          for a class, but some other population's jar has the
+                                          exact same sha256 (organized/<pop>/extracted/.jar_sha256,
+                                          written at decompile time; a raw nested jar is hashed
+                                          directly) and DOES decompile that class, use it -- never
+                                          linked by filename/artifact-name alone, only by sha256.
+                                          Real example: devkit bundles a raw, undecompiled LIB-INF
+                                          copy of n-templates-5.0.54.9.2.jar AND separately
+                                          decompiled that exact jar at organized/devkit/lib-inf/
+                                          n-templates-5.0.54.9.2/ (also duplicated at organized/
+                                          _etc-m2/n-templates-5.0.54.9.2/) -- the raw copy's classes
+                                          are not actually undecompiled corpus-wide, just locally.
+  7. missing -- no representation anywhere; still listed (never silently dropped).
 
 Also recorded per class (not a precedence rung, purely informational):
   - line_mapped_view: organized/<pop>/vineflower-cons/... when it exists -- conservative,
@@ -37,10 +50,12 @@ never the git-tracked worktree, which does not carry the gitignored corpus):
     jars devkit also bundles).
   - Every OTHER module's LIB-INF-nested third-party jars are raw, undecompiled files at
     organized/<mod>/extracted/LIB-INF/<jar>.jar (and duplicated raw under vineflower/,
-    vineflower2/, etc.) -- there is no per-class decompile of them in the corpus at all. This
-    tool treats each such raw jar as its own population ("module-lib-inf-raw"), enumerating its
-    classes straight from the jar's zip entries; without upstream-sources coverage, those classes
-    are correctly `missing`, not silently absent from the index.
+    vineflower2/, etc.) -- there is usually no per-class decompile of that SPECIFIC copy in the
+    corpus. This tool treats each such raw jar as its own population ("module-lib-inf-raw"),
+    enumerating its classes straight from the jar's zip entries. Before falling through to
+    upstream-sources coverage or `missing`, it first checks whether a byte-identical copy of the
+    same jar (matched by sha256, never filename) was decompiled as some OTHER population -- see
+    precedence rung 6 above; this really happens (devkit).
   - Nested classes (Outer$Inner.class) are excluded from population enumeration; their source
     lives in Outer's own file.
   - Some _etc-m2 populations' decompilers wrote `.kt` instead of `.java` (Kotlin sources); every
@@ -59,6 +74,7 @@ Subcommand-free CLI: this always runs the full index build (see main()).
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import sys
@@ -122,6 +138,7 @@ def _raw_lib_inf_populations(module_dir: Path, module_name: str) -> list[dict]:
             "root": None,
             "jar_path": jar,
             "docsource_name": None,
+            "jar_name": stem,
         })
     return out
 
@@ -139,14 +156,14 @@ def discover_populations(organized_root: Path) -> list[dict]:
         module_name = entry.name
         if _is_population_root(entry):
             pops.append({"kind": "module", "name": module_name, "root": entry,
-                         "docsource_name": module_name})
+                         "docsource_name": module_name, "jar_name": module_name})
         pops.extend(_raw_lib_inf_populations(entry, module_name))
         lib_inf_dir = entry / "lib-inf"
         if lib_inf_dir.is_dir():
             for sub in sorted(lib_inf_dir.iterdir()):
                 if sub.is_dir() and _is_population_root(sub):
                     pops.append({"kind": "module-lib-inf", "name": f"{module_name}/lib-inf/{sub.name}",
-                                 "root": sub, "docsource_name": None})
+                                 "root": sub, "docsource_name": None, "jar_name": sub.name})
 
     for base_name, kind in (("_bin-ext", "bin-ext"), ("_etc-m2", "etc-m2"), ("_lib", "lib")):
         base = organized_root / base_name
@@ -155,10 +172,79 @@ def discover_populations(organized_root: Path) -> list[dict]:
         for sub in sorted(base.iterdir()):
             if sub.is_dir() and _is_population_root(sub):
                 pops.append({"kind": kind, "name": f"{base_name}/{sub.name}", "root": sub,
-                             "docsource_name": sub.name})
+                             "docsource_name": sub.name, "jar_name": sub.name})
                 pops.extend(_raw_lib_inf_populations(sub, f"{base_name}/{sub.name}"))
 
     return pops
+
+
+# ---------------------------------------------------------------------------
+# Jar identity (sha256-only cross-population linking; never by filename).
+# ---------------------------------------------------------------------------
+
+def compute_jar_sha256(pop: dict) -> Optional[str]:
+    """The identity of the jar this population's classes came from.
+
+    Decompiled populations already have this written at decompile time
+    (<root>/extracted/.jar_sha256); a raw (undecompiled) nested jar is hashed directly. Never
+    derived from a filename/artifact name -- two same-named jars can differ in bytes (a different
+    build or version), and two differently-named ones can be byte-identical."""
+    if pop["kind"] == "module-lib-inf-raw":
+        try:
+            return hashlib.sha256(pop["jar_path"].read_bytes()).hexdigest()
+        except OSError:
+            return None
+    root = pop.get("root")
+    if root is None:
+        return None
+    sha_file = root / "extracted" / ".jar_sha256"
+    if not sha_file.is_file():
+        return None
+    content = sha_file.read_text().strip()
+    return content or None
+
+
+def build_jar_identity_index(populations: list[dict]) -> dict[str, list[dict]]:
+    """sha256 -> every DECOMPILED population whose jar has that sha256 (module-lib-inf-raw
+    populations are never sources here -- they have no decompile of their own to offer)."""
+    idx: dict[str, list[dict]] = {}
+    for pop in populations:
+        if pop["kind"] == "module-lib-inf-raw":
+            continue
+        sha256 = pop.get("jar_sha256")
+        if not sha256:
+            continue
+        idx.setdefault(sha256, []).append(pop)
+    return idx
+
+
+def find_identical_jar_candidate(jar_identity_index: dict[str, list[dict]],
+                                  own_sha256: Optional[str], own_pop_name: str, class_key: str):
+    """Last-resort rung (6): this population has nothing of its own for class_key, but some OTHER
+    population decompiled the exact same jar (by sha256) and DOES have it. Returns a
+    (kind, path, grade, reason) candidate tuple, or None."""
+    if not own_sha256:
+        return None
+    for other_pop in jar_identity_index.get(own_sha256, []):
+        if other_pop["name"] == own_pop_name:
+            continue
+        other_root = other_pop.get("root")
+        grade_v2 = other_pop.get("fidelity_v2", {}).get(class_key, {}).get("grade")
+        grade_v1 = other_pop.get("fidelity_v1", {}).get(class_key, {}).get("grade")
+        kind, path, grade, _reason = choose_decompile_rung(other_root, class_key, grade_v2, grade_v1)
+        if kind is None:
+            fb2 = find_rung_file(other_root, "fallback2", class_key)
+            if fb2 is not None:
+                kind, path, grade = "fallback2", fb2, None
+            else:
+                fb = find_rung_file(other_root, "fallback", class_key)
+                if fb is not None:
+                    kind, path, grade = "fallback", fb, None
+        if kind is not None:
+            reason = (f"identical jar {own_sha256[:12]} decompiled at {other_pop['name']} "
+                      f"({kind})")
+            return kind, path, grade, reason
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -345,7 +431,8 @@ def _rel(organized_root: Path, path: Optional[Path]) -> Optional[str]:
 
 
 def build_class_record(organized_root: Path, pop: dict, class_key: str,
-                        upstream_index: dict, extract_dir: Path) -> dict:
+                        upstream_index: dict, extract_dir: Path,
+                        jar_identity_index: Optional[dict] = None) -> dict:
     pop_root = pop.get("root")
     fidelity_v2 = pop.get("fidelity_v2") or {}
     fidelity_v1 = pop.get("fidelity_v1") or {}
@@ -374,11 +461,17 @@ def build_class_record(organized_root: Path, pop: dict, class_key: str,
         candidates.append(("fallback", fb_file, None,
                            "legacy CFR fallback (vineflower/vineflower2/fallback2 produced no output)"))
 
+    if not candidates and jar_identity_index:
+        identical = find_identical_jar_candidate(
+            jar_identity_index, pop.get("jar_sha256"), pop["name"], class_key)
+        if identical is not None:
+            candidates.append(identical)
+
     alternates = []
     if not candidates:
         best_kind, best_path, grade, reason = "missing", None, None, (
-            "no docSource, upstream, vineflower2, vineflower, fallback2 or fallback "
-            "representation found for this class"
+            "no docSource, upstream, vineflower2, vineflower, fallback2, fallback or "
+            "identical-jar-elsewhere representation found for this class"
         )
     else:
         best_kind, best_path_raw, grade, reason = candidates[0]
@@ -415,20 +508,39 @@ def build_index(organized_root: Path, extract_dir: Path) -> dict:
     populations = discover_populations(organized_root)
     upstream_index = build_upstream_index(organized_root)
 
-    records = []
+    # Enrich every population BEFORE building any class record: the jar-identity index (rung 6)
+    # needs every population's fidelity grades and jar_sha256 available up front, since a class
+    # missing from population A may be resolved by looking at population B's own data.
+    enriched: list[dict] = []
     for pop in populations:
         pop = dict(pop)
         pop["fidelity_v2"] = load_fidelity(pop.get("root"), "vineflower2")
         pop["fidelity_v1"] = load_fidelity(pop.get("root"), "vineflower")
+        pop["jar_sha256"] = compute_jar_sha256(pop)
+        enriched.append(pop)
+    jar_identity_index = build_jar_identity_index(enriched)
+    jar_name_by_pop_name = {p["name"]: p.get("jar_name", p["name"]) for p in enriched}
+
+    records = []
+    for pop in enriched:
         for class_key in enumerate_classes(pop):
             records.append(build_class_record(organized_root, pop, class_key, upstream_index,
-                                               extract_dir))
+                                               extract_dir, jar_identity_index))
 
     by_best_kind: dict[str, int] = {}
     by_population: dict[str, int] = {}
+    missing_by_jar_counts: dict[str, int] = {}
     for rec in records:
         by_best_kind[rec["best_kind"]] = by_best_kind.get(rec["best_kind"], 0) + 1
         by_population[rec["module"]] = by_population.get(rec["module"], 0) + 1
+        if rec["best_kind"] == "missing":
+            jar_name = jar_name_by_pop_name.get(rec["module"], rec["module"])
+            missing_by_jar_counts[jar_name] = missing_by_jar_counts.get(jar_name, 0) + 1
+
+    missing_by_jar = sorted(
+        ({"jar": jar, "count": count} for jar, count in missing_by_jar_counts.items()),
+        key=lambda e: (-e["count"], e["jar"]),
+    )
 
     summary = {
         "total_classes": len(records),
@@ -436,6 +548,7 @@ def build_index(organized_root: Path, extract_dir: Path) -> dict:
         "by_best_kind": by_best_kind,
         "by_population": by_population,
         "missing_count": by_best_kind.get("missing", 0),
+        "missing_by_jar": missing_by_jar,
     }
     return {"schema_version": 1, "summary": summary, "classes": records}
 

@@ -21,7 +21,13 @@ organized 2026-09-28, read-only):
   - EVERY OTHER module's LIB-INF-nested third-party jars are raw, undecompiled files at
     organized/<mod>/extracted/LIB-INF/<jar>.jar (also duplicated raw under vineflower/,
     vineflower2/, etc.) -- there is no per-class decompile of them anywhere in the corpus, so
-    their classes are "missing" unless an upstream sources jar covers them by name.
+    their classes are "missing" unless an upstream sources jar covers them by name, OR (fixed
+    2026-09-28, orchestrator-found defect) a BYTE-IDENTICAL copy of that same jar was decompiled
+    as its own population elsewhere -- e.g. devkit bundles both a raw LIB-INF copy AND a genuine
+    decompiled organized/devkit/lib-inf/<jar>/ subtree of the SAME jar (same
+    extracted/.jar_sha256). Every decompiled population's extracted/.jar_sha256 file (written at
+    decompile time) is the identity key; a raw jar is hashed directly. Linking is by sha256 only,
+    never by filename.
   - nested classes (Outer$Inner.class) are excluded from population enumeration; their source
     lives in the outer top-level class's file.
   - some _etc-m2 populations' decompilers wrote `.kt` instead of `.java` (Kotlin sources).
@@ -98,6 +104,9 @@ class FixtureOrganized:
     def add_fidelity(self, mod, variant, classes: dict):
         path = self.root / mod / f"fidelity.{variant}.json"
         _write(path, json.dumps({"module": mod, "classes": classes}))
+
+    def set_jar_sha256(self, mod, sha256):
+        _write(self.root / mod / "extracted" / ".jar_sha256", sha256)
 
 
 class DiscoverPopulationsTest(unittest.TestCase):
@@ -306,6 +315,101 @@ class UpstreamNonPortableNamesTest(unittest.TestCase):
             self.assertNotIn("module-info", index)
             self.assertNotIn("org/thing/package-info", index)
             self.assertIn("org/thing/Real", index)
+
+
+class JarIdentityFallbackTest(unittest.TestCase):
+    """Orchestrator-found defect (2026-09-28): a lib-inf-raw population with no decompile of its
+    own must fall back to a BYTE-IDENTICAL jar decompiled as some other population, keyed by
+    sha256 only (never by filename) -- mirrors the real devkit case (a raw LIB-INF copy of
+    n-templates/slotomatic sitting alongside a genuine decompiled organized/devkit/lib-inf/<jar>/
+    subtree of the exact same jar)."""
+
+    def _build(self, root):
+        fx = FixtureOrganized(root)
+        # "modA" bundles thirdparty.jar as a raw, undecompiled LIB-INF copy.
+        mod_root = fx.add_module_skeleton("modA")
+        jar_bytes = _jar_bytes({
+            "org/thirdparty/Shared.class": b"stub",
+            "org/thirdparty/OnlyInDecompiled.class": b"stub",
+        })
+        raw_jar_path = mod_root / "extracted" / "LIB-INF" / "thirdparty-1.0.jar"
+        raw_jar_path.parent.mkdir(parents=True, exist_ok=True)
+        raw_jar_path.write_bytes(jar_bytes)
+        sha256 = m_hash(jar_bytes)
+
+        # "modB" decompiled the exact same jar as its own module-lib-inf population.
+        fx_b = FixtureOrganized(root)
+        libinf_dir = root / "modB" / "lib-inf" / "thirdparty-1.0"
+        _write_class(libinf_dir / "extracted" / "org" / "thirdparty" / "Shared.class")
+        _write_class(libinf_dir / "extracted" / "org" / "thirdparty" / "OnlyInDecompiled.class")
+        fx_b.add_rung("modB/lib-inf/thirdparty-1.0", "vineflower2", "org/thirdparty/Shared")
+        fx_b.add_rung("modB/lib-inf/thirdparty-1.0", "vineflower2", "org/thirdparty/OnlyInDecompiled")
+        (libinf_dir / "extracted" / ".jar_sha256").write_text(sha256)
+        return root, sha256
+
+    def test_raw_population_resolves_via_identical_jar_elsewhere(self):
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            root, sha256 = self._build(root)
+            out_dir = root / "_best"
+            rc = m.main(["--organized", str(root), "--out", str(out_dir)])
+            self.assertEqual(rc, 0)
+            data = json.loads((out_dir / "best-source.json").read_text())
+            by_key = {(c["module"], c["class"]): c for c in data["classes"]}
+            rec = by_key[("modA/lib-inf-raw/thirdparty-1.0", "org/thirdparty/Shared")]
+            self.assertEqual(rec["best_kind"], "vineflower2")
+            self.assertTrue(rec["best"].endswith("modB/lib-inf/thirdparty-1.0/vineflower2/org/thirdparty/Shared.java"))
+            self.assertIn(sha256[:12], rec["reason"])
+            self.assertIn("modB/lib-inf/thirdparty-1.0", rec["reason"])
+
+    def test_does_not_link_by_filename_when_sha256_differs(self):
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            fx = FixtureOrganized(root)
+            mod_root = fx.add_module_skeleton("modA")
+            raw_jar_path = mod_root / "extracted" / "LIB-INF" / "thirdparty-1.0.jar"
+            raw_jar_path.parent.mkdir(parents=True, exist_ok=True)
+            raw_jar_path.write_bytes(_jar_bytes({"org/thirdparty/Shared.class": b"stubA"}))
+
+            libinf_dir = root / "modB" / "lib-inf" / "thirdparty-1.0"
+            _write_class(libinf_dir / "extracted" / "org" / "thirdparty" / "Shared.class")
+            fx2 = FixtureOrganized(root)
+            fx2.add_rung("modB/lib-inf/thirdparty-1.0", "vineflower2", "org/thirdparty/Shared")
+            # DIFFERENT sha256 -- same filename/artifact name, different bytes (e.g. a different
+            # build/version). Must NOT be linked.
+            (libinf_dir / "extracted" / ".jar_sha256").write_text("deadbeef" * 8)
+
+            out_dir = root / "_best"
+            m.main(["--organized", str(root), "--out", str(out_dir)])
+            data = json.loads((out_dir / "best-source.json").read_text())
+            by_key = {(c["module"], c["class"]): c for c in data["classes"]}
+            rec = by_key[("modA/lib-inf-raw/thirdparty-1.0", "org/thirdparty/Shared")]
+            self.assertEqual(rec["best_kind"], "missing")
+
+    def test_missing_by_jar_in_summary(self):
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            fx = FixtureOrganized(root)
+            fx.add_module_skeleton("modA")  # no rungs added at all: every class is "missing"
+            out_dir = root / "_best"
+            m.main(["--organized", str(root), "--out", str(out_dir)])
+            data = json.loads((out_dir / "best-source.json").read_text())
+            self.assertIn("missing_by_jar", data["summary"])
+            missing_by_jar = data["summary"]["missing_by_jar"]
+            self.assertIsInstance(missing_by_jar, list)
+            # sorted desc by count
+            counts = [entry["count"] for entry in missing_by_jar]
+            self.assertEqual(counts, sorted(counts, reverse=True))
+            total = sum(entry["count"] for entry in missing_by_jar)
+            self.assertEqual(total, data["summary"]["missing_count"])
+
+
+def m_hash(data: bytes) -> str:
+    import hashlib
+    return hashlib.sha256(data).hexdigest()
 
 
 class MainRunAndMaterializeTest(unittest.TestCase):

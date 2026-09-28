@@ -297,7 +297,9 @@ jars).
    beats v2 (consistent with the 65.1% vs 64.6% round-trip-rate finding above).
 5. `organized/<pop>/fallback2/...` then `fallback/...` — CFR fallback, only ever populated for
    the specific classes vineflower/vineflower2 produced no output for.
-6. `missing` — no representation anywhere. Still listed in the index (never silently dropped) so
+6. A byte-identical jar decompiled as a DIFFERENT population, matched ONLY by
+   `extracted/.jar_sha256` (never by filename — see the fix below). Last resort before `missing`.
+7. `missing` — no representation anywhere. Still listed in the index (never silently dropped) so
    an absence is a fact you can cite, not a gap you have to rediscover.
 
 Separately, `organized/<pop>/vineflower-cons/...` — the conservative, original-line-numbered /
@@ -310,22 +312,46 @@ module only (`devkit`) — a genuine decompiled `<mod>/lib-inf/<jar>/` subtree. 
 module's LIB-INF-nested third-party jars are raw, undecompiled files at
 `<mod>/extracted/LIB-INF/<jar>.jar`; the tool treats each as its own population
 (`<mod>/lib-inf-raw/<jar>`), reading class names straight out of the jar's zip entries — there is
-no decompile of them anywhere in the corpus, so absent upstream-sources coverage, their classes
-are correctly `missing`, not silently absent from the index.
+usually no decompile of that SPECIFIC copy in the corpus, so absent upstream-sources coverage or
+an identical-jar match elsewhere (rung 6), their classes are `missing`.
 
-**Real run** (2026-09-28, `python3 tools/n5-best-source.py --organized organized --out
-organized/_best --materialize organized/_best/tree`): 361 populations, 40678 classes —
-`docSource` 2809, `upstream` 13023, `vineflower2` 12708, `fallback2` 273, `missing` 11865 (28.2%
-of all classes — almost entirely LIB-INF-nested third-party classes with no upstream-sources
-match), 0 `vineflower`(v1) picks, 0 bare-`fallback` picks (fallback2 always already covers
-whatever bare fallback would, when both exist for a module).
+**Orchestrator-found defect, fixed 2026-09-28 (same day, second commit)**: the first real run
+showed 131 `tridium-niagara-slotomatic-library-5.0.2` classes and 15
+`n-templates-5.0.54.9.2` classes as `missing` under `devkit/lib-inf-raw/<jar>` — but `devkit`
+ALSO bundles a raw LIB-INF copy of these exact jars alongside a genuine decompile of the SAME
+bytes at `organized/devkit/lib-inf/<jar>/` (and again at `organized/_etc-m2/<jar>/`). Every
+decompiled population already writes `extracted/.jar_sha256` at decompile time; a raw jar is
+hashed directly. The tool now indexes every decompiled population by that sha256 and, before
+declaring a class `missing`, checks whether some OTHER population with the identical sha256
+already decompiled it — `reason` then reads `"identical jar <sha256[:12]> decompiled at
+<population>"`. Linking is by sha256 ONLY, never by filename/artifact name (regression-tested:
+two same-named-but-different-content jars are never linked). All 146 devkit classes now resolve
+correctly (spot-checked: `devkit/lib-inf-raw/n-templates-5.0.54.9.2`'s `Generator` class resolves
+to `organized/devkit/lib-inf/n-templates-5.0.54.9.2/vineflower2/.../Generator.java`, both by the
+JSON `best` path and by the materialized symlink).
+
+The summary also gained `missing_by_jar` (distinct jar name → still-missing class count, sorted
+descending) so the REMAINING gap is visible at a glance instead of hiding inside a flat
+`missing_count`. Top of the real run's list, 2026-09-28: `prosys-opc-ua-sdk-client-server-5.7.0-248`
+(3117), `poi-ooxml-lite-5.5.1` (2325), `poi-5.5.1` (1226), `xmlbeans-5.3.0` (697),
+`kotlin-stdlib-2.3.0` (687), `poi-ooxml-5.5.1` (654), `org.eclipse.swt.win32.win32.x86_64-3.134.0`
+(652), `woodstox-core-7.2.0` (539), `hsqldb-2.7.4` (465), `testng-7.12.0` (402) — genuinely
+undecompiled third-party LIB-INF jars with no matching upstream-sources artifact, not a tooling
+gap like the devkit case was.
+
+**Real run** (2026-09-28, post jar-identity fix, `python3 tools/n5-best-source.py --organized
+organized --out organized/_best --materialize organized/_best/tree`): 361 populations, 40678
+classes — `docSource` 2809, `upstream` 13023, `vineflower2` 12854, `fallback2` 273, `missing`
+11719 (28.8%, down from 11865 pre-fix), 0 `vineflower`(v1) picks, 0 bare-`fallback` picks
+(fallback2 always already covers whatever bare fallback would, when both exist for a module).
 
 **Browsing**: `organized/_best/best-source.json` is the full machine-readable index (per class:
 `module`, `class`, `best`, `best_kind`, `reason`, `line_mapped_view`, `alternates`, `grade`, plus
-a `summary` block). `organized/_best/tree/` is a browsable mirror — open
+a `summary` block with `missing_by_jar`). `organized/_best/tree/` is a browsable mirror — open
 `organized/_best/tree/<module>/<pkg>/<Class>.java` (or `.kt`) directly; it is a RELATIVE symlink
 to the real chosen file, so `cd`-ing into it in a file browser or `git grep`-free editor just
-works. An upstream pick's target is a real extracted file under
+works, even when the chosen file lives under a different population entirely (rung 6). An
+upstream pick's target is a real extracted file under
 `organized/_best/_upstream-extracted/<groupId>/<artifactId>/<version>/...` (a `.java` inside a
 `-sources.jar` cannot be symlinked to directly; this tool extracts it once, idempotently, instead
 of copying it again on every materialize).

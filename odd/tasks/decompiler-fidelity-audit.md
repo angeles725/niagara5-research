@@ -196,7 +196,7 @@ make the decompile complete and as faithful as possible.
       choose the primary tree by measured round-trip rate, not by text diff. Note: v2's +139% @Override is decompiler inference
       (B116: @Override never survives compilation), not recovered information. Route: delegated writer (TDD).
 - [ ] T21 Full-corpus grading run (all ~15k top-level classes, both trees) — closes B116-G1; long run, forecast first. Route: delegated.
-- [x] T25 (this commit, worktree t25-best-source off feat/n5-wave14@2a08063) Per-class "best available representation"
+- [x] T25 (4745a3e, worktree t25-best-source off feat/n5-wave14@2a08063) Per-class "best available representation"
       index tools/n5-best-source.py (TDD, 17/17 tests GREEN) + `--materialize` browsable relative-symlink tree, so a
       reader never has to re-derive the docs/writer-prompt.md precedence rule by hand. Structural discovery found one
       undocumented split: devkit is the ONLY module with a genuine decompiled `<mod>/lib-inf/<jar>/` subtree; every
@@ -211,6 +211,20 @@ make the decompile complete and as faithful as possible.
       test added. 3 spot-checks by hand (docSource: alarm/AlarmDbConnection; upstream: abstractMqttDriver's
       jackson-annotations JacksonAnnotation, extracted+symlinked correctly; vineflower2: aaphp/BAaPhpDevice) all
       resolved to the right file. Route: delegated writer (TDD).
+      **T25 follow-up fix (this commit, TDD, 20/20 tests GREEN)**: orchestrator verification found 146 `devkit`
+      classes (131 tridium-niagara-slotomatic-library-5.0.2 + 15 n-templates-5.0.54.9.2) wrongly reported `missing`
+      — devkit bundles a raw, undecompiled LIB-INF copy of each jar AND a genuine decompile of the byte-identical
+      jar at `organized/devkit/lib-inf/<jar>/`, never cross-linked. Fixed by keying every population's jar by
+      sha256 (`extracted/.jar_sha256` where present, else hashing the raw jar directly) and adding a rung-6
+      identical-jar fallback, linked by sha256 ONLY, never filename (regression test: same-named/different-bytes
+      jars stay unlinked). Added `missing_by_jar` to the summary. Rerun: docSource 2809, upstream 13023,
+      vineflower2 12854 (+146), fallback2 273, missing 11719 (-146, 28.8%). `missing_by_jar` top 10, all
+      genuinely-undecompiled third-party LIB-INF jars with no upstream match: prosys-opc-ua-sdk-client-server-
+      5.7.0-248 (3117), poi-ooxml-lite-5.5.1 (2325), poi-5.5.1 (1226), xmlbeans-5.3.0 (697), kotlin-stdlib-2.3.0
+      (687), poi-ooxml-5.5.1 (654), org.eclipse.swt.win32.win32.x86_64-3.134.0 (652), woodstox-core-7.2.0 (539),
+      hsqldb-2.7.4 (465), testng-7.12.0 (402). Spot-checked devkit/lib-inf-raw/n-templates-5.0.54.9.2's `Generator`
+      class: `best` and materialized symlink both resolve to `organized/devkit/lib-inf/n-templates-5.0.54.9.2/
+      vineflower2/.../Generator.java`, real content confirmed.
 - [x] T5 (9592b82) Porting guide: the only N5-only claim (`NiagaraSlotProcessor`) was false vs BOTH N4.14 and N4.15 — it is a
       relocation (javax.baja.nre... in bin/ext/nre.jar → niagara.nre... in module niagaraAnnotationProcessors); fixed.
 - [ ] T16b Extend lint-block R1/R2/R8 to docs/*.md (the porting guide carried an R8 error the linter could not see). TDD.
