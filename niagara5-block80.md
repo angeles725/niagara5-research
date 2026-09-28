@@ -48,6 +48,11 @@ corpus-wide idiom** — closing [Block 25] §25.2's and [Block 70] §70.5's "onl
 
 ## 80.2 — B70-G1 ADVANCED: the `SequencedCollection` *default methods* (`getFirst`/`getLast` on `List`) ARE adopted in `baja` core — a second, wider adoption form the type-name census in §80.1 cannot see `[CERT]`+`[INFER]`
 
+> **Correction (added by [Block 90], §14 cross-block).** The `EngineManager.peakScanStats`/`peakInterscanStats`
+> sites left `[INFER]` below are definitively the OLD `Deque` API: both fields are declared
+> `LinkedList<EngineManager.EngineStats>` (`EngineManager.java:58-59`). Full 211-site classification
+> (91 new / 61 old / 59 homonym) in [Block 90] §90.1.
+
 Separately from the *type* references, `getFirst()`/`getLast()`/`addFirst()`/`addLast()`/`removeFirst()`/
 `removeLast()` — the six methods JEP 431 added as **default methods on `List`/`Deque`/`SequencedCollection`** —
 appear in **110 files** across the corpus (`find ... -exec grep -lE '\.(getFirst|getLast|addFirst|addLast|removeFirst|removeLast)\('`,

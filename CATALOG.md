@@ -2,7 +2,7 @@
 
 # Block catalog
 
-Total: **82 blocks**
+Total: **90 blocks**
 
 | Block | File | Title |
 |-------|------|-------|
@@ -88,3 +88,11 @@ Total: **82 blocks**
 | 80 | [niagara5-block80.md](niagara5-block80.md) | Corpus-wide census of the two Java-21 `SequencedCollection` adoption forms, the JMX/MXBean surface, and the state of the N4-4.15 slot-diff prerequisite |
 | 81 | [niagara5-block81.md](niagara5-block81.md) | Closing the security-residual cluster: `FilePermission`/`RuntimeExecPermission`/`NiagaraBasicPermission`'s grant-matching bodies, `securityBridge.jar`'s unmodularized readability edge (narrowing away from `-Xbootclasspath/a:`), LDAP Kerberos/GSSAPI support REMOVED (not relocated) in N5, and `BServerPort`'s opt-in, inbound-only nftables firewall |
 | 82 | [niagara5-block82.md](niagara5-block82.md) | Closing the migrator/backup residual cluster: `BFormat.ReflectCall.eval()`'s permission-gated reflection semantics, `AxPasswordUtil.usesPasswordEncodings`'s exhaustive recursive walk, `BWebBogConverter`/`BJettyQoSFilterMigrator`'s exact property lists, and `backup.jar`'s own live (and partly dead) `.dist`-container KeyRing mechanism |
+| 83 | [niagara5-block83.md](niagara5-block83.md) | Closing box's WebSocket filter ordering and wire-format opcodes, Jetty's MBeanContainer diagnostic scope, and the servlet Context-threading census tail |
+| 84 | [niagara5-block84.md](niagara5-block84.md) | Closing four cross-corpus N4-vs-N5 diff gaps using a freshly-located, on-host N4 4.15.3.28 install: the `nre.jar` physical location, its `nre.subscription` byte-diff, the 5 B31 BACnet/tagdictionary types' slot-diff, and the `alarm.adb` header format compare |
+| 85 | [niagara5-block85.md](niagara5-block85.md) | `PortalApi.getOnlineLicenseRequestPortalAddress()`'s real (and only) caller inside the `LicenseProcedure` wizard, the wizard's full subscription+legacy flow, and closing the entitlement `scope`-field and `canCheckTpk()`-gate questions |
+| 86 | [niagara5-block86.md](niagara5-block86.md) | Closing the ORD-permission, JAAS-chain, and grant-matching residual gaps: `BOrdScheme.resolve()` is mostly caller-gated (a few schemes enforce their own), a null-`Context` permission check grants `BPermissions.all` by documented N4+N5 contract, every `BAuthenticationScheme` installs exactly ONE hardcoded `LoginModule` (never a real chain), `SuperSessionPrincipal` is CSRF/session-identity load-bearing, four more `doIsGrantedTo` bodies read, `ModifyProtectedPropertiesPermission`'s per-call trust set traced to its one construction site, the developer-log filename discrepancy resolved to "doc mismatch, not a hidden caller", and `BUserService.auditLoginAttempt` shown to have zero first-party callers across BOTH N4 and N5 |
+| 87 | [niagara5-block87.md](niagara5-block87.md) | The boot-time `.jar.sig` verifier is `SignatureUtil::checkFileSignature` (njre.dll/nre.dll), it is the SAME routine that assembles `--module-path=%s`; `-Djava.library.path=%s`'s origin is a PATH-env/niagaraHome/jreHome merge, not a native API; the `%s`-formatting helper is a plain UCRT `vsnprintf_s` wrapper; and `securityBridge.jar`'s `-Xbootclasspath/a:` load is now caught live inside `buildArgs` itself |
+| 88 | [niagara5-block88.md](niagara5-block88.md) | `MessageWrapper` retry-count gate, the Forge/Azure Blob upload backend, the cloudLink version-lag explained, and the nCloudDriver→cloudLink lineage statement |
+| 89 | [niagara5-block89.md](niagara5-block89.md) | Nine build-toolchain/devkit/test gaps closed by fresh decompiles: `lateinit` native platforms, a triply-inert `compact3` flag, a real javac module-naming defect, `Version.strip()`'s exact algorithm, a dead `ignoreRuntimeProfileCheck`, and the missing "TestNG Support" doc found under the wrong filename |
+| 90 | [niagara5-block90.md](niagara5-block90.md) | Closing five source-level census gaps: a full receiver-type classification of the 211 `getFirst`/`getLast` call sites, a decisive `instanceof`-pattern decompiler-artifact finding, `kitControl`'s zero-modernization corroboration, a tool-confirmed N4 ZKM census, and the six dynamic license-feature call sites traced |

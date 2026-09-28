@@ -44,16 +44,16 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
      Field names use UNDERSCORES on purpose: they must never collide with the prose greps below. -->
 <!-- research-state.v1 -->
 schema: research-state.v1
-covered_blocks: 82
-gaps_closed: 177
-known_gaps: 376
-investigable_open: 145
-requires_execution_open: 8
-blocked_open: 36
-deferred_open: 10
+covered_blocks: 90
+gaps_closed: 224
+known_gaps: 404
+investigable_open: 114
+requires_execution_open: 9
+blocked_open: 46
+deferred_open: 11
 undocumented_findings: 0
-blocks_since_retro: 7
-last_iteration_ts: 2026-09-27T22:45:00Z
+blocks_since_retro: 15
+last_iteration_ts: 2026-09-28T02:30:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
      applies to every corpus (single-focus and campaign alike); the stall-detection instrument reads it
@@ -61,9 +61,9 @@ last_iteration_ts: 2026-09-27T22:45:00Z
 
 ## Coverage
 
-- **Covered blocks**: 82 (B1..B82)
-- **Coverage metric**: 177 / 376 closed
-- **Last iteration**: 2026-09-27 — wave 8 FULLY closed: B76 (niagarad/.jar.sig/ZKM/npsdk) authored orchestrator-direct with r2/objdump
+- **Covered blocks**: 90 (B1..B90)
+- **Coverage metric**: 224 / 404 closed
+- **Last iteration**: 2026-09-28 — wave 9: B83–B90 (8 delegated sonnet writers), 46 gaps closed/narrowed + B83-G4 merged into B82-G4
 
 ## Gap-backlog
 
@@ -95,8 +95,8 @@ last_iteration_ts: 2026-09-27T22:45:00Z
 | medium | B2-G5 N5 JS build pipeline (node/yarn/grunt plugins) for -ux style web resources | m2 plugins | ✅ covered — B36 |
 | medium | B2-G6 Delta list for our build-n4-module kit templates (.gradle.kts) against N5 plugin DSL | kit templates + B2 | ✅ covered — B51 |
 | low | B1-G6 The 5 automatic-module jars (unterjar packaging) — why not explicit modules | jar manifests | pending |
-| low | B2-G2 Meaning of the Compact3 javac argument in N5 plugins | n-plugin bytecode | pending |
-| low | B2-G3 Read the TestNG Support in Niagara 5 doc | docDeveloper.jar | pending |
+| low | B2-G2 Meaning of the Compact3 javac argument in N5 plugins | n-plugin bytecode | ✅ covered — B89 |
+| low | B2-G3 Read the TestNG Support in Niagara 5 doc | docDeveloper.jar | ✅ covered — B89 |
 | low | B3-G5 securityBridge.jar 2-class bootclasspath shim | securityBridge.jar | ✅ covered — B65 |
 | low | B2-G4 Does N5 niagaraTest still hit the N4 plugin zero-tests bug | prototype build | requires-execution → §19 (run niagaraTest on a sample module) |
 | high | B4-G8 Deep-read official upgrade guides (upgradingToN5, upgradingUItoN5, upgradingJDK) + porting checklist for our modules | docDeveloper.jar doc/upgrade | ✅ covered — B10 |
@@ -113,8 +113,8 @@ last_iteration_ts: 2026-09-27T22:45:00Z
 | low | B7-G2 Defining module of niagara.rpc.NiagaraRpc (claimed by NullProcessor) | module bytecode | pending |
 | high | B8-G4 Confirm or refute that outbound HTTP/sockets from third-party modules are ungated in N5 (okhttp3/Jetty client layer) | nre.jar + bin/ext + module bytecode | ✅ covered — B15 |
 | medium | B8-G3 Are reflection / JMX / native-library / system-property accesses gated elsewhere in N5 | nre.jar + baja.jar | ✅ covered — B33 |
-| low | B8-G1 ModifyProtectedPropertiesPermission construction sites | module bytecode | pending |
-| low | B8-G2 Permission-denial log filename: code vs doc discrepancy | nre.jar | pending |
+| low | B8-G1 ModifyProtectedPropertiesPermission construction sites | module bytecode | ✅ covered — B86 |
+| low | B8-G2 Permission-denial log filename: code vs doc discrepancy | nre.jar | ✅ covered — B86 |
 | medium | B10-G1 Compile-verify the 15-item porting checklist by building DashboardPan/CompPan/ColdRoomPan against N5 | prototype build | ✅ covered — B16 |
 | high | B10-G5 The n5mig station migration application: where it ships, what it transforms (N4 station → N5) | install bin + migration/migrator modules | ✅ covered — B14 |
 | medium | B10-G2 Locate the full Niagara 5.0 Breaking Changes list (in-jar or web-only) and diff vs B10 32-row table | docDeveloper.jar + web | pending |
@@ -145,12 +145,12 @@ last_iteration_ts: 2026-09-27T22:45:00Z
 | low | B12-G7 LDAP v2/v3 bind details | ldap.jar | ✅ covered — B38 |
 | low | B12-G8 SRP6 key exchange: new in N5 or carried over | baja/nre | ✅ covered — B38 |
 | medium | B11-G1 Capacity licensing mode: Metrics.isUsingCapacityLicensing() and resource.limit | baja metrics + license | ✅ covered — B34 |
-| low | B11-G3 Six dynamic (non-literal) checkFeature/getFeature call sites | module bytecode | pending |
+| low | B11-G3 Six dynamic (non-literal) checkFeature/getFeature call sites | module bytecode | ✅ covered — B90 |
 | low | B11-G4 Upgrade B11 bytecode-offset citations to source file:line via full decompile | organized/ decompile | pending |
 | deferred | B11-G2 OEM-branded module absence (Honeywell UI, eSignature): edition gap vs removal | OEM N5 build | pending (parked; needs an OEM N5 build) |
 | medium | B13-G1 The 49 Tridium code modules absent from N5 with no removal/merge evidence: confirm against N5 GA docs | N5 GA / web docs | pending |
 | medium | B13-G4 Why N5 module.xml declares fewer explicit dependencies (declaration slimming) | module.xml + build plugin | ✅ covered — B51 |
-| low | B13-G2 cloudLink family stuck at vendorVersion 5.0.0.26 | module.xml | pending |
+| low | B13-G2 cloudLink family stuck at vendorVersion 5.0.0.26 | module.xml | ✅ covered — B88 |
 | low | B13-G3 59 N4 doc-guides absent from docDeveloper.jar | doc jars | pending |
 | low | B13-G5 What the Atlas hardware (platHwScanAtlas) is | platHwScanAtlas.jar | pending |
 | low | B13-G6 Licensing of Honeywell-branded modules shipped under vendor Tridium | cloudLinkForge/HonSbp | pending |
@@ -165,7 +165,7 @@ last_iteration_ts: 2026-09-27T22:45:00Z
 | low | B19-G4 KeyRing/SecurityInitializer proprietary blocker unchanged in N5 | nre/baja | ✅ covered — B43 |
 | medium | B19-G5 OrientDB 3.2.23 → 3.2.55 on-disk compatibility for migrated stations | prototype run | requires-execution → §19 (open an N4 systemDb store with the N5 OrientDB libs) |
 | medium | B17-G2 Why wb.exe boots on the unlicensed beta while n5mig/station do not (tridium:nre gate path) | nre.jar + launchers | ✅ covered — B53 |
-| low | B17-G3 Reconstruct the native launcher VM/module-path args to run n5mig via java | bin launchers + nre.dll | pending |
+| low | B17-G3 Reconstruct the native launcher VM/module-path args to run n5mig via java | bin launchers + nre.dll | ✅ covered — B87 |
 | low | B17-G4 DefrostMode declared in ColdRoomPan-rt module.xml has zero bog instances | our module + PANCCADIA bog | pending |
 | medium | B20-G2 niagaraSync ticks integration in kitControl BLoopPoint (BNiagaraSyncTicks) semantics | kitControl + niagaraSync | ✅ covered — B37 |
 | medium | B20-G3 BIActionAuditProvider old-value audit path end-to-end | baja security + control | ✅ covered — B41 |
@@ -179,7 +179,7 @@ last_iteration_ts: 2026-09-27T22:45:00Z
 | high | B16-G6 Port the 5 N4 JUnit4 ColdRoomPan tests to TestNG and write a JUnit4→TestNG recipe | our module tests | ✅ covered — B29 |
 | high | B16-G7 Port CompPan and DashboardPan (multi-part rt/ux/wb, jakarta servlet) with the B16 recipe | prototype build | ✅ covered — B28 |
 | medium | B16-G2 Does a multi-module group like DashboardPan still need a parent grouping file | devkit templates + build | ✅ covered — B28 |
-| low | B16-G3 Locate the TestNG Support in Niagara 5 doc | docDeveloper.jar | pending |
+| low | B16-G3 Locate the TestNG Support in Niagara 5 doc | docDeveloper.jar | ✅ covered — B89 |
 | low | B16-G5 moduleTest dependency vendorVersion truncated 2.0.7 → 2.0 | n-plugin | ✅ covered — B51 |
 | medium | B22-G1 Decompile bacnetUtil to resolve the Descriptor interface behind BC-10 | bacnetUtil.jar | ✅ covered — B35 |
 | medium | B22-G3 Which other bundled drivers still extend the deprecated basicDriver chassis | driver modules | ✅ covered — B35 |
@@ -203,10 +203,9 @@ last_iteration_ts: 2026-09-27T22:45:00Z
 | low | B26-G2 Can a raw property-sheet string edit construct a restrictBy=2 capacity on N5 | history + workbench | ✅ covered — B72 |
 | low | B26-G3 BHistoryDbTable subclasses: alternate capacity enforcement | history.jar | ✅ covered — B72 |
 | low | B26-G4 BTypeSpecConverter generic simple-value handling | migrator.jar | ✅ covered — B72 |
-| low | B29-G4 Does the niagaraTest runner require BTestNg even for pure-logic tests | test module | pending |
-| low | B29-G5 compileModuleTestJava "cannot determine module name" message root cause | n-plugin | pending |
+| low | B29-G5 compileModuleTestJava "cannot determine module name" message root cause | n-plugin | ✅ covered — B89 |
 | low | B29-G3 assertArrayEquals mapping in the port script | tools/port-junit4-to-testng.py | pending |
-| low | B25-G1 instanceof-pattern adoption (bytecode-invisible) via decompiled sources | organized/ + docSource | pending |
+| low | B25-G1 instanceof-pattern adoption (bytecode-invisible) via decompiled sources | organized/ + docSource | ✅ covered — B90 |
 | low | B25-G2 Classify the 34 ambiguous Deque-family SequencedCollection call sites | bytecode census | ✅ covered — B80 |
 | medium | B25-G3 Full 253-jar jdeprscan --for-removal pass | all jars | ✅ covered — B44 |
 | low | B25-G4 Read the switch logic of control.jar B*Writable pattern switches | control.jar | ✅ covered — B70 |
@@ -216,7 +215,7 @@ last_iteration_ts: 2026-09-27T22:45:00Z
 | low | B30-G1 Format and verifier of the bin/ext <jar>.jar.sig sidecars | bin/ext + nre | ✅ covered — B76 |
 | medium | B30-G3 N5 embedded trust anchor that accepts the Honeywell code-signing chain | nre/baja crypto | ✅ covered — B53 |
 | low | B30-G4 Full N4 obfuscation census (beyond the 53-module ZKM sample) | N4 organized/ | pending |
-| low | B31-G1 Slot diff for 5 types in the 4.14→4.15 version gap (needs an N4 4.15 decompile) | N4 4.15 jars | pending |
+| low | B31-G1 Slot diff for 5 types in the 4.14→4.15 version gap (needs an N4 4.15 decompile) | N4 4.15 jars | ✅ covered — B84 |
 | low | B31-G3 Re-read BWebBogConverter / BJettyQoSFilterMigrator property lists | migrator.jar | ✅ covered — B82 |
 | low | B31-G5 box HistoryChannel/AlarmChannel parent swap BBoxChannel → BWrapperBoxChannel | box.jar | pending |
 | medium | B35-G1 niagaraSync package semantics (standby/active RPC state machine in niagaraDriver) | niagaraSync + niagaraDriver | ✅ covered — B37 |
@@ -254,7 +253,7 @@ last_iteration_ts: 2026-09-27T22:45:00Z
 | low | B41-G5 Do first-party N5 servlets thread niagara.context through to writes | web modules | ✅ covered — B68 |
 | low | B42-G2 Three cloudLinkExtension satellite modules | cloudLinkExtension* | ✅ covered — B67 |
 | low | B42-G3 retriableError() classification body | cloudLink | ✅ covered — B67 |
-| low | B42-G4 Authoritative statement on nCloudDriver retirement (newer releases / web) | web | pending |
+| low | B42-G4 Authoritative statement on nCloudDriver retirement (newer releases / web) | web | ✅ narrowed — B88 (residue → B88-G2) |
 | low | B42-G5 Forge message-handler classes | cloudLinkForge | ✅ covered — B67 |
 | low | B42-G6 Throttle / backpressure numeric defaults | cloudLink | ✅ covered — B67 |
 | high | B43-G1 KeyRing alias rename javax.baja.security.BAes256PasswordEncoder.key → niagara.security.BAes256PasswordEncoder.key: does N5 (or n5mig) remap it, or do migrated stations lose reversible passwords? | nre KeyRing + migrator | ✅ covered — B47 (MITIGATED by n5mig force-clear/passphrase path; PANCCADIA uses external encoding (3 pbkdf2-aes-256 secrets)) |
@@ -326,8 +325,8 @@ last_iteration_ts: 2026-09-27T22:45:00Z
 | low | B59-G1 Is niagara-help guide-search/devguide-search index-backed or linear scan | niagara-help tool | pending |
 | low | B59-G2 BajadocIndex.lookup/ensureTagsLoaded internals (rendering of java.* refs) | help.jar | pending |
 | low | B59-G4 docDeveloperAnalytics.jar own .dat index presence | docDeveloperAnalytics.jar | pending |
-| low | B60-G1 ignoreRuntimeProfileCheck consuming logic/effect in N5 ModuleXml | n-plugin | pending |
-| low | B60-G2 Version.strip(2) exact truncation algorithm | baja Version | pending |
+| low | B60-G1 ignoreRuntimeProfileCheck consuming logic/effect in N5 ModuleXml | n-plugin | ✅ covered — B89 |
+| low | B60-G2 Version.strip(2) exact truncation algorithm | baja Version | ✅ covered — B89 |
 | low | B60-G3 plat* cluster +17..+19 dependency gain N4→N5 cause | module.xml census | pending |
 | low | B60-G4 html/file/fox/export cluster outsized N4→N5 dependency drop | module.xml census | pending |
 | high | B61-G3 N5's consumer-side SAML (java-saml Util) accepts SHA-1/DSA-SHA1-signed IdP responses — the DEPRECATED_ALGOS reject flag is hardcoded false; weaker than Tridium's own IdP-side policy (security note for SAML SSO deployments) | saml java-saml-core | ✅ covered — B62 |
@@ -335,38 +334,37 @@ last_iteration_ts: 2026-09-27T22:45:00Z
 | medium | B65-G1 niagarad runs with the ByteBuddy permission layer inert (isTrustedDomain=true in NiagaraDaemon.Main); Java half confirmed — NiagaraDaemon has no nreMain so Nre.runClass path is unreachable | nre + platDaemon bytecode | ✅ covered — B69 |
 | low | B62-G1 Did N4's bare JDK javax.xml.crypto.dsig provider independently restrict SHA-1 (N4 used older com.onelogin.saml.Utils with no allowlist) | N4 saml + JDK | pending |
 | low | B62-G2 N4 runtime-crypto jar decompile for SRP6 KeyExchange (re-scoped B38-G4) | N4 nre-equivalent | pending |
-| low | B63-G2 nre.dll module-path / java.library.path / niagara.* %s runtime-value origin trace | nre.dll disasm | pending |
-| low | B63-G4 Disassemble nre.dll's shared snprintf-style command-line helper | nre.dll disasm | pending |
+| low | B63-G2 nre.dll module-path / java.library.path / niagara.* %s runtime-value origin trace | nre.dll disasm | ✅ covered — B87 |
+| low | B63-G4 Disassemble nre.dll's shared snprintf-style command-line helper | nre.dll disasm | ✅ covered — B87 |
 | low | B64-G3 Independently open the third-party CloudConnector_Sentience doc (WebSearch-summary confidence only) | web | pending |
 | low | B64-G4 Full page-by-page pass of the Summit-2026 128-slide Module Transition deck | web PDF | pending |
 | low | B64-G5 Same deck: enumerate any further module-level breaking-change rows beyond BACnet | web PDF | pending |
 | low | B65-G2 PermissionUtil.isPrivileged frame-classification rule | nre bytecode | ✅ covered — B69 |
-| low | B65-G4 securityBridge.jar -Xbootclasspath/a: loading mechanism (residual half of B3-G5) | securityBridge.jar + launcher | pending |
+| low | B65-G4 securityBridge.jar -Xbootclasspath/a: loading mechanism (residual half of B3-G5) | securityBridge.jar + launcher | ✅ covered — B87 |
 | low | B66-G1 backup.jar design-intent: can BBackupService produce a KeyRing-protected .dist the dead migrator code consumed (residual B47-G2) | backup.jar | pending |
 | low | B66-G2 BPxMigrator.processFormat ReflectCall.eval semantics | migrator.jar | ✅ covered — B82 |
 | low | B66-G3 BBogPremigrator program-object module-dependency check vs a real station | migrator + station | pending |
 | low | B67-G1 Deliberate-vs-vestigial intent of the empty finalize() idiom (needs external changelog) | cloudLink + web | pending |
-| low | B67-G2 MessageWrapper.canRetry() logic — the real retry-count gate | cloudLink | pending |
-| low | B67-G3 Whether Forge's Azure-Blob file-upload reuse implies an Azure-owned backend or a shared client primitive | cloudLinkForge + cloudLinkAzure | pending |
-| low | B67-G4 The ~30 remaining unread Forge msg/ classes | cloudLinkForge | pending |
-| low | B67-G5 BINiagaraNetworkHelper declaring file | cloudLinkExtensionNiagara | pending |
-| low | B68-G1 Remaining uncensused first-party servlets (Context threading) | web modules | pending |
+| low | B67-G2 MessageWrapper.canRetry() logic — the real retry-count gate | cloudLink | ✅ covered — B88 |
+| low | B67-G3 Whether Forge's Azure-Blob file-upload reuse implies an Azure-owned backend or a shared client primitive | cloudLinkForge + cloudLinkAzure | ✅ covered — B88 |
+| low | B67-G4 The ~30 remaining unread Forge msg/ classes | cloudLinkForge | ✅ narrowed — B88 (residue → B88-G1) |
+| low | B67-G5 BINiagaraNetworkHelper declaring file | cloudLinkExtensionNiagara | ✅ covered — B88 |
+| low | B68-G1 Remaining uncensused first-party servlets (Context threading) | web modules | ✅ covered — B83 |
 | low | B68-G2 @NiagaraRpc method bodies past injection point | niagaraDriver + rpc | pending |
-| low | B68-G3 BOrdScheme.resolve null-user read-permission enforcement | baja ord | pending |
-| low | B68-G4 JAAS LoginModule chain internals | baja auth | pending |
-| low | B68-G5 SuperSessionPrincipal branch-on-identity check | baja auth | pending |
+| low | B68-G3 BOrdScheme.resolve null-user read-permission enforcement | baja ord | ✅ covered — B86 |
+| low | B68-G4 JAAS LoginModule chain internals | baja auth | ✅ covered — B86 |
+| low | B68-G5 SuperSessionPrincipal branch-on-identity check | baja auth | ✅ covered — B86 |
 | low | B65-G3 doIsGrantedTo grant-matching body for FilePermission/RuntimeExecPermission | nre bytecode | ✅ covered — B81 |
 | low | B69-G1 Native-launcher-binary confirmation that niagarad never runs the Nre.runClass/Bootstrap path | native launchers | ✅ covered — B76 |
-| low | B69-G2 BUserService.auditLoginAttempt third-party caller confirmation (documented @since 3.3 API) | third-party modules | pending |
 | low | B69-G3 BOrionDatabase storage/retention internals | orion | pending |
 | low | B70-G1 Extend AMBIG SequencedCollection classification to the ~33 sites in undecompiled jars | organized/ | pending |
-| low | B70-G2 Cross-check instanceof census against docSource.jar originals | docSource | pending |
-| low | B70-G4 Confirm kitControl zero-modernization (records/sealed/pattern-switch counts) | kitControl | pending |
+| low | B70-G2 Cross-check instanceof census against docSource.jar originals | docSource | ✅ covered — B90 |
+| low | B70-G4 Confirm kitControl zero-modernization (records/sealed/pattern-switch counts) | kitControl | ✅ covered — B90 |
 | low | B71-G1 PortalLicenseUtil.getPortalUpdates HTTP body | portalApi | ✅ covered — B77 |
-| low | B71-G2 LicenseProcedure wizard full flow | portalApi | pending |
+| low | B71-G2 LicenseProcedure wizard full flow | portalApi | ✅ covered — B85 |
 | low | B71-G3 EntitlementApi/RetrieveEntitlements request/response schema | nre.subscription | ✅ covered — B77 |
-| low | B71-G4 N4 nre.jar physical location (which jar holds com.tridium.nre.subscription) | N4 install | pending |
-| low | B71-G5 N4 vs N5 nre.subscription byte-diff | N4 vs N5 nre | pending |
+| low | B71-G4 N4 nre.jar physical location (which jar holds com.tridium.nre.subscription) | N4 install | ✅ covered — B84 |
+| low | B71-G5 N4 vs N5 nre.subscription byte-diff | N4 vs N5 nre | ✅ covered — B84 |
 | low | B71-G6 DEVICE_REGISTRATION_CLIENT_ID OAuth flow (structure only) | nre.subscription | ✅ covered — B77 |
 | low | B72-G1 Exact FE-selection UI command that sets fieldEditor facet | workbench | pending |
 | low | B72-G2 AgentList.getDefault() specificity algorithm | baja agent | pending |
@@ -377,38 +375,57 @@ last_iteration_ts: 2026-09-27T22:45:00Z
 | low | B73-G3 BFoxClientWebsocketBehavior TLS-axis interaction with fox transport | fox | pending |
 | low | B73-G4 basicDriver chassis full blast-radius (12 modules) slot census | modbus + basicDriver | pending |
 | low | B73-G5 niagaraSync waitingQueueCsv live behavior (requires-execution) | niagaraSync station | pending |
-| low | B74-G1 Build a driver module end-to-end via NDriverModuleGenerator templates (refines B50-G1) | devkit | pending |
-| low | B74-G2 Recover devkit*.properties native-build compiler/linker command shapes | n-plugin natives | pending |
-| low | B74-G3 npsdk-native linux_npsdk/Gcc preset platform definition | n-plugin natives | pending |
+| low | B74-G1 Build a driver module end-to-end via NDriverModuleGenerator templates (refines B50-G1) | devkit | requires-execution → §19 (static template reconstruction done in B89; run the wizard + build) |
+| low | B74-G2 Recover devkit*.properties native-build compiler/linker command shapes | n-plugin natives | ✅ narrowed — B89 (residue → B89-G3) |
+| low | B74-G3 npsdk-native linux_npsdk/Gcc preset platform definition | n-plugin natives | ✅ covered — B89 |
 | low | B75-G1 JxBrowser/JavaFX preInitialize() bodies | workbench | ✅ covered — B79 |
 | low | B75-G2 BajadocIndex PatternFilter full wildcard grammar | help | pending |
 | low | B75-G3 Line-diff N5 buildingJS.html vs N4 B1132/B1119 excerpts | doc jars | pending |
 | low | B75-G4 uxBuilder-ux.jar minified JS bundle extraction | uxBuilder | ✅ covered — B79 |
-| low | B77-G1 PortalApi.getOnlineLicenseRequestPortalAddress endpoint host resolution | portalApi | pending |
-| low | B77-G2 Two structural inconsistencies in PortalApi.getLicenseUpdates | portalApi | pending |
-| low | B77-G3 RegistrationApi/EntitlementApi full field enumeration | nre.subscription | pending |
-| low | B77-G4 Device-flow token-endpoint live exchange (structure done) | nre.subscription | pending |
-| low | B77-G5 Three unreferenced device-registration sibling constants | nre.subscription | pending |
+| low | B77-G1 PortalApi.getOnlineLicenseRequestPortalAddress endpoint host resolution | portalApi | ✅ covered — B85 |
+| low | B77-G2 Two structural inconsistencies in PortalApi.getLicenseUpdates | portalApi | ✅ narrowed — B85 (residue → B85-G2) |
+| low | B77-G3 Whether EntitlementStatus.getScope()/the scope OAuth field is consumed anywhere (text corrected from block77 — prior row drifted) | nre.subscription | ✅ covered — B85 |
+| low | B77-G4 Whether DEVICE_REGISTRATION_RESPONSE_TYPE/GRANT_TYPE sibling constants are dead or a not-yet-wired path (text corrected from block77; live token exchange is not this gap) | nre.subscription | pending |
+| low | B77-G5 Whether SecurityConstants.canCheckTpk() is a deliberate single dev/prod-build flag or incidental reuse (text corrected from block77) | nre.subscription | ✅ covered — B85 |
 | low | B79-G1 jxBrowser 9.5.0 engine runtime download/pin mechanism | jxBrowser | pending |
 | low | B79-G2 uxBuilder AMD bundle module-loader entry graph | uxBuilder | pending |
 | low | B79-G3 grunt-niagara successor npm package name/contents (still unnamed) | m2 + npm | pending |
-| low | B81-G1 securityBridge.jar exact boot-classpath loading mechanism (refines B65-G4) | nre launcher | pending |
-| low | B81-G2 doIsGrantedTo wildcard/implies edge cases for other permission types | nre | pending |
+| low | B81-G1 securityBridge.jar exact boot-classpath loading mechanism (refines B65-G4) | nre launcher | ✅ covered — B87 |
+| low | B81-G2 doIsGrantedTo wildcard/implies edge cases for other permission types | nre | ✅ covered — B86 |
 | low | B81-G3 BServerPort nftables firewall rule-set generation + activation path | platform | pending |
 | low | B82-G1 backup.jar live .dist KeyRing write path full read | backup | pending |
 | low | B82-G2 BFormat.ReflectCall.eval permission-gate caller census | baja | pending |
 | low | B82-G3 AxPasswordUtil recursive-walk callers | migrator/baja | pending |
-| low | B82-G4 BJettyQoSFilterMigrator runtime effect on N5 jetty config | migrator | pending |
-| low | B78-G1 box jetty-web.xml contextPath + WebSocket-upgrade-filter vs auth-filter ordering | box | pending |
-| low | B78-G2 N4 AlarmStoreHeader magic/version compare (alarm.adb upgrade compatibility) | N4 alarm | pending |
+| low | B78-G1 box jetty-web.xml contextPath + WebSocket-upgrade-filter vs auth-filter ordering | box | ✅ covered — B83 |
+| low | B78-G2 N4 AlarmStoreHeader magic/version compare (alarm.adb upgrade compatibility) | N4 alarm | ✅ covered — B84 |
 | low | B78-G3 niagaraSync getLicenseFeature consumer: unlicensed fault/down/disabled severity | niagaraSync | pending |
-| low | B78-G4 box wire-format message opcodes / frame body layout | box | pending |
-| low | B80-G1 Full new-vs-old classification of all 110 getFirst/getLast call sites by receiver type | organized/ | pending |
-| low | B80-G2 What Jetty MBeanContainer publishes + platform MBean server remote reachability | jetty | pending |
-| low | B80-G3 Decompile the 5 B31 types from on-host N4-4.15 jars and slot-diff vs 4.14 | N4 4.15 jars | pending |
-| low | B76-G1 Boot-time routine (njre.dll/nre) that verifies the 256-byte .jar.sig sidecars + its key | nre boot | pending |
-| low | B76-G2 Watermark-specific N4 ZKM census (clinit decrypt idiom), replacing base64-polluted grep | N4 organized/ | pending |
+| low | B78-G4 box wire-format message opcodes / frame body layout | box | ✅ covered — B83 |
+| low | B80-G1 Full new-vs-old classification of all 110 getFirst/getLast call sites by receiver type | organized/ | ✅ covered — B90 |
+| low | B80-G2 What Jetty MBeanContainer publishes + platform MBean server remote reachability | jetty | ✅ covered — B83 |
+| low | B80-G3 Decompile the 5 B31 types from on-host N4-4.15 jars and slot-diff vs 4.14 | N4 4.15 jars | ✅ covered — B84 |
+| low | B76-G1 Boot-time routine (njre.dll/nre) that verifies the 256-byte .jar.sig sidecars + its key | nre boot | ✅ covered — B87 |
+| low | B76-G2 Watermark-specific N4 ZKM census (clinit decrypt idiom), replacing base64-polluted grep | N4 organized/ | ✅ covered — B90 |
 | deferred | B4-G6 Is the absence of docUser/migration doc jars permanent in N5 GA or beta-only | N5 GA install | pending (parked; needs a GA build) |
+| medium | B83-G2 Does the manual non-ComponentSlotMap alarm-attribution pattern (BNaServlet UpdateAlarms) generalize to the alarm module's own ack path | alarm + analytics | pending |
+| medium | B83-G3 Plain-JSON box frame path: internal message-type/method-dispatch structure beyond p/v/id | box | pending |
+| low | B84-G1 com.tridium.json (121 files) vs org.json (398 files) coexistence: per-module migration state | organized/ census | pending |
+| low | B84-G2 IpProtocol move nre.firewall → nre.security: genuine consolidation or coincidence | nre | pending |
+| low | B84-G3 alarm.adb record/row body format (recordVersion) N4-4.15 vs N5 compare | alarm + PowerB 4.15 | pending |
+| low | B85-G1 Corpus-wide audit for the shadow-literal dead-constant anti-pattern (seen twice in portalApi) | organized/ | pending |
+| low | B85-G3 RotateKeys / RequestCertificates response field shapes | nre.subscription | pending |
+| medium | B86-G1 Any first-party chain combining null-Context ORD resolve with canRead() as an exposure gate | web + baja | pending |
+| low | B86-G2 BLegacyBasicAuthenticationScheme (null LoginConfiguration) live reachability vs vestigial | web/authn | pending |
+| low | B87-G2 NreLauncherWin32 FIPS-mode byte (this+0x1002c) setter/origin | nre.dll disasm | pending |
+| low | B87-G3 njre.dll --add-exports niagara.nre/...=niagara.niagarad call site | njre.dll disasm | pending |
+| low | B88-G1 Payload body reads of the 9 large unread Forge msg/ classes | cloudLinkForge | pending |
+| low | B88-G3 cloudLinkForge Honeywell-Forge tenant ownership vs Tridium Azure proxy | cloudLinkForge | pending |
+| low | B89-G1 Why compileModuleTestJava's invalid Automatic-Module-Name error does not fail the Gradle task | n-plugin + javac | pending |
+| low | B89-G4 Remaining ~45 ndriver/videodriver .vm templates: other unnoted interface requirements | devkit | pending |
+| low | B90-G1 Extend docSource instanceof cross-check to the 19 remaining bound sites | docSource | pending |
+| low | B90-G2 BCloudConnectionService.getPlatformType() value set | cloudLink/platform | pending |
+| low | B90-G3 Explicit Zelix deobfuscator log for the 2 remaining N4 ZKM modules | N4 organized/ | pending |
+| low | B90-G4 Full census of BPlatformService/BIPlatformCommand getLicenseVendor/Feature overrides | organized/ | pending |
+| deferred | B88-G2 N5-specific Tridium statement that nCloudDriver is removed/unsupported (successor-by-redesign quote found) | web after GA | pending (parked; revisit after GA) |
 
 ## Iteration history
 
@@ -496,9 +513,27 @@ last_iteration_ts: 2026-09-27T22:45:00Z
 | 76 | 2026-09-27 | B69-G1 CLOSED niagarad.exe = 24KB njre.dll-hosted service, no CreateProcess/SCM; B30-G1 .jar.sig = 73×256-byte detached RSA-2048; B30-G4 N5 zero-ZKM reaffirmed (base64 FP); B43-G4 blocked (no native npsdk) | B76 | orchestrator-direct (r2/objdump) | 3 new — B76-G1..G3 |
 | 81 | 2026-09-27 | B65-G3 permission grant-matching bodies + B38-G3 LDAP Kerberos/GSSAPI REMOVED in N5 + B15-G3 BServerPort opt-in inbound-only nftables firewall; B65-G4 narrowed | B81 | delegated | 3 new — B81-G1..G3 |
 | 82 | 2026-09-27 | B66-G2 ReflectCall.eval permission-gated + B47-G3 AxPasswordUtil recursive walk + B31-G3 BWebBogConverter/QoS property lists; B66-G1 narrowed | B82 | delegated | 4 new — B82-G1..G4 |
+| 83 | 2026-09-28 | B78-G1 box /wsbox behind injected auth filter chain + B78-G4 single 'F' fragment opcode + B80-G2 MBeanContainer opt-in, no remote connector + B68-G1 servlet census; B82-G4 blocked-on-authorization | B83 | yes · sonnet | 4 new — B83-G1..G4 |
+| 84 | 2026-09-28 | N4-4.15.3.28 (PowerB OEM) found on-host: B80-G3/B31-G1 5 types slot-identical, B71-G4/G5 nre.subscription (injected LicenseValidator), B78-G2 alarm header byte-identical | B84 | yes · sonnet | 4 new — B84-G1..G4 |
+| 85 | 2026-09-28 | B77-G1/G3/G5 + B71-G2 LicenseProcedure full flow; B77-G2 narrowed; state-row drift for B77-G3/G4/G5 corrected | B85 | yes · sonnet | 3 new — B85-G1..G3 |
+| 86 | 2026-09-28 | B68-G3/G4/G5 ORD schemes + single REQUIRED LoginModule + super-session reader; B81-G2, B8-G1, B8-G2 doc/code mismatch | B86 | yes · sonnet | 3 new — B86-G1..G3 |
+| 87 | 2026-09-28 | B76-G1 SignatureUtil::checkFileSignature (CNG, exit 249/250) + B63-G2/G4 + B81-G1/B65-G4 live -Xbootclasspath/a + B17-G3 | B87 | yes · sonnet | 3 new — B87-G1..G3 |
+| 88 | 2026-09-28 | B67-G2/G3/G5 cloudLink retry/Azure/network helper + B13-G2 independent CI versioning; B42-G4/B67-G4 narrowed | B88 | yes · sonnet | 3 new — B88-G1..G3 |
+| 89 | 2026-09-28 | B2-G2 compact3 inert, B2-G3/B16-G3 doc/test.html, B29-G5 invalid Automatic-Module-Name (§14 corrects B29), B60-G1/G2, B74-G3; B74-G1/G2 advanced | B89 | yes · sonnet | 4 new — B89-G1..G4 |
+| 90 | 2026-09-28 | B80-G1 211-site classification, B70-G2 instanceof = Vineflower resugaring (§14 corrects B70/B25), B70-G4, B25-G1, B76-G2 N4 ZKM 16 modules, B11-G3 | B90 | yes · sonnet | 4 new — B90-G1..G4 |
 
 ## Blocked gaps (each tagged with what it needs)
 
+- B82-G4 SLOTS_TO_REMOVE vs PANCCADIA config.bog cross-check (text corrected; prior row drifted to a QoS-migrator wording) — needs: operator authorization to read client config.bog in this sandbox · tried: B83 located the bog; classifier denied extraction (not retried). Alias: B83-G4
+- B69-G2 BUserService.auditLoginAttempt third-party caller — needs: third-party/OEM modules · tried: N5 + N4.14 corpora (zero first-party callers in both, B86)
+- B29-G4 niagaraTest hard-requires BTestNg — needs: licensed niagaraTest run · tried: doc/test.html (every example extends BTestNg, B89)
+- B83-G1 MBeanContainer listener propagation to per-module WebAppContexts — needs: live JMX enumeration on a running station · tried: static read (B83)
+- B84-G4 NiagaraDaemon system property truth during niagarad execution — needs: running niagarad · tried: static trace (B84)
+- B85-G2 Portal handling of the growing multi-host getLicenseUpdates payload — needs: live traffic capture · tried: static reachability (B85)
+- B86-G3 BSpyScheme null-user bypass reachability from a live web session — needs: running station · tried: static (B86)
+- B87-G1 Live JPMS readability edge for securityBridge on the boot classpath — needs: running JVM (jcmd) · tried: launcher disasm + ModuleManager read (B87)
+- B89-G2 ignoreRuntimeProfileCheck consumer in closed native binaries — needs: native RE of the remaining binaries · tried: n-plugin, slotomatic, baja, devkit jars (zero consumers, B89)
+- B89-G3 Real devkit*.properties to confirm interpolation syntax — needs: an external devkit properties artifact · tried: whole install (absent, B89)
 - B61-G2 Live confirmation that N5 accepts an rsa-sha1-signed SAML response — needs: a running station + IdP · tried: bytecode gate reading only
 - B55-G3 Live egress reproduction — needs: a running station · tried: static decompile
 - B57-G3 Live reproduction of the denylist -D override — needs: a running station with controllable launch args · tried: static trace only
@@ -538,9 +573,9 @@ last_iteration_ts: 2026-09-27T22:45:00Z
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 145
-- **Open gaps — requires-execution**: 8
-- **Open gaps — blocked**: 36
+- **Open gaps — read-only investigable**: 114
+- **Open gaps — requires-execution**: 9
+- **Open gaps — blocked**: 46
 - Consecutive iterations with empty backlog (secondary): 0/2
 - Budget cap (default safety net): none
 

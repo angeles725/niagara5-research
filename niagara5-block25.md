@@ -178,6 +178,10 @@ did not scan `nre.jar`, `platform.jar`, `email.jar`, `fox.jar`, `jetty.jar`, `pl
 
 ## 25.6 — `instanceof` pattern matching — bytecode-invisible `[INFER]`
 
+> **Update (added by [Block 90], §14 cross-block).** The decompiled-source census this section anticipated
+> ([Block 70] §70.4) was itself shown by [Block 90] §90.2 to measure Vineflower resugaring; docSource ground
+> truth gives ~0% JEP 394 adoption in control/alarm/kitControl/schedule. B25-G1 is resolved by [Block 90].
+
 `instanceof <Type> <binding>` (Java 16+, JEP 394) compiles to the **same** `instanceof`/`checkcast`
 bytecode a plain `instanceof` check does — no distinct opcode, attribute, or bootstrap method
 distinguishes it. This census (and any purely bytecode-level tool) **cannot** measure its adoption; a

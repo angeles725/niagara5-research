@@ -297,6 +297,12 @@ decompile from other blocks, not exhaustively re-verified here).
 
 ## 70.4 — B25-G1 NARROWED: `instanceof` pattern-matching (JEP 394) adoption, measured at source across the four modules `[CERT]`
 
+> **Correction (added by [Block 90], §14 cross-block).** [Block 90] §90.2 cross-checked 13/13 "bound"
+> sites in the docSource/vineflower overlap against `docSource.jar` originals: every one is Vineflower
+> *resugaring* of the classic `instanceof`+cast idiom (byte-identical bytecode, `javac --release 21` +
+> `javap -c`), not Tridium-authored JEP 394 syntax. The ~14.5% rate below measures decompiler output, not
+> source adoption; the source-level rate for these four modules reads as ~0%. See [Block 90].
+
 A line-based scan (`.java` files only, comment-leading lines excluded, per-module) of every
 `instanceof` occurrence in the four decompiled modules, classifying each as **bound** (the JEP 394
 binding form, `instanceof Type identifier`) or **unbound** (classic `instanceof Type)`/`instanceof
