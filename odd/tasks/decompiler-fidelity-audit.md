@@ -130,6 +130,10 @@ make the decompile complete and as faithful as possible.
 - [ ] T16 Make the grade visible where claims are made: lint rule R9 — a [CERT] citation into organized/<mod>/vineflower/<cls>
       whose class grade is compiles-mismatch/no-compile needs a bytecode (javap) or docSource co-citation. Route: after T15.
 
+## Grader report follow-ups (next session, from review-6f1c46518f56b786)
+- Render the new grades (timeout, harness-error) in the aggregate report table (0 occurrences in the current sample).
+- Reconcile the report's allowlist prose and sample-size note with the current run; restore the krak2 cross-check line.
+
 ## Performance (2026-09-28)
 - Grading/decompiling read ~440 jars from /mnt/c (WSL 9p) per javac call — the dominant cost. Local mirror created and
   sha256-verified: niagara5-research-localcache/jar-mirror-5.0.0.28/{modules,bin-ext} (+ modules.sha256, bin-ext.sha256).
