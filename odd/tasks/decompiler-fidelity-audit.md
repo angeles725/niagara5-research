@@ -171,6 +171,23 @@ make the decompile complete and as faithful as possible.
       upstream_unproven_artifacts 0. Spot check: jackson-core-2.22.2 META-INF/versions/11 BigSignificand.java
       present with its package/class. Browse: organized/_best/tree.
 
+- [x] Review-advisory rounds (native RDD, all slices APPROVED + acknowledged): round 1 = 8 chained slices
+      cc693dd..114960f (whole range exceeded the lens context budget), fixes 3cf34c1, 5af7a84, 4505d39, 987b734,
+      5c3d9c0, 9ddb521; round 2 = 4 slices 114960f..9ddb521, fixes 338f446, 6724b9f. Each advisory was verified
+      against code and classified REAL-fixed / ALREADY-FIXED-LATER / NOT-REAL / COSMETIC-DEFERRED by its writer;
+      orchestrator re-verified samples (CHA callers 10 sites, MRJAR/noinner/budget bats, kotlin facade mapping
+      GroupingKt → commonMain/kotlin/collections/Grouping.kt byte-identical). Coverage headline (third-party
+      classes, one unit = every .class entry, covered iff identity proven AND top-level source present):
+      61,491/77,719 = 79.1% (supersedes 86.9% / 77.7% / 70.5%, which mixed units or missed MRJAR/KMP layouts).
+      Current index: 64,929 classes — docSource 2,809, upstream 37,725, vineflower2 24,394, fallback2 1, missing 0.
+- [ ] Documented follow-ups (cosmetic / low risk, deferred by their writers with reasons in the commit reports):
+      duplicated v1 vs v2/cons timeout glue and Vineflower command prefix (n5-decompile.sh); decompile-vs-skip
+      tally inferred from a log line in --third-party-libinf; GRADE_RANK duplicated from n5-fidelity.py without a
+      drift test; find_identical_jar_candidate reimplements the rung chain; single-status rollup of
+      multi-occurrence artifacts; extracted upstream copies named after the class, not the original source file;
+      `@JvmMultifileClass` facades mapped to one file; kotlin-stdlib/woodstox residual facade gaps (2,468 classes
+      corpus-wide); n5-bytecode-xref advisories R2-003/R2-004 from 4505d39's slice (out of that writer's scope).
+
 ## Maximum decompile fidelity (user requirement 2026-09-28: "the decompile must be right, no inventions, not tainted; try everything possible")
 - [x] T13 Integrity + completeness census [CERT-hw]: 252 recon.json (247 modules + bin/ext) — 0 jar sha256 mismatches vs the
       installed jars, 0 missing jars; 14,894 top-level classes, 0 without a .java (CORRECTED by B117: this counted only top-level classes of the module jars — 24,896 classes in 98 nested LIB-INF jars and 958 classes in 10 out-of-pipeline Tridium jars were never decompiled; orchestrator verified 0 .java under any LIB-INF) (vineflower or fallback); CFR fallback used in

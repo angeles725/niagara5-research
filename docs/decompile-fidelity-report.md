@@ -433,6 +433,12 @@ _lib-inf-3p/*` rebuild settled, same command): 455 populations, 64929 classes �
 0, 0 `vineflower`(v1) picks, 0 bare-`fallback` picks. This is the number this file's own two
 transient/in-progress runs above were pending on; it supersedes both.
 
+**Current numbers** (after 9ddb521's MRJAR-aware + declared-package source matching and 6724b9f's
+review fixes; orchestrator-verified on `organized/_best/best-source.json`): 64929 classes — `docSource`
+2809, `upstream` **37725**, `vineflower2` **24394**, `fallback2` 1, `missing` 0,
+`upstream_unproven_artifacts` 0; `--materialize`: 64929 linked, 0 skipped. These supersede the
+"Final real run" figures above (530 classes moved from vineflower2 to proven-identical upstream source).
+
 **Browsing**: `organized/_best/best-source.json` is the full machine-readable index (per class:
 `module`, `class`, `best`, `best_kind`, `reason`, `line_mapped_view`, `alternates`, `grade`, plus
 a `summary` block with `missing_by_jar`). `organized/_best/tree/` is a browsable mirror — open
