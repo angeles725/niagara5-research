@@ -74,7 +74,7 @@ make the decompile complete and as faithful as possible.
       class names across modules must not be dropped silently (R2-002); --cha must accept subtype receivers that inherit the
       method (R3-001, current result can MISS callers); surface parse_errors in every subcommand (R4). Until fixed, treat its
       caller lists as lower bounds.
-- [ ] T22 Completeness: decompile (v2 + conservative line-mapped view) the 10 out-of-pipeline Tridium jars (etc/m2, lib doclet)
+- [~] T22 Completeness (third-party half DONE f591074: 154/154 upstream -sources.jar, 92.4% class coverage; Tridium half + conservative tree delegated): decompile (v2 + conservative line-mapped view) the 10 out-of-pipeline Tridium jars (etc/m2, lib doclet)
       and the Tridium-owned nested LIB-INF jars; for identified third-party jars fetch the upstream -sources.jar by exact
       Maven coordinates (original source beats any decompile); record per-class best representation. Route: delegated,
       after T19b lands (same script).
@@ -111,7 +111,7 @@ make the decompile complete and as faithful as possible.
       JEP 513/456, condy, preview 65535, Kotlin metadata, Maven SHA-1 lookup. REJECTED from it: difflib similarity >= 0.90 as a
       verdict and branch-target erasure ("L") in its normalizer (hides control-flow changes); -parameters (Tridium classes have no
       MethodParameters, verified); re-signing/redistribution steps (out of scope: research is read-only).
-- [ ] T19b (delegated, TDD) Harden v2 after RDD review-4091d4df000d0cae: orchestrator verified a real library-context race —
+- [x] T19b (1e44e71; orchestrator verified 252/252 v2 ok with idempotency_key; RDD pending) Harden v2 after RDD review-4091d4df000d0cae: orchestrator verified a real library-context race —
       5 modules (analyticsLibs, apachePoi, commonsIo, commonsLang, niagaraTest) were rm -rf/unzip-ed 07:20-07:31Z while parallel
       workers scanned */extracted/LIB-INF/*.jar. Fix: immutable libcache prepared serially, idempotency key over the full
       library set, failed runs never cached as success, fallback2/ cleared, stale-extract check, no shell→Python interpolation.
