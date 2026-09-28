@@ -352,6 +352,11 @@ below).
 
 ## 87.5 — B17-G3 CLOSED to practical completeness: every runtime value needed for a bare `java`-fallback `n5mig` relaunch is now either a fixed literal ([Block 63]), an environment variable (§87.2), or a plain-text config file (this section) — no further native disassembly is required to reconstruct the invocation `[CERT-hw]`+`[CERT]`
 
+> **Correction (added by [Block 94], §14 cross-block).** `defaultToNonFIPS()` has zero call xrefs in `nre.dll`
+> (full linear sweep, [Block 94]). The FIPS choice is made by `NreLauncherWin32::initFips()`, called from `nre()`,
+> with a 3-tier precedence: license feature `Tridium:fips140`, then the `-fips=` CLI flag, then the
+> `bajaui-FipsOptions.options` file (inverted polarity vs `defaultToNonFIPS`). See [Block 94] §94.x Corrections.
+
 [Block 17] §17.2's own `java`-fallback attempt against `n5mig` failed because it could not reconstruct the
 native launcher's module-path/VM-argument set, naming **B17-G3**. [Block 63] §63.3 supplied the complete FIXED
 43-flag list but left the `%s`-templated runtime values as the open remainder. §87.1-§87.4 close that

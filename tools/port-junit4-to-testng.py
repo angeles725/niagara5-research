@@ -164,13 +164,18 @@ ASSERT_KINDS = {
     "assertSame": reorder_assert_equals_args,
     "assertNotSame": reorder_assert_equals_args,
     # TestNG's Assert class has NO assertArrayEquals method at all — arrays go through the
-    # SAME overloaded assertEquals(actual[], expected[]) family. Not exercised by the
-    # ColdRoomPan-rt corpus (grep-confirmed zero uses); flagged as B29-G (recipe limitation)
-    # rather than silently mis-emitting a call TestNG doesn't have.
+    # SAME overloaded assertEquals(actual[], expected[]) family, so the call is renamed to
+    # assertEquals and reordered exactly like assertEquals (niagara5-block97.md §97.8, B29-G3).
+    "assertArrayEquals": reorder_assert_equals_args,
 }
 
-ASSERT_CALL = re.compile(r'(?<!Assert\.)\b(assertTrue|assertFalse|assertNull|assertNotNull|'
-                          r'assertSame|assertNotSame|assertEquals)\s*\(')
+# JUnit name -> TestNG name when they differ.
+TESTNG_NAME = {"assertArrayEquals": "assertEquals"}
+
+# One name list drives both the rewrite and the self-checks in main().
+_ASSERT_NAMES = "|".join(ASSERT_KINDS)
+ASSERT_CALL = re.compile(r'(?<!Assert\.)\b(' + _ASSERT_NAMES + r')\s*\(')
+ANY_ASSERT_CALL = re.compile(r'\b(?:' + _ASSERT_NAMES + r')\s*\(')
 
 
 def port_source(src: str) -> str:
@@ -199,12 +204,22 @@ def port_source(src: str) -> str:
         inner = out[open_idx + 1:close_idx]
         reorder_fn = ASSERT_KINDS[kind]
         new_inner = reorder_fn(inner)
-        result.append(f"Assert.{kind}({new_inner})")
+        result.append(f"Assert.{TESTNG_NAME.get(kind, kind)}({new_inner})")
         pos = close_idx + 1
     result.append(out[pos:])
     out = "".join(result)
 
     return out
+
+
+def unported_calls(src: str) -> int:
+    """Number of JUnit-style assert* calls left without an Assert. prefix (should be 0 after a port)."""
+    return len(ASSERT_CALL.findall(src))
+
+
+def exit_code(n_before: int, n_after: int, left: int) -> int:
+    """0 when every assert* call survived the port and none is left without an Assert. prefix."""
+    return 0 if n_before == n_after and left == 0 else 1
 
 
 def main():
@@ -217,11 +232,15 @@ def main():
     ported = port_source(src)
     with open(dest_path, "w", encoding="utf-8") as f:
         f.write(ported)
-    n_before = len(re.findall(r'\bassert(?:True|False|Null|NotNull|Same|NotSame|Equals|ArrayEquals)\s*\(', src))
-    n_after = len(re.findall(r'\bassert(?:True|False|Null|NotNull|Same|NotSame|Equals|ArrayEquals)\s*\(', ported))
-    print(f"{src_path} -> {dest_path}: {n_before} assert* calls in, {n_after} out "
-          f"({'OK — count preserved' if n_before == n_after else 'MISMATCH — investigate'})")
+    # assertArrayEquals is renamed to assertEquals, so count every known assert name on both sides.
+    n_before = len(ANY_ASSERT_CALL.findall(src))
+    n_after = len(ANY_ASSERT_CALL.findall(ported))
+    left = unported_calls(ported)
+    code = exit_code(n_before, n_after, left)
+    print(f"{src_path} -> {dest_path}: {n_before} assert* calls in, {n_after} out, {left} unported "
+          f"({'OK — count preserved, none unported' if code == 0 else 'MISMATCH — investigate'})")
+    return code
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

@@ -243,6 +243,11 @@ to the old layer/loader/classes — which nothing here attempts).
 
 ## 23.7 — Signature gates: N5 restructures N4's two-gate design into three gates, drops the `moduleVerificationMode` level knob, and gives `baja` its *own* dedicated per-class check instead of bypassing verification
 
+> **Correction (added by [Block 95], §14 cross-block).** This block's header and §23.7 describe
+> `com.tridium.crypto.core` as absent from the jars opened. [Block 95] §95.9 found it inside `bin/ext/nre.jar`
+> (152 entries) and already decompiled under `organized/_bin-ext/nre/vineflower`. Its
+> `CertificateChainValidator` disables revocation checking (`params.setRevocationEnabled(false)`). See [Block 95].
+
 REMITTANCE `[B1147]` (`niagara-research`, N4 4.14) documents N4 as **two** gates: boot-scan
 (`ModuleManager.verifyModuleSignature`, per module-part, hard-fails to `exit(-7)`) and class-load
 (`ModuleClassLoader.verifyJarEntrySignature`, per JAR entry, hard-fails to `exit(-6)`), with `baja` bypassing
