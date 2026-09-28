@@ -44,16 +44,16 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
      Field names use UNDERSCORES on purpose: they must never collide with the prose greps below. -->
 <!-- research-state.v1 -->
 schema: research-state.v1
-covered_blocks: 114
-gaps_closed: 385
-known_gaps: 483
-investigable_open: 4
+covered_blocks: 115
+gaps_closed: 386
+known_gaps: 488
+investigable_open: 8
 requires_execution_open: 18
 blocked_open: 64
 deferred_open: 12
 undocumented_findings: 0
-blocks_since_retro: 8
-last_iteration_ts: 2026-09-28T07:30:00Z
+blocks_since_retro: 0
+last_iteration_ts: 2026-09-28T08:30:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
      applies to every corpus (single-focus and campaign alike); the stall-detection instrument reads it
@@ -61,9 +61,9 @@ last_iteration_ts: 2026-09-28T07:30:00Z
 
 ## Coverage
 
-- **Covered blocks**: 114 (B1..B114)
-- **Coverage metric**: 385 / 483 closed
-- **Last iteration**: 2026-09-28 — wave 13: B112–B114 (3 sonnet writers), 10 child gaps closed/narrowed, 6 new (2 requires-execution), §14 pointers in B107/B110/B111
+- **Covered blocks**: 115 (B1..B115)
+- **Coverage metric**: 386 / 488 closed
+- **Last iteration**: 2026-09-28 — B115 decompiler-fidelity/method-error audit; lint-block R0-R8 gates + CI; §18 retro (14 kit deltas, issues #1204-#1217)
 
 ## Gap-backlog
 
@@ -483,6 +483,11 @@ last_iteration_ts: 2026-09-28T07:30:00Z
 | low | B113-G1 Transitive-closure walk of NCS-Agent Go types beyond the 2,418 typelinks entries (Ghidra reported 4,209) | NCS-Agent binary | pending |
 | low | B114-G1 Map other hardcoded-BSqlType-literal callers of the deprecated-dialect path | rdb | pending |
 | low | B114-G2 Live MySQL/SQL-Server execution of BUnicodeUpdateJob ALTER TABLE DDL | RDBMS | requires-execution → §19 |
+| low | B115-G1 §14 pointer in B18 §18.9 cloudLinkNcs row | corpus | ✅ covered — orchestrator (B18 pointer added with B115) |
+| medium | B115-G2 Triage lint-block --audit findings over B1-B114 (721 at first run; measured-by: tools/lint-block.py --audit) | corpus + lint-block | pending |
+| medium | B115-G3 Extend the docSource inlining proof across the full dead-constant candidate population | organized/docSource | pending |
+| low | B115-G4 Re-check B13 §13.4.4(d-2) 49 removed modules against the N4.15 baseline | PowerB install | pending |
+| low | B115-G5 Reconcile the two /tmp-path re-counts (§115.7) with T3 audit method | corpus | pending |
 | low | B104-G5 Live-station confirmation of B104's static driver/sync findings | station | requires-execution → §19 |
 | low | B106-G1 Gradle --info/dependencyInsight trace of which wiring puts the moduleTest jar on compileModuleTestJava | Gradle run | requires-execution → §19 |
 
@@ -604,6 +609,7 @@ last_iteration_ts: 2026-09-28T07:30:00Z
 | 112 | 2026-09-28 | B107-G1 fox history gate is real session check (§14 corrects B107), B109-G1 Santuario xmlsec MD5-only; B107-G2/B109-G2 narrowed | B112 | yes · sonnet | 3 new — B112-G1..G3 |
 | 113 | 2026-09-28 | B108-G2 no process creation in NCS-Agent; B108-G1 narrowed (2,418 typelinks, 47 own types) | B113 | yes · sonnet | 1 new — B113-G1 |
 | 114 | 2026-09-28 | B110-G1 MySQL/MSSQL DDL, B110-G2 sqlNVarchar live via BUnicodeUpdateJob (§14 B110), B111-G1; B109-G3 already-covered | B114 | yes · sonnet | 2 new — B114-G1..G2 |
+| 115 | 2026-09-28 | Decompiler-fidelity + method-error audit: bytecode-distinguishability matrix, version-gated resugaring, constant inlining (docSource proof), 7/18 N5-only modules ship in N4.15, B84 fixes; §14 pointers B13/B18/B84/B96/B105/B111 | B115 | yes · sonnet | 5 new — B115-G1..G5 |
 
 ## Blocked gaps (each tagged with what it needs)
 
@@ -674,7 +680,7 @@ last_iteration_ts: 2026-09-28T07:30:00Z
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 4
+- **Open gaps — read-only investigable**: 8
 - **Open gaps — requires-execution**: 18
 - **Open gaps — blocked**: 64
 - Consecutive iterations with empty backlog (secondary): 0/2

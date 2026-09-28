@@ -253,6 +253,17 @@ second-level subclasses, one shared `tridium:workbench` key for the entire `plat
 
 ## 96.5 — B85-G1 NARROWED: the mechanical corpus-wide sweep runs clean and finds the "shadow-literal dead-constant" anti-pattern is pervasive — not a 2-instance anomaly — recurring in at least 680 files at various scales, from a single accidental bug to a 268-instance systematic table; full per-candidate triage of the ~3600 surfaced pairs is a separate, large, mechanical follow-on `[CERT]`+`[INFER]`
 
+> **Correction (added by [Block 115], §115.3, §14 cross-block).** This sweep's method (decompiled source
+> only) cannot distinguish a compile-time-INLINED reference to the "dead" constant from a genuinely
+> independent duplicate literal — `static final` `String`/primitive fields are JLS §4.12.4 compile-time
+> constants, inlined by `javac` into every caller's own constant pool, so a referencing site and an
+> unrelated duplicate both decompile to the identical bare literal. [Block 115] §115.3 proves this
+> concretely on a real, docSource-covered pair from this sweep's own `dead_constants_shadowed.json`
+> (`BTagDictionaryService.LOGGER_NAME` / `BTagDictionary.logger`): one shadow-literal hit for that constant
+> IS an inlined reference (confirmed against the docSource original); a second shadow-literal hit for the
+> SAME constant, same file, is a genuine independent duplicate. A dead constant with zero textual references
+> in decompiled source is therefore not itself evidence the constant is unused.
+
 **Method** (`dead_constant_sweep.py`, preserved at
 `/tmp/claude-1000/-home-cristian-niagara-research/dcc4f40c-fb17-49fb-afa5-3b08dcc8e0bd/scratchpad/b96/`):
 (1) regex-match every `[public|private|protected] static final String NAME = "VALUE";` single-line

@@ -2,7 +2,7 @@
 
 # Block catalog
 
-Total: **114 blocks**
+Total: **115 blocks**
 
 | Block | File | Title |
 |-------|------|-------|
@@ -120,3 +120,4 @@ Total: **114 blocks**
 | 112 | [niagara5-block112.md](niagara5-block112.md) | `BFoxHistorySpace`'s `getPermissions(null)` nav gate is CORRECTED, not confirmed: the class is a client-side fox proxy whose `BRootHistoryFolder.getPermissions()` override ignores `cx` entirely and instead round-trips the real session's permissions, and the server-side leaf-record path independently re-gates on `getSessionContext()`; the caller/callee-split null-Context census stays non-mechanical; N4-4.15.3.28's real SAML SP call chain is now traced end-to-end and accepts SHA-1 for an even more solidly-evidenced reason than [Block 98] found; `WebProperty`'s frozen-slot flag is found once more, on an unrelated first-party mechanism |
 | 113 | [niagara5-block113.md](niagara5-block113.md) | NCS-Agent's Go type-metadata table (`typelinks`) fully parsed and cross-tool-corroborated: 2,418 reflect-visible types recovered with 47 own `github.com/HON-HCE/*` struct/pointer types and their fields; `InstallSoftware`'s process-invocation path traced to a dead end — the binary links zero process-creation API anywhere |
 | 114 | [niagara5-block114.md](niagara5-block114.md) | `docDeveloper.jar`'s `bajadoc.index` root-node count is ALREADY fully accounted for by two prior blocks; MySQL/SQL-Server DDL type strings censused against HSQLDB; `BSqlType.sqlNVarchar` is dead in the NEW `ddl.Column` path but LIVE in the OLD deprecated-dialect path via `BUnicodeUpdateJob`; and `com.tridium.niagarad.license.Feature`'s call-site census extended to its true 7-file/11-site population |
+| 115 | [niagara5-block115.md](niagara5-block115.md) | Decompiler-fidelity and method-error audit: the bytecode-distinguishability matrix, version-gated resugaring confirmed on `BQudtUnitTag`, compile-time constant inlining proven docSource-vs-decompiled on a real corpus pair, B13's 18 "N5-only" modules re-baselined against N4-4.15.3.28 (platHwScanAtlas was already shipping), two B84 defects corrected, and a canonical C1-C12 method-error-class catalog mapped to lint rules R1-R8 |

@@ -379,6 +379,18 @@ whoever closes B105-G1.
 
 ## 105.8 — B96-G2 ADVANCED: a 40-candidate systematic sample of the 3623 dead-constant/shadow-literal population classifies 62.5% as accidental code-duplication debt, 30% as coincidental value collisions (dominated by generic short words), 7.5% as framework-conventional duplication — with zero cases of an actual VALUE mismatch (this sweep measures duplication debt, not functional-correctness bugs) `[CERT]`+`[INFER]`
 
+> **Correction (added by [Block 115], §115.3, §14 cross-block).** The triage method behind this sample
+> (reading decompiled source at the declaration + shadow-hit sites) cannot distinguish a compile-time-INLINED
+> constant reference from a genuinely independent duplicate literal — both decompile to the identical bare
+> literal, since `static final` `String`/primitive fields are JLS §4.12.4 compile-time constants inlined by
+> `javac` before Vineflower ever sees them. [Block 115] §115.3 proves this concretely on a real,
+> docSource-covered pair from the same `dead_constants_shadowed.json` artifact. The 62.5% "accidental
+> duplication" figure may correctly describe what this 40-candidate sample's own decompiled-source reads
+> concluded, but it is **unsupported as a general bug-RATE claim** for the population: some fraction of
+> "accidental duplication" classifications made this way are compile-time-inlined constant references
+> misread as duplicates, not maintainability debt. A docSource cross-check, not performed in this sample,
+> is the only way to tell the two apart per-candidate.
+
 **Verbatim parent text** ([Block 96] §96.x "Child gaps," `niagara5-block96.md:531-537`): "**B96-G2** —
 Full per-candidate triage of the B85-G1 mechanical sweep's ~2,766 same-file / ~3,623 corpus-wide
 dead-constant-with-shadow-literal candidates (`dead_constants_shadowed.json`, this session's artifact)
