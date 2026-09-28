@@ -458,6 +458,10 @@ class JarIdentityFallbackTest(unittest.TestCase):
             self.assertIn("missing_by_jar", data["summary"])
             missing_by_jar = data["summary"]["missing_by_jar"]
             self.assertIsInstance(missing_by_jar, list)
+            # R3-005: assert the actual per-jar content, not just structural properties (sorted,
+            # total-matches-missing_count) that would still hold even if `jar` carried the wrong
+            # name (e.g. always "unknown") for every entry.
+            self.assertEqual(missing_by_jar, [{"jar": "modA", "count": 8}])
             # sorted desc by count
             counts = [entry["count"] for entry in missing_by_jar]
             self.assertEqual(counts, sorted(counts, reverse=True))
