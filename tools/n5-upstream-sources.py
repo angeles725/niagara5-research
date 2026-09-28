@@ -635,6 +635,38 @@ def classify_jar_identity(local_bytes: bytes, central_bytes: bytes) -> dict:
     }
 
 
+# Class-file names Java's own compiler emits that are NOT "classes" a decompile/source-match
+# effort needs to cover -- module-info.class (a module declaration) and package-info.class (a
+# package's annotations only) each compile from a real .java file but carry no logic worth
+# chasing an upstream source for. Orchestrator follow-up finding (2026-09-28,
+# R-coverage-unit-definition): the coverage UNIT below must exclude them, or the headline
+# overstates its own denominator with entries nothing is trying to prove.
+_NON_CLASS_SIMPLE_NAMES = {"module-info", "package-info"}
+
+
+def real_class_entries(jar_bytes: bytes) -> dict[str, str]:
+    """THE single canonical UNIT for third-party class-coverage accounting (orchestrator
+    follow-up, 2026-09-28): every REAL `.class` entry a jar ships, nested/anonymous classes
+    INCLUDED (unlike class_names_from_zip's source-file-name unit, which deliberately excludes
+    them to compare 1:1 against `.java` files) -- EXCLUDING module-info.class/package-info.class
+    (see _NON_CLASS_SIMPLE_NAMES). Keyed by the entry's full in-jar path WITH the ".class" suffix
+    (the same shape all_class_entry_hashes returns, which this reuses), valued by its SHA-256."""
+    return {name: h for name, h in all_class_entry_hashes(jar_bytes).items()
+            if name.rsplit("/", 1)[-1][:-len(".class")] not in _NON_CLASS_SIMPLE_NAMES}
+
+
+def top_level_class_of(class_entry_name: str) -> str:
+    """The TOP-LEVEL class a `.class` entry belongs to -- the `.java`/`.kt` source file that
+    would need to exist for this entry to be source-covered -- in the same "path/without/
+    extension" shape class_names_from_zip(..., ".java") returns: "org/foo/A$B.class" ->
+    "org/foo/A", "org/foo/A$1.class" -> "org/foo/A", "org/foo/A.class" -> "org/foo/A" (a nested/
+    anonymous class A$B or A$1 is declared INSIDE A.java, so it is source-covered exactly when
+    A's own top-level source is)."""
+    base = class_entry_name[:-len(".class")] if class_entry_name.endswith(".class") else class_entry_name
+    dirpart, sep, simple = base.rpartition("/")
+    return f"{dirpart}{sep}{simple.split('$', 1)[0]}"
+
+
 def load_binary_bytes(occurrence: dict, mod_dir: Path = N5_MOD_DIR,
                        install_dir: Path = N5_INSTALL_DIR) -> Optional[bytes]:
     """Read the installed binary jar bytes an evidence occurrence refers to. Returns None if the
@@ -879,78 +911,114 @@ def run_identify_unidentified(plan: dict, mirror_modules_dir=MIRROR_MODULES_DIR,
     return summary
 
 
+def sources_top_level_names(art: dict) -> Optional[set[str]]:
+    """The set of top-level class names (same "path/without/extension" shape top_level_class_of
+    returns) that have a matching source file in this artifact's FETCHED sources jar -- `.java`,
+    UNIONED with `.kt` (real finding: kotlin-stdlib and friends publish `.kt` sources, no `.java`
+    at all -- a Kotlin-only sources jar must still count as source coverage). Returns None when no
+    sources jar was ever fetched for this artifact (status != "fetched") or the recorded file
+    isn't actually readable on disk."""
+    if art.get("status") != "fetched":
+        return None
+    rel_path = art.get("sources_jar_path")
+    if not rel_path:
+        return None
+    jar_path = REPO_ROOT / rel_path
+    if not jar_path.exists():
+        return None
+    sources_bytes = jar_path.read_bytes()
+    return class_names_from_zip(sources_bytes, ".java") | class_names_from_zip(sources_bytes, ".kt")
+
+
 def run_all_third_party_coverage(manifest: dict, mirror_modules_dir=MIRROR_MODULES_DIR,
                                   mirror_binext_dir=MIRROR_BINEXT_DIR) -> dict:
-    """T26a headline fix: the class-coverage percentage must state its denominator over ALL
-    third-party classes (identified + unidentified), not only artifacts with a fetched sources
-    jar. Numerator: classes_with_upstream_source. For an artifact with a real per-.class
-    content_identity check (see classify_jar_identity): resigned-identical/sha1-exact count every
-    class as covered, partially-modified counts only its classes_identical, vendor-modified/
-    unverifiable/mixed/unverified counts none -- but its classes still count toward the
-    denominator (content_identity's own classes_total_local is preferred; classdiff's binary_total
-    is the fallback).
+    """T26a headline fix, tightened by an orchestrator follow-up review (2026-09-28): the
+    class-coverage percentage must state BOTH its numerator and denominator in ONE consistent
+    UNIT, over ALL third-party classes (identified + unidentified), not only artifacts with a
+    fetched sources jar.
 
-    UNIT (real 2026-09-28 finding, R3-coverage-unit-mix): content_identity's classes_total_local
-    counts EVERY .class entry in the jar, including nested/anonymous classes
-    (all_class_entry_hashes) -- that is the unit this function's denominator uses wherever it can.
-    Without a content_identity, this now first tries the LOCAL MIRROR's own raw .class-entry count
-    for the artifact's first occurrence, in that SAME all-classes unit (no network) -- an artifact
-    whose sources jar was never fetched (status != "fetched": no-sources-published /
-    checksum-mismatch / network-error, so run_classdiff never even runs for it) used to be
-    `continue`-d out of the denominator ENTIRELY (real 2026-09-28 finding,
-    R3-headline-denominator-silent-omission / R4-coverage-denominator-silently-shrinks) -- its
-    real shipped classes just vanished from the headline instead of counting as uncovered. Only
-    when the mirror doesn't have the jar either does this fall back to classdiff's own
-    binary_total/common, a DIFFERENT, smaller unit (class_names_from_zip deliberately excludes
-    nested/anonymous classes -- it's a source-file-name comparison), and only as a last resort
-    (better an undercounted number than a silently missing one). An artifact this function truly
-    cannot count at all gets "class_count": None, so the gap stays visible instead of silent."""
+    THE UNIT (denominator, every artifact and every still-unidentified jar): real_class_entries
+    of the LOCAL MIRROR's copy of the artifact's first occurrence -- every `.class` entry the jar
+    ships, nested/anonymous classes INCLUDED, module-info.class/package-info.class EXCLUDED (see
+    real_class_entries). This is the SAME unit everywhere: no artifact's denominator uses a
+    narrower, name-based, top-level-only count anymore (previously a REAL bug -- R3-coverage-
+    unit-mix -- content_identity's classes_total_local (all classes) was mixed with classdiff's
+    binary_total (top-level only, excludes nested/anonymous) in the SAME total).
+
+    COVERAGE (numerator): a class entry counts as covered iff BOTH hold:
+      (a) PROVEN binary identity for that exact entry -- "whole-jar" proof (content_identity
+          status resigned-identical/sha1-exact, OR an artifact with NO content_identity but an
+          "identification_method" -- T26a's OWN whole-jar SHA-1 proof, see run_identify_unidentified
+          -- both mean literally every byte of the local jar already matches Central's, so EVERY
+          entry is proven, nested/anonymous included) proves ALL entries; "partially-modified"
+          proves only the entries NOT in its different_classes/local_only_classes; vendor-modified/
+          unverifiable/mixed/unverified/no content_identity-or-identification_method prove NONE.
+      (b) its TOP-LEVEL class (top_level_class_of, stripping any "$...") has a matching `.java`/
+          `.kt` in the artifact's FETCHED sources jar (sources_top_level_names) -- binary proof
+          alone is not "coverage": this report is specifically about having the ORIGINAL SOURCE,
+          and a nested/anonymous class is declared inside its enclosing top-level class's own
+          source file, so it is source-covered exactly when that file is.
+    A name-based classdiff match with NO identity proof at all (the previous, weaker fallback) no
+    longer counts here -- that weaker, name-only view is still reported separately, see
+    "Class coverage by original upstream source" (classdiff_coverage) below.
+
+    When the local mirror doesn't have an artifact's jar at all, this falls back to classdiff's
+    own (narrower, top-level-only) binary_total for the denominator ONLY (better an undercounted
+    number than a silently missing one -- real 2026-09-28 finding, R3-headline-denominator-
+    silent-omission / R4-coverage-denominator-silently-shrinks, for the case where classdiff
+    itself is also entirely absent); 0 covered, since no per-entry proof can be computed without
+    the actual bytes. "class_count" records the real unit's count on every artifact/unidentified
+    entry (None when genuinely uncountable), so the gap stays visible instead of silent."""
     covered = 0
     total = 0
     for art in manifest["artifacts"]:
-        ci = art.get("content_identity")
-        cd = art.get("classdiff")
-        if ci:
-            total_n = ci.get("classes_total_local")
-            if total_n is None:
-                total_n = cd.get("binary_total", 0) if cd else 0
-            total += total_n
-            if ci["status"] in ("resigned-identical", "sha1-exact"):
-                covered += total_n
-            elif ci["status"] == "partially-modified":
-                covered += ci.get("classes_identical", 0)
-            # vendor-modified / unverifiable / mixed / unverified: 0 covered, already counted in
-            # total -- a "mixed" artifact's rollup deliberately doesn't collapse to a blanket
-            # trusted verdict (see run_recheck_pom_identified_gaps), so it's conservatively
-            # treated the same as an unproven one here too.
-            continue
         occurrences = art.get("occurrences") or []
         binary_bytes = (load_binary_bytes_from_mirror(occurrences[0], mirror_modules_dir, mirror_binext_dir)
                          if occurrences else None)
-        if binary_bytes is not None:
-            n = len(all_class_entry_hashes(binary_bytes))
-            art["class_count"] = n
-            total += n
+        if binary_bytes is None:
+            cd = art.get("classdiff")
             if cd and "binary_total" in cd:
-                covered += cd["common"]
-            # No content_identity and no per-class proof exists otherwise -- a name-based
-            # classdiff match alone is not proof of byte-identical content for the classes it
-            # can't even see (nested/anonymous ones), so nothing beyond cd["common"] is covered.
-            continue
-        if cd and "binary_total" in cd:
-            total += cd["binary_total"]
-            covered += cd["common"]
+                total += cd["binary_total"]
             art["class_count"] = None
             continue
-        art["class_count"] = None
+        real_entries = real_class_entries(binary_bytes)
+        art["class_count"] = len(real_entries)
+        total += len(real_entries)
+
+        ci = art.get("content_identity")
+        if ci and ci["status"] in WHOLE_TRUST_STATUSES:
+            proven = set(real_entries)
+        elif ci and ci["status"] == "partially-modified":
+            not_proven = set(ci.get("different_classes", [])) | set(ci.get("local_only_classes", []))
+            proven = set(real_entries) - not_proven
+        elif ci:
+            # vendor-modified / unverifiable / mixed / unverified: no binary identity proof at
+            # any granularity.
+            proven = set()
+        elif art.get("identification_method"):
+            # T26a's OWN whole-jar SHA-1 proof (sha1-search hit, or a filename-guess whose SHA-1
+            # matched exactly) -- by design no content_identity is computed for this case (the
+            # whole-jar SHA-1 already IS the strongest possible proof, see
+            # run_identify_unidentified), but it proves every entry just as WHOLE_TRUST_STATUSES
+            # would.
+            proven = set(real_entries)
+        else:
+            proven = set()
+
+        if proven:
+            src_names = sources_top_level_names(art)
+            if src_names:
+                covered += sum(1 for entry in proven if top_level_class_of(entry) in src_names)
     for u in manifest.get("unidentified", []):
         binary_bytes = load_binary_bytes_from_mirror(u, mirror_modules_dir, mirror_binext_dir)
         if binary_bytes is None:
             u["class_count"] = None
             continue
-        n = len(all_class_entry_hashes(binary_bytes))
-        u["class_count"] = n
-        total += n
+        real_entries = real_class_entries(binary_bytes)
+        u["class_count"] = len(real_entries)
+        total += len(real_entries)
+        # An unidentified jar has no known coordinate, so no sources were ever fetched for it --
+        # 0 covered by construction.
     coverage = {"classes_with_upstream_source": covered, "classes_total": total}
     manifest["all_third_party_coverage"] = coverage
     return coverage
@@ -1281,20 +1349,33 @@ def render_report(manifest: dict, paho_result: Optional[dict] = None,
         pct = f"{100*covered/total:.1f}%" if total else "n/a"
         lines.append(
             f"**Coverage over ALL third-party classes: {covered} of {total} classes ({pct}) have "
-            "a byte-adjacent original upstream source.** Denominator = every `.class` entry in "
-            "every third-party jar in this corpus (identified + still-unidentified), INCLUDING "
-            "nested/anonymous classes -- not only artifacts with a fetched sources jar, and not "
-            "only the top-level classes a `.java`-source-file-name match can see; numerator "
-            "excludes vendor-modified artifacts "
-            "(same coordinate on Central, different bytes -- their \"source\" is for a different "
-            "build, not ground truth for these classes). See T26a. This number is NOT the same "
+            "a PROVEN byte-adjacent original upstream source.** ONE unit, both sides: every real "
+            "`.class` entry in every third-party jar in this corpus (identified + "
+            "still-unidentified), nested/anonymous classes INCLUDED, `module-info.class`/"
+            "`package-info.class` EXCLUDED (they carry no logic to source-match). A class counts "
+            "as covered only when BOTH hold: (a) its BINARY identity is PROVEN -- whole-jar proof "
+            "(sha1-exact / identified-by-sha1 / resigned-identical) proves every class in the jar, "
+            "nested/anonymous included; partially-modified proves only the specific classes found "
+            "byte-identical; vendor-modified/unverifiable/mixed/unverified prove none -- AND "
+            "(b) its TOP-LEVEL class has a matching `.java` (or `.kt`, for Kotlin-only sources) in "
+            "the FETCHED sources jar, since a nested/anonymous class is declared inside its "
+            "top-level class's own source file. A bare classdiff NAME match with no identity proof "
+            "is NOT counted here -- see the separate, weaker \"Class coverage by original upstream "
+            "source\" section below for that name-only view. See T26a. This number is NOT the same "
             "thing as `tools/n5-best-source.py`'s `by_best_kind.upstream` count and the two are "
             "not expected to match: this one counts, per DISTINCT third-party artifact, whether a "
-            "class name has a same-path proven-identical `.java` in its fetched sources jar; "
-            "n5-best-source.py counts per-population (module, `_bin-ext`/`_etc-m2`/`_lib` jar, or "
-            "raw LIB-INF copy) -- the same physical class can recur across several populations "
-            "(e.g. the same third-party jar bundled, undecompiled, inside more than one module), "
-            "so its `upstream` count can exceed the distinct-class count here."
+            "class has PROVEN upstream source; n5-best-source.py counts per-population (module, "
+            "`_bin-ext`/`_etc-m2`/`_lib` jar, or raw LIB-INF copy) -- the same physical class can "
+            "recur across several populations (e.g. the same third-party jar bundled, undecompiled, "
+            "inside more than one module), so its `upstream` count can exceed the distinct-class "
+            "count here.\n\n"
+            "Known undercounting sources in (b)'s TOP-LEVEL path match (real 2026-09-28 findings): "
+            "a multi-release jar's `META-INF/versions/N/...` override classes carry that prefix in "
+            "the BINARY but not in the sources jar (same logical class, different top-level path) -- "
+            "e.g. bc-fips, bcprov-jdk18on; a Kotlin MULTIPLATFORM sources jar lays `.kt` files out by "
+            "source SET (`commonMain/`, `jvmMain/`, ...), not by the compiled package path -- e.g. "
+            "kotlin-stdlib, okhttp-jvm, okio-jvm. Both are real, verified gaps in THIS report's "
+            "matching method, not evidence the upstream source is actually missing or wrong."
         )
         lines.append("")
     lines.append("## Fetch status counts")
@@ -1307,7 +1388,7 @@ def render_report(manifest: dict, paho_result: Optional[dict] = None,
 
     has_classdiff = any(a.get("classdiff", {}).get("binary_total") for a in artifacts)
     if classdiff_coverage or has_classdiff:
-        lines.append("## Class coverage by original upstream source")
+        lines.append("## Class coverage by original upstream source (secondary, name-only view)")
         lines.append("")
         if classdiff_coverage:
             total = classdiff_coverage.get("classes_total", 0)
@@ -1316,7 +1397,9 @@ def render_report(manifest: dict, paho_result: Optional[dict] = None,
             lines.append(
                 f"{covered} of {total} third-party classes ({pct}) in artifacts with a fetched "
                 "sources jar have a matching top-level class name in that sources jar "
-                "(class-name-set comparison, not a full compile)."
+                "(class-name-set comparison, not a full compile, and NOT identity-proven -- see "
+                "the primary \"Coverage over ALL third-party classes\" headline above for the "
+                "proven, all-classes-including-nested number)."
             )
             lines.append("")
         low = [a for a in artifacts if a.get("classdiff", {}).get("binary_total")

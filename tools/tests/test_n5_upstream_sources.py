@@ -1383,82 +1383,89 @@ class RunFetchPropagatesSha1IdentificationFieldsTest(unittest.TestCase):
 
 
 class RunAllThirdPartyCoverageTest(unittest.TestCase):
-    def test_denominator_includes_unidentified_jar_classes(self):
+    """Orchestrator follow-up review (2026-09-28) on the first fix: the headline must use ONE
+    consistent unit (real_class_entries: every real `.class` entry, nested/anonymous included,
+    module-info/package-info excluded) for BOTH numerator and denominator, and "covered" must mean
+    PROVEN identity (see run_all_third_party_coverage's docstring), not a bare classdiff name
+    match -- that weaker signal moved to the separate classdiff_coverage report section."""
+
+    def _mirror(self, td):
+        modules_dir = os.path.join(td, "modules")
+        binext_dir = os.path.join(td, "bin-ext")
+        os.makedirs(modules_dir, exist_ok=True)
+        os.makedirs(binext_dir, exist_ok=True)
+        return modules_dir, binext_dir
+
+    def _sources_jar_under_repo(self, name, entries):
+        # sources_top_level_names reads art["sources_jar_path"] relative to REPO_ROOT (matching
+        # run_fetch's own convention), so a real fetched-sources test needs a file under the repo,
+        # not an arbitrary system tempdir; use a throwaway subdir of the gitignored organized/
+        # tree and remove it afterwards.
+        import shutil
+        m = _load()
+        out_dir = m.REPO_ROOT / "organized" / "_test_tmp_coverage_sources"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        self.addCleanup(shutil.rmtree, out_dir, True)
+        jar_path = out_dir / name
+        jar_path.write_bytes(_jar_bytes(entries))
+        return str(jar_path.relative_to(m.REPO_ROOT))
+
+    def test_unidentified_jar_counts_toward_denominator_zero_covered(self):
         m = _load()
         with tempfile.TemporaryDirectory() as td:
-            modules_dir = os.path.join(td, "modules")
-            binext_dir = os.path.join(td, "bin-ext")
-            os.makedirs(modules_dir)
-            os.makedirs(binext_dir)
+            modules_dir, binext_dir = self._mirror(td)
             with open(os.path.join(binext_dir, "still-unknown.jar"), "wb") as f:
                 f.write(_jar_bytes({"a/One.class": b"", "a/Two.class": b""}))
-            manifest = {
-                "artifacts": [
-                    {"groupId": "g", "artifactId": "a", "version": "1", "status": "fetched",
-                     "classdiff": {"common": 8, "binary_total": 10}},
-                ],
-                "unidentified": [
-                    {"kind": "bin/ext", "name": "bin/ext/still-unknown.jar", "reason": "not-on-central"},
-                ],
-            }
-            coverage = m.run_all_third_party_coverage(manifest, mirror_modules_dir=modules_dir, mirror_binext_dir=binext_dir)
-            self.assertEqual(coverage["classes_with_upstream_source"], 8)
-            self.assertEqual(coverage["classes_total"], 12)  # 10 fetched-artifact classes + 2 unidentified
-
-    def test_vendor_modified_content_identity_excluded_from_covered_but_included_in_total(self):
-        m = _load()
-        with tempfile.TemporaryDirectory() as td:
-            modules_dir = os.path.join(td, "modules")
-            binext_dir = os.path.join(td, "bin-ext")
-            os.makedirs(modules_dir)
-            os.makedirs(binext_dir)
-            manifest = {
-                "artifacts": [
-                    {"groupId": "g", "artifactId": "a", "version": "1", "status": "fetched",
-                     "classdiff": {"common": 5, "binary_total": 5},
-                     "content_identity": {"status": "vendor-modified", "classes_identical": 0,
-                                           "classes_total_local": 5}},
-                ],
-                "unidentified": [],
-            }
+            manifest = {"artifacts": [], "unidentified": [
+                {"kind": "bin/ext", "name": "bin/ext/still-unknown.jar", "reason": "not-on-central"},
+            ]}
             coverage = m.run_all_third_party_coverage(manifest, mirror_modules_dir=modules_dir, mirror_binext_dir=binext_dir)
             self.assertEqual(coverage["classes_with_upstream_source"], 0)
-            self.assertEqual(coverage["classes_total"], 5)
+            self.assertEqual(coverage["classes_total"], 2)
 
-    def test_resigned_identical_content_identity_fully_covered(self):
+    def test_resigned_identical_covers_top_level_nested_and_anonymous_classes(self):
+        # Reviewer follow-up finding: a synthetic jar with a top-level, a nested, and an anonymous
+        # class. Whole-jar proof (resigned-identical) proves ALL of them; they are all covered
+        # because their shared top-level class ("a/Widget") has a matching .java in the fetched
+        # sources jar -- a nested/anonymous class lives INSIDE its top-level class's own source.
         m = _load()
         with tempfile.TemporaryDirectory() as td:
-            modules_dir = os.path.join(td, "modules")
-            binext_dir = os.path.join(td, "bin-ext")
-            os.makedirs(modules_dir)
-            os.makedirs(binext_dir)
+            modules_dir, binext_dir = self._mirror(td)
+            with open(os.path.join(binext_dir, "widget-1.0.jar"), "wb") as f:
+                f.write(_jar_bytes({
+                    "a/Widget.class": b"top", "a/Widget$Inner.class": b"nested",
+                    "a/Widget$1.class": b"anon",
+                }))
+            sources_path = self._sources_jar_under_repo("widget-1.0-sources.jar",
+                                                          {"a/Widget.java": b"class Widget {}"})
             manifest = {
                 "artifacts": [
-                    {"groupId": "g", "artifactId": "a", "version": "1", "status": "fetched",
-                     "classdiff": {"common": 39, "binary_total": 39},
-                     "content_identity": {"status": "resigned-identical", "classes_identical": 39,
-                                           "classes_total_local": 39}},
+                    {"groupId": "g", "artifactId": "widget", "version": "1.0", "status": "fetched",
+                     "sources_jar_path": sources_path,
+                     "occurrences": [{"kind": "bin/ext", "name": "bin/ext/widget-1.0.jar"}],
+                     "content_identity": {"status": "resigned-identical"}},
                 ],
                 "unidentified": [],
             }
             coverage = m.run_all_third_party_coverage(manifest, mirror_modules_dir=modules_dir, mirror_binext_dir=binext_dir)
-            self.assertEqual(coverage["classes_with_upstream_source"], 39)
-            self.assertEqual(coverage["classes_total"], 39)
+            self.assertEqual(coverage["classes_total"], 3)
+            self.assertEqual(coverage["classes_with_upstream_source"], 3)
 
     def test_sha1_exact_content_identity_fully_covered(self):
         # A "sha1-exact" verdict (b117's own whole-jar SHA-1 match) is just as strong a proof as
-        # "resigned-identical" -- every class in the jar is covered, using classdiff's binary_total
-        # as the class count (no per-class check ran, so there is no classes_total_local).
+        # "resigned-identical" -- every class in the jar is covered.
         m = _load()
         with tempfile.TemporaryDirectory() as td:
-            modules_dir = os.path.join(td, "modules")
-            binext_dir = os.path.join(td, "bin-ext")
-            os.makedirs(modules_dir)
-            os.makedirs(binext_dir)
+            modules_dir, binext_dir = self._mirror(td)
+            with open(os.path.join(binext_dir, "asm-9.10.1.jar"), "wb") as f:
+                f.write(_jar_bytes({f"a/C{i}.class": b"" for i in range(12)}))
+            sources_path = self._sources_jar_under_repo(
+                "asm-9.10.1-sources.jar", {f"a/C{i}.java": b"..." for i in range(12)})
             manifest = {
                 "artifacts": [
-                    {"groupId": "g", "artifactId": "a", "version": "1", "status": "fetched",
-                     "classdiff": {"common": 12, "binary_total": 12},
+                    {"groupId": "org.ow2.asm", "artifactId": "asm", "version": "9.10.1", "status": "fetched",
+                     "sources_jar_path": sources_path,
+                     "occurrences": [{"kind": "bin/ext", "name": "bin/ext/asm-9.10.1.jar"}],
                      "content_identity": {"status": "sha1-exact",
                                            "source": "evidence/b117/maven-repo1.json"}},
                 ],
@@ -1468,43 +1475,68 @@ class RunAllThirdPartyCoverageTest(unittest.TestCase):
             self.assertEqual(coverage["classes_with_upstream_source"], 12)
             self.assertEqual(coverage["classes_total"], 12)
 
-    def test_partially_modified_content_identity_counts_only_identical_classes(self):
+    def test_partially_modified_covers_only_the_proven_entries_nested_included(self):
+        # Per-entry granularity: a/Good.class + its nested a/Good$Inner.class are proven and
+        # sourced (covered); a/Bad.class is explicitly in different_classes (not proven), so it
+        # is NOT covered even though it has a matching .java too.
         m = _load()
         with tempfile.TemporaryDirectory() as td:
-            modules_dir = os.path.join(td, "modules")
-            binext_dir = os.path.join(td, "bin-ext")
-            os.makedirs(modules_dir)
-            os.makedirs(binext_dir)
+            modules_dir, binext_dir = self._mirror(td)
+            with open(os.path.join(binext_dir, "mix-1.0.jar"), "wb") as f:
+                f.write(_jar_bytes({
+                    "a/Good.class": b"good", "a/Good$Inner.class": b"good-nested",
+                    "a/Bad.class": b"bad",
+                }))
+            sources_path = self._sources_jar_under_repo(
+                "mix-1.0-sources.jar", {"a/Good.java": b"...", "a/Bad.java": b"..."})
             manifest = {
                 "artifacts": [
-                    {"groupId": "g", "artifactId": "a", "version": "1", "status": "fetched",
-                     "classdiff": {"common": 10, "binary_total": 10},
-                     "content_identity": {"status": "partially-modified", "classes_identical": 7,
-                                           "classes_total_local": 10}},
+                    {"groupId": "g", "artifactId": "mix", "version": "1.0", "status": "fetched",
+                     "sources_jar_path": sources_path,
+                     "occurrences": [{"kind": "bin/ext", "name": "bin/ext/mix-1.0.jar"}],
+                     "content_identity": {"status": "partially-modified",
+                                           "different_classes": ["a/Bad.class"],
+                                           "local_only_classes": []}},
                 ],
                 "unidentified": [],
             }
             coverage = m.run_all_third_party_coverage(manifest, mirror_modules_dir=modules_dir, mirror_binext_dir=binext_dir)
-            self.assertEqual(coverage["classes_with_upstream_source"], 7)
-            self.assertEqual(coverage["classes_total"], 10)
+            self.assertEqual(coverage["classes_total"], 3)
+            self.assertEqual(coverage["classes_with_upstream_source"], 2)
 
-    def test_content_identity_with_zero_local_classes_is_not_treated_as_missing(self):
-        # Real 2026-09-28 finding: bin/ext/okhttp-5.5.0.jar (the Kotlin Multiplatform metadata
-        # artifact, not okhttp-jvm) has classes_total_local == 0 -- a legitimate value, not a
-        # missing one. `if not total_n` treats 0 the same as None and wrongly falls back to
-        # classdiff's binary_total instead of trusting the real (zero) count.
+    def test_vendor_modified_content_identity_excluded_from_covered_but_included_in_total(self):
         m = _load()
         with tempfile.TemporaryDirectory() as td:
-            modules_dir = os.path.join(td, "modules")
-            binext_dir = os.path.join(td, "bin-ext")
-            os.makedirs(modules_dir)
-            os.makedirs(binext_dir)
+            modules_dir, binext_dir = self._mirror(td)
+            with open(os.path.join(binext_dir, "bad-1.0.jar"), "wb") as f:
+                f.write(_jar_bytes({f"a/C{i}.class": b"" for i in range(5)}))
+            manifest = {
+                "artifacts": [
+                    {"groupId": "g", "artifactId": "bad", "version": "1.0", "status": "fetched",
+                     "occurrences": [{"kind": "bin/ext", "name": "bin/ext/bad-1.0.jar"}],
+                     "content_identity": {"status": "vendor-modified"}},
+                ],
+                "unidentified": [],
+            }
+            coverage = m.run_all_third_party_coverage(manifest, mirror_modules_dir=modules_dir, mirror_binext_dir=binext_dir)
+            self.assertEqual(coverage["classes_with_upstream_source"], 0)
+            self.assertEqual(coverage["classes_total"], 5)
+
+    def test_jar_with_zero_real_classes_is_not_treated_as_missing(self):
+        # Real 2026-09-28 finding: bin/ext/okhttp-5.5.0.jar (the Kotlin Multiplatform metadata
+        # artifact, not okhttp-jvm) genuinely ships ZERO .class entries -- a legitimate value, not
+        # a missing one; must not fall back to classdiff's stale/unrelated binary_total.
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir, binext_dir = self._mirror(td)
+            with open(os.path.join(binext_dir, "okhttp-5.5.0.jar"), "wb") as f:
+                f.write(_jar_bytes({"META-INF/MANIFEST.MF": b"x"}))  # no .class entries at all
             manifest = {
                 "artifacts": [
                     {"groupId": "g", "artifactId": "okhttp", "version": "5.5.0", "status": "fetched",
                      "classdiff": {"common": 0, "binary_total": 999},  # a stale/unrelated fallback
-                     "content_identity": {"status": "vendor-modified", "classes_identical": 0,
-                                           "classes_total_local": 0}},
+                     "occurrences": [{"kind": "bin/ext", "name": "bin/ext/okhttp-5.5.0.jar"}],
+                     "content_identity": {"status": "no-classes"}},
                 ],
                 "unidentified": [],
             }
@@ -1517,15 +1549,11 @@ class RunAllThirdPartyCoverageTest(unittest.TestCase):
         # R4-coverage-denominator-silently-shrinks): an artifact identified via pom.properties
         # whose sources jar was never fetched (status != "fetched": no-sources-published /
         # checksum-mismatch / network-error) never gets a "classdiff" key at all (run_classdiff
-        # only processes status == "fetched") and, without a content_identity either, used to be
-        # `continue`-d out of the denominator entirely -- its real, shipped classes just vanished
-        # from the headline instead of counting as uncovered.
+        # only processes status == "fetched") and, without a content_identity or
+        # identification_method either, used to be `continue`-d out of the denominator entirely.
         m = _load()
         with tempfile.TemporaryDirectory() as td:
-            modules_dir = os.path.join(td, "modules")
-            binext_dir = os.path.join(td, "bin-ext")
-            os.makedirs(modules_dir)
-            os.makedirs(binext_dir)
+            modules_dir, binext_dir = self._mirror(td)
             with open(os.path.join(binext_dir, "orphan-2.0.jar"), "wb") as f:
                 f.write(_jar_bytes({"a/One.class": b"", "a/Two.class": b"", "a/Three.class": b""}))
             manifest = {
@@ -1541,22 +1569,15 @@ class RunAllThirdPartyCoverageTest(unittest.TestCase):
             self.assertEqual(coverage["classes_total"], 3)  # NOT 0 / silently omitted
             self.assertEqual(manifest["artifacts"][0]["class_count"], 3)
 
-    def test_classdiff_only_artifact_counts_every_class_not_only_source_matchable_ones(self):
-        # Real 2026-09-28 finding (R3-coverage-unit-mix): without a content_identity, this
-        # function used to fall back to classdiff's own "binary_total", which deliberately
-        # EXCLUDES nested/anonymous classes (it's a source-file-name comparison via
-        # class_names_from_zip). content_identity's own "classes_total_local" (the unit used for
-        # the vast majority of artifacts) counts EVERY .class entry, nested/anonymous included.
-        # Mixing the two units in the same total silently undercounts artifacts that only have a
-        # classdiff. When the local mirror has the jar, this must count every real .class entry.
+    def test_classdiff_only_artifact_denominator_counts_every_class_but_covers_none_without_proof(self):
+        # Reviewer follow-up (2026-09-28): a bare classdiff name match (no content_identity, no
+        # identification_method -- i.e. NO binary identity proof at all) no longer counts as
+        # "covered" in this authoritative headline; that weaker, name-only signal still lives in
+        # the separate "Class coverage by original upstream source" (classdiff_coverage) section.
+        # The denominator still uses the real unit -- the nested class counts too.
         m = _load()
         with tempfile.TemporaryDirectory() as td:
-            modules_dir = os.path.join(td, "modules")
-            binext_dir = os.path.join(td, "bin-ext")
-            os.makedirs(modules_dir)
-            os.makedirs(binext_dir)
-            # 2 top-level classes (name-matchable against sources) + 1 nested class the name-based
-            # classdiff excludes -- 3 real .class entries in the shipped jar.
+            modules_dir, binext_dir = self._mirror(td)
             with open(os.path.join(binext_dir, "libx-1.0.jar"), "wb") as f:
                 f.write(_jar_bytes({"a/One.class": b"", "a/Two.class": b"", "a/Two$Inner.class": b""}))
             manifest = {
@@ -1568,8 +1589,99 @@ class RunAllThirdPartyCoverageTest(unittest.TestCase):
                 "unidentified": [],
             }
             coverage = m.run_all_third_party_coverage(manifest, mirror_modules_dir=modules_dir, mirror_binext_dir=binext_dir)
-            self.assertEqual(coverage["classes_with_upstream_source"], 2)  # cd["common"], unchanged
-            self.assertEqual(coverage["classes_total"], 3)  # NOT 2 (cd["binary_total"]) -- the nested class counts too
+            self.assertEqual(coverage["classes_total"], 3)  # NOT 2 -- the nested class counts too
+            self.assertEqual(coverage["classes_with_upstream_source"], 0)  # NOT 2 -- name match isn't proof
+
+    def test_identification_method_without_content_identity_is_whole_jar_proof(self):
+        # Real 2026-09-28 finding: T26a's "identified-by-sha1" artifacts (the whole LOCAL jar's
+        # bytes exactly match a Central SHA-1 -- via a sha1-search hit or an exact filename-guess
+        # match) never get a content_identity at all, by design (see
+        # run_identify_unidentified) -- but the whole-jar SHA-1 IS the strongest possible proof,
+        # exactly as strong as resigned-identical/sha1-exact, and must cover nested classes too.
+        # This is the real corpus gap the orchestrator's follow-up review flagged: poi, poi-ooxml,
+        # xmlbeans, kotlin-stdlib(T26a), json-path, hsqldb, testng, jcommander all hit this path.
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir, binext_dir = self._mirror(td)
+            with open(os.path.join(binext_dir, "poi-5.5.1.jar"), "wb") as f:
+                f.write(_jar_bytes({"o/A.class": b"a", "o/A$B.class": b"nested"}))
+            sources_path = self._sources_jar_under_repo("poi-5.5.1-sources.jar", {"o/A.java": b"..."})
+            manifest = {
+                "artifacts": [
+                    {"groupId": "org.apache.poi", "artifactId": "poi", "version": "5.5.1",
+                     "status": "fetched", "sources_jar_path": sources_path,
+                     "occurrences": [{"kind": "bin/ext", "name": "bin/ext/poi-5.5.1.jar"}],
+                     "identification_method": "sha1-search"},
+                ],
+                "unidentified": [],
+            }
+            coverage = m.run_all_third_party_coverage(manifest, mirror_modules_dir=modules_dir, mirror_binext_dir=binext_dir)
+            self.assertEqual(coverage["classes_total"], 2)
+            self.assertEqual(coverage["classes_with_upstream_source"], 2)
+
+    def test_module_info_and_package_info_excluded_from_the_unit(self):
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir, binext_dir = self._mirror(td)
+            with open(os.path.join(binext_dir, "modtool-1.0.jar"), "wb") as f:
+                f.write(_jar_bytes({
+                    "a/Real.class": b"real", "module-info.class": b"mod",
+                    "a/package-info.class": b"pkg",
+                }))
+            manifest = {
+                "artifacts": [
+                    {"groupId": "g", "artifactId": "modtool", "version": "1.0",
+                     "status": "no-sources-published",
+                     "occurrences": [{"kind": "bin/ext", "name": "bin/ext/modtool-1.0.jar"}]},
+                ],
+                "unidentified": [],
+            }
+            coverage = m.run_all_third_party_coverage(manifest, mirror_modules_dir=modules_dir, mirror_binext_dir=binext_dir)
+            self.assertEqual(coverage["classes_total"], 1)  # module-info + package-info excluded
+            self.assertEqual(manifest["artifacts"][0]["class_count"], 1)
+
+    def test_kotlin_only_sources_jar_matched_via_kt_extension(self):
+        # kotlin-stdlib and friends publish .kt sources, no .java at all -- a Kotlin-only sources
+        # jar must still count as source coverage.
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir, binext_dir = self._mirror(td)
+            with open(os.path.join(binext_dir, "kotlin-stdlib-2.3.0.jar"), "wb") as f:
+                f.write(_jar_bytes({"kotlin/Foo.class": b"foo"}))
+            sources_path = self._sources_jar_under_repo(
+                "kotlin-stdlib-2.3.0-sources.jar", {"kotlin/Foo.kt": b"class Foo"})
+            manifest = {
+                "artifacts": [
+                    {"groupId": "org.jetbrains.kotlin", "artifactId": "kotlin-stdlib", "version": "2.3.0",
+                     "status": "fetched", "sources_jar_path": sources_path,
+                     "occurrences": [{"kind": "bin/ext", "name": "bin/ext/kotlin-stdlib-2.3.0.jar"}],
+                     "content_identity": {"status": "resigned-identical"}},
+                ],
+                "unidentified": [],
+            }
+            coverage = m.run_all_third_party_coverage(manifest, mirror_modules_dir=modules_dir, mirror_binext_dir=binext_dir)
+            self.assertEqual(coverage["classes_total"], 1)
+            self.assertEqual(coverage["classes_with_upstream_source"], 1)
+
+    def test_no_mirror_bytes_falls_back_to_classdiff_binary_total_with_zero_covered(self):
+        # Genuinely uncountable in the real unit (the mirror doesn't have the jar) -- better an
+        # undercounted denominator (classdiff's narrower, top-level-only binary_total) than a
+        # silently missing one; 0 covered, since no per-entry proof can be computed without bytes.
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir, binext_dir = self._mirror(td)
+            manifest = {
+                "artifacts": [
+                    {"groupId": "g", "artifactId": "a", "version": "1", "status": "fetched",
+                     "classdiff": {"common": 8, "binary_total": 10},
+                     "content_identity": {"status": "resigned-identical"}},
+                ],
+                "unidentified": [],
+            }
+            coverage = m.run_all_third_party_coverage(manifest, mirror_modules_dir=modules_dir, mirror_binext_dir=binext_dir)
+            self.assertEqual(coverage["classes_total"], 10)
+            self.assertEqual(coverage["classes_with_upstream_source"], 0)
+            self.assertIsNone(manifest["artifacts"][0]["class_count"])
 
 
 class RunRecheckPomIdentifiedGapsTest(unittest.TestCase):
