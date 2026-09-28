@@ -277,9 +277,16 @@ def load_binary_bytes(occurrence: dict, mod_dir: Path = N5_MOD_DIR,
 # javap normalization for the recompile / paho cross-checks.
 # ---------------------------------------------------------------------------
 
+class JavapError(RuntimeError):
+    """javap failed or printed nothing; comparing its output would turn [] == [] into a false match."""
+
+
 def run_javap(class_bytes_path: str, javap_bin: str = JAVAP25) -> str:
-    return subprocess.run([javap_bin, "-p", "-c", class_bytes_path],
-                           capture_output=True, text=True, check=False).stdout
+    proc = subprocess.run([javap_bin, "-p", "-c", class_bytes_path],
+                          capture_output=True, text=True, check=False)
+    if proc.returncode != 0 or not proc.stdout.strip():
+        raise JavapError(f"javap rc={proc.returncode} on {class_bytes_path}: {proc.stderr.strip()[:300]}")
+    return proc.stdout
 
 
 _CP_INDEX_RE = re.compile(r"#\d+\s*$")
@@ -476,9 +483,13 @@ def run_recompile_check(manifest: dict, out_dir: Path, mod_dir: Path = N5_MOD_DI
                     shipped = bz.read(cls + ".class")
                 shipped_path = out_classes / "_shipped.class"
                 shipped_path.write_bytes(shipped)
-                norm_recompiled = normalize_javap(run_javap(str(recompiled), javap))
-                norm_shipped = normalize_javap(run_javap(str(shipped_path), javap))
-                entry["javap_normalized_match"] = norm_recompiled == norm_shipped
+                try:
+                    norm_recompiled = normalize_javap(run_javap(str(recompiled), javap))
+                    norm_shipped = normalize_javap(run_javap(str(shipped_path), javap))
+                    entry["javap_normalized_match"] = norm_recompiled == norm_shipped
+                except JavapError as e:
+                    entry["javap_normalized_match"] = None
+                    entry["javap_error"] = str(e)
             per_class.append(entry)
         results.append({"artifactId": art["artifactId"], "version": art["version"],
                           "classes": per_class})

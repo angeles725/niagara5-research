@@ -472,3 +472,22 @@ class MainPlanSubcommandTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestJavapFailureIsNeverAMatch(unittest.TestCase):
+    """Review review-38b7ff2daec0bf35: javap failing on both sides produced [] == [] -> a false MATCH."""
+
+    def test_run_javap_raises_on_missing_class_file(self):
+        mod = _load()
+        with self.assertRaises(mod.JavapError):
+            mod.run_javap("/nonexistent/definitely/missing.class")
+
+    def test_run_javap_raises_on_empty_output(self):
+        mod = _load()
+        with tempfile.TemporaryDirectory() as d:
+            fake = os.path.join(d, "fake-javap")
+            with open(fake, "w") as f:
+                f.write("#!/bin/sh\nexit 0\n")
+            os.chmod(fake, 0o755)
+            with self.assertRaises(mod.JavapError):
+                mod.run_javap(os.path.join(d, "X.class"), javap_bin=fake)
