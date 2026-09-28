@@ -97,7 +97,11 @@ Design note on `--materialize`: an "upstream" pick lives inside a zipped `-sourc
 cannot be symlinked to directly. This tool extracts the matched .java entry once into
 `<out>/_upstream-extracted/<groupId>/<artifactId>/<version>/<class>.java` (idempotent, cached) and
 treats *that* real file as the `best` path -- so materialize's own job stays exactly what the task
-asked for: symlink-only, no copies, at materialize time.
+asked for: symlink-only, no copies, at materialize time. A record materialize() cannot safely or
+successfully link is skipped, never aborting the rest of the batch -- but main()'s exit code is
+NOT always 0: when `--materialize` skips one or more candidates, it prints a "linked/skipped"
+summary and exits 1 (R4-materialize-partial-failure-exit-zero, orchestrator second-round review,
+2026-09-28 -- a caller checking only the exit code used to see success even on a partial failure).
 
 Subcommand-free CLI: this always runs the full index build (see main()).
 """
@@ -189,9 +193,14 @@ _KOTLIN_FILE_JVM_NAME_RE = re.compile(r'@file:JvmName\(\s*"([^"]+)"\s*\)')
 
 def declared_package_of(source_text: str) -> Optional[str]:
     """The package THIS source file declares (its own `package ...` statement, in slash form,
-    e.g. "org/foo") -- independent of whatever path its zip entry happens to live at. "" for an
-    explicit default (no-package) file; None when no package statement is found at all (a
-    malformed/unusual file -- callers must not derive a declared-name candidate from it)."""
+    e.g. "org/foo") -- independent of whatever path its zip entry happens to live at. Returns
+    None when no `package` statement is found at all. Fix (R2-001, orchestrator second-round
+    review, 2026-09-28, mirroring tools/n5-upstream-sources.py's own fix): this used to claim a
+    distinct "" return for an "explicit default (no-package)" file, but the implementation never
+    actually produced one -- a bare regex search has no way to tell a genuine no-package (Java
+    "default package") file apart from any other non-matching or malformed text, so both cases
+    collapse to None here; callers must never derive a declared-name candidate from a None
+    result."""
     m = _PACKAGE_DECL_RE.search(source_text)
     if not m:
         return None
@@ -611,29 +620,55 @@ def _source_candidate_entries(jar_path: Path, sources_only: set[str]) -> dict[st
     absent from the specific occurrence[0] binary it was diffed against) excludes a PATH-based
     name only -- it cannot apply to a declared name, which was never itself a path-based name
     classdiff compared in the first place, so it would exclude nothing there anyway. First match
-    wins per name (path-based candidates are added before declared ones, so they always win)."""
+    wins per name (path-based candidates are added before declared ones, so they always win).
+
+    Two resilience/determinism fixes from the orchestrator's second-round review (2026-09-28):
+      - R3/R4-entry-read-failure: a single unreadable/corrupt zip ENTRY no longer drops every
+        OTHER, perfectly readable entry's candidates too -- only that one entry's declared-name
+        read is skipped (and reported to stderr); the jar's central directory itself failing to
+        open (BadZipFile/OSError) is the only thing that still returns {} for the whole jar, since
+        nothing at all could be read in that case.
+      - R3-declared-first-wins-order-dependent: entries are visited in a SORTED (by zip entry
+        name), not raw zf.infolist() physical/central-directory, order -- so a genuine declared-
+        name collision between two different source files resolves to a stable, jar-authoring-
+        order-independent winner (the lexicographically-first entry name) instead of whichever the
+        zip's own on-disk layout happened to list first. A collision is also reported to stderr,
+        never silently swallowed."""
     path_names: dict[str, str] = {}
     declared_names: dict[str, str] = {}
     try:
-        with zipfile.ZipFile(jar_path) as zf:
-            for info in zf.infolist():
-                if info.is_dir():
-                    continue
-                zn = info.filename
-                if zn.endswith(".java"):
-                    base = zn[: -len(".java")]
-                elif zn.endswith(".kt"):
-                    base = zn[: -len(".kt")]
-                else:
-                    continue
-                if "$" in base.rsplit("/", 1)[-1]:
-                    continue
-                for variant in mrjar_variants(base):
-                    path_names.setdefault(variant, zn)
-                for declared in declared_names_for_source(zn, zf.read(info)):
-                    declared_names.setdefault(declared, zn)
+        zf = zipfile.ZipFile(jar_path)
     except (zipfile.BadZipFile, OSError):
         return {}
+    with zf:
+        for info in sorted(zf.infolist(), key=lambda i: i.filename):
+            if info.is_dir():
+                continue
+            zn = info.filename
+            if zn.endswith(".java"):
+                base = zn[: -len(".java")]
+            elif zn.endswith(".kt"):
+                base = zn[: -len(".kt")]
+            else:
+                continue
+            if "$" in base.rsplit("/", 1)[-1]:
+                continue
+            for variant in mrjar_variants(base):
+                path_names.setdefault(variant, zn)
+            try:
+                data = zf.read(info)
+            except (zipfile.BadZipFile, OSError) as exc:
+                print(f"n5-best-source: skipping unreadable sources-jar entry {zn!r} in "
+                      f"{jar_path}: {exc}", file=sys.stderr)
+                continue
+            for declared in declared_names_for_source(zn, data):
+                prior = declared_names.get(declared)
+                if prior is not None and prior != zn:
+                    print(f"n5-best-source: declared-name collision for {declared!r} in "
+                          f"{jar_path} -- {prior!r} and {zn!r} both declare it; keeping "
+                          f"{prior!r} (sorted-first, deterministic)", file=sys.stderr)
+                    continue
+                declared_names.setdefault(declared, zn)
     covered: dict[str, str] = {n: e for n, e in path_names.items() if n not in sources_only}
     for n, e in declared_names.items():
         covered.setdefault(n, e)
@@ -764,6 +799,15 @@ def find_upstream_candidate(pop: dict, class_key: str, name_index: dict, sha_ind
 
 
 def extract_upstream_file(info: dict, extract_dir: Path, class_key: str) -> Optional[Path]:
+    """Extracts an upstream candidate dict's own `entry` (one real zip member of `info["jar_path"]`
+    -- see find_upstream_candidate/build_upstream_index) into
+    `<extract_dir>/<groupId>/<artifactId>/<version>/<class_key><ext>` (idempotent: an already-
+    extracted file is reused, never re-read). `.kt`/`.java` extension matches the entry's own, not
+    forced to `.java` (see the module docstring's "Design note on --materialize"). Returns None,
+    never raising, when the entry can't actually be read (corrupt/unreadable jar since indexing,
+    or the entry has since disappeared) -- callers must not assume a matched candidate is always
+    extractable (see build_class_record's R1-001 fix: a None here must never be reported as a
+    working `best_kind: "upstream"`)."""
     ext = ".kt" if info["entry"].endswith(".kt") else ".java"
     dest = extract_dir / info["groupId"] / info["artifactId"] / info["version"] / (class_key + ext)
     if dest.is_file():
@@ -833,27 +877,40 @@ def build_class_record(organized_root: Path, pop: dict, class_key: str,
         if identical is not None:
             candidates.append(identical)
 
+    _MISSING_REASON = ("no docSource, proven-identical upstream, vineflower2, vineflower, "
+                        "fallback2, fallback or identical-jar-elsewhere representation found "
+                        "for this class")
     alternates = []
-    if not candidates:
-        best_kind, best_path, grade, reason = "missing", None, None, (
-            "no docSource, proven-identical upstream, vineflower2, vineflower, fallback2, "
-            "fallback or identical-jar-elsewhere representation found for this class"
-        )
-    else:
+    best_kind = best_path = grade = reason = None
+    if candidates:
         best_kind, best_path_raw, grade, reason = candidates[0]
         if best_kind == "upstream":
             best_path = extract_upstream_file(up_candidate, extract_dir, class_key)
+            if best_path is None:
+                # R1-001 (orchestrator second-round review, 2026-09-28): the top-ranked
+                # "upstream" candidate's own sources-jar entry could not actually be extracted
+                # (corrupt/unreadable jar since indexing -- see build_upstream_index) -- never
+                # report best_kind="upstream" with best=None, a misleading claim to any reader.
+                # Report this class as genuinely missing instead, keeping the failed pick visible
+                # as an alternate (never silently dropped).
+                gav = f"{up_candidate['groupId']}:{up_candidate['artifactId']}:{up_candidate['version']}"
+                alternates.append({"kind": "upstream-extraction-failed",
+                                   "path": f"upstream:{gav}:{class_key}", "grade": None})
+                best_kind = None
         else:
             best_path = best_path_raw
-        for kind, path, alt_grade, _reason in candidates[1:]:
-            if kind == "upstream":
-                gav = f"{up_candidate['groupId']}:{up_candidate['artifactId']}:{up_candidate['version']}"
-                up_ext = ".kt" if up_candidate["entry"].endswith(".kt") else ".java"
-                alternates.append({"kind": kind, "path": f"upstream:{gav}:{class_key}{up_ext}",
-                                   "grade": alt_grade})
-            else:
-                alternates.append({"kind": kind, "path": _rel(organized_root, path),
-                                   "grade": alt_grade})
+        if best_kind is not None:
+            for kind, path, alt_grade, _reason in candidates[1:]:
+                if kind == "upstream":
+                    gav = f"{up_candidate['groupId']}:{up_candidate['artifactId']}:{up_candidate['version']}"
+                    up_ext = ".kt" if up_candidate["entry"].endswith(".kt") else ".java"
+                    alternates.append({"kind": kind, "path": f"upstream:{gav}:{class_key}{up_ext}",
+                                       "grade": alt_grade})
+                else:
+                    alternates.append({"kind": kind, "path": _rel(organized_root, path),
+                                       "grade": alt_grade})
+    if best_kind is None:
+        best_kind, best_path, grade, reason = "missing", None, None, _MISSING_REASON
 
     # Not proven byte-identical (vendor-modified / unverifiable / no-classes / this class differs
     # in a partially-modified jar / no identity verdict recorded at all): never used as `best`
@@ -1033,14 +1090,32 @@ def main(argv: Optional[list[str]] = None) -> int:
     index_path = out_dir / "best-source.json"
     index_path.write_text(json.dumps(index, indent=1))
 
+    exit_code = 0
     if args.materialize:
         materialize_dir = Path(args.materialize).resolve()
         materialize_dir.mkdir(parents=True, exist_ok=True)
-        materialize(organized_root, materialize_dir, index["classes"])
+        linked = materialize(organized_root, materialize_dir, index["classes"])
+        # A record is only ever a materialize CANDIDATE (i.e. actually attempted -- see
+        # materialize()'s own `continue` guard) when it has a non-"missing" best_kind AND a real
+        # `best` path; this must match that guard exactly so "skipped" counts only records
+        # materialize() genuinely tried and failed to link, never ones it correctly never
+        # attempted in the first place.
+        candidates = sum(1 for rec in index["classes"]
+                          if rec["best_kind"] != "missing" and rec.get("best"))
+        skipped = candidates - linked
+        print(f"materialize: {linked} linked, {skipped} skipped")
+        if skipped:
+            # R4-materialize-partial-failure-exit-zero (orchestrator second-round review,
+            # 2026-09-28): a partial materialize failure used to always exit 0, indistinguishable
+            # from full success to any caller that checks the exit code rather than parsing
+            # stderr text -- report the failure count above AND make it a nonzero exit.
+            print(f"n5-best-source: --materialize skipped {skipped} of {candidates} candidate(s) "
+                  "(see warnings above)", file=sys.stderr)
+            exit_code = 1
 
     print_human_summary(index)
     print(f"wrote {index_path}")
-    return 0
+    return exit_code
 
 
 if __name__ == "__main__":

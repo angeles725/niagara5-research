@@ -79,6 +79,23 @@ def _jar_bytes(entries: dict) -> bytes:
     return buf.getvalue()
 
 
+def _jar_bytes_with_corrupt_entry(entries: dict, corrupt_name: str) -> bytes:
+    """Same as _jar_bytes, but flips one byte of corrupt_name's own stored file data so
+    zipfile.ZipFile(...).read(corrupt_name) raises zipfile.BadZipFile ("Bad CRC-32 for file...")
+    for that ONE entry -- a real-world simulation of a truncated/corrupted zip member -- while
+    every other entry in the same jar stays perfectly readable. Used to test that one unreadable
+    sources-jar entry does not zero out an entire jar's worth of upstream-index coverage
+    (R3/R4-entry-read-failure, orchestrator second-round review, 2026-09-28)."""
+    import struct
+    raw = bytearray(_jar_bytes(entries))
+    with zipfile.ZipFile(io.BytesIO(bytes(raw))) as zf:
+        offset = zf.getinfo(corrupt_name).header_offset
+    fname_len, extra_len = struct.unpack("<HH", raw[offset + 26:offset + 30])
+    data_offset = offset + 30 + fname_len + extra_len
+    raw[data_offset] ^= 0xFF
+    return bytes(raw)
+
+
 class FixtureOrganized:
     """Builds a synthetic organized/ tree covering every precedence rung."""
 
@@ -510,6 +527,57 @@ class UpstreamMrjarAndSourceSetLayoutTest(unittest.TestCase):
             self.assertTrue(cand["trusted"])
             self.assertEqual(cand["entry"], "commonMain/generated/Arrays.kt")
 
+    def test_one_unreadable_source_entry_does_not_drop_the_whole_jars_declared_names(self):
+        # Real finding (R3/R4-entry-read-failure, orchestrator second-round review, 2026-09-28):
+        # _source_candidate_entries used to wrap its ENTIRE zip-reading loop in one try/except that
+        # returned {} (the whole jar's worth of candidates dropped) the moment ANY single entry's
+        # zf.read() failed -- one corrupt class file must only drop THAT entry's declared-name
+        # candidate, not every other, perfectly readable entry's too. Uses a source-set layout
+        # (commonMain/) so matching can ONLY happen via each entry's OWN declared-package bytes --
+        # a path-based match needs no file content at all, so it would not exercise this fix.
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            jar_bytes = _jar_bytes_with_corrupt_entry({
+                "commonMain/Good.kt": b"package kotlin\nclass Good {}",
+                "commonMain/Bad.kt": b"package kotlin\nclass Bad {}",
+            }, "commonMain/Bad.kt")
+            self._manifest_for(root, jar_bytes)
+            name_index, sha_index, _v = m.build_upstream_index(root)
+            good = m.find_upstream_candidate({}, "kotlin/Good", name_index, sha_index)
+            self.assertIsNotNone(good)
+            self.assertTrue(good["trusted"])
+            bad = m.find_upstream_candidate({}, "kotlin/Bad", name_index, sha_index)
+            self.assertIsNone(bad)
+
+    def test_declared_name_collision_resolves_deterministically_and_is_reported(self):
+        # Real finding (R3-declared-first-wins-order-dependent, orchestrator second-round review,
+        # 2026-09-28): when TWO different source files declare the SAME top-level name (a genuine,
+        # if rare, source-set collision), the old code's plain zf.infolist()-order setdefault() let
+        # whichever entry the zip's OWN physical/central-directory layout happened to list first
+        # win -- a silent, jar-authoring-order-dependent pick, with no trace of the collision. The
+        # fix must be a stable, sorted-by-entry-name pick (independent of physical zip layout) with
+        # the collision reported.
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            # Both declare "package kotlin" and stem "Dup" -> both provide "kotlin/Dup". Written in
+            # zip order zLater-then-zEarlier so a naive infolist()-order pick would choose
+            # "zLater/Dup.kt", not the lexicographically-first "zEarlier/Dup.kt".
+            jar_bytes = _jar_bytes({
+                "zLater/Dup.kt": b"package kotlin\nclass Dup {}",
+                "zEarlier/Dup.kt": b"package kotlin\nclass Dup {}",
+            })
+            self._manifest_for(root, jar_bytes)
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                name_index, sha_index, _v = m.build_upstream_index(root)
+            cand = m.find_upstream_candidate({}, "kotlin/Dup", name_index, sha_index)
+            self.assertIsNotNone(cand)
+            self.assertEqual(cand["entry"], "zEarlier/Dup.kt")  # lexicographically-first, stable
+            self.assertIn("collision", stderr.getvalue())
+            self.assertIn("kotlin/Dup", stderr.getvalue())
+
     def test_extracted_upstream_file_uses_kt_extension_for_a_kotlin_match(self):
         m = _load()
         with tempfile.TemporaryDirectory() as td:
@@ -905,6 +973,35 @@ class UpstreamIdentityVerificationTest(unittest.TestCase):
         self.assertEqual(len(alt), 1, rec["alternates"])
         self.assertFalse([a for a in rec["alternates"] if a["kind"] == "upstream-different-build"])
 
+    def test_extraction_failure_on_a_trusted_upstream_pick_reports_missing_not_a_broken_upstream(self):
+        # Real finding (R1-001, orchestrator second-round review, 2026-09-28): when the TOP-
+        # ranked candidate is "upstream" (trusted, proven byte-identical) but its own sources-jar
+        # entry can't actually be extracted (corrupt/unreadable), the old code left
+        # best_kind="upstream" with best=None -- a misleading claim to any reader (a record that
+        # SAYS it has upstream source but doesn't). This must report "missing" instead, keeping
+        # the failed extraction visible as an alternate rather than silently dropped.
+        m = _load()
+        _write_class(self.mod_root / "extracted" / "pkg" / "CorruptClass.class")
+        art_dir = self.root / "_upstream-sources" / "grp" / "corrupt-art" / "1.0"
+        art_dir.mkdir(parents=True)
+        jar_path = art_dir / "corrupt-art-1.0-sources.jar"
+        jar_path.write_bytes(_jar_bytes_with_corrupt_entry(
+            {"pkg/CorruptClass.java": b"// will fail to extract\n"}, "pkg/CorruptClass.java"))
+        self._write_manifest({
+            "groupId": "grp", "artifactId": "corrupt-art", "version": "1.0", "status": "fetched",
+            "sources_jar_path": "organized/_upstream-sources/grp/corrupt-art/1.0/corrupt-art-1.0-sources.jar",
+            "classdiff": {"sources_only": [], "binary_only": [], "common": 1},
+            "content_identity": {"status": "resigned-identical"},
+        })
+        name_index, sha_index, verdicts = m.build_upstream_index(self.root)
+        self.assertEqual(verdicts.get("resigned-identical"), 1)
+        rec = self._record("pkg/CorruptClass", (name_index, sha_index))
+        self.assertEqual(rec["best_kind"], "missing")
+        self.assertIsNone(rec["best"])
+        failed = [a for a in rec["alternates"] if a["kind"] == "upstream-extraction-failed"]
+        self.assertEqual(len(failed), 1, rec["alternates"])
+        self.assertIn("corrupt-art", failed[0]["path"])
+
 
 def m_hash(data: bytes) -> str:
     import hashlib
@@ -1026,7 +1123,11 @@ class MainRunAndMaterializeTest(unittest.TestCase):
 
     def test_materialize_skips_a_record_it_cannot_link_without_aborting_the_batch(self):
         """R3-008/R4-005: one record's link target colliding with a real (non-symlink) directory
-        must not abort materializing every other record in the batch."""
+        must not abort materializing every other record in the batch. R4-materialize-partial-
+        failure-exit-zero (orchestrator second-round review, 2026-09-28): main() used to discard
+        materialize()'s own return value and always `return 0`, even when a record was skipped --
+        a caller (e.g. a CI/automation step) had no way to detect the partial failure short of
+        parsing stderr text. A nonzero skip count must now be reflected in the exit code."""
         m = _load()
         with tempfile.TemporaryDirectory() as td:
             root = Path(td) / "organized"
@@ -1038,15 +1139,33 @@ class MainRunAndMaterializeTest(unittest.TestCase):
             materialize_dir = out_dir / "tree"
             # Pre-create a REAL directory exactly where DocClass.java's symlink would go.
             (materialize_dir / "modA" / "pkg" / "DocClass.java").mkdir(parents=True)
+            stdout = io.StringIO()
             stderr = io.StringIO()
-            with contextlib.redirect_stderr(stderr):
+            with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
                 rc = m.main(["--organized", str(root), "--out", str(out_dir),
                              "--materialize", str(materialize_dir)])
-            self.assertEqual(rc, 0)
+            self.assertEqual(rc, 1)  # nonzero: at least one record could not be materialized
+            self.assertIn("1 skipped", stdout.getvalue())
             # DocClass could not be linked (still a real dir), but V2Class -- unrelated -- was.
             self.assertTrue((materialize_dir / "modA" / "pkg" / "DocClass.java").is_dir())
             v2_link = materialize_dir / "modA" / "pkg" / "V2Class.java"
             self.assertTrue(v2_link.is_symlink())
+
+    def test_materialize_with_no_skips_still_exits_zero(self):
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td) / "organized"
+            fx = FixtureOrganized(root)
+            fx.add_module_skeleton("modA")
+            fx.add_docsource("modA", "pkg/DocClass")
+            out_dir = root / "_best"
+            materialize_dir = out_dir / "tree"
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                rc = m.main(["--organized", str(root), "--out", str(out_dir),
+                             "--materialize", str(materialize_dir)])
+            self.assertEqual(rc, 0)
+            self.assertIn("0 skipped", stdout.getvalue())
 
 
 if __name__ == "__main__":

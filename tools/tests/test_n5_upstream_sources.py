@@ -42,6 +42,23 @@ def _jar_bytes(entries):
     return buf.getvalue()
 
 
+def _jar_bytes_with_corrupt_entry(entries, corrupt_name):
+    """Same as _jar_bytes, but flips one byte of corrupt_name's own stored file data so
+    zipfile.ZipFile(...).read(corrupt_name) raises zipfile.BadZipFile ("Bad CRC-32 for file...")
+    for that ONE entry -- a real-world simulation of a truncated/corrupted zip member -- while
+    every other entry in the same jar stays perfectly readable. Used to test that one unreadable
+    sources-jar entry does not zero out an entire jar's worth of coverage (R3/R4-entry-read-
+    failure, orchestrator second-round review, 2026-09-28)."""
+    import struct
+    raw = bytearray(_jar_bytes(entries))
+    with zipfile.ZipFile(io.BytesIO(bytes(raw))) as zf:
+        offset = zf.getinfo(corrupt_name).header_offset
+    fname_len, extra_len = struct.unpack("<HH", raw[offset + 26:offset + 30])
+    data_offset = offset + 30 + fname_len + extra_len
+    raw[data_offset] ^= 0xFF
+    return bytes(raw)
+
+
 class ParseMatchTest(unittest.TestCase):
     def test_parses_group_artifact_version(self):
         m = _load()
@@ -575,6 +592,24 @@ class SplitClassifierTest(unittest.TestCase):
         m = _load()
         self.assertEqual(m.split_classifier("1.4.0-native"), ("1.4.0", "native"))
 
+    def test_dash_separated_numbered_qualifier_is_not_a_classifier(self):
+        # Real finding (R3-qualifier-guard-misses-dashed-and-dotted-qualifiers, orchestrator
+        # second-round review, 2026-09-28): "-rc-1" is a DASH-separated qualifier+number (as
+        # opposed to the fused "-RC1" the guard already handled) -- still one whole Central
+        # version, "1.5.0-rc-1", not version "1.5.0" plus classifier "rc-1".
+        m = _load()
+        self.assertEqual(m.split_classifier("1.5.0-rc-1"), ("1.5.0-rc-1", None))
+
+    def test_dot_separated_numbered_qualifier_is_not_a_classifier(self):
+        # "-alpha.2" is a DOT-separated qualifier+number -- one whole Central version,
+        # "1.0.0-alpha.2", not version "1.0.0" plus classifier "alpha.2".
+        m = _load()
+        self.assertEqual(m.split_classifier("1.0.0-alpha.2"), ("1.0.0-alpha.2", None))
+
+    def test_dot_separated_rc_qualifier_is_not_a_classifier(self):
+        m = _load()
+        self.assertEqual(m.split_classifier("2.1.0-RC.1"), ("2.1.0-RC.1", None))
+
 
 class DetectClassifierTest(unittest.TestCase):
     """For the ORIGINAL 154 pom.properties-identified artifacts, artifactId/version are already
@@ -988,7 +1023,13 @@ class DeclaredPackageOfTest(unittest.TestCase):
         m = _load()
         self.assertEqual(m.declared_package_of("package org.foo.bar\n\nclass X"), "org/foo/bar")
 
-    def test_default_package_is_empty_string(self):
+    def test_no_package_statement_returns_none(self):
+        # Real finding (R2-001/R3-default-package-doc-test-mismatch, orchestrator second-round
+        # review, 2026-09-28): this test's own NAME used to say "is_empty_string" while its body
+        # asserted assertIsNone -- a stale rename that no longer matched the actual, and only
+        # actually implementable, behavior (see declared_package_of's docstring: a bare regex
+        # search cannot distinguish a genuine no-package "default package" file from any other
+        # non-matching/malformed text, so both collapse to None, never "").
         m = _load()
         self.assertIsNone(m.declared_package_of("class X {}"))
 
@@ -1760,6 +1801,112 @@ class RunAllThirdPartyCoverageTest(unittest.TestCase):
             self.assertEqual(coverage["classes_total"], 1)
             self.assertEqual(coverage["classes_with_upstream_source"], 1)
 
+    def test_one_unreadable_sources_entry_does_not_zero_the_whole_jars_coverage(self):
+        # Real finding (R3-upstream-entry-read-failure/R4-coverage-entry-read-failure-zeroes-
+        # artifact, orchestrator second-round review, 2026-09-28): sources_top_level_names used to
+        # wrap its ENTIRE zip-reading loop in one try/except that returned None (this artifact's
+        # coverage entirely zeroed) the moment ANY single entry's z.read() failed -- one corrupt
+        # class file in an otherwise-healthy sources jar must only drop THAT entry, not every
+        # other, perfectly readable class's coverage too. Uses a Kotlin Multiplatform source-set
+        # layout (commonMain/) so the match can ONLY happen via each entry's OWN declared-package
+        # bytes (see declared_names_for_source) -- a path-based match needs no file content at
+        # all, so it alone would not exercise the per-entry read failure this fix is about.
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir, binext_dir = self._mirror(td)
+            with open(os.path.join(binext_dir, "mix-1.0.jar"), "wb") as f:
+                f.write(_jar_bytes({"kotlin/Good.class": b"good", "kotlin/Bad.class": b"bad"}))
+            import shutil
+            out_dir = m.REPO_ROOT / "organized" / "_test_tmp_corrupt_sources_entry"
+            out_dir.mkdir(parents=True, exist_ok=True)
+            self.addCleanup(shutil.rmtree, out_dir, True)
+            jar_path = out_dir / "mix-1.0-sources.jar"
+            jar_path.write_bytes(_jar_bytes_with_corrupt_entry(
+                {"commonMain/Good.kt": b"package kotlin\nclass Good {}",
+                 "commonMain/Bad.kt": b"package kotlin\nclass Bad {}"}, "commonMain/Bad.kt"))
+            sources_path = str(jar_path.relative_to(m.REPO_ROOT))
+            manifest = {
+                "artifacts": [
+                    {"groupId": "g", "artifactId": "mix", "version": "1.0", "status": "fetched",
+                     "sources_jar_path": sources_path,
+                     "occurrences": [{"kind": "bin/ext", "name": "bin/ext/mix-1.0.jar"}],
+                     "content_identity": {"status": "resigned-identical"}},
+                ],
+                "unidentified": [],
+            }
+            coverage = m.run_all_third_party_coverage(manifest, mirror_modules_dir=modules_dir, mirror_binext_dir=binext_dir)
+            self.assertEqual(coverage["classes_total"], 2)
+            # kotlin/Good is still covered (its OWN entry read fine) even though kotlin/Bad's
+            # entry is unreadable -- not both zeroed by one bad entry elsewhere in the same jar.
+            self.assertEqual(coverage["classes_with_upstream_source"], 1)
+
+    def test_unidentified_jar_with_no_mirror_bytes_is_counted_not_silently_dropped(self):
+        # Real finding (R3-no-mirror-content-identity-denominator-drop/R4-mirror-absent-proof-
+        # discarded, orchestrator second-round review, 2026-09-28): an unidentified jar whose own
+        # local-mirror copy has since gone missing used to just `continue`, leaving its class_count
+        # None with NO record anywhere of how many classes (or how many entries) were dropped from
+        # the denominator this way -- a silent gap, not merely an "honestly uncountable" one.
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir, binext_dir = self._mirror(td)
+            # Deliberately do NOT create bin/ext/ghost-1.0.jar in either mirror dir.
+            manifest = {"artifacts": [], "unidentified": [
+                {"kind": "bin/ext", "name": "bin/ext/ghost-1.0.jar", "reason": "not-on-central"},
+            ]}
+            coverage = m.run_all_third_party_coverage(manifest, mirror_modules_dir=modules_dir, mirror_binext_dir=binext_dir)
+            self.assertEqual(coverage["classes_total"], 0)
+            self.assertEqual(coverage["classes_with_upstream_source"], 0)
+            self.assertEqual(coverage["classes_uncounted_no_mirror"], 1)
+            self.assertIsNone(manifest["unidentified"][0]["class_count"])
+            self.assertIn("no-mirror", manifest["unidentified"][0]["class_count_uncounted_reason"])
+
+    def test_artifact_without_mirror_or_classdiff_fallback_is_counted_not_silently_dropped(self):
+        # Same gap as above, for the OTHER loop: a T26a "identified-by-sha1" artifact (no
+        # classdiff at all -- see run_identify_unidentified) whose local-mirror copy is missing
+        # used to add NOTHING to the denominator and leave no trace of the drop.
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir, binext_dir = self._mirror(td)
+            # Deliberately do NOT create bin/ext/poi-5.5.1.jar in either mirror dir.
+            manifest = {
+                "artifacts": [
+                    {"groupId": "org.apache.poi", "artifactId": "poi", "version": "5.5.1",
+                     "status": "fetched",
+                     "occurrences": [{"kind": "bin/ext", "name": "bin/ext/poi-5.5.1.jar"}],
+                     "identification_method": "sha1-search"},
+                ],
+                "unidentified": [],
+            }
+            coverage = m.run_all_third_party_coverage(manifest, mirror_modules_dir=modules_dir, mirror_binext_dir=binext_dir)
+            self.assertEqual(coverage["classes_total"], 0)
+            self.assertEqual(coverage["classes_uncounted_no_mirror"], 1)
+            self.assertIsNone(manifest["artifacts"][0]["class_count"])
+            self.assertIn("no-mirror", manifest["artifacts"][0]["class_count_uncounted_reason"])
+
+    def test_sources_jar_missing_on_disk_despite_fetched_status_is_reported_not_silent(self):
+        # Related visibility gap: an artifact PROVEN byte-identical (so it WOULD contribute to
+        # "covered") whose manifest says status=="fetched" but whose sources_jar_path no longer
+        # points at a readable file on disk used to just silently contribute 0 to "covered", with
+        # no distinction from a legitimately zero-source-overlap artifact.
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir, binext_dir = self._mirror(td)
+            with open(os.path.join(binext_dir, "ghostsrc-1.0.jar"), "wb") as f:
+                f.write(_jar_bytes({"a/One.class": b"one"}))
+            manifest = {
+                "artifacts": [
+                    {"groupId": "g", "artifactId": "ghostsrc", "version": "1.0", "status": "fetched",
+                     "sources_jar_path": "organized/_upstream-sources/g/ghostsrc/1.0/ghostsrc-1.0-sources.jar",
+                     "occurrences": [{"kind": "bin/ext", "name": "bin/ext/ghostsrc-1.0.jar"}],
+                     "content_identity": {"status": "resigned-identical"}},
+                ],
+                "unidentified": [],
+            }
+            coverage = m.run_all_third_party_coverage(manifest, mirror_modules_dir=modules_dir, mirror_binext_dir=binext_dir)
+            self.assertEqual(coverage["classes_total"], 1)
+            self.assertEqual(coverage["classes_with_upstream_source"], 0)
+            self.assertEqual(coverage["artifacts_with_proof_but_unreadable_sources_jar"], 1)
+
     def test_no_mirror_bytes_falls_back_to_classdiff_binary_total_with_zero_covered(self):
         # Genuinely uncountable in the real unit (the mirror doesn't have the jar) -- better an
         # undercounted denominator (classdiff's narrower, top-level-only binary_total) than a
@@ -2121,6 +2268,32 @@ class RenderReportAllThirdPartyHeadlineTest(unittest.TestCase):
         # let a reader assume the two numbers should match 1:1.
         self.assertIn("n5-best-source.py", text)
         self.assertIn("per-population", text)
+
+    def test_headline_caveats_the_all_claim_when_entries_were_uncounted(self):
+        # R2-report-one-unit-claim-overstates (orchestrator second-round review, 2026-09-28): the
+        # headline claims coverage over "ALL third-party classes" -- when some entries genuinely
+        # could not be counted (no mirror bytes) or an artifact's proof couldn't translate into
+        # "covered" because its sources jar isn't actually readable, that must be disclosed, not
+        # silently rolled into an unqualified "ALL" claim.
+        m = _load()
+        manifest = {"artifacts": [], "unidentified": []}
+        text = m.render_report(manifest, all_third_party_coverage={
+            "classes_with_upstream_source": 100, "classes_total": 200,
+            "classes_uncounted_no_mirror": 3,
+            "artifacts_with_proof_but_unreadable_sources_jar": 2,
+        })
+        self.assertIn("3 artifact/unidentified-jar entries", text)
+        self.assertIn("2 artifact(s) have PROVEN binary identity", text)
+
+    def test_headline_omits_the_caveat_when_nothing_was_uncounted(self):
+        m = _load()
+        manifest = {"artifacts": [], "unidentified": []}
+        text = m.render_report(manifest, all_third_party_coverage={
+            "classes_with_upstream_source": 100, "classes_total": 200,
+            "classes_uncounted_no_mirror": 0,
+            "artifacts_with_proof_but_unreadable_sources_jar": 0,
+        })
+        self.assertNotIn("Caveat on the \"ALL\" claim", text)
 
     def test_identify_summary_rendered(self):
         m = _load()

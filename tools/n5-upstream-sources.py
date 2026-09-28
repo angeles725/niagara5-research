@@ -254,8 +254,15 @@ _CLASSIFIER_RE = re.compile(r"^(?P<v>\d[\w.]*?)-(?P<c>[A-Za-z][\w.\-]*)$")
 # a trailing token that is ENTIRELY one of these well-known qualifier words (optionally followed
 # by digits, e.g. "RC1", "beta2", "M1") is excluded from being treated as a classifier; a genuine
 # classifier like "native" or "jdk11" does not match this list and still splits normally.
+#
+# Second-round finding (R3-qualifier-guard-misses-dashed-and-dotted-qualifiers, orchestrator
+# review, 2026-09-28): the qualifier word and its trailing number are not always FUSED ("RC1") --
+# Maven versions also spell them DASH- or DOT-separated ("rc-1", "RC.1", "alpha.2"). _CLASSIFIER_RE
+# already peels a leading "-" off the whole tail before this regex ever sees it, so a dash
+# separator here means the token looked like "...-rc-1" (candidate "rc-1"); the optional
+# "[.\-]?\d+" below accepts either separator, or none at all (the original fused case).
 _MAVEN_QUALIFIER_RE = re.compile(
-    r"^(alpha|beta|milestone|m|rc|cr|snapshot|ga|final|release|sp)\d*$", re.IGNORECASE)
+    r"^(alpha|beta|milestone|m|rc|cr|snapshot|ga|final|release|sp)([.\-]?\d+)?$", re.IGNORECASE)
 
 
 def split_classifier(version: str):
@@ -709,9 +716,13 @@ _KOTLIN_FILE_JVM_NAME_RE = re.compile(r'@file:JvmName\(\s*"([^"]+)"\s*\)')
 
 def declared_package_of(source_text: str) -> Optional[str]:
     """The package THIS source file declares (its own `package ...` statement, in slash form,
-    e.g. "org/foo") -- independent of whatever path its zip entry happens to live at. "" for an
-    explicit default (no-package) file; None when no package statement is found at all (a
-    malformed/unusual file -- callers must not derive a declared-name candidate from it)."""
+    e.g. "org/foo") -- independent of whatever path its zip entry happens to live at. Returns
+    None when no `package` statement is found at all. Fix (R2-001, orchestrator second-round
+    review, 2026-09-28): this used to claim a distinct "" return for an "explicit default
+    (no-package)" file, but the implementation never actually produced one -- a bare regex search
+    has no way to tell a genuine no-package (Java "default package") file apart from any other
+    non-matching or malformed text, so both cases collapse to None here; callers must never
+    derive a declared-name candidate from a None result."""
     m = _PACKAGE_DECL_RE.search(source_text)
     if not m:
         return None
@@ -1023,8 +1034,14 @@ def sources_top_level_names(art: dict) -> Optional[dict]:
     declared_names_for_source) -- the fallback for a source-set layout whose paths don't mirror
     packages (Kotlin Multiplatform's `commonMain/`, `jvmMain/`, ...). Use class_has_matching_source
     to actually match a binary class against this, never a bare `in` check against one set.
-    Returns None when no sources jar was ever fetched for this artifact (status != "fetched") or
-    the recorded file isn't actually readable on disk."""
+    Returns None when no sources jar was ever fetched for this artifact (status != "fetched"), the
+    recorded file isn't actually readable on disk, or the zip's central directory itself can't be
+    opened at all. A single unreadable/corrupt ENTRY inside an otherwise-openable jar does NOT
+    return None -- it is skipped (and reported to stderr), never zeroing out every other, perfectly
+    readable entry's coverage (R3-upstream-entry-read-failure/R4-coverage-entry-read-failure-
+    zeroes-artifact, orchestrator second-round review, 2026-09-28: this used to wrap the WHOLE
+    per-entry loop in one try/except, so one bad `z.read()` call dropped the ENTIRE artifact's
+    contribution to the coverage headline, not just that one class)."""
     if art.get("status") != "fetched":
         return None
     rel_path = art.get("sources_jar_path")
@@ -1033,27 +1050,37 @@ def sources_top_level_names(art: dict) -> Optional[dict]:
     jar_path = REPO_ROOT / rel_path
     if not jar_path.exists():
         return None
-    sources_bytes = jar_path.read_bytes()
+    try:
+        sources_bytes = jar_path.read_bytes()
+    except OSError:
+        return None
     path_names: set[str] = set()
     declared_names: set[str] = set()
     try:
-        with zipfile.ZipFile(io.BytesIO(sources_bytes)) as z:
-            for info in z.infolist():
-                if info.is_dir():
-                    continue
-                name = info.filename
-                if name.endswith(".java"):
-                    base = name[: -len(".java")]
-                elif name.endswith(".kt"):
-                    base = name[: -len(".kt")]
-                else:
-                    continue
-                if "$" in base.rsplit("/", 1)[-1]:
-                    continue
-                path_names |= mrjar_variants(base)
-                declared_names |= declared_names_for_source(name, z.read(info))
+        z = zipfile.ZipFile(io.BytesIO(sources_bytes))
     except (zipfile.BadZipFile, OSError):
         return None
+    with z:
+        for info in z.infolist():
+            if info.is_dir():
+                continue
+            name = info.filename
+            if name.endswith(".java"):
+                base = name[: -len(".java")]
+            elif name.endswith(".kt"):
+                base = name[: -len(".kt")]
+            else:
+                continue
+            if "$" in base.rsplit("/", 1)[-1]:
+                continue
+            path_names |= mrjar_variants(base)
+            try:
+                data = z.read(info)
+            except (zipfile.BadZipFile, OSError) as exc:
+                print(f"n5-upstream-sources: skipping unreadable sources-jar entry {name!r} in "
+                      f"{jar_path}: {exc}", file=sys.stderr)
+                continue
+            declared_names |= declared_names_for_source(name, data)
     return {"path": path_names, "declared": declared_names}
 
 
@@ -1095,9 +1122,25 @@ def run_all_third_party_coverage(manifest: dict, mirror_modules_dir=MIRROR_MODUL
     silent-omission / R4-coverage-denominator-silently-shrinks, for the case where classdiff
     itself is also entirely absent); 0 covered, since no per-entry proof can be computed without
     the actual bytes. "class_count" records the real unit's count on every artifact/unidentified
-    entry (None when genuinely uncountable), so the gap stays visible instead of silent."""
+    entry (None when genuinely uncountable), so the gap stays visible instead of silent.
+
+    Two further visibility gaps fixed by the orchestrator's second-round review (2026-09-28):
+      - R3-no-mirror-content-identity-denominator-drop / R4-mirror-absent-proof-discarded: when
+        the mirror is missing AND there is no classdiff fallback either (e.g. a T26a "identified-
+        by-sha1" artifact -- never given a classdiff, see run_identify_unidentified -- or a still-
+        unidentified jar the mirror has since lost), the entry used to add NOTHING to the total
+        and leave no record it had even been skipped. It is now counted in the returned
+        coverage["classes_uncounted_no_mirror"] and the record itself gets a
+        "class_count_uncounted_reason" field, so a silent gap becomes a visible, countable one.
+      - An artifact whose binary identity IS proven (would contribute to "covered") but whose
+        manifest-recorded sources_jar_path is not actually readable on disk despite status ==
+        "fetched" (moved/deleted after fetch, or a corrupt jar) used to contribute a silent 0 to
+        "covered" indistinguishable from a legitimate zero-overlap artifact. It is now counted in
+        coverage["artifacts_with_proof_but_unreadable_sources_jar"] and reported to stderr."""
     covered = 0
     total = 0
+    uncounted_no_mirror = 0
+    unreadable_sources_jar = 0
     for art in manifest["artifacts"]:
         occurrences = art.get("occurrences") or []
         binary_bytes = (load_binary_bytes_from_mirror(occurrences[0], mirror_modules_dir, mirror_binext_dir)
@@ -1106,6 +1149,12 @@ def run_all_third_party_coverage(manifest: dict, mirror_modules_dir=MIRROR_MODUL
             cd = art.get("classdiff")
             if cd and "binary_total" in cd:
                 total += cd["binary_total"]
+            else:
+                uncounted_no_mirror += 1
+                art["class_count_uncounted_reason"] = "no-mirror-bytes-and-no-classdiff-fallback"
+                print(f"n5-upstream-sources: {art.get('groupId')}:{art.get('artifactId')}:"
+                      f"{art.get('version')} dropped from the coverage denominator -- no local-"
+                      "mirror bytes and no classdiff fallback", file=sys.stderr)
             art["class_count"] = None
             continue
         real_entries = real_class_entries(binary_bytes)
@@ -1137,17 +1186,29 @@ def run_all_third_party_coverage(manifest: dict, mirror_modules_dir=MIRROR_MODUL
             if src_names:
                 covered += sum(1 for entry in proven
                                 if class_has_matching_source(top_level_class_of(entry), src_names))
+            elif art.get("status") == "fetched":
+                unreadable_sources_jar += 1
+                print(f"n5-upstream-sources: {art.get('groupId')}:{art.get('artifactId')}:"
+                      f"{art.get('version')} has proven binary identity but its recorded "
+                      "sources_jar_path is not readable -- contributing 0 to covered, not "
+                      "silently", file=sys.stderr)
     for u in manifest.get("unidentified", []):
         binary_bytes = load_binary_bytes_from_mirror(u, mirror_modules_dir, mirror_binext_dir)
         if binary_bytes is None:
+            uncounted_no_mirror += 1
             u["class_count"] = None
+            u["class_count_uncounted_reason"] = "no-mirror-bytes"
+            print(f"n5-upstream-sources: unidentified {u.get('name')} dropped from the coverage "
+                  "denominator -- no local-mirror bytes", file=sys.stderr)
             continue
         real_entries = real_class_entries(binary_bytes)
         u["class_count"] = len(real_entries)
         total += len(real_entries)
         # An unidentified jar has no known coordinate, so no sources were ever fetched for it --
         # 0 covered by construction.
-    coverage = {"classes_with_upstream_source": covered, "classes_total": total}
+    coverage = {"classes_with_upstream_source": covered, "classes_total": total,
+                "classes_uncounted_no_mirror": uncounted_no_mirror,
+                "artifacts_with_proof_but_unreadable_sources_jar": unreadable_sources_jar}
     manifest["all_third_party_coverage"] = coverage
     return coverage
 
@@ -1514,6 +1575,32 @@ def render_report(manifest: dict, paho_result: Optional[dict] = None,
             "actually missing or wrong."
         )
         lines.append("")
+        uncounted_no_mirror = all_third_party_coverage.get("classes_uncounted_no_mirror", 0)
+        unreadable_sources_jar = all_third_party_coverage.get(
+            "artifacts_with_proof_but_unreadable_sources_jar", 0)
+        if uncounted_no_mirror or unreadable_sources_jar:
+            # R2-report-one-unit-claim-overstates fix (orchestrator second-round review,
+            # 2026-09-28): the headline above says "ALL third-party classes" -- when either of
+            # these is nonzero, the denominator did NOT actually cover every entry this corpus
+            # ships, so the "ALL" claim must be caveated explicitly rather than silently overstate
+            # what was actually counted.
+            caveat = []
+            if uncounted_no_mirror:
+                caveat.append(
+                    f"{uncounted_no_mirror} artifact/unidentified-jar entr"
+                    f"{'y' if uncounted_no_mirror == 1 else 'ies'} could not be counted toward "
+                    "the denominator at all (no local-mirror copy of the jar, and no classdiff "
+                    "fallback either) -- see `classes_uncounted_no_mirror` and each affected "
+                    "record's own `class_count_uncounted_reason`"
+                )
+            if unreadable_sources_jar:
+                caveat.append(
+                    f"{unreadable_sources_jar} artifact(s) have PROVEN binary identity but their "
+                    "recorded sources jar is not actually readable on disk, contributing 0 to "
+                    "\"covered\" -- see `artifacts_with_proof_but_unreadable_sources_jar`"
+                )
+            lines.append("Caveat on the \"ALL\" claim above: " + "; ".join(caveat) + ".")
+            lines.append("")
     lines.append("## Fetch status counts")
     lines.append("")
     lines.append("| status | count |")
