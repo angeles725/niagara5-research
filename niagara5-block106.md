@@ -493,7 +493,9 @@ verdict; re-deriving it here would violate this task's own ALREADY-COVERED disci
   emitted a new benign warning in probe 1 (`warning: unknown enum constant
   NiagaraPermissionGrant$Type.WORKBENCH — reason: class file for
   com.tridium.nre.annotations.NiagaraPermissionGrant$Type not found`) that [Block 55]'s own Homebrew
-  probe 1 output (quoted in full, `[Block 55] §55.2`) does not mention. Whether this is a genuine
+  probe 1 output (quoted in full, `[Block 55] §55.2`) does not mention. **[CORRECTED by [Block 108] §108.3:** the
+  RAW Block 55 probe1 artifact DOES contain this warning (line 15) — only the §55.2 prose paraphrase omitted it; the
+  warning is toolchain-independent (reproduced on Linux OpenJDK 25).**]** Whether this is a genuine
   toolchain-specific difference (e.g. the Windows `javac.exe` scans an annotation-processor classpath
   entry Homebrew's plain OpenJDK never sees) or simply an unreported detail of [Block 55]'s own session
   was not determined — a re-run of Homebrew's identical probe 1 side-by-side with this session's Windows
