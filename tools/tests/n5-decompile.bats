@@ -707,6 +707,25 @@ PY
   [ "$recorded" -eq "$actual" ]
 }
 
+@test "T23a: --prepare-libcache refuses an empty source-jar scan and leaves an existing ready cache untouched" {
+  local_dir="$BATS_TEST_TMPDIR/t23a"
+  mkdir -p "$local_dir/modules" "$local_dir/empty" "$local_dir/out"
+  make_fake_jar "$local_dir/modules/modA.jar" Tridium "libx-1.0.jar"
+  N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR=/nonexistent N5_OUT_DIR="$local_dir/out" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --prepare-libcache
+  [ "$status" -eq 0 ]
+  before=$(cat "$local_dir/out/_v2-libcache/.complete" "$local_dir/out/_v2-libcache/_current_entries.tsv" | sha256sum)
+  # A mistyped / unmounted modules dir scans zero jars: that must be a typed
+  # failure, never a "complete" cache that strips every LIB-INF jar from the
+  # later decompiles' -e= context.
+  N5_MODULES_DIR="$local_dir/empty" N5_BIN_EXT_DIR=/nonexistent N5_OUT_DIR="$local_dir/out" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --prepare-libcache
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"no source jars"* ]]
+  after=$(cat "$local_dir/out/_v2-libcache/.complete" "$local_dir/out/_v2-libcache/_current_entries.tsv" | sha256sum)
+  [ "$before" = "$after" ]
+}
+
 @test "T19h2c: a stale completion marker (count mismatch against actual cache contents) is treated as not-ready" {
   local_dir="$BATS_TEST_TMPDIR/t19h2c"
   mkdir -p "$local_dir/modules" "$local_dir/out"

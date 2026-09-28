@@ -477,6 +477,15 @@ cache_source_jar_libinf() {
 prepare_v2_libcache() {
   local force="${1:-false}"
   local cache_dir="$N5_OUT_DIR/_v2-libcache"
+  # T23 (RDD advisory R4): a zero-jar scan (mistyped or unmounted
+  # $N5_MODULES_DIR) must fail loudly BEFORE touching the cache. Otherwise it
+  # would publish a "complete" cache with an empty _current_entries.tsv, and
+  # every later v2/cons decompile would silently lose all LIB-INF context.
+  if ! find -L "$N5_MODULES_DIR" -maxdepth 1 -name '*.jar' ! -name docSource.jar -print -quit 2>/dev/null | grep -q . \
+      && ! find -L "$N5_BIN_EXT_DIR" -name '*.jar' -print -quit 2>/dev/null | grep -q .; then
+    echo "FATAL: --prepare-libcache found no source jars under N5_MODULES_DIR=$N5_MODULES_DIR or N5_BIN_EXT_DIR=$N5_BIN_EXT_DIR; refusing to rebuild $cache_dir (an existing cache is left untouched)." >&2
+    exit 2
+  fi
   mkdir -p "$cache_dir"
   # An in-progress rebuild must never look complete to a concurrent reader.
   rm -f "$cache_dir/.complete"

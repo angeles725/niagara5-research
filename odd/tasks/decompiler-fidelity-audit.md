@@ -107,6 +107,21 @@ make the decompile complete and as faithful as possible.
       and the Tridium-owned nested LIB-INF jars; for identified third-party jars fetch the upstream -sources.jar by exact
       Maven coordinates (original source beats any decompile); record per-class best representation. Route: delegated,
       after T19b lands (same script).
+- [x] T22-rdd Range review 80c5f90..HEAD (tool base 7f6ba50; covers 97a5d23, bb58475, docs): lineage
+      review-83022868fd33530e APPROVED + acknowledged (authority burned), 4 lenses, 10 non-blocking advisories.
+      Orchestrator verified the WARNINGs: R4-libcache-empty-scan-strips-context REAL → T23; R3 .complete removal under
+      concurrent readers = by design (readers fail loudly with "run --prepare-libcache"; prepare runs serially first);
+      R3 source-sha cache reload per jar = performance only; R2 readability items deferred.
+- [ ] T23 (TDD, bats T23a RED observed: exit 0 on an empty scan) `--prepare-libcache` refuses a zero-jar scan of
+      N5_MODULES_DIR + N5_BIN_EXT_DIR with exit 2 BEFORE touching the cache, so a mistyped/unmounted path can never
+      publish a "complete" cache that strips all LIB-INF context. GREEN: 13/13 libcache tests, shellcheck clean.
+      Route: inline (one script + one test).
+- [ ] T24 bajaui whole-module Vineflower timeout (found during the T22 line-mapping spot check): `bajaui` (832 classes)
+      is the ONLY module whose primary Vineflower run hit N5_PRIMARY_TIMEOUT=240 s in all three variants (v1 265 s,
+      v2 265 s, cons 268 s; recon.json primary_status=timeout, fallback_reason=primary_timeout_whole_module), so its
+      566 top-level sources in every tree are CFR, not Vineflower. Trial: same v2 command with a 3600 s budget. Then
+      re-run bajaui v1/v2/cons with the budget that completes (or `--max-time-per-method`) and re-check the
+      StyleUtils line mapping. Route: inline.
 
 ## Maximum decompile fidelity (user requirement 2026-09-28: "the decompile must be right, no inventions, not tainted; try everything possible")
 - [x] T13 Integrity + completeness census [CERT-hw]: 252 recon.json (247 modules + bin/ext) — 0 jar sha256 mismatches vs the
