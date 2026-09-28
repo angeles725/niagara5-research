@@ -1,0 +1,3 @@
+TEXT (2809 top-level files): Counter({'text-noncosmetic': 1661, 'text-cosmetic-only': 1148}) 40.9% cosmetic-only
+BYTECODE ORACLE (recompiled decompile vs shipped, per class file): 3436 Counter({'exact': 2143, 'differs-only-in-benign-classified-shapes': 1192, 'has SEM? candidate method': 87, 'slot-renumbering-only': 14})
+top-level files that did not recompile: 152

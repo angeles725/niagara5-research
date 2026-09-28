@@ -1,0 +1,230 @@
+Compiled from "F.java"
+public class F {
+  public F();
+    Code:
+         0: aload_0
+         1: invokespecial #N                  // Method java/lang/Object."<init>":()V
+         4: return
+      LineNumberTable:
+        line 2: 0
+      LocalVariableTable:
+        Start  Length  Slot  Name   Signature
+            0       5     0  this   LF;
+
+  static int inst(java.lang.Object);
+    Code:
+         0: aload_0
+         1: instanceof    #N                  // class java/lang/String
+         4: ifeq          17
+         7: aload_0
+         8: checkcast     #N                  // class java/lang/String
+        11: astore_1
+        12: aload_1
+        13: invokevirtual #N                  // Method java/lang/String.length:()I
+        16: ireturn
+        17: iconst_0
+        18: ireturn
+      LineNumberTable:
+        line 3: 0
+      LocalVariableTable:
+        Start  Length  Slot  Name   Signature
+           12       5     1     s   Ljava/lang/String;
+            0      19     0     o   Ljava/lang/Object;
+
+  static int v();
+    Code:
+         0: new           #N                 // class java/util/ArrayList
+         3: dup
+         4: invokespecial #N                 // Method java/util/ArrayList."<init>":()V
+         7: astore_0
+         8: aload_0
+         9: invokevirtual #N                 // Method java/util/ArrayList.size:()I
+        12: ireturn
+      LineNumberTable:
+        line 4: 0
+      LocalVariableTable:
+        Start  Length  Slot  Name   Signature
+            8       5     0     l   Ljava/util/ArrayList;
+
+  static java.lang.String tb();
+    Code:
+         0: ldc           #N                 // String line1\nline2\n
+         2: areturn
+      LineNumberTable:
+        line 5: 0
+
+  static int ef(int[]);
+    Code:
+         0: iconst_0
+         1: istore_1
+         2: iconst_0
+         3: istore_2
+         4: iload_2
+         5: aload_0
+         6: arraylength
+         7: if_icmpge     24
+        10: aload_0
+        11: iload_2
+        12: iaload
+        13: istore_3
+        14: iload_1
+        15: iload_3
+        16: iadd
+        17: istore_1
+        18: iinc          2, 1
+        21: goto          4
+        24: iload_1
+        25: ireturn
+      LineNumberTable:
+        line 6: 0
+      LocalVariableTable:
+        Start  Length  Slot  Name   Signature
+           14       4     3     x   I
+            4      20     2     i   I
+            0      26     0     a   [I
+            2      24     1     t   I
+
+  static int efi(java.util.List<java.lang.String>);
+    Code:
+         0: iconst_0
+         1: istore_1
+         2: aload_0
+         3: invokeinterface #N,  1           // InterfaceMethod java/util/List.iterator:()Ljava/util/Iterator;
+         8: astore_2
+         9: aload_2
+        10: invokeinterface #N,  1           // InterfaceMethod java/util/Iterator.hasNext:()Z
+        15: ifeq          38
+        18: aload_2
+        19: invokeinterface #N,  1           // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+        24: checkcast     #N                  // class java/lang/String
+        27: astore_3
+        28: iload_1
+        29: aload_3
+        30: invokevirtual #N                  // Method java/lang/String.length:()I
+        33: iadd
+        34: istore_1
+        35: goto          9
+        38: iload_1
+        39: ireturn
+      LineNumberTable:
+        line 7: 0
+      LocalVariableTable:
+        Start  Length  Slot  Name   Signature
+           28       7     3     s   Ljava/lang/String;
+            9      29     2    it   Ljava/util/Iterator;
+            0      40     0     l   Ljava/util/List;
+            2      38     1     t   I
+
+  static int sw(int);
+    Code:
+         0: iload_0
+         1: lookupswitch  { // 2
+                       1: 28
+                       2: 34
+                 default: 40
+            }
+        28: bipush        10
+        30: istore_1
+        31: goto          42
+        34: bipush        20
+        36: istore_1
+        37: goto          42
+        40: iconst_0
+        41: istore_1
+        42: iload_1
+        43: ireturn
+      LineNumberTable:
+        line 8: 0
+      LocalVariableTable:
+        Start  Length  Slot  Name   Signature
+           31       3     1     r   I
+           37       3     1     r   I
+            0      44     0     k   I
+           42       2     1     r   I
+
+  static int ss(java.lang.String);
+    Code:
+         0: aload_0
+         1: astore_1
+         2: iconst_m1
+         3: istore_2
+         4: aload_1
+         5: invokevirtual #N                 // Method java/lang/String.hashCode:()I
+         8: lookupswitch  { // 2
+                      97: 36
+                      98: 50
+                 default: 61
+            }
+        36: aload_1
+        37: ldc           #N                 // String a
+        39: invokevirtual #N                 // Method java/lang/String.equals:(Ljava/lang/Object;)Z
+        42: ifeq          61
+        45: iconst_0
+        46: istore_2
+        47: goto          61
+        50: aload_1
+        51: ldc           #N                 // String b
+        53: invokevirtual #N                 // Method java/lang/String.equals:(Ljava/lang/Object;)Z
+        56: ifeq          61
+        59: iconst_1
+        60: istore_2
+        61: iload_2
+        62: lookupswitch  { // 2
+                       0: 88
+                       1: 90
+                 default: 92
+            }
+        88: iconst_1
+        89: ireturn
+        90: iconst_2
+        91: ireturn
+        92: iconst_0
+        93: ireturn
+      LineNumberTable:
+        line 9: 0
+      LocalVariableTable:
+        Start  Length  Slot  Name   Signature
+            0      94     0     k   Ljava/lang/String;
+
+  static java.lang.String cat(java.lang.String, int);
+    Code:
+         0: aload_0
+         1: iload_1
+         2: invokedynamic #N,  0             // InvokeDynamic #N:makeConcatWithConstants:(Ljava/lang/String;I)Ljava/lang/String;
+         7: areturn
+      LineNumberTable:
+        line 10: 0
+      LocalVariableTable:
+        Start  Length  Slot  Name   Signature
+            0       8     0     a   Ljava/lang/String;
+            0       8     1     b   I
+
+  static java.lang.Runnable lam();
+    Code:
+         0: new           #N                 // class F$1
+         3: dup
+         4: invokespecial #N                 // Method F$1."<init>":()V
+         7: areturn
+      LineNumberTable:
+        line 11: 0
+
+  static int tsw(java.lang.Object);
+    Code:
+         0: aload_0
+         1: instanceof    #N                  // class java/lang/String
+         4: ifeq          9
+         7: iconst_1
+         8: ireturn
+         9: aload_0
+        10: instanceof    #N                 // class java/lang/Integer
+        13: ifeq          18
+        16: iconst_2
+        17: ireturn
+        18: iconst_0
+        19: ireturn
+      LineNumberTable:
+        line 12: 0
+      LocalVariableTable:
+        Start  Length  Slot  Name   Signature
+            0      20     0     o   Ljava/lang/Object;
+}

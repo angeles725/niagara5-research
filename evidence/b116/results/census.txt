@@ -1,0 +1,12 @@
+classes 21751
+classes-with-LVT 20325
+classes-with-code 20744
+ctor-athrow-before-super 1
+ctor-localstore-before-super 8
+indy-ObjectMethods(record) 126
+indy-enumSwitch 7
+indy-typeSwitch 27
+major69 21751
+nest-attrs 9017
+records 45
+sealed 3

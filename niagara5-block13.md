@@ -228,6 +228,18 @@ guessing.
 
 ## 13.5 — The 18 N5-only modules `[CERT]`
 
+> **Correction (added by [Block 115], §115.4, §14 cross-block).** "N5-only" here means "absent from the
+> specific N4.14.0.162 OEM install consulted" — this section never checked against the closer N4-**4.15.3.28**
+> release. Re-run this session against all of `/mnt/c/PowerB/PowerB-4.15.3.28/modules`: **7 of these 18
+> already ship in N4-4.15.3.28** — the `cloudLink` family (`cloudLink`, `cloudLinkAzure`, `cloudLinkForge`,
+> `cloudLinkHonSbp`, `cloudLinkNcs`), `jodaTime`, and (not previously known) `platHwScanAtlas`
+> (`module.xml` `vendorVersion="4.15.3.28"`, same `BAtlasBoard` class), per a class-level census of all 721
+> jars in that install. The remaining 11 (the 3
+> `cloudLinkExtension*` modules, `niagaraCloud`, `niagaraSync`, `nurio`, `platNurio`, `totpAuth`, `themeN5`,
+> `analyticsLibs`, `lonDevices`) are genuinely absent from this 4.15.3.28 install too. See [Block 115] §115.4
+> for the full corrected table and downstream sites this affected (including [Block 18] §18.9's `cloudLinkNcs`
+> row).
+
 | Module | Vendor · vendorVersion | Size | Description (module.xml) | Notable |
 |---|---|---|---|---|
 | `cloudLink` | Tridium · **5.0.0.26** | 2,442,163 | Core Cloud Connectivity | 474 classes, top package `com.tridium.cloudLink.msg` |

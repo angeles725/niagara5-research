@@ -119,6 +119,14 @@ larger question this narrower script was never asked to resolve), but it substan
 
 ## 111.2 — B105-G2 ADVANCED: a new, disjoint n=120 stratified sample (60 candidates ≥20 shadow-hits, 60 <20 hits) quantifies [Block 105] §105.8's hit-count heuristic far beyond its original 3-of-3 in-sample pattern — the two buckets show INVERTED duplication-debt rates (≥20-hit: 15% accidental / 61.7% coincidental / 23.3% conventional; <20-hit: ~78% accidental / 10% coincidental / 10% conventional) `[CERT]`+`[INFER]` (tiered, see below)
 
+> **Correction (added by [Block 115], §115.3, §14 cross-block).** Same caveat as [Block 105] §105.8's own
+> pointer: this sample's triage method (decompiled source only) cannot separate a compile-time-INLINED
+> constant reference from a genuinely independent duplicate literal — both render as the identical bare
+> literal after Vineflower resugars the `ldc`. [Block 115] §115.3 proves this concretely on a real,
+> docSource-covered pair from the same underlying `dead_constants_shadowed.json` artifact this sample draws
+> from. The "accidental"/"coincidental"/"conventional" percentages here describe this sample's own
+> decompiled-source classifications, not a docSource-verified bug rate.
+
 **Verbatim parent text** ([Block 105] §105.11, `niagara5-block105.md:463-466`): "**B105-G2** — Continue
 B96-G2's per-candidate triage past this block's 40-candidate sample toward full coverage of the
 3623-candidate population, starting with the hit-count pre-filter heuristic §105.8 flagged (≥20-hit
@@ -334,7 +342,7 @@ template set; the gap's own question is answered definitively, not merely advanc
 
 ## 111.7 — Child gaps opened this block
 
-- **B111-G1** (low priority) — Extend §111.1's `feature_census.py` (or a variant) to ALSO census
+- **B111-G1** (low priority; scope CORRECTED by [Block 114] §114.4: 7 files / 11 call sites, not 2 / 5) — Extend §111.1's `feature_census.py` (or a variant) to ALSO census
   `com.tridium.niagarad.license.Feature` (`niagarad`'s own separate, structurally-identical-shaped but
   textually-distinct license `Feature` class, confirmed at `organized/_bin-ext/niagarad/vineflower/
   com/tridium/niagarad/license/Feature.java`) across its own module scope — 2 files / 5 call sites were

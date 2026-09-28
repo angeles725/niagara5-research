@@ -1,0 +1,16 @@
+files 2809 modules 46
+Counter({'has-residual-or-unaligned': 1783, 'cosmetic-only(<=S7)': 843, 'identical-after-S0': 183})
+Counter({('vineflower', 'has-residual-or-unaligned'): 1552, ('vineflower', 'cosmetic-only(<=S7)'): 790, ('cfr', 'has-residual-or-unaligned'): 231, ('vineflower', 'identical-after-S0'): 174, ('cfr', 'cosmetic-only(<=S7)'): 53, ('cfr', 'identical-after-S0'): 9})
+members aligned 65136
+S0-lexical                        25465  39.1%  gen   7588 hand  17877
+S1-annotations                     2466   3.8%  gen   1490 hand    976
+S2-qualification                  18457  28.3%  gen   7437 hand  11020
+S3-modifiers/generics/parens        150   0.2%  gen      0 hand    150
+S4-literal-form                     869   1.3%  gen    151 hand    718
+S5-constant-inlining/folding       7414  11.4%  gen   5450 hand   1964
+S6-local-names                      871   1.3%  gen      0 hand    871
+S7-braces/increments                510   0.8%  gen      0 hand    510
+residual-structural                8934  13.7%  gen    587 hand   8347
+generated members 22703 hand 42433
+unaligned orig 556 dec 527
+files with $VF marker 0

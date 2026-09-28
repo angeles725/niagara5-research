@@ -336,6 +336,10 @@ binary this session):
 | (functional gap `niagaraSync` fills) | N4 has **no automatic HA/failover module at all**: `niagara-research` B39 documents `BBackupService` (manual backup/restore) and `provisioningNiagara` (`BNiagaraNetworkJob`/`BForEachStationStage`, cold, admin-triggered bulk config push to N subordinates) as the ONLY N4 replication mechanisms — no primary/secondary heartbeat, no automatic promotion | `niagaraSync`'s active/standby Fox-heartbeat failover (§18.7) is a materially NEW capability class relative to N4, not a rename of an existing one |
 | N4's own separate cloud driver, `nCloudDriver` | `nCloudDriver` (`BNiagaraCloudNetwork extends BNNetwork`, `com.tridium.nc.*`, license `tridium/nCloudDriver`) bridges to Honeywell Sentience/Forge via **Azure IoT Hub AMQP**, discovered via BQL `select * from cloudConnector:CloudConnector` — documented in B83/B84/B1076 | A THIRD, N4-only cloud stack, architecturally distinct from both `cloudLink` (extension-based) and N5's module set — no `nCloudDriver` JAR was checked for in the N5 5.0.0.28 tree this session (`[INFER]` that it was retired/folded into `cloudLinkAzure`+`cloudLinkForge` — not confirmed, B18-G7) |
 
+> **Correction (added by [Block 115], §14 cross-block).** `cloudLinkNcs` is NOT N5-only: `cloudLinkNcs-rt.jar` ships in the
+> N4-4.15.3.28 OEM install (`/mnt/c/PowerB/PowerB-4.15.3.28/modules/`); the "not found" check above used only the N4.14.0.162 baseline.
+> See [Block 115] §115.4 (7 of B13's 18 "N5-only" modules already ship in 4.15).
+
 The corpus-nav absence checks are `[CERT]` for "not present in the specific N4.14.0.162 install /
 niagara-research corpus consulted" — they are not proof the modules never existed in ANY N4 release;
 a narrower or newer N4 build was not checked (scope caveat, folded into B18-G7).

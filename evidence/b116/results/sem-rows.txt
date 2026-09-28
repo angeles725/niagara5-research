@@ -1,0 +1,402 @@
+SEM?arith/conv :: bacnet niagara/bacnet/point/BBacnetProxyExt.class toString(Lniagara/sys/Context;)Ljava/lang/String;
+    - [] []
+    + ['i2c'] []
+SEM?arith/conv :: kitControl com/tridium/kitControl/hvac/BSequenceLinear.class calculate()V
+    - ['i2f', 'f2d'] []
+    + ['i2d'] []
+SEM?arith/conv :: nre niagara/nre/util/Base64.class encode([BI)Ljava/lang/String;
+    - ['i2f', 'f2d'] []
+    + ['i2d'] []
+SEM?arith/conv :: nre niagara/xml/XPath$DynamicXPathMatcher.class updateMatrix()V
+    - [] []
+    + ['i2b'] []
+SEM?constant :: bacnet niagara/bacnet/datatypes/BBacnetBitString.class emptyBitString(I)Lniagara/bacnet/datatypes/BBacnetBitString;
+    - [] []
+    + ['const|0'] []
+SEM?constant :: bajaui niagara/ui/table/TableController.class fireExit(Lniagara/ui/event/BMouseEvent;)V
+    - [] []
+    + ['const|-1'] []
+SEM?constant :: bajaui niagara/ui/text/TextModel.class walkLines([Lniagara/ui/text/Line;)V
+    - [] []
+    + ['const|null'] []
+SEM?constant :: bajaui niagara/ui/text/TextSelection.class deselect()V
+    - [] []
+    + ['const|null', 'const|null', 'const|null'] []
+SEM?constant :: bajaui niagara/ui/tree/TreeController.class mouseSelection(Lniagara/ui/tree/TreeNode;Lniagara/ui/event/BMouseEvent;)V
+    - [] []
+    + ['const|null'] []
+SEM?constant :: baseRtsp niagara/rtsp/RtspConnection.class connect(Ljava/lang/String;)V
+    - ['const|1'] []
+    + [] []
+SEM?constant :: kitControl com/tridium/kitControl/energy/BElectricalDemandLimit.class doCalculate()V
+    - ['const|1'] []
+    + [] []
+SEM?constant :: kitControl com/tridium/kitControl/energy/BShedControl.class doCalculate()V
+    - ['const|1'] []
+    + [] []
+SEM?constant :: kitControl com/tridium/kitControl/logic/BNor.class calculate(Lniagara/status/BStatusBoolean;Lniagara/status/BStatusBoolean;Lniagara/status/BS
+    - [] []
+    + ['const|0', 'const|0', 'const|0'] []
+SEM?constant :: kitControl com/tridium/kitControl/logic/BXor.class calculate(Lniagara/status/BStatusBoolean;Lniagara/status/BStatusBoolean;Lniagara/status/BS
+    - [] []
+    + ['const|0', 'const|0', 'const|0'] []
+SEM?constant :: lonworks niagara/lonworks/BLonNetwork$2.class equals(Ljava/lang/Object;)Z
+    - ["const|S:'noWrite'"] []
+    + ["const|S:'noPropagate'"] []
+SEM?constant :: ndriver niagara/ndriver/ui/BIpPortFE.class doSaveValue(Lniagara/sys/BObject;Lniagara/sys/Context;)Lniagara/sys/BObject;
+    - ['const|1', 'const|0'] []
+    + [] []
+SEM?constant+SEM?arith/conv :: baja niagara/category/BCategoryMask.class get(I)Z
+    - ['const|1', 'isub'] []
+    + [] []
+SEM?constant+SEM?arith/conv :: baja niagara/category/BCategoryMask.class make([I)Lniagara/category/BCategoryMask;
+    - ['const|1', 'isub'] []
+    + [] []
+SEM?constant+SEM?arith/conv :: baja niagara/sys/BMonth.class previous()Lniagara/sys/BMonth;
+    - ['const|1', 'isub'] []
+    + [] []
+SEM?constant+SEM?arith/conv :: baja niagara/sys/BWeekday.class previous()Lniagara/sys/BWeekday;
+    - ['const|1', 'isub'] []
+    + [] []
+SEM?constant+SEM?arith/conv :: nrio com/tridium/nrio/points/BNrioCounterInputProxyExt.class doSet(Lniagara/sys/BLong;)V
+    - ['const|8', 'isub'] []
+    + [] []
+SEM?constant+SEM?arith/conv :: nrio com/tridium/nrio/points/BNrioCounterInputProxyExt.class started()V
+    - ['const|8', 'isub'] []
+    + [] []
+SEM?constant+SEM?arith/conv :: nrio com/tridium/nrio/points/BUiProxyExt.class atSteadyState()V
+    - ['const|8', 'isub'] []
+    + [] []
+SEM?constant+SEM?arith/conv :: nrio com/tridium/nrio/points/BUiProxyExt.class started()V
+    - ['const|8', 'isub'] []
+    + [] []
+SEM?constant+SEM?arith/conv :: nrio com/tridium/nrio/util/FirmwareUpgradeUtils.class writeMemoryBlock(Lcom/tridium/nrio/BNrioNetwork;ILcom/tridium/nrio/util/IntelHexFile$Memor
+    - ['const|64', 'iadd'] []
+    + [] []
+SEM?constant+SEM?arith/conv :: nurio com/tridium/nurio/messages/NurioReadInputsResp.class <init>(ILcom/tridium/nurio/messages/NurioInputStream;I)V
+    - [] []
+    + ['const|48', 'iadd', 'iadd', 'const|96'] []
+SEM?constant+SEM?field :: lonworks niagara/lonworks/datatypes/BAddressEntry.class setAddressType(Lniagara/lonworks/enums/BAddressType;)V
+    - [] []
+    + ['getfield|fref:niagara/lonworks/datatypes/BAddressEntry.addressEntry:[B', 'const|0'] []
+SEM?constant+SEM?field :: lonworks niagara/lonworks/datatypes/BExtAddressEntry.class setAddressType(Lniagara/lonworks/enums/BAddressType;)V
+    - [] []
+    + ['getfield|fref:niagara/lonworks/datatypes/BExtAddressEntry.addressEntry:[B', 'const|0'] []
+SEM?constant+SEM?other :: history niagara/history/BHistorySpace.class getHistoryIds(Lniagara/naming/BOrd;)Lniagara/sys/Cursor;
+    - ['const|0', 'aaload'] []
+    + [] []
+SEM?field :: baja niagara/util/Worker.class spyImpl(Lniagara/spy/SpyWriter;)V
+    - ['getfield|fref:niagara/util/Worker.todo:Lniagara/util/Worker$ITodo;', 'getfield|fref:niagara/util/Worker.todo:Lniagara/util/Worker$ITodo;'] []
+    + [] []
+SEM?field :: bajaui niagara/ui/BAccelerator.class <clinit>()V
+    - ['getstatic|fref:niagara/ui/BAccelerator.NULL:Lniagara/ui/BAccelerator;'] []
+    + [] []
+SEM?field :: bajaui niagara/ui/BAccelerator.class encodeToString()Ljava/lang/String;
+    - ['putfield|fref:niagara/ui/BAccelerator.string:Ljava/lang/String;'] []
+    + [] []
+SEM?field :: bajaui niagara/ui/BLayout.class <clinit>()V
+    - ['getstatic|fref:niagara/ui/BLayout.FILL:Lniagara/ui/BLayout;'] []
+    + [] []
+SEM?field :: bajaui niagara/ui/BToolBar.class doLayout(Lniagara/ui/IRenderContext;)V
+    - ['putfield|fref:niagara/ui/BToolBar.layout:Lcom/tridium/ui/layout/ILayoutContainer;'] []
+    + [] []
+SEM?field :: bajaui niagara/ui/list/ListController.class checkMouseOver(Lniagara/ui/event/BMouseEvent;)Z
+    - [] []
+    + ['getfield|fref:niagara/ui/list/ListController.overItem:I'] []
+SEM?field :: bajaui niagara/ui/list/ListController.class keyPressed(Lniagara/ui/event/BKeyEvent;)V
+    - ['putfield|fref:niagara/ui/list/ListController.searchText:Ljava/lang/String;'] []
+    + [] []
+SEM?field :: bajaui niagara/ui/pane/BGridPane.class doLayout(Lniagara/ui/IRenderContext;)V
+    - [] []
+    + ['getfield|fref:niagara/ui/pane/BGridPane.cw:[D', 'getfield|fref:niagara/ui/pane/BGridPane.rh:[D'] []
+SEM?field :: bajaui niagara/ui/table/TableController.class checkMouseOver(Lniagara/ui/event/BMouseEvent;)Z
+    - [] []
+    + ['getfield|fref:niagara/ui/table/TableController.overResize:I', 'getfield|fref:niagara/ui/table/TableController.overResize:I', 'getfield|fref:niagara/ui/table/TableController.overHeader:I', 'getfield|fref:niagara/ui/table/TableController.overRow:I', 'getfield|fref:niagara/ui/table/TableController.overColumn:I'] []
+SEM?field :: bajaui niagara/ui/table/TableController.class keyPressed(Lniagara/ui/event/BKeyEvent;)V
+    - ['putfield|fref:niagara/ui/table/TableController.searchText:Ljava/lang/String;'] []
+    + [] []
+SEM?field :: bajaui niagara/ui/text/BTextEditorOptions.class make()Lniagara/ui/text/BTextEditorOptions;
+    - ['putstatic|fref:niagara/ui/text/BTextEditorOptions.options:Lniagara/ui/text/BTextEditorOptions;'] []
+    + [] []
+SEM?field :: bajaui niagara/ui/tree/TreeController.class keyPressed(Lniagara/ui/event/BKeyEvent;)V
+    - ['putfield|fref:niagara/ui/tree/TreeController.searchText:Ljava/lang/String;'] []
+    + [] []
+SEM?field :: driver niagara/driver/util/BPollScheduler.class updateStats()V
+    - [] []
+    + ['getfield|fref:niagara/driver/util/BPollScheduler.fast:Lniagara/driver/util/BPollScheduler$Bucket;', 'getfield|fref:niagara/driver/util/BPollScheduler.norm:Lniagara/driver/util/BPollScheduler$Bucket;', 'getfield|fref:niagara/driver/util/BPollScheduler.slow:Lniagara/driver/util/BPollScheduler$Bucket;'] []
+SEM?field :: flexSerial com/tridium/flexSerial/comm/TLinkedListManager$Enumerator.class <init>(Lcom/tridium/flexSerial/comm/TLinkedListManager;)V
+    - [] []
+    + ['putfield|fref:com/tridium/flexSerial/comm/TLinkedListManager$Enumerator.this$0:Lcom/tridium/flexSerial/comm/TL', 'getfield|fref:com/tridium/flexSerial/comm/TLinkedListManager$Enumerator.this$0:Lcom/tridium/flexSerial/comm/TL'] []
+SEM?field :: hx niagara/hx/px/BHxPxView.class doPost(Lniagara/web/WebOp;)V
+    - ['getfield|fref:niagara/hx/px/BHxPxView.pxView:Lniagara/agent/BAbstractPxView;'] []
+    + [] []
+SEM?field :: hx niagara/hx/px/BHxPxView.class write(Lniagara/hx/HxOp;)V
+    - ['getfield|fref:niagara/hx/px/BHxPxView.pxView:Lniagara/agent/BAbstractPxView;'] []
+    + [] []
+SEM?field :: ndriver niagara/ndriver/comm/tcp/TcpLinkLayer$LinkSession.class <init>(Lniagara/ndriver/comm/tcp/TcpLinkLayer;Ljava/net/Socket;)V
+    - ['getfield|fref:niagara/ndriver/comm/tcp/TcpLinkLayer$LinkSession.this$0:Lniagara/ndriver/comm/tcp/TcpLinkLayer;'] []
+    + [] []
+SEM?field :: ndriver niagara/ndriver/comm/tcp/TcpLinkLayer$LinkSession.class <init>(Lniagara/ndriver/comm/tcp/TcpLinkLayer;Lniagara/ndriver/datatypes/BIpAddress;)V
+    - ['getfield|fref:niagara/ndriver/comm/tcp/TcpLinkLayer$LinkSession.this$0:Lniagara/ndriver/comm/tcp/TcpLinkLayer;'] []
+    + [] []
+SEM?field :: ndriver niagara/ndriver/comm/tcp/TcpLinkLayer$LinkSession.class <init>(Lniagara/ndriver/comm/tcp/TcpLinkLayer;Lniagara/ndriver/datatypes/BIpAddress;I)V
+    - ['getfield|fref:niagara/ndriver/comm/tcp/TcpLinkLayer$LinkSession.this$0:Lniagara/ndriver/comm/tcp/TcpLinkLayer;'] []
+    + [] []
+SEM?field :: ndriver niagara/ndriver/io/TypedOutputStream.class writeBit(IIII)V
+    - [] []
+    + ['getfield|fref:niagara/ndriver/io/TypedOutputStream.buf:[B'] []
+SEM?field :: nrio com/tridium/nrio/comm/TLinkedListManager$Enumerator.class <init>(Lcom/tridium/nrio/comm/TLinkedListManager;)V
+    - [] []
+    + ['putfield|fref:com/tridium/nrio/comm/TLinkedListManager$Enumerator.this$0:Lcom/tridium/nrio/comm/TLinkedListMan', 'getfield|fref:com/tridium/nrio/comm/TLinkedListManager$Enumerator.this$0:Lcom/tridium/nrio/comm/TLinkedListMan'] []
+SEM?field :: nurio com/tridium/nurio/comm/TLinkedListManager$Enumerator.class <init>(Lcom/tridium/nurio/comm/TLinkedListManager;)V
+    - [] []
+    + ['putfield|fref:com/tridium/nurio/comm/TLinkedListManager$Enumerator.this$0:Lcom/tridium/nurio/comm/TLinkedListM', 'getfield|fref:com/tridium/nurio/comm/TLinkedListManager$Enumerator.this$0:Lcom/tridium/nurio/comm/TLinkedListM'] []
+SEM?invoke :: alarm niagara/alarm/ext/offnormal/BOutOfRangeAlgorithm$ValidateLowAlarmState.class <init>(Lniagara/alarm/ext/offnormal/BOutOfRangeAlgorithm;J)V
+    - ['invokestatic|mref:niagara/alarm/ext/offnormal/BOutOfRangeAlgorithm.access$600:(Lniagara/alarm/ext/offnormal/BO'] []
+    + ['invokestatic|mref:niagara/alarm/ext/offnormal/BOutOfRangeAlgorithm.access$300:(Lniagara/alarm/ext/offnormal/BO'] []
+SEM?invoke :: alarm niagara/alarm/ext/offnormal/BOutOfRangeAlgorithm$ValidateReturnFromHighState.class <init>(Lniagara/alarm/ext/offnormal/BOutOfRangeAlgorithm;J)V
+    - ['invokestatic|mref:niagara/alarm/ext/offnormal/BOutOfRangeAlgorithm.access$300:(Lniagara/alarm/ext/offnormal/BO'] []
+    + ['invokestatic|mref:niagara/alarm/ext/offnormal/BOutOfRangeAlgorithm.access$500:(Lniagara/alarm/ext/offnormal/BO'] []
+SEM?invoke :: bajaui niagara/ui/BRoundedWindow.class mouseDragged(Lniagara/ui/event/BMouseEvent;)V
+    - ['invokeinterface|imref:niagara/gx/IRectGeom.x:()D', 'invokeinterface|imref:niagara/gx/IRectGeom.y:()D', 'invokeinterface|imref:niagara/gx/IRectGeom.width:()D', 'invokeinterface|imref:niagara/gx/IRectGeom.height:()D'] []
+    + ['invokevirtual|mref:niagara/gx/RectGeom.x:()D', 'invokevirtual|mref:niagara/gx/RectGeom.y:()D', 'invokevirtual|mref:niagara/gx/RectGeom.width:()D', 'invokevirtual|mref:niagara/gx/RectGeom.height:()D'] []
+SEM?invoke :: bajaui niagara/ui/style/BStyleDeclarations.class declaring(Ljava/lang/String;Lniagara/sys/BSimple;Z)Lniagara/ui/style/BStyleDeclarations;
+    - ['invokeinterface|imref:java/util/SequencedMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;'] []
+    + ['invokevirtual|mref:java/util/LinkedHashMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;'] []
+SEM?invoke :: bajaui niagara/ui/style/BStyleDeclarations.class make(Ljava/lang/String;)Lniagara/ui/style/BStyleDeclarations;
+    - ['invokeinterface|imref:java/util/List.add:(Ljava/lang/Object;)Z'] []
+    + ['invokevirtual|mref:java/util/ArrayList.add:(Ljava/lang/Object;)Z'] []
+SEM?invoke :: bajaui niagara/ui/style/BStyleDeclarations.class make(Ljava/util/List;)Lniagara/ui/style/BStyleDeclarations;
+    - ['invokeinterface|imref:java/util/SequencedMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;'] []
+    + ['invokevirtual|mref:java/util/LinkedHashMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;'] []
+SEM?invoke :: bajaui niagara/ui/style/StyleUtils.class addClassesForTheme(Lniagara/ui/style/IConfigurableStylable;Ljava/lang/String;)V
+    - ['invokedynamic|indy:accept:(Lniagara/ui/style/IConfigurableStylable;)Ljava/util/function/Consumer;@MH6:mref:jav'] []
+    + ['invokedynamic|indy:accept:(Lniagara/ui/style/IConfigurableStylable;)Ljava/util/function/Consumer;@MH6:mref:jav'] []
+SEM?invoke :: bajaui niagara/ui/style/StyleUtils.class removeStyleClass(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+    - ['invokeinterface|imref:java/util/List.remove:(Ljava/lang/Object;)Z'] []
+    + ['invokevirtual|mref:java/util/ArrayList.remove:(Ljava/lang/Object;)Z'] []
+SEM?invoke :: bajaui niagara/ui/style/StylesToSlots.class map(Ljava/lang/String;Ljava/lang/String;Ljava/util/function/Function;)Lniagara/ui/style/St
+    - ['invokeinterface|imref:java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;', 'invokeinterface|imref:java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;', 'invokeinterface|imref:java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;'] []
+    + ['invokevirtual|mref:java/util/HashMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;', 'invokevirtual|mref:java/util/HashMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;', 'invokevirtual|mref:java/util/HashMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;'] []
+SEM?invoke :: bajaui niagara/ui/text/Macro.class <init>(Lniagara/xml/XElem;)V
+    - ['invokeinterface|imref:java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;', 'invokeinterface|imref:java/util/List.add:(Ljava/lang/Object;)Z', 'invokeinterface|imref:java/util/List.add:(Ljava/lang/Object;)Z', 'invokeinterface|imref:java/util/List.add:(Ljava/lang/Object;)Z', 'invokeinterface|imref:java/util/List.add:(Ljava/lang/Object;)Z', 'invokeinterface|imref:java/util/List.add:(Ljava/lang/Object;)Z'] []
+    + ['invokevirtual|mref:java/util/HashMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;', 'invokevirtual|mref:java/util/ArrayList.add:(Ljava/lang/Object;)Z', 'invokevirtual|mref:java/util/ArrayList.add:(Ljava/lang/Object;)Z', 'invokevirtual|mref:java/util/ArrayList.add:(Ljava/lang/Object;)Z', 'invokevirtual|mref:java/util/ArrayList.add:(Ljava/lang/Object;)Z', 'invokevirtual|mref:java/util/ArrayList.add:(Ljava/lang/Object;)Z'] []
+SEM?invoke :: bajaui niagara/ui/text/Macro.class makeCommand(Lniagara/ui/text/BTextEditor;)Lniagara/ui/commands/CompoundCommand;
+    - ['invokeinterface|imref:java/util/List.add:(Ljava/lang/Object;)Z', 'invokeinterface|imref:java/util/List.toArray:([Ljava/lang/Object;)[Ljava/lang/Object;'] []
+    + ['invokevirtual|mref:java/util/ArrayList.add:(Ljava/lang/Object;)Z', 'invokevirtual|mref:java/util/ArrayList.toArray:([Ljava/lang/Object;)[Ljava/lang/Object;'] []
+SEM?invoke :: hierarchy niagara/hierarchy/BHierarchyService.class getCachedParent(Lniagara/hierarchy/BLevelElem;Lniagara/sys/BFacets;)Lniagara/hierarchy/BLe
+    - ['invokedynamic|indy:get:(Lniagara/sys/BObject;)Ljava/util/function/Supplier;@MH6:mref:java/lang/invoke/LambdaMe', 'invokedynamic|indy:get:(Ljava/lang/String;Lniagara/sys/BObject;)Ljava/util/function/Supplier;@MH6:mref:java/la'] []
+    + ['invokedynamic|indy:get:(Ljava/lang/String;Lniagara/sys/BObject;)Ljava/util/function/Supplier;@MH6:mref:java/la', 'invokedynamic|indy:get:(Lniagara/sys/BObject;)Ljava/util/function/Supplier;@MH6:mref:java/lang/invoke/LambdaMe'] []
+SEM?invoke :: nrio com/tridium/nrio/BNrio34Module.class doWriteIo()V
+    - ['invokevirtual|mref:com/tridium/nrio/BNrio16Module.doWriteIo:()V'] []
+    + ['invokevirtual|mref:com/tridium/nrio/BNrio34SecModule.doWriteIo:()V'] []
+SEM?invoke :: nrio com/tridium/nrio/BNrio34Module.class setUiConfig(II)V
+    - ['invokevirtual|mref:com/tridium/nrio/BNrio16Module.setUiConfig:(II)V'] []
+    + ['invokevirtual|mref:com/tridium/nrio/BNrio34SecModule.setUiConfig:(II)V'] []
+SEM?invoke :: test com/tridium/testng/BTridiumTestNg.class lambda$toDataProviderArray$1(Ljava/util/stream/Stream$Builder;Ljava/util/stream/Stream$Bui
+    - ['invokedynamic|indy:accept:(Ljava/util/stream/Stream$Builder;)Ljava/util/function/Consumer;@MH6:mref:java/lang/'] []
+    + ['invokedynamic|indy:accept:(Ljava/util/stream/Stream$Builder;)Ljava/util/function/Consumer;@MH6:mref:java/lang/'] []
+SEM?invoke+SEM?other :: bacnet niagara/bacnet/point/BBacnetProxyExt.class <clinit>()V
+    - ['new|C:niagara/bacnet/point/BBacnetProxyExt$2', 'invokespecial|mref:niagara/bacnet/point/BBacnetProxyExt$2.<init>:()V'] []
+    + ['new|C:niagara/bacnet/point/BBacnetProxyExt$1', 'invokespecial|mref:niagara/bacnet/point/BBacnetProxyExt$1.<init>:()V'] []
+SEM?invoke+SEM?other :: bacnet niagara/bacnet/point/BBacnetProxyExt.class discoverPrioritizedPresentValue(Z)V
+    - ['new|C:niagara/bacnet/point/BBacnetProxyExt$1', 'invokespecial|mref:niagara/bacnet/point/BBacnetProxyExt$1.<init>:(Lniagara/bacnet/point/BBacnetProxyExt;)V'] []
+    + ['new|C:niagara/bacnet/point/BBacnetProxyExt$2', 'invokespecial|mref:niagara/bacnet/point/BBacnetProxyExt$2.<init>:(Lniagara/bacnet/point/BBacnetProxyExt;)V'] []
+SEM?invoke+SEM?other :: lonworks niagara/lonworks/BLocalLonDevice.class <clinit>()V
+    - ['new|C:niagara/lonworks/BLocalLonDevice$2', 'invokespecial|mref:niagara/lonworks/BLocalLonDevice$2.<init>:(Lniagara/sys/Context;)V'] []
+    + ['new|C:niagara/lonworks/BLocalLonDevice$1', 'invokespecial|mref:niagara/lonworks/BLocalLonDevice$1.<init>:(Lniagara/sys/Context;)V'] []
+SEM?invoke+SEM?other :: lonworks niagara/lonworks/BLocalLonDevice.class runAsyncUpdate()V
+    - ['new|C:niagara/lonworks/BLocalLonDevice$1', 'invokespecial|mref:niagara/lonworks/BLocalLonDevice$1.<init>:(Lniagara/lonworks/BLocalLonDevice;)V'] []
+    + ['new|C:niagara/lonworks/BLocalLonDevice$2', 'invokespecial|mref:niagara/lonworks/BLocalLonDevice$2.<init>:(Lniagara/lonworks/BLocalLonDevice;)V'] []
+SEM?invoke+SEM?other :: lonworks niagara/lonworks/BLonNetwork.class <clinit>()V
+    - ['new|C:niagara/lonworks/BLonNetwork$3', 'invokespecial|mref:niagara/lonworks/BLonNetwork$3.<init>:(Lniagara/sys/Context;)V'] []
+    + ['new|C:niagara/lonworks/BLonNetwork$1', 'invokespecial|mref:niagara/lonworks/BLonNetwork$1.<init>:(Lniagara/sys/Context;)V'] []
+SEM?invoke+SEM?other :: lonworks niagara/lonworks/BLonNetwork.class setWorkQueuePriority()V
+    - ['new|C:niagara/lonworks/BLonNetwork$1', 'invokespecial|mref:niagara/lonworks/BLonNetwork$1.<init>:(Lniagara/lonworks/BLonNetwork;)V'] []
+    + ['new|C:niagara/lonworks/BLonNetwork$3', 'invokespecial|mref:niagara/lonworks/BLonNetwork$3.<init>:(Lniagara/lonworks/BLonNetwork;)V'] []
+SEM?invoke+SEM?other :: test com/tridium/testng/NiagaraAnnotationTransformer.class transform(Lorg/testng/annotations/ITestAnnotation;Ljava/lang/Class;Ljava/lang/reflect/Cons
+    - ['anewarray|C:java/lang/reflect/AnnotatedElement', 'invokedynamic|indy:test:()Ljava/util/function/Predicate;@MH6:mref:java/lang/invoke/LambdaMetafactory.metafacto', 'invokedynamic|indy:apply:(Lcom/tridium/testng/NiagaraAnnotationTransformer;)Ljava/util/function/Function;@MH6:'] []
+    + ['anewarray|C:java/lang/reflect/GenericDeclaration', 'invokedynamic|indy:test:()Ljava/util/function/Predicate;@MH6:mref:java/lang/invoke/LambdaMetafactory.metafacto', 'invokedynamic|indy:apply:(Lcom/tridium/testng/NiagaraAnnotationTransformer;)Ljava/util/function/Function;@MH6:'] []
+SEM?other :: baja niagara/sys/BValue.class newCopy([Lniagara/sys/BValue;Lniagara/sys/CopyHints;)[Lniagara/sys/BValue;
+    - ['aaload'] []
+    + [] []
+SEM?other :: ndriver niagara/ndriver/ui/NMgrControllerUtil.class updateCommands(Lniagara/workbench/mgr/BAbstractManager;)V
+    - ['aaload', 'aaload'] []
+    + [] []
+SEM?other :: nre niagara/xml/XElem.class elem(Ljava/lang/String;)Lniagara/xml/XElem;
+    - ['aaload'] []
+    + [] []
+SEM?other :: nre niagara/xml/XElem.class elem(Lniagara/xml/XNs;Ljava/lang/String;)Lniagara/xml/XElem;
+    - ['aaload'] []
+    + [] []
+SEM?other :: nre niagara/xml/XElem.class elems(Ljava/lang/String;)[Lniagara/xml/XElem;
+    - ['aaload'] []
+    + [] []
+SEM?other :: nre niagara/xml/XElem.class elems(Lniagara/xml/XNs;)[Lniagara/xml/XElem;
+    - ['aaload'] []
+    + [] []
+SEM?other :: nre niagara/xml/XElem.class elems(Lniagara/xml/XNs;Ljava/lang/String;)[Lniagara/xml/XElem;
+    - ['aaload'] []
+    + [] []
+SEM?other :: schedule niagara/schedule/BWeeklySchedule.class doCleanup()V
+    - ['aaload'] []
+    + [] []
+SEM?overload-or-receiver-change :: bacnet niagara/bacnet/point/BBacnetProxyExt.class spy(Lniagara/spy/SpyWriter;)V
+    - ['invokevirtual|mref:niagara/spy/SpyWriter.prop:(Ljava/lang/Object;Ljava/lang/Object;)Lniagara/spy/SpyWriter;'] []
+    + ['invokevirtual|mref:niagara/spy/SpyWriter.prop:(Ljava/lang/Object;Ljava/lang/Runnable;)Lniagara/spy/SpyWriter;'] []
+SEM?overload-or-receiver-change :: bajaui niagara/ui/BProgressBar.class <init>()V
+    - ['invokespecial|mref:niagara/ui/BProgressBar$BarBrushStylable.<init>:(Lniagara/ui/BProgressBar;Ljava/lang/String', 'invokespecial|mref:niagara/ui/BProgressBar$BackgroundBrushStylable.<init>:(Lniagara/ui/BProgressBar;Ljava/lang'] []
+    + ['invokespecial|mref:niagara/ui/BProgressBar$BarBrushStylable.<init>:(Lniagara/ui/BProgressBar;Lniagara/ui/BProg', 'invokespecial|mref:niagara/ui/BProgressBar$BackgroundBrushStylable.<init>:(Lniagara/ui/BProgressBar;Lniagara/u'] []
+SEM?overload-or-receiver-change :: bajaui niagara/ui/UndoManager.class <init>(Lniagara/ui/BWidget;)V
+    - ['invokespecial|mref:niagara/ui/UndoManager$UndoCommand.<init>:(Lniagara/ui/UndoManager;Lniagara/ui/BWidget;)V', 'invokespecial|mref:niagara/ui/UndoManager$RedoCommand.<init>:(Lniagara/ui/UndoManager;Lniagara/ui/BWidget;)V'] []
+    + ['invokespecial|mref:niagara/ui/UndoManager$UndoCommand.<init>:(Lniagara/ui/UndoManager;Lniagara/ui/UndoManager;', 'invokespecial|mref:niagara/ui/UndoManager$RedoCommand.<init>:(Lniagara/ui/UndoManager;Lniagara/ui/UndoManager;'] []
+SEM?overload-or-receiver-change :: bajaui niagara/ui/commands/SetDisplayNameCommand.class doInvoke()Lniagara/ui/CommandArtifact;
+    - ['invokespecial|mref:niagara/ui/commands/SetDisplayNameCommand$DisplayNameArtifact.<init>:(Lniagara/ui/commands/'] []
+    + ['invokespecial|mref:niagara/ui/commands/SetDisplayNameCommand$DisplayNameArtifact.<init>:(Lniagara/ui/commands/'] []
+SEM?overload-or-receiver-change :: bajaui niagara/ui/options/BMruButton.class <init>(Ljava/lang/String;Lniagara/nre/util/IFilter;)V
+    - ['invokespecial|mref:niagara/ui/options/BMruButton$MenuController.<init>:(Lniagara/ui/options/BMruButton;)V'] []
+    + ['invokespecial|mref:niagara/ui/options/BMruButton$MenuController.<init>:(Lniagara/ui/options/BMruButton;Lniagar'] []
+SEM?overload-or-receiver-change :: bajaui niagara/ui/pane/BExpandablePane.class <init>()V
+    - ['invokespecial|mref:niagara/ui/pane/BExpandablePane$ExpansionToggle.<init>:(Lniagara/ui/pane/BExpandablePane;Ln'] []
+    + ['invokespecial|mref:niagara/ui/pane/BExpandablePane$ExpansionToggle.<init>:(Lniagara/ui/pane/BExpandablePane;Ln'] []
+SEM?overload-or-receiver-change :: bajaui niagara/ui/style/PaintableImageAdapter.class makePeerWrapper(Lniagara/ui/IRenderContext;)Lniagara/ui/style/PaintableImageAdapter$PeerWr
+    - ['invokespecial|mref:niagara/ui/style/PaintableImageAdapter$AwtPeerWrapper.<init>:(Lniagara/ui/style/PaintableIm', 'invokespecial|mref:niagara/ui/style/PaintableImageAdapter$DefaultPeerWrapper.<init>:(Lniagara/ui/style/Paintab'] []
+    + ['invokespecial|mref:niagara/ui/style/PaintableImageAdapter$AwtPeerWrapper.<init>:(Lniagara/ui/style/PaintableIm', 'invokespecial|mref:niagara/ui/style/PaintableImageAdapter$DefaultPeerWrapper.<init>:(Lniagara/ui/style/Paintab'] []
+SEM?overload-or-receiver-change :: bajaui niagara/ui/table/TableController.class headerPopup(Lniagara/ui/event/BMouseEvent;I)V
+    - ['invokespecial|mref:niagara/ui/table/TableController$HideColumnCommand.<init>:(Lniagara/ui/table/TableControlle'] []
+    + ['invokespecial|mref:niagara/ui/table/TableController$HideColumnCommand.<init>:(Lniagara/ui/table/TableControlle'] []
+SEM?overload-or-receiver-change :: bajaui niagara/ui/table/TableController.class makeOptionsMenu()Lniagara/ui/BMenu;
+    - ['invokespecial|mref:niagara/ui/table/TableController$ResizeColumnsCommand.<init>:(Lniagara/ui/table/TableContro', 'invokespecial|mref:niagara/ui/table/TableController$ExportCommand.<init>:(Lniagara/ui/table/TableController;Ln', 'invokespecial|mref:niagara/ui/table/TableController$ShowColumnCommand.<init>:(Lniagara/ui/table/TableControlle'] []
+    + ['invokespecial|mref:niagara/ui/table/TableController$ResizeColumnsCommand.<init>:(Lniagara/ui/table/TableContro', 'invokespecial|mref:niagara/ui/table/TableController$ExportCommand.<init>:(Lniagara/ui/table/TableController;Ln', 'invokespecial|mref:niagara/ui/table/TableController$ShowColumnCommand.<init>:(Lniagara/ui/table/TableControlle'] []
+SEM?overload-or-receiver-change :: bajaui niagara/ui/text/BTextEditor.class <init>()V
+    - ['invokespecial|mref:niagara/ui/text/BTextEditor$Placeholder.<init>:(Lniagara/ui/text/BTextEditor;)V'] []
+    + ['invokespecial|mref:niagara/ui/text/BTextEditor$Placeholder.<init>:(Lniagara/ui/text/BTextEditor;Lniagara/ui/te'] []
+SEM?overload-or-receiver-change :: bajaui niagara/ui/text/TextController.class <init>()V
+    - ['invokespecial|mref:niagara/ui/text/TextController$TextControllerImpl.<init>:(Lniagara/ui/text/TextController;L'] []
+    + ['invokespecial|mref:niagara/ui/text/TextController$TextControllerImpl.<init>:(Lniagara/ui/text/TextController;L'] []
+SEM?overload-or-receiver-change :: bajaui niagara/ui/text/TextRenderer.class <init>()V
+    - ['invokespecial|mref:niagara/ui/text/TextRenderer$Selection.<init>:(Lniagara/ui/text/TextRenderer;)V'] []
+    + ['invokespecial|mref:niagara/ui/text/TextRenderer$Selection.<init>:(Lniagara/ui/text/TextRenderer;Lniagara/ui/te'] []
+SEM?overload-or-receiver-change :: bajaui niagara/ui/treetable/BTreeTable.class <init>()V
+    - ['invokespecial|mref:niagara/ui/treetable/BTreeTable$Selection.<init>:(Lniagara/ui/treetable/BTreeTable;)V'] []
+    + ['invokespecial|mref:niagara/ui/treetable/BTreeTable$Selection.<init>:(Lniagara/ui/treetable/BTreeTable;Lniagara'] []
+SEM?overload-or-receiver-change :: bajaui niagara/ui/treetable/BTreeTable.class <init>(Lniagara/ui/treetable/TreeTableModel;)V
+    - ['invokespecial|mref:niagara/ui/treetable/BTreeTable$Selection.<init>:(Lniagara/ui/treetable/BTreeTable;)V'] []
+    + ['invokespecial|mref:niagara/ui/treetable/BTreeTable$Selection.<init>:(Lniagara/ui/treetable/BTreeTable;Lniagara'] []
+SEM?overload-or-receiver-change :: bajaui niagara/ui/treetable/BTreeTable.class <init>(Lniagara/ui/treetable/TreeTableModel;Lniagara/ui/treetable/TreeTableController;)V
+    - ['invokespecial|mref:niagara/ui/treetable/BTreeTable$Selection.<init>:(Lniagara/ui/treetable/BTreeTable;)V'] []
+    + ['invokespecial|mref:niagara/ui/treetable/BTreeTable$Selection.<init>:(Lniagara/ui/treetable/BTreeTable;Lniagara'] []
+SEM?overload-or-receiver-change :: bajaui niagara/ui/treetable/TreeTableController.class headerPopup(Lniagara/ui/event/BMouseEvent;I)V
+    - ['invokespecial|mref:niagara/ui/treetable/TreeTableController$HideColumnCommand.<init>:(Lniagara/ui/treetable/Tr'] []
+    + ['invokespecial|mref:niagara/ui/treetable/TreeTableController$HideColumnCommand.<init>:(Lniagara/ui/treetable/Tr'] []
+SEM?overload-or-receiver-change :: bajaui niagara/ui/treetable/TreeTableController.class makeOptionsMenu()Lniagara/ui/BMenu;
+    - ['invokespecial|mref:niagara/ui/table/TableController$ResizeColumnsCommand.<init>:(Lniagara/ui/table/TableContro', 'invokespecial|mref:niagara/ui/table/TableController$ExportCommand.<init>:(Lniagara/ui/table/TableController;Ln', 'invokespecial|mref:niagara/ui/treetable/TreeTableController$ShowColumnCommand.<init>:(Lniagara/ui/treetable/Tr'] []
+    + ['invokespecial|mref:niagara/ui/table/TableController$ResizeColumnsCommand.<init>:(Lniagara/ui/table/TableContro', 'invokespecial|mref:niagara/ui/table/TableController$ExportCommand.<init>:(Lniagara/ui/table/TableController;Ln', 'invokespecial|mref:niagara/ui/treetable/TreeTableController$ShowColumnCommand.<init>:(Lniagara/ui/treetable/Tr'] []
+SEM?overload-or-receiver-change :: bajaui niagara/ui/wizard/BWizard.class <init>()V
+    - ['invokespecial|mref:niagara/ui/wizard/BWizard$BackCommand.<init>:(Lniagara/ui/wizard/BWizard;Lniagara/ui/wizard', 'invokespecial|mref:niagara/ui/wizard/BWizard$NextCommand.<init>:(Lniagara/ui/wizard/BWizard;Lniagara/ui/wizard', 'invokespecial|mref:niagara/ui/wizard/BWizard$FinishCommand.<init>:(Lniagara/ui/wizard/BWizard;Lniagara/ui/wiza', 'invokespecial|mref:niagara/ui/wizard/BWizard$CancelCommand.<init>:(Lniagara/ui/wizard/BWizard;Lniagara/ui/wiza'] []
+    + ['invokespecial|mref:niagara/ui/wizard/BWizard$BackCommand.<init>:(Lniagara/ui/wizard/BWizard;Lniagara/ui/wizard', 'invokespecial|mref:niagara/ui/wizard/BWizard$NextCommand.<init>:(Lniagara/ui/wizard/BWizard;Lniagara/ui/wizard', 'invokespecial|mref:niagara/ui/wizard/BWizard$FinishCommand.<init>:(Lniagara/ui/wizard/BWizard;Lniagara/ui/wiza', 'invokespecial|mref:niagara/ui/wizard/BWizard$CancelCommand.<init>:(Lniagara/ui/wizard/BWizard;Lniagara/ui/wiza'] []
+SEM?overload-or-receiver-change :: bajaui niagara/ui/wizard/BWizard.class <init>(Lniagara/ui/BWidget;Lniagara/ui/wizard/WizardModel;Lniagara/gx/BInsets;)V
+    - ['invokespecial|mref:niagara/ui/wizard/BWizard$BackCommand.<init>:(Lniagara/ui/wizard/BWizard;Lniagara/ui/wizard', 'invokespecial|mref:niagara/ui/wizard/BWizard$NextCommand.<init>:(Lniagara/ui/wizard/BWizard;Lniagara/ui/wizard', 'invokespecial|mref:niagara/ui/wizard/BWizard$FinishCommand.<init>:(Lniagara/ui/wizard/BWizard;Lniagara/ui/wiza', 'invokespecial|mref:niagara/ui/wizard/BWizard$CancelCommand.<init>:(Lniagara/ui/wizard/BWizard;Lniagara/ui/wiza'] []
+    + ['invokespecial|mref:niagara/ui/wizard/BWizard$BackCommand.<init>:(Lniagara/ui/wizard/BWizard;Lniagara/ui/wizard', 'invokespecial|mref:niagara/ui/wizard/BWizard$NextCommand.<init>:(Lniagara/ui/wizard/BWizard;Lniagara/ui/wizard', 'invokespecial|mref:niagara/ui/wizard/BWizard$FinishCommand.<init>:(Lniagara/ui/wizard/BWizard;Lniagara/ui/wiza', 'invokespecial|mref:niagara/ui/wizard/BWizard$CancelCommand.<init>:(Lniagara/ui/wizard/BWizard;Lniagara/ui/wiza'] []
+SEM?overload-or-receiver-change+SEM?boxing :: nrio com/tridium/nrio/ui/BNrioTabularThermistorDialog$DeleteCmd.class doInvoke()Lniagara/ui/CommandArtifact;
+    - ['invokestatic|mref:java/lang/Integer.valueOf:(I)Ljava/lang/Integer;', 'invokevirtual|mref:niagara/nre/util/Array.remove:(Ljava/lang/Object;)Z'] []
+    + ['invokevirtual|mref:niagara/nre/util/Array.remove:(I)Ljava/lang/Object;'] []
+SEM?overload-or-receiver-change+SEM?boxing :: nurio com/tridium/nurio/BNurioNetwork.class spy(Lniagara/spy/SpyWriter;)V
+    - ['invokestatic|mref:java/lang/Long.valueOf:(J)Ljava/lang/Long;', 'invokestatic|mref:java/lang/Long.valueOf:(J)Ljava/lang/Long;', 'invokestatic|mref:java/lang/Long.valueOf:(J)Ljava/lang/Long;', 'invokevirtual|mref:niagara/spy/SpyWriter.prop:(Ljava/lang/Object;Ljava/lang/Object;)Lniagara/spy/SpyWriter;', 'invokevirtual|mref:niagara/spy/SpyWriter.prop:(Ljava/lang/Object;Ljava/lang/Object;)Lniagara/spy/SpyWriter;', 'invokevirtual|mref:niagara/spy/SpyWriter.prop:(Ljava/lang/Object;Ljava/lang/Object;)Lniagara/spy/SpyWriter;'] []
+    + ['l2d', 'l2d', 'l2d', 'invokevirtual|mref:niagara/spy/SpyWriter.prop:(Ljava/lang/Object;D)Lniagara/spy/SpyWriter;', 'invokevirtual|mref:niagara/spy/SpyWriter.prop:(Ljava/lang/Object;D)Lniagara/spy/SpyWriter;', 'invokevirtual|mref:niagara/spy/SpyWriter.prop:(Ljava/lang/Object;D)Lniagara/spy/SpyWriter;'] []
+SEM?overload-or-receiver-change+SEM?boxing :: nurio com/tridium/nurio/ui/BNurioTabularThermistorDialog$DeleteCmd.class doInvoke()Lniagara/ui/CommandArtifact;
+    - ['invokestatic|mref:java/lang/Integer.valueOf:(I)Ljava/lang/Integer;', 'invokevirtual|mref:niagara/nre/util/Array.remove:(Ljava/lang/Object;)Z'] []
+    + ['invokevirtual|mref:niagara/nre/util/Array.remove:(I)Ljava/lang/Object;'] []
+SEM?overload-or-receiver-change+SEM?boxing+SEM?arith/conv :: nrio com/tridium/nrio/BNrioNetwork.class spy(Lniagara/spy/SpyWriter;)V
+    - ['invokestatic|mref:java/lang/Long.valueOf:(J)Ljava/lang/Long;', 'invokestatic|mref:java/lang/Long.valueOf:(J)Ljava/lang/Long;', 'invokestatic|mref:java/lang/Long.valueOf:(J)Ljava/lang/Long;', 'invokestatic|mref:java/lang/Long.valueOf:(J)Ljava/lang/Long;', 'invokevirtual|mref:niagara/spy/SpyWriter.prop:(Ljava/lang/Object;Ljava/lang/Object;)Lniagara/spy/SpyWriter;', 'invokevirtual|mref:niagara/spy/SpyWriter.prop:(Ljava/lang/Object;Ljava/lang/Object;)Lniagara/spy/SpyWriter;'] []
+    + ['l2d', 'l2d', 'l2d', 'l2d', 'invokevirtual|mref:niagara/spy/SpyWriter.prop:(Ljava/lang/Object;D)Lniagara/spy/SpyWriter;', 'invokevirtual|mref:niagara/spy/SpyWriter.prop:(Ljava/lang/Object;D)Lniagara/spy/SpyWriter;'] []
+SEM?overload-or-receiver-change+SEM?field :: bajaui niagara/ui/options/BMruButton$MenuController.class getMenu(Lniagara/ui/BAbstractButton;)Lniagara/ui/BMenu;
+    - ['invokespecial|mref:niagara/ui/options/BMruButton$Entry.<init>:(Lniagara/ui/options/BMruButton;Lniagara/ui/BWid'] []
+    + ['getfield|fref:niagara/ui/options/BMruButton$MenuController.this$0$:Lniagara/ui/options/BMruButton;', 'invokespecial|mref:niagara/ui/options/BMruButton$Entry.<init>:(Lniagara/ui/options/BMruButton;Lniagara/ui/opti'] []
+exception-table-sameset+SEM?invoke :: bacnet niagara/bacnet/point/BBacnetProxyExt.class readMetaData([BLniagara/sys/Context;Lniagara/status/BStatusValue;)V
+    - [] []
+    + ['invokevirtual|mref:niagara/bacnet/asn/AsnInputStream.release:()V'] ['any']
+exception-table-types+SEM?field :: workbench niagara/workbench/nav/tree/NavTreeNode.class refresh(Z)V
+    - ['getfield|fref:niagara/workbench/nav/tree/NavTreeNode.navNode:Lniagara/nav/BINavNode;'] ['any']
+    + [] []
+exception-table-types+SEM?invoke :: bajaui niagara/ui/BMenuBar.class paintMenuInBarBackground(Lniagara/gx/Graphics;Lniagara/ui/style/IStylable;Lniagara/gx/Rect
+    - [] []
+    + ['invokeinterface|imref:niagara/gx/Graphics.pop:()V', 'invokeinterface|imref:niagara/gx/Graphics.pop:()V'] ['any', 'any', 'java/lang/Exception', 'java/lang/Exception']
+exception-table-types+SEM?invoke :: bajaui niagara/ui/pane/BCanvasPane.class paintKids(Lniagara/gx/Graphics;ZLniagara/ui/IRenderContext;)V
+    - [] []
+    + ['invokeinterface|imref:niagara/gx/Graphics.pop:()V'] ['java/lang/Throwable', 'any']
+requireNonNull+SEM?invoke :: alarm niagara/alarm/ext/offnormal/BOutOfRangeAlgorithm$ValidateLowAlarmState.class evaluate(DJJ)Lniagara/alarm/ext/BAlarmState;
+    - ['invokestatic|mref:niagara/alarm/ext/offnormal/BOutOfRangeAlgorithm.access$700:(Lniagara/alarm/ext/offnormal/BO'] []
+    + ['invokestatic|mref:niagara/alarm/ext/offnormal/BOutOfRangeAlgorithm.access$400:(Lniagara/alarm/ext/offnormal/BO', 'invokestatic|mref:java/util/Objects.requireNonNull:(Ljava/lang/Object;)Ljava/lang/Object;', 'invokestatic|mref:java/util/Objects.requireNonNull:(Ljava/lang/Object;)Ljava/lang/Object;', 'invokestatic|mref:java/util/Objects.requireNonNull:(Ljava/lang/Object;)Ljava/lang/Object;', 'invokestatic|mref:java/util/Objects.requireNonNull:(Ljava/lang/Object;)Ljava/lang/Object;'] []
+requireNonNull+SEM?invoke :: alarm niagara/alarm/ext/offnormal/BOutOfRangeAlgorithm$ValidateReturnFromHighState.class evaluate(DJJ)Lniagara/alarm/ext/BAlarmState;
+    - ['invokestatic|mref:niagara/alarm/ext/offnormal/BOutOfRangeAlgorithm.access$400:(Lniagara/alarm/ext/offnormal/BO', 'invokestatic|mref:niagara/alarm/ext/offnormal/BOutOfRangeAlgorithm.access$500:(Lniagara/alarm/ext/offnormal/BO'] []
+    + ['invokestatic|mref:niagara/alarm/ext/offnormal/BOutOfRangeAlgorithm.access$600:(Lniagara/alarm/ext/offnormal/BO', 'invokestatic|mref:java/util/Objects.requireNonNull:(Ljava/lang/Object;)Ljava/lang/Object;', 'invokestatic|mref:java/util/Objects.requireNonNull:(Ljava/lang/Object;)Ljava/lang/Object;', 'invokestatic|mref:niagara/alarm/ext/offnormal/BOutOfRangeAlgorithm.access$700:(Lniagara/alarm/ext/offnormal/BO'] []
+requireNonNull+exception-table-types+SEM?invoke :: bajaui niagara/ui/util/WebProperty.class doSync(Lniagara/ui/BWidget;Ljava/lang/Iterable;Z)Ljava/util/Map;
+    - ['invokestatic|mref:java/util/Objects.requireNonNull:(Ljava/lang/Object;)Ljava/lang/Object;', 'invokedynamic|indy:accept:(Lniagara/ui/BWidget;)Ljava/util/function/Consumer;@MH6:mref:java/lang/invoke/Lambda'] []
+    + ['invokedynamic|indy:accept:(Lniagara/ui/BWidget;)Ljava/util/function/Consumer;@MH6:mref:java/lang/invoke/Lambda'] ['java/io/IOException', 'java/io/IOException']
+return-merge+SEM?boxing+SEM?arith/conv+SEM?invoke :: lonworks niagara/lonworks/londata/LonFacetsUtil.class parseNumber(Lniagara/sys/BObject;)Ljava/lang/Number;
+    - ['invokestatic|mref:java/lang/Float.valueOf:(F)Ljava/lang/Float;'] []
+    + ['f2d'] []
+return-merge+SEM?field :: bacnet niagara/bacnet/export/BOutOfServiceExt.class changed(Lniagara/sys/Property;Lniagara/sys/Context;)V
+    - ['getfield|fref:niagara/bacnet/export/BOutOfServiceExt.export:Lniagara/bacnet/export/BIBacnetExportObject;'] []
+    + [] []
+return-merge+SEM?field :: driver niagara/driver/BDevice.class checkFatalFault(Ljava/lang/String;)V
+    - [] []
+    + ['putfield|fref:niagara/driver/BDevice.network:Lniagara/driver/BDeviceNetwork;', 'getfield|fref:niagara/driver/BDevice.network:Lniagara/driver/BDeviceNetwork;', 'getfield|fref:niagara/driver/BDevice.network:Lniagara/driver/BDeviceNetwork;', 'getfield|fref:niagara/driver/BDevice.network:Lniagara/driver/BDeviceNetwork;', 'getfield|fref:niagara/driver/BDevice.network:Lniagara/driver/BDeviceNetwork;', 'getfield|fref:niagara/driver/BDevice.network:Lniagara/driver/BDeviceNetwork;'] []
+return-merge+SEM?field :: driver niagara/driver/point/BProxyExt.class checkFatalFault(Ljava/lang/String;)V
+    - [] []
+    + ['putfield|fref:niagara/driver/point/BProxyExt.deviceExt:Lniagara/driver/point/BPointDeviceExt;', 'getfield|fref:niagara/driver/point/BProxyExt.deviceExt:Lniagara/driver/point/BPointDeviceExt;', 'getfield|fref:niagara/driver/point/BProxyExt.deviceExt:Lniagara/driver/point/BPointDeviceExt;', 'getfield|fref:niagara/driver/point/BProxyExt.deviceExt:Lniagara/driver/point/BPointDeviceExt;', 'getfield|fref:niagara/driver/point/BProxyExt.deviceExt:Lniagara/driver/point/BPointDeviceExt;', 'getfield|fref:niagara/driver/point/BProxyExt.deviceExt:Lniagara/driver/point/BPointDeviceExt;'] []
+return-merge+SEM?field :: lonworks niagara/lonworks/io/LonOutputStream.class writeBit(IIII)V
+    - [] []
+    + ['getfield|fref:niagara/lonworks/io/LonOutputStream.buf:[B'] []
+return-merge+SEM?invoke :: nrio com/tridium/nrio/BNrio34Module.class setAoValue(II)I
+    - ['invokevirtual|mref:com/tridium/nrio/BNrio16Module.setAoValue:(II)I'] []
+    + ['invokevirtual|mref:com/tridium/nrio/BNrio34SecModule.setAoValue:(II)I'] []
+return-merge+SEM?other :: nrio com/tridium/nrio/BNrioNetwork.class changed(Lniagara/sys/Property;Lniagara/sys/Context;)V
+    - ['aaload'] []
+    + [] []
+return-merge+exception-table-sameset+finally/sync-copy+SEM?constant :: bacnet niagara/bacnet/BBacnetNetwork.class doLookupDeviceByAddress(Lniagara/bacnet/datatypes/BBacnetAddress;)Lniagara/bacnet/BBacnetD
+    - [] []
+    + ['const|null', 'monitorexit'] ['any']
+return-merge+exception-table-types+SEM?field+SEM?invoke :: ndriver niagara/ndriver/comm/NComm.class doReceiveMessage(Lniagara/ndriver/comm/LinkMessage;)V
+    - ['getfield|fref:niagara/ndriver/comm/NComm.lnkFac:Lniagara/ndriver/comm/NLinkMessageFactory;', 'invokevirtual|mref:niagara/ndriver/comm/NLinkMessageFactory.releaseLinkMessage:(Lniagara/ndriver/comm/LinkMess'] ['java/lang/Throwable', 'any']
+    + [] []
+return-merge+exception-table-types+SEM?field+SEM?invoke :: test niagara/test/file/BMockFileSpace.class getNavChild(Ljava/lang/String;)Lniagara/nav/BINavNode;
+    - ['getfield|fref:niagara/test/file/BMockFileSpace.mapsLock:Ljava/util/concurrent/locks/Lock;', 'invokeinterface|imref:java/util/concurrent/locks/Lock.unlock:()V'] ['any']
+    + [] []
+return-merge+exception-table-types+SEM?invoke :: alarmOrion niagara/alarmOrion/OrionAlarmDbConnection.class getOrionRecord(Lniagara/util/BUuid;Lcom/tridium/orion/OrionSession;)Lniagara/alarmOrion/BO
+    - ['invokeinterface|imref:com/tridium/orion/OrionCursor.close:()V'] ['any']
+    + [] []
+return-merge+exception-table-types+SEM?invoke :: history niagara/history/BHistoryDevice.class getNavChild(Ljava/lang/String;)Lniagara/nav/BINavNode;
+    - ['invokeinterface|imref:niagara/history/HistorySpaceConnection.close:()V'] ['java/lang/Throwable']
+    + [] []
+return-merge+string-concat-shape+SEM?invoke :: bacnet niagara/bacnet/datatypes/BBacnetBitString.class getActiveTags(Lniagara/sys/Context;)Ljava/lang/String;
+    - ['invokestatic|mref:java/lang/String.valueOf:(I)Ljava/lang/String;', 'invokedynamic|indy:makeConcatWithConstants:(Ljava/lang/String;)Ljava/lang/String;@MH6:mref:java/lang/invoke/St'] []
+    + ['invokedynamic|indy:makeConcatWithConstants:(I)Ljava/lang/String;@MH6:mref:java/lang/invoke/StringConcatFactory'] []
+return-merge+string-concat-shape+SEM?invoke :: bacnet niagara/bacnet/datatypes/BBacnetBitString.class getCompleteTagList(Lniagara/sys/Context;)Ljava/lang/String;
+    - ['invokestatic|mref:java/lang/String.valueOf:(I)Ljava/lang/String;', 'invokedynamic|indy:makeConcatWithConstants:(Ljava/lang/String;)Ljava/lang/String;@MH6:mref:java/lang/invoke/St'] []
+    + ['invokedynamic|indy:makeConcatWithConstants:(I)Ljava/lang/String;@MH6:mref:java/lang/invoke/StringConcatFactory'] []
+return-merge+string-concat-shape+SEM?invoke :: driver niagara/driver/util/BPollScheduler.class count(I)Ljava/lang/String;
+    - ['invokestatic|mref:java/lang/String.valueOf:(I)Ljava/lang/String;', 'invokedynamic|indy:makeConcatWithConstants:(Ljava/lang/String;)Ljava/lang/String;@MH6:mref:java/lang/invoke/St'] []
+    + ['invokedynamic|indy:makeConcatWithConstants:(I)Ljava/lang/String;@MH6:mref:java/lang/invoke/StringConcatFactory'] []
+return-merge+string-concat-shape+SEM?invoke :: driver niagara/driver/util/BPollScheduler.class duration(J)Ljava/lang/String;
+    - ['invokestatic|mref:java/lang/String.valueOf:(J)Ljava/lang/String;', 'invokestatic|mref:java/lang/String.valueOf:(J)Ljava/lang/String;', 'invokedynamic|indy:makeConcatWithConstants:(Ljava/lang/String;)Ljava/lang/String;@MH6:mref:java/lang/invoke/St', 'invokedynamic|indy:makeConcatWithConstants:(Ljava/lang/String;)Ljava/lang/String;@MH6:mref:java/lang/invoke/St'] []
+    + ['invokedynamic|indy:makeConcatWithConstants:(J)Ljava/lang/String;@MH6:mref:java/lang/invoke/StringConcatFactory', 'invokedynamic|indy:makeConcatWithConstants:(J)Ljava/lang/String;@MH6:mref:java/lang/invoke/StringConcatFactory'] []
+string-concat-shape+SEM?constant :: bql niagara/bql/BqlQuery.class toBqlLiteral(Lniagara/sys/BSimple;)Ljava/lang/String;
+    - ['new|C:java/lang/StringBuilder', 'invokespecial|mref:java/lang/StringBuilder.<init>:()V', 'invokevirtual|mref:java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;', 'invokevirtual|mref:java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;', 'invokevirtual|mref:java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;', 'invokevirtual|mref:java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;'] []
+    + ['invokedynamic|indy:makeConcatWithConstants:(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;@MH6:mref:j'] []
+string-concat-shape+SEM?invoke :: bacnet niagara/bacnet/datatypes/BBacnetObjectIdentifier.class encodeToString()Ljava/lang/String;
+    - ['invokestatic|mref:java/lang/String.valueOf:(I)Ljava/lang/String;', 'invokedynamic|indy:makeConcatWithConstants:(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;@MH6:mref:j'] []
+    + ['invokedynamic|indy:makeConcatWithConstants:(Ljava/lang/String;I)Ljava/lang/String;@MH6:mref:java/lang/invoke/S'] []
+string-concat-shape+SEM?invoke :: bacnet niagara/bacnet/datatypes/BBacnetObjectPropertyReference.class encodeToString()Ljava/lang/String;
+    - ['invokestatic|mref:java/lang/String.valueOf:(I)Ljava/lang/String;', 'invokestatic|mref:java/lang/String.valueOf:(I)Ljava/lang/String;', 'invokedynamic|indy:makeConcatWithConstants:(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/'] []
+    + ['invokedynamic|indy:makeConcatWithConstants:(Ljava/lang/String;II)Ljava/lang/String;@MH6:mref:java/lang/invoke/'] []
+string-concat-shape+SEM?invoke :: bacnet niagara/bacnet/datatypes/BBacnetOctetString.class toString(Lniagara/sys/Context;)Ljava/lang/String;
+    - ['invokestatic|mref:java/lang/String.valueOf:(I)Ljava/lang/String;', 'invokestatic|mref:java/lang/String.valueOf:(I)Ljava/lang/String;', 'invokedynamic|indy:makeConcatWithConstants:(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/'] []
+    + ['invokedynamic|indy:makeConcatWithConstants:(Ljava/lang/String;IB)Ljava/lang/String;@MH6:mref:java/lang/invoke/'] []
+string-concat-shape+SEM?invoke :: gx niagara/gx/Size.class toString()Ljava/lang/String;
+    - ['invokestatic|mref:java/lang/String.valueOf:(D)Ljava/lang/String;', 'invokestatic|mref:java/lang/String.valueOf:(D)Ljava/lang/String;', 'invokedynamic|indy:makeConcatWithConstants:(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;@MH6:mref:j'] []
+    + ['invokedynamic|indy:makeConcatWithConstants:(DD)Ljava/lang/String;@MH6:mref:java/lang/invoke/StringConcatFactor'] []
+string-concat-shape+SEM?invoke :: nrio com/tridium/nrio/conv/BNrioTabularThermistorConversion$XYPoint.class hashCode()I
+    - ['invokestatic|mref:java/lang/String.valueOf:(D)Ljava/lang/String;', 'invokestatic|mref:java/lang/String.valueOf:(D)Ljava/lang/String;', 'invokedynamic|indy:makeConcatWithConstants:(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;@MH6:mref:j'] []
+    + ['invokedynamic|indy:makeConcatWithConstants:(DD)Ljava/lang/String;@MH6:mref:java/lang/invoke/StringConcatFactor'] []

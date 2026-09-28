@@ -124,5 +124,19 @@ Indexes over the N5 corpus (rebuild after a re-decompile):
 Run any tool with -h/--help for its full flag list before guessing one.
 EOF
 
+# Warn (never fail the hook) when this checkout's git hooks aren't wired to tools/githooks/ —
+# `make install-hooks` sets core.hooksPath so the pre-commit lint gate (tools/lint-block.py +
+# tools/check-gap-drift.py on staged files) actually runs.
+hooks_path=$(git config --get core.hooksPath 2>/dev/null || true)
+if [ "$hooks_path" != "tools/githooks" ]; then
+  CTX="${CTX}
+
+────────────────────────────────────────────────────────────────────────
+WARNING: git hooks not installed (core.hooksPath=${hooks_path:-<unset>}). Run
+\`make install-hooks\` to enable the pre-commit lint gate (tools/lint-block.py
++ tools/check-gap-drift.py on staged niagara5-block*.md / RESEARCH-STATE.md).
+────────────────────────────────────────────────────────────────────────"
+fi
+
 jq -n --arg ctx "$CTX" \
   '{hookSpecificOutput: {hookEventName: "SessionStart", additionalContext: $ctx}}'

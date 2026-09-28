@@ -117,6 +117,17 @@ name, same location, same packaging role, both signed, both versions.
 
 ## 84.2 — B71-G5 CLOSED: N5's `RetrieveEntitlements`/`EntitlementApi` share N4's OAuth device-code/HTTP-transport structure almost line-for-line, but N5 replaced N4's dynamic cross-classloader reflection into `baja.jar` with a proper `LicenseValidator` interface implemented by `SubscriptionLicenseManager` itself `[CERT]`
 
+> **Correction (added by [Block 115], §115.5, §14 cross-block).** The pattern-matching-switch claim below
+> (point 3, "N5 rewrites N4's if/instanceof cause-dispatch chains as Java-21 pattern-matching switch
+> statements") is REAL, but scoped to `EntitlementApi.class` ONLY — `RetrieveEntitlements.class` carries
+> ZERO `SwitchBootstraps.typeSwitch` call sites (`javap -v -p`, re-run fresh this session). This section's
+> own title names both classes together; only `EntitlementApi` has the pattern-switch. Also: an earlier
+> orchestrator-relayed count of "12 typeSwitch" for `EntitlementApi` was a raw `grep -c "typeSwitch"` over
+> `javap -v` text, which double-counts constant-pool cross-references and `BootstrapMethods` table entries
+> for the SAME call sites — the true count, re-derived from the `BootstrapMethods:` table and the
+> `invokedynamic` disassembly directly, is 2 distinct call sites. Self-verify row 9 below restates the same
+> claim and is covered by this same pointer. See [Block 115] §115.5 for the full re-derivation.
+
 A normalized diff (`javax.baja.*`→`niagara.*`, `com.tridium.json`→`org.json` import lines set aside) of the
 freshly-decompiled N4-4.15.3.28 `RetrieveEntitlements.class`/`EntitlementApi.class` against N5's shows the
 files are **close but not byte-identical** — 326→330 lines and 705→684 lines respectively `[CERT]` (`diff`,
@@ -169,6 +180,15 @@ removing a dynamic-classloading pattern that (per [Block 25]'s broader Java-mode
 of thing `AccessController`'s JDK-24+ deprecation-for-removal path would eventually force anyway.
 
 ## 84.3 — B80-G3 / B31-G1 CLOSED: all 5 version-gap-unresolved types have IDENTICAL frozen-slot shape between N4-4.15.3.28 and N5-5.0.0.28 — the migration path is confirmed clean, no orphan-property risk `[CERT]`
+
+> **Correction (added by [Block 115], §115.2/§115.5, §14 cross-block).** The `BQudtUnitTag` table row's
+> "`instanceof BNumericPoint np` pattern-match (Java 21) replaces N4's cast" language describes a Vineflower
+> RESUGARING artifact, not an actual N4→N5 source change. N4-4.15.3.28 (major 52) and N5-5.0.0.28 (major 69)
+> `BQudtUnitTag.class` carry byte-for-byte identical `instanceof`/`checkcast`/`astore` bytecode — re-verified
+> independently this session with a fresh `javap -c -p` pass on both sides (`[Block 115] §115.2`). The
+> table's bottom-line verdict (CLEAN, `@NiagaraProperty` block byte-identical) is unaffected — only the
+> causal "replaces N4's cast" framing for that one cell needs the correction: Vineflower's rendering choice
+> is gated by the class file's own major version, not by anything Tridium changed.
 
 All 5 types [Block 31] §31.4a flagged (`bacnet:BacnetNetworkNumberQuality`, `bacnet:BacnetIpServerPort`,
 `bacnet:BacnetMstpPortDescriptor`, `bacnet:BacnetNetworkPortPendingChanges`, `tagdictionary:QudtUnitTag`) were

@@ -1,0 +1,7 @@
+[('set', 158), ('F:i', 45), ('F:s', 41), ('F:v', 33), ('F:c', 32), ('F:m', 30), ('fir', 29), ('F:t', 28), ('F:h', 20), ('F:a', 18)]
+bajaui	niagara/ui/BMenuItem.java	BMenuItem.F:text
+nurio	com/tridium/nurio/points/BNurioCurrentOutputProxyExt.java	BNurioCurrentOutputProxyExt.F:failsafeValue
+bajaui	niagara/ui/BTextField.java	BTextField.fireActionPerformed(BWidgetEvent)
+bajaui	niagara/ui/text/BKeyBindings.java	BKeyBindings.F:replace
+bajaui	niagara/ui/BListDropDown.java	BListDropDown.F:listActionPerformed
+bajaui	niagara/ui/tree/BTree.java	BTree.fireSelectionModified(BWidgetEvent)

@@ -165,6 +165,10 @@ accessors. No functional delta.
 
 ## 110.3 — B104-G3 CLOSED: `TableBuilder` delegates the actual type mapping to `Column`+`BSqlType`+17 per-type `BColumnTranslator` agents; one concrete dialect (`BHsqlDatabase`) gives the exact DDL strings `[CERT]`
 
+> **Correction (added by [Block 114], §14 cross-block).** `sqlNVarchar` is dead only in the `niagara.rdb.ddl.Column`
+> translator path; it is LIVE in the deprecated-dialect path via `BUnicodeUpdateJob.updateTable()`
+> (`organized/rdb/vineflower/com/tridium/rdb/util/BUnicodeUpdateJob.java:85`). See [Block 114] §114.3.
+
 `TableBuilder` itself (`organized/orion/vineflower/com/tridium/orion/sql/TableBuilder.java`, 238 lines,
 full read this session) does **not** contain the Property→SQL mapping directly — `makeColumns()`
 (`:81-112`) only classifies each persistent `Property` into one of 5 `Column` factory calls

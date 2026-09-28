@@ -44,16 +44,16 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
      Field names use UNDERSCORES on purpose: they must never collide with the prose greps below. -->
 <!-- research-state.v1 -->
 schema: research-state.v1
-covered_blocks: 111
-gaps_closed: 375
-known_gaps: 477
+covered_blocks: 116
+gaps_closed: 387
+known_gaps: 494
 investigable_open: 10
-requires_execution_open: 16
+requires_execution_open: 21
 blocked_open: 64
 deferred_open: 12
 undocumented_findings: 0
-blocks_since_retro: 5
-last_iteration_ts: 2026-09-28T06:30:00Z
+blocks_since_retro: 1
+last_iteration_ts: 2026-09-28T10:30:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
      applies to every corpus (single-focus and campaign alike); the stall-detection instrument reads it
@@ -61,9 +61,9 @@ last_iteration_ts: 2026-09-28T06:30:00Z
 
 ## Coverage
 
-- **Covered blocks**: 111 (B1..B111)
-- **Coverage metric**: 375 / 477 closed
-- **Last iteration**: 2026-09-28 — wave 12: B107–B111 (5 delegated sonnet writers), all 20 investigable gaps closed/narrowed, 11 child gaps (1 blocked), 4 §14 corrections (B98, B105, B106)
+- **Covered blocks**: 116 (B1..B116)
+- **Coverage metric**: 387 / 494 closed
+- **Last iteration**: 2026-09-28 — B116 Java decompile loss catalog (11 semantic Vineflower defects D1-D11); gate fixes aaa369d/b5814c8
 
 ## Gap-backlog
 
@@ -467,16 +467,33 @@ last_iteration_ts: 2026-09-28T06:30:00Z
 | low | B106-G3 Exhaustive prose read of all 5,161 ndriver/videodriver template lines | devkit | ✅ covered — B111 |
 | low | B99-G2 Live repro of the Sys.isStation()/getStation() permission-helper edges | station | requires-execution → §19 (offline Workbench vs station run) |
 | low | B102-G2 Flip the uxBuilder WebDev toggle on a live station and observe raw vs built serving | station | requires-execution → §19 |
-| medium | B107-G1 Does BFoxHistorySpace getPermissions(null) nav gate reach history content exposure or discovery only | history fox | pending |
-| low | B107-G2 Semantic caller/callee-split + wrapper-name null-Context shapes (non-mechanical) | organized/ | pending |
-| medium | B108-G1 Walk NCS-Agent Go type-metadata (typelinks) table: 4209 types | NCS-Agent binary | pending |
-| low | B108-G2 NCS-Agent InstallSoftware process-invocation path without os/exec (syscall/x/sys trace) | NCS-Agent binary | pending |
-| medium | B109-G1 Re-run B98 §98.1 SHA-1/secureValidation analysis on N4-4.15 com.onelogin.saml2.util.Util (defensive) | PowerB saml-rt | pending |
-| low | B109-G2 WebProperty frozen-slot metadata-sync path across third-party modules | organized/ | pending |
-| low | B109-G3 Line-by-line read of docDeveloper.jar bajadoc.index | doc jars | pending |
-| low | B110-G1 MySQL/SQL-Server RdbmsDialect DDL strings | rdb dialects | pending |
-| low | B110-G2 Whether BSqlType.sqlNVarchar is dead code in Column.makeTypeDdl or reachable via a third-party translator (deprecated dialects DO handle it — orchestrator check) | rdb | pending |
-| low | B111-G1 Extend Feature census to com.tridium.niagarad.license.Feature | organized/ | pending |
+| medium | B107-G1 Does BFoxHistorySpace getPermissions(null) nav gate reach history content exposure or discovery only | history fox | ✅ covered — B112 (§14 corrects B107 §107.3: BRootHistoryFolder fetches real session permissions) |
+| low | B107-G2 Semantic caller/callee-split + wrapper-name null-Context shapes (non-mechanical) | organized/ | ✅ narrowed — B112 (2 more mechanical shapes clean; residue → B112-G2) |
+| medium | B108-G1 Walk NCS-Agent Go type-metadata (typelinks) table: 4209 types | NCS-Agent binary | ✅ narrowed — B113 (2,418 typelinks types + 47 own types; transitive remainder → B113-G1) |
+| low | B108-G2 NCS-Agent InstallSoftware process-invocation path without os/exec (syscall/x/sys trace) | NCS-Agent binary | ✅ covered — B113 (zero process-creation capability linked) |
+| medium | B109-G1 Re-run B98 §98.1 SHA-1/secureValidation analysis on N4-4.15 com.onelogin.saml2.util.Util (defensive) | PowerB saml-rt | ✅ covered — B112 (SAML SP uses Santuario xmlsec 3.0.4, secureValidation restricts MD5 only; → B112-G3) |
+| low | B109-G2 WebProperty frozen-slot metadata-sync path across third-party modules | organized/ | ✅ narrowed — B112 (first-party universe closed 0/6 widgets; third-party SPI unanswerable by construction) |
+| low | B109-G3 Line-by-line read of docDeveloper.jar bajadoc.index | doc jars | ✅ already-covered — B4 §4.2 + B109 §109.3 (confirmed by B114) |
+| low | B110-G1 MySQL/SQL-Server RdbmsDialect DDL strings | rdb dialects | ✅ covered — B114 |
+| low | B110-G2 Whether BSqlType.sqlNVarchar is dead code in Column.makeTypeDdl or reachable via a third-party translator (deprecated dialects DO handle it — orchestrator check) | rdb | ✅ covered — B114 (§14 narrows B110 §110.3; → B114-G1) |
+| low | B111-G1 Extend Feature census to com.tridium.niagarad.license.Feature | organized/ | ✅ covered — B114 (7 files / 11 sites) |
+| low | B112-G1 Live fox-session capture confirming BRootHistoryFolder session-permission round-trip | station | requires-execution → §19 |
+| low | B112-G2 Caller/callee-split null-Context census (non-mechanical) | organized/ | pending |
+| low | B112-G3 Does N5 bundled xmlsec-4.0.4 share xmlsec-3.0.4 MD5-only secureValidation scope | N5 saml LIB-INF | pending |
+| low | B113-G1 Transitive-closure walk of NCS-Agent Go types beyond the 2,418 typelinks entries (Ghidra reported 4,209) | NCS-Agent binary | pending |
+| low | B114-G1 Map other hardcoded-BSqlType-literal callers of the deprecated-dialect path | rdb | pending |
+| low | B114-G2 Live MySQL/SQL-Server execution of BUnicodeUpdateJob ALTER TABLE DDL | RDBMS | requires-execution → §19 |
+| low | B115-G1 §14 pointer in B18 §18.9 cloudLinkNcs row | corpus | ✅ covered — orchestrator (B18 pointer added with B115) |
+| medium | B115-G2 Triage lint-block --audit findings over B1-B114 (721 at first run; measured-by: tools/lint-block.py --audit) | corpus + lint-block | pending |
+| medium | B115-G3 Extend the docSource inlining proof across the full dead-constant candidate population | organized/docSource | pending |
+| low | B115-G4 Re-check B13 §13.4.4(d-2) 49 removed modules against the N4.15 baseline | PowerB install | pending |
+| low | B115-G5 Reconcile the two /tmp-path re-counts (§115.7) with T3 audit method | corpus | pending |
+| high | B116-G1 Run the bytecode round-trip oracle over the ~12,100 classes without docSource (measured-by: tools/n5-fidelity.py) | organized/ + n5-fidelity | requires-execution → §19 |
+| high | B116-G2 Audit corpus quotes of the D1-D11 semantically-wrong methods | corpus | ✅ covered — orchestrator (rg over niagara5-block*.md: only B35 §35 cites BNrioNetwork for class hierarchy, unaffected) |
+| medium | B116-G3 Classify the 152 docSource-covered decompiled files that do not recompile | organized/docSource | requires-execution → §19 |
+| medium | B116-G4 Measure a whole-tree Vineflower re-run with library context (-e) against D1-D11 | n5-decompile v2 | requires-execution → §19 |
+| medium | B116-G5 Review the 27 typeSwitch / 10 MatchException classes decompiled as pseudo-Java | organized/ | pending |
+| low | B116-G6 Independent second review of the 113 benign SEM? verdicts | evidence/b116 | pending |
 | low | B104-G5 Live-station confirmation of B104's static driver/sync findings | station | requires-execution → §19 |
 | low | B106-G1 Gradle --info/dependencyInsight trace of which wiring puts the moduleTest jar on compileModuleTestJava | Gradle run | requires-execution → §19 |
 
@@ -595,6 +612,11 @@ last_iteration_ts: 2026-09-28T06:30:00Z
 | 109 | 2026-09-28 | B103-G1 no GUI frozen setFacets, B103-G3 BHelpSideBar reads bajadoc.index, B98-G4 (§14 corrects B98); B103-G2 narrowed | B109 | yes · sonnet | 3 new — B109-G1..G3 |
 | 110 | 2026-09-28 | B104-G1 ValueDocDecoder XML grammar (+5.0 root), B104-G2 params, B104-G3 SQL mapping, B104-G4 no Orion purge | B110 | yes · sonnet | 2 new — B110-G1..G2 |
 | 111 | 2026-09-28 | B105-G1 Feature census +76 sites, B105-G3 plat* uniform +19 (§14 corrects B105), B106-G3 exhaustive template read; B105-G2 narrowed | B111 | yes · sonnet | 1 new — B111-G1 |
+| 112 | 2026-09-28 | B107-G1 fox history gate is real session check (§14 corrects B107), B109-G1 Santuario xmlsec MD5-only; B107-G2/B109-G2 narrowed | B112 | yes · sonnet | 3 new — B112-G1..G3 |
+| 113 | 2026-09-28 | B108-G2 no process creation in NCS-Agent; B108-G1 narrowed (2,418 typelinks, 47 own types) | B113 | yes · sonnet | 1 new — B113-G1 |
+| 114 | 2026-09-28 | B110-G1 MySQL/MSSQL DDL, B110-G2 sqlNVarchar live via BUnicodeUpdateJob (§14 B110), B111-G1; B109-G3 already-covered | B114 | yes · sonnet | 2 new — B114-G1..G2 |
+| 115 | 2026-09-28 | Decompiler-fidelity + method-error audit: bytecode-distinguishability matrix, version-gated resugaring, constant inlining (docSource proof), 7/18 N5-only modules ship in N4.15, B84 fixes; §14 pointers B13/B18/B84/B96/B105/B111 | B115 | yes · sonnet | 5 new — B115-G1..G5 |
+| 116 | 2026-09-28 | Java decompile loss catalog: docSource = byte-identical ground truth (3,707 classes); 30-row synthetic loss matrix over 4 decompilers; 65,136 aligned members normalized; 11 confirmed Vineflower semantic defects D1-D11 (0.030%); §14 pointer B115 | B116 | yes · opus | 6 new — B116-G1..G6 |
 
 ## Blocked gaps (each tagged with what it needs)
 
@@ -666,7 +688,7 @@ last_iteration_ts: 2026-09-28T06:30:00Z
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
 - **Open gaps — read-only investigable**: 10
-- **Open gaps — requires-execution**: 16
+- **Open gaps — requires-execution**: 21
 - **Open gaps — blocked**: 64
 - Consecutive iterations with empty backlog (secondary): 0/2
 - Budget cap (default safety net): none

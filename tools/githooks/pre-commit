@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+# pre-commit — mechanical gate for the decompiler-fidelity / method-blind-spot rules.
+#
+# Installed by `make install-hooks` (sets git config core.hooksPath tools/githooks). Runs only
+# against the STAGED (indexed) blobs, never the working-tree files, so a partially-staged edit
+# (working tree modified further after `git add`) can never slip an unlinted version through:
+#
+#   - every staged niagara5-block*.md, materialized from the git index (`git show ":$path"`)
+#     into a scratch dir that preserves each file's basename (lint-block.py derives the block
+#     number from the filename):
+#       * tools/lint-block.py <materialized copies>  (enforced mode: R1-R8, blocks >= --min-block)
+#       * ~/investigacion/sdd-investigacion/research-sdd/toolbelt/verify-block.sh <materialized
+#         copy>, if that script exists on this machine (it is not part of this repo)
+#   - if RESEARCH-STATE.md is staged: tools/check-gap-drift.py, pointed (via --state/--block-dir)
+#     at the staged RESEARCH-STATE.md and a scratch copy of EVERY tracked niagara5-block*.md
+#     materialized from the index, so a gap row's parent block is checked against its
+#     about-to-be-committed content too, not a stale or independently-dirty working-tree copy.
+#
+# Any of the above failing blocks the commit (exit 1). Emergency bypass is git's own `--no-verify`
+# (`git commit --no-verify`) — this hook does not add a second bypass mechanism.
+set -euo pipefail
+
+repo_root=$(git rev-parse --show-toplevel)
+cd "$repo_root"
+
+status=0
+
+scratch=$(mktemp -d)
+trap 'rm -rf "$scratch"' EXIT
+
+mapfile -t staged_blocks < <(git diff --cached --name-only --diff-filter=ACM -- 'niagara5-block*.md')
+
+verify_block_sh="$HOME/investigacion/sdd-investigacion/research-sdd/toolbelt/verify-block.sh"
+
+if [ "${#staged_blocks[@]}" -gt 0 ]; then
+  block_scratch="$scratch/staged-blocks"
+  mkdir -p "$block_scratch"
+  materialized_blocks=()
+  declare -A staged_name_of=()
+  for f in "${staged_blocks[@]}"; do
+    dest="$block_scratch/$(basename "$f")"
+    git show ":$f" > "$dest"
+    materialized_blocks+=("$dest")
+    staged_name_of["$dest"]="$f"
+  done
+
+  if ! python3 tools/lint-block.py "${materialized_blocks[@]}"; then
+    echo "pre-commit: tools/lint-block.py found enforced findings above — fix or waive with" >&2
+    echo "  <!-- lint-ok: R<n> <reason> --> before committing (or 'git commit --no-verify')." >&2
+    status=1
+  fi
+
+  if [ -x "$verify_block_sh" ]; then
+    for dest in "${materialized_blocks[@]}"; do
+      if ! "$verify_block_sh" "$dest"; then
+        echo "pre-commit: verify-block.sh failed on ${staged_name_of[$dest]} (staged content)" >&2
+        status=1
+      fi
+    done
+  fi
+fi
+
+if git diff --cached --name-only --diff-filter=ACM -- RESEARCH-STATE.md | grep -q .; then
+  state_scratch="$scratch/state"
+  mkdir -p "$state_scratch"
+  git show ":RESEARCH-STATE.md" > "$state_scratch/RESEARCH-STATE.md"
+
+  # Every TRACKED block file at its index (about-to-be-committed) content, not just the ones
+  # staged in THIS commit -- a pending gap's parent block is usually a block this commit never
+  # touches, and check-gap-drift.py still needs to read it.
+  block_dir_scratch="$scratch/all-blocks"
+  mkdir -p "$block_dir_scratch"
+  while IFS= read -r -d '' f; do
+    git show ":$f" > "$block_dir_scratch/$(basename "$f")"
+  done < <(git ls-files -z -- 'niagara5-block*.md')
+
+  if ! python3 tools/check-gap-drift.py \
+        --state "$state_scratch/RESEARCH-STATE.md" \
+        --block-dir "$block_dir_scratch"; then
+    echo "pre-commit: check-gap-drift.py reported suspects — fix RESEARCH-STATE.md drift before" >&2
+    echo "  committing (or 'git commit --no-verify')." >&2
+    status=1
+  fi
+fi
+
+exit "$status"

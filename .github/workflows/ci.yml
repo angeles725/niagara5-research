@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test-and-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # tools/tests/test_*.py self-skip whenever they need the real, read-only N4/N5 installs or
+      # other machine-local paths that don't exist on a CI runner (see each test's own guard).
+      - name: make test
+        run: make test
+
+      # Enforced mode: tools/lint-block.py's rules (R1-R8) apply only to blocks >= its
+      # --min-block (currently 115); everything below that is unaffected here.
+      - name: tools/lint-block.py (enforced)
+        run: python3 tools/lint-block.py
+
+      - name: tools/check-gap-drift.py
+        run: python3 tools/check-gap-drift.py
+
+      - name: shellcheck tools/githooks/pre-commit
+        run: |
+          command -v shellcheck || (sudo apt-get update -y && sudo apt-get install -y shellcheck)
+          shellcheck tools/githooks/pre-commit
