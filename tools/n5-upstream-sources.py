@@ -866,11 +866,14 @@ def run_all_third_party_coverage(manifest: dict, mirror_modules_dir=MIRROR_MODUL
             if total_n is None:
                 total_n = cd.get("binary_total", 0) if cd else 0
             total += total_n
-            if ci["status"] == "resigned-identical":
+            if ci["status"] in ("resigned-identical", "sha1-exact"):
                 covered += total_n
             elif ci["status"] == "partially-modified":
                 covered += ci.get("classes_identical", 0)
-            # vendor-modified / unverifiable: 0 covered, already counted in total
+            # vendor-modified / unverifiable / mixed / unverified: 0 covered, already counted in
+            # total -- a "mixed" artifact's rollup deliberately doesn't collapse to a blanket
+            # trusted verdict (see run_recheck_pom_identified_gaps), so it's conservatively
+            # treated the same as an unproven one here too.
             continue
         if not cd or "binary_total" not in cd:
             continue
@@ -889,6 +892,78 @@ def run_all_third_party_coverage(manifest: dict, mirror_modules_dir=MIRROR_MODUL
     return coverage
 
 
+# Statuses that mean "every .class entry in this occurrence's jar is proven byte-identical to
+# Central" -- the strongest possible proof, regardless of WHICH proof mechanism produced it
+# (b117's own whole-jar SHA-1 match, or a per-.class re-check that happened to find full
+# agreement). When every occurrence of an artifact lands in this set, the artifact-level rollup
+# can safely collapse to one verdict; when they don't all agree, it must NOT collapse (see
+# run_recheck_pom_identified_gaps).
+WHOLE_TRUST_STATUSES = {"sha1-exact", "resigned-identical"}
+
+
+def compute_occurrence_identity(occ: dict, ev: Optional[dict], art: dict, opener: Callable,
+                                 sleep: Callable, retries: int, mod_dir: Path, install_dir: Path,
+                                 pace: float) -> dict:
+    """The identity proof for ONE manifest occurrence, from its OWN evidence/b117/maven-repo1.json
+    record -- never inherited from the artifact's other occurrences. Two occurrences of the same
+    g:a:v (e.g. a LIB-INF copy and an etc/m2 build-tool copy) can be genuinely different bytes
+    (real finding, 2026-09-28: org.jetbrains:annotations:13.0's devkit LIB-INF copy is b117
+    "exact" while its bin/ext copy is "differs").
+
+    Returns a typed content_identity dict:
+      - no b117 record at all: {"status": "unverified", "reason": ...} -- defensive; every
+        occurrence of the original pom.properties-identified artifacts traces back to a b117
+        entry by construction, so this should not happen in practice, but must never be a silent
+        missing field.
+      - b117 result == "exact": {"status": "sha1-exact", "source": "evidence/b117/maven-repo1.json",
+        "sha1": ...} -- the whole shipped BINARY jar's SHA-1 already matched Central's published
+        SHA-1 during the b117 evidence run itself. The strongest possible proof; no further
+        verification (and no network call) is needed -- ORCHESTRATOR-FOUND DEFECT FIX
+        (2026-09-28): this used to be silently skipped, leaving 81 of 188 manifest artifacts with
+        NEITHER content_identity NOR identification_method, so tools/n5-best-source.py treated
+        them as unproven even though b117 had already proven 78 of them outright.
+      - b117 content == "identical-non-META-INF": reuse b117's own non-META-INF byte comparison
+        (no network) -- {"status": "resigned-identical", "source": "b117-reused", ...}.
+      - anything else ("differs" with a real content difference, "not-on-central...", a download
+        failure): a LIVE per-.class check (classify_jar_identity) against Central's own binary
+        jar, classifier-aware (detect_classifier)."""
+    if ev is None:
+        return {"status": "unverified", "reason": "no-b117-evidence-record"}
+    if ev.get("result") == "exact":
+        return {"status": "sha1-exact", "source": "evidence/b117/maven-repo1.json",
+                "sha1": ev.get("sha1")}
+    if ev.get("content") == "identical-non-META-INF":
+        return {"status": "resigned-identical", "source": "b117-reused",
+                "b117_meta_inf_local": ev.get("meta_inf_local")}
+    local_bytes = load_binary_bytes(occ, mod_dir, install_dir)
+    if local_bytes is None:
+        return {"status": "unverifiable", "reason": "install-not-mounted", "source": "live-recheck"}
+    # Recorded as a side effect (not just for this check) so a later "mixed" rollup can link THIS
+    # occurrence's own jar identity without a second read -- see run_recheck_pom_identified_gaps.
+    occ["binary_sha256"] = hashlib.sha256(local_bytes).hexdigest()
+    # Some artifacts (e.g. mssql-jdbc) only exist on Central under a version this tool's own
+    # candidate_versions correction found, not the raw pom.properties "version" -- run_fetch
+    # already used "resolved_version" to fetch the sources jar; reuse it here too, or a plain
+    # whole-jar lookup at the wrong version 404s and this reports "unverifiable" for nothing.
+    lookup_version = art.get("resolved_version") or art["version"]
+    classifier = detect_classifier(jar_basename(occ["name"]), art["artifactId"], lookup_version)
+    central_fetch = fetch_central_binary_jar(art["groupId"], art["artifactId"], lookup_version,
+                                               opener, sleep=sleep, retries=retries,
+                                               classifier=classifier)
+    if pace:
+        sleep(pace)
+    if central_fetch["status"] == "fetched":
+        ci = classify_jar_identity(local_bytes, central_fetch["bytes"])
+        ci["central_sha1"] = central_fetch["sha1"]
+    else:
+        ci = {"status": "unverifiable", "reason": central_fetch["status"]}
+    ci["source"] = "live-recheck"
+    if classifier:
+        ci["classifier"] = classifier
+        ci["sources_shared_across_classifiers"] = True
+    return ci
+
+
 def run_recheck_pom_identified_gaps(manifest: dict, evidence_entries: list,
                                      opener: Callable = urllib.request.urlopen,
                                      sleep: Callable = time.sleep, retries: int = 3,
@@ -901,65 +976,72 @@ def run_recheck_pom_identified_gaps(manifest: dict, evidence_entries: list,
     "differs" or "not-on-central"), class-level identity was never checked, same gap T26a's own
     vendor-modified jars had.
 
-    evidence/b117's own maven_content.py already ran a non-META-INF (not class-only, but a
-    superset) byte comparison for every result=="differs" jar; reuse its
-    content == "identical-non-META-INF" finding (no network) as "resigned-identical". For jars
-    whose b117 recheck failed ("download-failed"), found a real difference ("differs:N"), or
-    whose whole-jar SHA-1 lookup itself 404'd ("not-on-central" -- resolved anyway by this tool's
-    own candidate-version corrections, e.g. mssql-jdbc, kotlin-reflect), do a LIVE per-.class
-    check via classify_jar_identity, same as T26a. A plain "exact" whole-jar match needs no
-    re-check at all -- that already IS class-level proof.
+    ORCHESTRATOR-FOUND DEFECT FIX (2026-09-28): this used to check ONLY occurrences[0] and to
+    silently skip an artifact entirely (no content_identity written at all) whenever that first
+    occurrence's b117 record was already "exact" -- the STRONGEST possible proof -- leaving 81 of
+    188 manifest artifacts with neither content_identity nor identification_method, so
+    tools/n5-best-source.py's classify_upstream_identity() treated them as unproven. This now
+    computes an identity proof for EVERY occurrence of every qualifying artifact
+    (compute_occurrence_identity), stored as that occurrence's own "content_identity", and rolls
+    those up into the artifact-level "content_identity":
+      - all occurrences agree (same status, or all in WHOLE_TRUST_STATUSES): the rollup collapses
+        to that one verdict (or "resigned-identical" when they're a mix of "sha1-exact" and
+        "resigned-identical" -- both are whole-jar-proven, just via different mechanisms).
+      - occurrences DISAGREE (real finding: org.jetbrains:annotations:13.0 et al. -- one occurrence
+        b117 "exact", another genuinely "differs"): the rollup is {"status": "mixed", ...} and
+        does NOT collapse to the best occurrence's verdict -- tools/n5-best-source.py must resolve
+        trust per occurrence (via each occurrence's own "binary_sha256", computed here for a mixed
+        artifact's occurrences so a population can be linked to the exact occurrence it came from).
+      - no b117 record at all for any occurrence: "unverified" -- never a silently missing field.
 
-    Mutates each matched manifest artifact in place (adds "content_identity"); returns counts by
-    outcome, split into "reused-resigned-identical" (no network) vs the live-checked statuses.
-
-    Also detects a Maven CLASSIFIER from the local occurrence's own basename (detect_classifier):
-    real finding, oauth2.jar!LIB-INF/oauth2-oidc-sdk-11.26-jdk11.jar is the "jdk11" classifier
-    build -- comparing it against the classifier-less Central binary gives a false 0/533 match;
-    the classifier binary is 533/533 byte-identical."""
+    Mutates each matched manifest artifact (and its occurrences) in place; returns counts by
+    artifact-level rollup outcome, split into "reused-resigned-identical" (single-occurrence,
+    no-network b117 reuse -- kept as its own bucket for backward compatibility with the pre-fix
+    report) vs the other statuses."""
     mod_dir, install_dir = Path(mod_dir), Path(install_dir)
     evidence_by_name = {(e.get("kind"), e.get("name")): e for e in evidence_entries}
-    summary = {"reused-resigned-identical": 0, "resigned-identical": 0, "partially-modified": 0,
-               "vendor-modified": 0, "no-classes": 0, "unverifiable": 0}
+    summary = {"reused-resigned-identical": 0, "sha1-exact": 0, "resigned-identical": 0,
+               "partially-modified": 0, "vendor-modified": 0, "no-classes": 0,
+               "unverifiable": 0, "unverified": 0, "mixed": 0}
     for art in manifest["artifacts"]:
         if art.get("identification_method") or art.get("status") != "fetched":
             continue
-        occ = art["occurrences"][0]
-        ev = evidence_by_name.get((occ["kind"], occ["name"]))
-        if ev is None or ev.get("result") == "exact":
-            continue
-        if ev.get("content") == "identical-non-META-INF":
-            art["content_identity"] = {
-                "status": "resigned-identical", "source": "b117-reused",
-                "b117_meta_inf_local": ev.get("meta_inf_local"),
-            }
-            summary["reused-resigned-identical"] += 1
-            continue
-        local_bytes = load_binary_bytes(occ, mod_dir, install_dir)
-        if local_bytes is None:
-            continue
-        # Some artifacts (e.g. mssql-jdbc) only exist on Central under a version this tool's own
-        # candidate_versions correction found, not the raw pom.properties "version" -- run_fetch
-        # already used "resolved_version" to fetch the sources jar; reuse it here too, or a plain
-        # whole-jar lookup at the wrong version 404s and this reports "unverifiable" for nothing.
-        lookup_version = art.get("resolved_version") or art["version"]
-        classifier = detect_classifier(jar_basename(occ["name"]), art["artifactId"], lookup_version)
-        central_fetch = fetch_central_binary_jar(art["groupId"], art["artifactId"], lookup_version,
-                                                   opener, sleep=sleep, retries=retries,
-                                                   classifier=classifier)
-        if pace:
-            sleep(pace)
-        if central_fetch["status"] == "fetched":
-            ci = classify_jar_identity(local_bytes, central_fetch["bytes"])
-            ci["central_sha1"] = central_fetch["sha1"]
+        occurrences = art["occurrences"]
+        for occ in occurrences:
+            ev = evidence_by_name.get((occ["kind"], occ["name"]))
+            occ["content_identity"] = compute_occurrence_identity(
+                occ, ev, art, opener, sleep, retries, mod_dir, install_dir, pace)
+
+        statuses = [occ["content_identity"]["status"] for occ in occurrences]
+        if len(set(statuses)) == 1:
+            rollup = dict(occurrences[0]["content_identity"])
+        elif all(s in WHOLE_TRUST_STATUSES for s in statuses):
+            rollup = {"status": "resigned-identical", "source": "per-occurrence-aggregate",
+                      "detail": statuses}
         else:
-            ci = {"status": "unverifiable", "reason": central_fetch["status"]}
-        ci["source"] = "live-recheck"
-        if classifier:
-            ci["classifier"] = classifier
-            ci["sources_shared_across_classifiers"] = True
-        art["content_identity"] = ci
-        summary[ci["status"]] = summary.get(ci["status"], 0) + 1
+            rollup = {"status": "mixed", "source": "per-occurrence",
+                      "reason": "occurrences disagree; see occurrences[].content_identity for "
+                                "the individual verdicts -- never collapsed to the best one",
+                      "detail": statuses}
+            # A mixed artifact needs each occurrence's OWN jar identity so
+            # tools/n5-best-source.py can link a population to the exact occurrence its verdict
+            # applies to, never to "the artifact's other occurrences'" verdict. Occurrences whose
+            # live per-.class check already read local bytes get this almost for free; a
+            # "sha1-exact" occurrence (no local read needed for its own proof) gets one here.
+            for occ in occurrences:
+                if "binary_sha256" in occ:
+                    continue
+                local_bytes = load_binary_bytes(occ, mod_dir, install_dir)
+                if local_bytes is not None:
+                    occ["binary_sha256"] = hashlib.sha256(local_bytes).hexdigest()
+
+        art["content_identity"] = rollup
+        status = rollup["status"]
+        if (status == "resigned-identical" and len(occurrences) == 1
+                and rollup.get("source") == "b117-reused"):
+            summary["reused-resigned-identical"] += 1
+        else:
+            summary[status] = summary.get(status, 0) + 1
     manifest["pom_identified_recheck_summary"] = summary
     return summary
 
@@ -1139,7 +1221,14 @@ def render_report(manifest: dict, paho_result: Optional[dict] = None,
             "third-party jar in this corpus (identified + still-unidentified), not only "
             "artifacts with a fetched sources jar; numerator excludes vendor-modified artifacts "
             "(same coordinate on Central, different bytes -- their \"source\" is for a different "
-            "build, not ground truth for these classes). See T26a."
+            "build, not ground truth for these classes). See T26a. This number is NOT the same "
+            "thing as `tools/n5-best-source.py`'s `by_best_kind.upstream` count and the two are "
+            "not expected to match: this one counts, per DISTINCT third-party artifact, whether a "
+            "class name has a same-path proven-identical `.java` in its fetched sources jar; "
+            "n5-best-source.py counts per-population (module, `_bin-ext`/`_etc-m2`/`_lib` jar, or "
+            "raw LIB-INF copy) -- the same physical class can recur across several populations "
+            "(e.g. the same third-party jar bundled, undecompiled, inside more than one module), "
+            "so its `upstream` count can exceed the distinct-class count here."
         )
         lines.append("")
     lines.append("## Fetch status counts")
@@ -1233,18 +1322,26 @@ def render_report(manifest: dict, paho_result: Optional[dict] = None,
         lines.append("")
         lines.append(
             "The original 154 pom.properties-identified artifacts were only ever proven identical "
-            "to Central by their SOURCES jar's own SHA-1. For the ones whose evidence/b117 record "
-            "shows the whole shipped BINARY jar's SHA-1 differs from Central's, this reuses "
-            "b117's own non-META-INF content check where it already found `identical-non-META-INF` "
-            "(no network), and does a live per-.class check (same method as T26a) for the rest "
-            "(b117's own download failures, real content differences, and jars this tool's own "
-            "candidate-version corrections resolved after a `not-on-central` whole-jar lookup)."
+            "to Central by their SOURCES jar's own SHA-1. `sha1-exact` -- evidence/b117's own "
+            "whole-jar SHA-1 match, the strongest possible proof, carried through as-is with no "
+            "further check -- covers most of them. For the rest (evidence/b117 shows the whole "
+            "shipped BINARY jar's SHA-1 differs from Central's), this reuses b117's own "
+            "non-META-INF content check where it already found `identical-non-META-INF` (no "
+            "network), and does a live per-.class check (same method as T26a) otherwise (b117's "
+            "own download failures, real content differences, and jars this tool's own "
+            "candidate-version corrections resolved after a `not-on-central` whole-jar lookup). "
+            "Every check runs PER OCCURRENCE (an artifact can ship as more than one physical jar, "
+            "e.g. a LIB-INF copy and an etc/m2 copy, which are not always the same bytes): "
+            "`mixed` means the occurrences disagree and the verdict was deliberately NOT collapsed "
+            "to the best one -- see manifest.json's occurrences[].content_identity for the "
+            "individual verdicts. `unverified` means no evidence/b117 record was found at all."
         )
         lines.append("")
         lines.append("| outcome | count |")
         lines.append("|---|---|")
-        for status in ("reused-resigned-identical", "resigned-identical", "partially-modified",
-                       "vendor-modified", "no-classes", "unverifiable"):
+        for status in ("sha1-exact", "reused-resigned-identical", "resigned-identical",
+                       "partially-modified", "vendor-modified", "no-classes", "unverifiable",
+                       "unverified", "mixed"):
             lines.append(f"| {status} | {pom_recheck_summary.get(status, 0)} |")
         lines.append("")
 

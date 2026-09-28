@@ -393,6 +393,34 @@ def _resolve_repo_relative(organized_root: Path, stored_path: str) -> Path:
     return organized_root.parent / norm
 
 
+def _identity_verdict_from_ci(ci: Optional[dict]) -> dict:
+    """The shared verdict computation from ONE content_identity dict -- either an artifact-level
+    one (the common case: every occurrence of the artifact agrees), or ONE occurrence's own
+    content_identity for a "mixed" artifact whose occurrences disagree (see
+    classify_upstream_identity). Returns {"trust": "whole" | "partial" | "none", "verdict": <short
+    label>, "reason": <human text>, "different_classes"/"local_only_classes" (partial only)}."""
+    if ci is None:
+        return {"trust": "none", "verdict": "no-verdict",
+                "reason": "no identity verdict recorded in manifest.json for this artifact/"
+                          "occurrence (no content_identity, no identification_method) -- not "
+                          "proven byte-identical to the shipped jar"}
+    status = ci.get("status")
+    if status in ("resigned-identical", "sha1-exact"):
+        proof = ("evidence/b117/maven-repo1.json's own whole-jar SHA-1 match" if status == "sha1-exact"
+                 else "every class byte-identical to Central; only non-class entries, e.g. "
+                      "Niagara's added signature, differ")
+        return {"trust": "whole", "verdict": status,
+                "reason": f"content_identity={status} ({proof})"}
+    if status == "partially-modified":
+        return {"trust": "partial", "verdict": status,
+                "different_classes": set(ci.get("different_classes") or []),
+                "local_only_classes": set(ci.get("local_only_classes") or []),
+                "reason": "content_identity=partially-modified (only this jar's own per-class "
+                          "byte-identical matches are trusted)"}
+    return {"trust": "none", "verdict": status or "unknown",
+            "reason": f"content_identity={status} (not proven byte-identical to the shipped jar)"}
+
+
 def classify_upstream_identity(art: dict) -> dict:
     """Whether one manifest.json artifact record proves its fetched Maven SOURCES are byte-
     identical to the SHIPPED BINARY jar it was matched against -- i.e. whether it can be trusted
@@ -403,25 +431,33 @@ def classify_upstream_identity(art: dict) -> dict:
 
     tools/n5-upstream-sources.py writes one of these identity signals per artifact, most reliable
     first:
+      - art["content_identity"]["status"] == "sha1-exact": evidence/b117/maven-repo1.json's own
+        whole-jar SHA-1 match (the strongest possible proof, carried through with no further
+        check) -- proven for the WHOLE jar. (2026-09-28 fix, orchestrator-found defect: this used
+        to be silently unrecorded for 78 of 188 manifest artifacts, leaving them with neither
+        content_identity nor identification_method -- i.e. wrongly treated as unproven.)
       - art["content_identity"]["status"] == "resigned-identical": every .class entry matched
         Central byte-for-byte (only non-class entries, e.g. Niagara's added signature, differ) --
         proven for the WHOLE jar.
       - art["content_identity"]["status"] == "partially-modified": only SOME classes matched;
         content_identity["different_classes"] / ["local_only_classes"] list the ones that did NOT
         -- everything else in the jar is proven, per class (see _class_trusted).
-      - art["content_identity"]["status"] in {"vendor-modified", "no-classes", "unverifiable"}:
-        not proven for any class.
+      - art["content_identity"]["status"] == "mixed": this artifact ships as more than one
+        physical jar (e.g. a LIB-INF copy and an etc/m2 copy) and those occurrences do NOT all
+        agree -- there is no single artifact-wide verdict. Returns trust "none" here (a bare
+        class-name match can't tell which occurrence it came from); build_upstream_index resolves
+        trust PER OCCURRENCE instead, via each occurrence's own content_identity, linked by that
+        occurrence's own binary_sha256 -- never by falling back to another occurrence's verdict.
+      - art["content_identity"]["status"] in {"vendor-modified", "no-classes", "unverifiable",
+        "unverified"}: not proven for any class.
       - art["identification_method"] set with NO "content_identity" key at all: T26a's
         identify_unidentified_entry returned "identified-by-sha1" -- the ONLY T26a outcome that
         skips writing content_identity -- meaning the whole local BINARY jar's SHA-1 matched
         Central's directly (the strongest possible proof: a whole-jar SHA-1 match).
-      - neither field present (the original ~154 pom.properties-identified artifacts that were
-        never rechecked -- either because evidence/b117 already recorded a whole-jar SHA-1 "exact"
-        match, which manifest.json does not carry forward as an explicit field, or because no
-        matching evidence record was found at all): the manifest itself carries NO identity
-        verdict for this artifact, so it is treated as NOT proven (`verdict` "no-verdict") --
-        conservative by design, and visible in the index summary's `upstream_unproven_artifacts`
-        rather than silently assumed correct.
+      - neither field present: the manifest itself carries NO identity verdict for this artifact,
+        so it is treated as NOT proven (`verdict` "no-verdict") -- conservative by design, and
+        visible in the index summary's `upstream_unproven_artifacts` rather than silently assumed
+        correct.
 
     Returns {"trust": "whole" | "partial" | "none", "verdict": <short label>, "reason": <human
     text>, "different_classes": set[str] (partial only), "local_only_classes": set[str] (partial
@@ -429,20 +465,13 @@ def classify_upstream_identity(art: dict) -> dict:
     lists), e.g. "com/foo/Bar.class" or "com/foo/Bar$Inner.class"."""
     ci = art.get("content_identity")
     if ci is not None:
-        status = ci.get("status")
-        if status == "resigned-identical":
-            return {"trust": "whole", "verdict": status,
-                    "reason": "content_identity=resigned-identical (every class byte-identical to "
-                              "Central; only non-class entries, e.g. Niagara's added signature, "
-                              "differ)"}
-        if status == "partially-modified":
-            return {"trust": "partial", "verdict": status,
-                    "different_classes": set(ci.get("different_classes") or []),
-                    "local_only_classes": set(ci.get("local_only_classes") or []),
-                    "reason": "content_identity=partially-modified (only this jar's own per-class "
-                              "byte-identical matches are trusted)"}
-        return {"trust": "none", "verdict": status or "unknown",
-                "reason": f"content_identity={status} (not proven byte-identical to the shipped jar)"}
+        if ci.get("status") == "mixed":
+            return {"trust": "none", "verdict": "mixed",
+                    "reason": "this artifact's occurrences disagree (some proven byte-identical, "
+                              "some not) -- no single artifact-wide verdict applies; trust is "
+                              "resolved per occurrence via its own jar-sha256 link, never by "
+                              "collapsing to the best occurrence's verdict"}
+        return _identity_verdict_from_ci(ci)
     if art.get("identification_method") and art.get("status") == "fetched":
         return {"trust": "whole", "verdict": "identified-by-sha1",
                 "reason": f"identification_method={art['identification_method']} "
@@ -511,11 +540,42 @@ def build_upstream_index(organized_root: Path):
         covered = java_names - sources_only
         verdict = classify_upstream_identity(art)
         verdict_counts[verdict["verdict"]] = verdict_counts.get(verdict["verdict"], 0) + 1
+        portable_covered = [name for name in covered if _is_portable_class_name(name)]
+
+        # A "mixed" artifact (occurrences disagree -- see classify_upstream_identity) has NO
+        # single artifact-wide verdict: the weak name-only index gets an untrusted placeholder
+        # (it can't tell which occurrence a bare name match came from), and each occurrence's OWN
+        # verdict is indexed separately, keyed by that occurrence's OWN binary_sha256 -- a
+        # population linked to a "differs" occurrence must use THAT occurrence's verdict, never
+        # another occurrence's (2026-09-28 fix, orchestrator-found defect).
+        if verdict["verdict"] == "mixed":
+            for name in portable_covered:
+                candidate = {
+                    "groupId": art["groupId"], "artifactId": art["artifactId"],
+                    "version": art["version"], "jar_path": jar_path, "entry": name + ".java",
+                    "trusted": False, "verdict": verdict["verdict"], "reason": verdict["reason"],
+                }
+                if name not in name_index:
+                    name_index[name] = candidate
+            for occ in art.get("occurrences", []):
+                occ_sha256 = occ.get("binary_sha256")
+                if not occ_sha256:
+                    continue
+                occ_verdict = _identity_verdict_from_ci(occ.get("content_identity"))
+                by_class_for_this_occurrence: dict[str, dict] = {}
+                for name in portable_covered:
+                    by_class_for_this_occurrence[name] = {
+                        "groupId": art["groupId"], "artifactId": art["artifactId"],
+                        "version": art["version"], "jar_path": jar_path, "entry": name + ".java",
+                        "trusted": _class_trusted(occ_verdict, name),
+                        "verdict": occ_verdict["verdict"], "reason": occ_verdict["reason"],
+                    }
+                sha_index.setdefault(occ_sha256, {}).update(by_class_for_this_occurrence)
+            continue
+
         binary_sha256 = art.get("binary_sha256")
         by_class_for_this_artifact: dict[str, dict] = {}
-        for name in covered:
-            if not _is_portable_class_name(name):
-                continue
+        for name in portable_covered:
             candidate = {
                 "groupId": art["groupId"], "artifactId": art["artifactId"],
                 "version": art["version"], "jar_path": jar_path, "entry": name + ".java",

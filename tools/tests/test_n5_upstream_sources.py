@@ -1322,6 +1322,29 @@ class RunAllThirdPartyCoverageTest(unittest.TestCase):
             self.assertEqual(coverage["classes_with_upstream_source"], 39)
             self.assertEqual(coverage["classes_total"], 39)
 
+    def test_sha1_exact_content_identity_fully_covered(self):
+        # A "sha1-exact" verdict (b117's own whole-jar SHA-1 match) is just as strong a proof as
+        # "resigned-identical" -- every class in the jar is covered, using classdiff's binary_total
+        # as the class count (no per-class check ran, so there is no classes_total_local).
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir = os.path.join(td, "modules")
+            binext_dir = os.path.join(td, "bin-ext")
+            os.makedirs(modules_dir)
+            os.makedirs(binext_dir)
+            manifest = {
+                "artifacts": [
+                    {"groupId": "g", "artifactId": "a", "version": "1", "status": "fetched",
+                     "classdiff": {"common": 12, "binary_total": 12},
+                     "content_identity": {"status": "sha1-exact",
+                                           "source": "evidence/b117/maven-repo1.json"}},
+                ],
+                "unidentified": [],
+            }
+            coverage = m.run_all_third_party_coverage(manifest, mirror_modules_dir=modules_dir, mirror_binext_dir=binext_dir)
+            self.assertEqual(coverage["classes_with_upstream_source"], 12)
+            self.assertEqual(coverage["classes_total"], 12)
+
     def test_partially_modified_content_identity_counts_only_identical_classes(self):
         m = _load()
         with tempfile.TemporaryDirectory() as td:
@@ -1392,19 +1415,125 @@ class RunRecheckPomIdentifiedGapsTest(unittest.TestCase):
         summary = m.run_recheck_pom_identified_gaps(manifest, [], opener=opener, sleep=lambda s: None)
         self.assertNotIn("content_identity", manifest["artifacts"][0])
 
-    def test_skips_exact_whole_jar_match(self):
+    def test_records_sha1_exact_whole_jar_match(self):
+        # Orchestrator-found defect fix (2026-09-28): a b117 "exact" whole-jar SHA-1 match is the
+        # STRONGEST possible proof -- it must never be silently skipped (the old behavior left 81
+        # of 188 manifest artifacts with neither content_identity nor identification_method,
+        # making tools/n5-best-source.py treat them as unproven). No further verification (and no
+        # network call) is needed: b117 already proved it.
         m = _load()
         manifest = {"artifacts": [
             {"groupId": "g", "artifactId": "a", "version": "1", "status": "fetched",
              "occurrences": [{"kind": "bin/ext", "name": "bin/ext/a-1.jar"}]},
         ]}
-        evidence = [{"kind": "bin/ext", "name": "bin/ext/a-1.jar", "result": "exact"}]
+        evidence = [{"kind": "bin/ext", "name": "bin/ext/a-1.jar", "result": "exact",
+                     "sha1": "deadbeef"}]
 
         def opener(url, timeout=30):
-            raise AssertionError("should not fetch for an already-exact whole-jar match")
+            raise AssertionError("a b117 'exact' whole-jar match needs no further verification")
 
-        m.run_recheck_pom_identified_gaps(manifest, evidence, opener=opener, sleep=lambda s: None)
-        self.assertNotIn("content_identity", manifest["artifacts"][0])
+        summary = m.run_recheck_pom_identified_gaps(manifest, evidence, opener=opener,
+                                                      sleep=lambda s: None)
+        self.assertEqual(summary["sha1-exact"], 1)
+        ci = manifest["artifacts"][0]["content_identity"]
+        self.assertEqual(ci["status"], "sha1-exact")
+        self.assertEqual(ci["source"], "evidence/b117/maven-repo1.json")
+        self.assertEqual(ci["sha1"], "deadbeef")
+        occ_ci = manifest["artifacts"][0]["occurrences"][0]["content_identity"]
+        self.assertEqual(occ_ci, ci)
+
+    def test_unverified_when_occurrence_has_no_b117_record(self):
+        # Defensive: every occurrence of an original pom.properties-identified artifact traces
+        # back to a b117 entry by construction, but if one is ever missing, this must be recorded
+        # explicitly as "unverified" -- never silently dropped (no content_identity at all).
+        m = _load()
+        manifest = {"artifacts": [
+            {"groupId": "g", "artifactId": "a", "version": "1", "status": "fetched",
+             "occurrences": [{"kind": "bin/ext", "name": "bin/ext/a-1.jar"}]},
+        ]}
+
+        def opener(url, timeout=30):
+            raise AssertionError("no b117 record to check against; nothing to fetch")
+
+        summary = m.run_recheck_pom_identified_gaps(manifest, [], opener=opener,
+                                                      sleep=lambda s: None)
+        self.assertEqual(summary["unverified"], 1)
+        ci = manifest["artifacts"][0]["content_identity"]
+        self.assertEqual(ci["status"], "unverified")
+        self.assertIn("reason", ci)
+
+    def test_multiple_exact_occurrences_roll_up_to_sha1_exact(self):
+        # jackson-annotations-style real finding: TWO occurrences (LIB-INF + etc/m2), BOTH b117
+        # "exact" -- they agree, so the artifact-level rollup collapses to one verdict, still
+        # recorded per occurrence too.
+        m = _load()
+        manifest = {"artifacts": [
+            {"groupId": "g", "artifactId": "a", "version": "1", "status": "fetched",
+             "occurrences": [
+                 {"kind": "LIB-INF", "name": "mod.jar!LIB-INF/a-1.jar"},
+                 {"kind": "etc/m2", "name": "etc/m2/repository/g/a/1/a-1.jar"},
+             ]},
+        ]}
+        evidence = [
+            {"kind": "LIB-INF", "name": "mod.jar!LIB-INF/a-1.jar", "result": "exact", "sha1": "aaa"},
+            {"kind": "etc/m2", "name": "etc/m2/repository/g/a/1/a-1.jar", "result": "exact", "sha1": "bbb"},
+        ]
+
+        def opener(url, timeout=30):
+            raise AssertionError("both occurrences are already proven exact by b117")
+
+        summary = m.run_recheck_pom_identified_gaps(manifest, evidence, opener=opener,
+                                                      sleep=lambda s: None)
+        self.assertEqual(summary["sha1-exact"], 1)
+        art = manifest["artifacts"][0]
+        self.assertEqual(art["content_identity"]["status"], "sha1-exact")
+        self.assertEqual(art["occurrences"][0]["content_identity"]["sha1"], "aaa")
+        self.assertEqual(art["occurrences"][1]["content_identity"]["sha1"], "bbb")
+
+    def test_disagreeing_occurrences_keep_per_occurrence_verdicts_not_collapsed(self):
+        # Real finding (org.jetbrains:annotations:13.0 / jakarta.xml.bind-api:4.0.5 /
+        # jakarta.activation-api:2.1.4): one occurrence is b117 "exact", the other is "differs"
+        # with a REAL (non-reused, non-whole-trust) content difference -- these must NOT collapse
+        # to a single artifact-level verdict; each occurrence keeps its own.
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            install_dir = self._install(td)
+            local_jar = _jar_bytes({"a/Foo.class": b"local", "a/Bar.class": b"only-local"})
+            with open(os.path.join(install_dir, "bin", "ext", "a-1.jar"), "wb") as f:
+                f.write(local_jar)
+            central_jar = _jar_bytes({"a/Foo.class": b"local"})
+            central_sha1 = hashlib.sha1(central_jar).hexdigest()
+
+            def opener(url, timeout=30):
+                if url.endswith(".sha1"):
+                    return _FakeResponse(central_sha1.encode())
+                return _FakeResponse(central_jar)
+
+            manifest = {"artifacts": [
+                {"groupId": "g", "artifactId": "a", "version": "1", "status": "fetched",
+                 "occurrences": [
+                     {"kind": "LIB-INF", "name": "mod.jar!LIB-INF/a-1.jar"},
+                     {"kind": "bin/ext", "name": "bin/ext/a-1.jar"},
+                 ]},
+            ]}
+            evidence = [
+                {"kind": "LIB-INF", "name": "mod.jar!LIB-INF/a-1.jar", "result": "exact", "sha1": "aaa"},
+                {"kind": "bin/ext", "name": "bin/ext/a-1.jar", "result": "differs",
+                 "content": "differs:1"},
+            ]
+            summary = m.run_recheck_pom_identified_gaps(manifest, evidence, opener=opener,
+                                                          sleep=lambda s: None,
+                                                          install_dir=install_dir, pace=0)
+            self.assertEqual(summary["mixed"], 1)
+            art = manifest["artifacts"][0]
+            self.assertEqual(art["content_identity"]["status"], "mixed")
+            occ0_ci = art["occurrences"][0]["content_identity"]
+            occ1_ci = art["occurrences"][1]["content_identity"]
+            self.assertEqual(occ0_ci["status"], "sha1-exact")
+            self.assertEqual(occ1_ci["status"], "partially-modified")
+            # Per-occurrence linking data (n5-best-source.py's own jar-sha256 join) must be
+            # present and DIFFERENT for the two occurrences -- never collapsed to one value.
+            self.assertIsNotNone(art["occurrences"][1].get("binary_sha256"))
 
     def test_reuses_b117_identical_non_meta_inf_without_network(self):
         m = _load()
@@ -1536,6 +1665,13 @@ class RenderReportAllThirdPartyHeadlineTest(unittest.TestCase):
         self.assertIn("21000", text)
         self.assertIn("47700", text)
         self.assertIn("ALL third-party classes", text)
+        # This report's headline number and tools/n5-best-source.py's `by_best_kind.upstream`
+        # count measure different things (one class-name-match-in-a-proven-sources-jar count over
+        # distinct third-party jars, the other a per-population count where the same physical
+        # class can recur across populations) -- the report must say so explicitly rather than
+        # let a reader assume the two numbers should match 1:1.
+        self.assertIn("n5-best-source.py", text)
+        self.assertIn("per-population", text)
 
     def test_identify_summary_rendered(self):
         m = _load()
@@ -1572,6 +1708,21 @@ class RenderReportAllThirdPartyHeadlineTest(unittest.TestCase):
         self.assertIn("partially-modified", text)
         self.assertIn("NIAGARA4.SF", text)
         self.assertIn("a/X.class", text)
+
+    def test_pom_recheck_summary_table_includes_new_statuses(self):
+        # Orchestrator-found defect fix: the pom-recheck table must render "sha1-exact" (the b117
+        # whole-jar-match reuse, previously silently skipped), "mixed" (occurrences that
+        # disagree), and "unverified" (no b117 record at all) -- never a silently missing row.
+        m = _load()
+        manifest = {"artifacts": [], "unidentified": []}
+        text = m.render_report(manifest, pom_recheck_summary={
+            "reused-resigned-identical": 64, "sha1-exact": 78, "resigned-identical": 11,
+            "partially-modified": 0, "vendor-modified": 1, "no-classes": 0, "unverifiable": 0,
+            "unverified": 0, "mixed": 0,
+        })
+        self.assertIn("| sha1-exact | 78 |", text)
+        self.assertIn("| mixed | 0 |", text)
+        self.assertIn("| unverified | 0 |", text)
 
 
 class TestJavapFailureIsNeverAMatch(unittest.TestCase):

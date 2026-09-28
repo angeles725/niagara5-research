@@ -360,13 +360,37 @@ NOT in its `different_classes` or `local_only_classes`). A `vendor-modified`, `u
 `upstream-different-build`, with a `reason`); the decompile (`vineflower2` → `vineflower` →
 `fallback2`/`fallback`) becomes `best` instead, or `missing` if no decompile exists either. An
 artifact with NO identity verdict recorded at all in the manifest (`content_identity` absent AND
-`identification_method` absent — the original ~154 pom.properties-identified artifacts that
-`n5-upstream-sources.py`'s recheck step skipped, because either evidence/b117 had already proven a
-whole-jar match it doesn't carry forward as an explicit manifest field, or no matching evidence
-record was ever found) is likewise treated as NOT proven (`upstream-unproven`, conservative by
-design) rather than silently assumed correct — visible in the index summary's
-`upstream_unproven_artifacts` count (81 on the real corpus) instead of hidden inside a blanket
-"fetched = trustworthy" assumption.
+`identification_method` absent) is likewise treated as NOT proven (`upstream-unproven`,
+conservative by design) rather than silently assumed correct — visible in the index summary's
+`upstream_unproven_artifacts` count instead of hidden inside a blanket "fetched = trustworthy"
+assumption.
+
+**Orchestrator-found defect, fixed 2026-09-28 (b117 whole-jar SHA-1 proof carried through per
+occurrence)**: the recheck step above actually left 81 of the 154 pom.properties-identified
+artifacts with NEITHER `content_identity` NOR `identification_method` — not because their identity
+was unknown, but because it had ALREADY been proven: `evidence/b117/maven-repo1.json` records
+`result: "exact"` for a whole-jar SHA-1 match against Central, and the old recheck code, keyed
+only off `occurrences[0]`, silently `continue`d on exactly that signal instead of carrying the
+proof forward. `n5-upstream-sources.py`'s `run_recheck_pom_identified_gaps` now computes an
+identity proof for EVERY occurrence of every such artifact (an artifact can ship as more than one
+physical jar — e.g. a LIB-INF copy and an etc/m2 copy — and those are not always the same bytes):
+a b117 `"exact"` occurrence gets `content_identity: {"status": "sha1-exact", "source":
+"evidence/b117/maven-repo1.json", ...}` with no further check needed (b117 already proved it, so
+this costs no network call); a `"differs"` occurrence gets the pre-existing per-.class recheck.
+When an artifact's occurrences all agree (or are all in `{sha1-exact, resigned-identical}` — both
+are whole-jar-proven, just via different mechanisms), the artifact-level rollup collapses to one
+verdict. When they DISAGREE (real finding: `org.jetbrains:annotations:13.0`,
+`jakarta.xml.bind-api:4.0.5`, `jakarta.activation-api:2.1.4` each have one b117-"exact" occurrence
+and one b117-"differs" occurrence), the rollup is `content_identity: {"status": "mixed", ...}` and
+does NOT collapse to the best occurrence's verdict; `tools/n5-best-source.py`'s
+`build_upstream_index` resolves trust PER OCCURRENCE instead, linking a population to the exact
+occurrence its verdict applies to via that occurrence's own `binary_sha256` (never by falling back
+to another occurrence's verdict). On the real corpus all three of these actually resolve to
+"agree" once checked per occurrence (their "differs" occurrence turns out `resigned-identical`
+too, reused from b117's own `identical-non-META-INF` finding, no network) — so `mixed` is 0 in
+practice today, but the mechanism is real and tested (a genuinely disagreeing pair of occurrences
+is exercised in both tools' unit tests). Effect: `upstream_unproven_artifacts` dropped from 81 to
+**0** (verified 2026-09-28 real run); `by_best_kind` `upstream` rose from 13100 to 37195 classes.
 
 A population is linked to its specific manifest artifact by jar sha256 first — the population's
 own `extracted/.jar_sha256` (or a raw undecompiled jar hashed directly) against the artifact's own
@@ -392,6 +416,17 @@ always already covers whatever bare fallback would, when both exist for a module
 455-population / 64929-class totals reflect corpus growth since the jar-identity-fix run above was
 recorded, not this fix alone — the upstream/vineflower2 shift (24287 classes reclassified from
 `upstream` to `vineflower2`, `missing` untouched) is this fix's own, isolated effect.
+
+**Real run, follow-up** (2026-09-28, post b117-whole-jar-SHA-1-proof-per-occurrence fix, same
+command): `upstream_unproven_artifacts` 0 (down from 81), `upstream` 37195 classes (up from
+13100), `upstream_artifact_verdicts` gained `sha1-exact: 78` and `resigned-identical` rose to 98
+(includes the 3 real disagreeing-occurrence artifacts above, which resolve to `resigned-identical`
+on this corpus once checked per occurrence). This run happened concurrently with an unrelated
+`tools/n5-decompile.sh --third-party-libinf --force` rebuild of `organized/_lib-inf-3p/*`, so its
+`missing`/`vineflower2` counts are transient (observed `missing` 57 and 718, `vineflower2` 24867
+and 24206, across two runs seconds apart) — `upstream` and `upstream_unproven_artifacts` were
+stable across both and are this fix's own effect; the orchestrator owns the final, authoritative
+full-index run once that rebuild is done.
 
 **Browsing**: `organized/_best/best-source.json` is the full machine-readable index (per class:
 `module`, `class`, `best`, `best_kind`, `reason`, `line_mapped_view`, `alternates`, `grade`, plus

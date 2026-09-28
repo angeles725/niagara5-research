@@ -600,6 +600,81 @@ class UpstreamIdentityVerificationTest(unittest.TestCase):
         self.assertEqual(unlinked_rec["best_kind"], "upstream")
         self.assertIn("matched by class name only", unlinked_rec["reason"])
 
+    def test_sha1_exact_content_identity_is_trusted_whole(self):
+        """Orchestrator-found defect fix (2026-09-28): tools/n5-upstream-sources.py now records
+        `content_identity: {"status": "sha1-exact", ...}` for a b117 whole-jar SHA-1 match --
+        the STRONGEST possible proof (equivalent to identified-by-sha1 / resigned-identical) --
+        and it must be trusted for the whole jar, not treated as an unrecognized/unproven status."""
+        m = _load()
+        _write_class(self.mod_root / "extracted" / "pkg" / "ExactClass.class")
+        sources_jar = self._write_sources_jar(("grp", "exact-art", "1.0"),
+                                               {"pkg/ExactClass.java": b"// b117 exact\n"})
+        self._write_manifest({
+            "groupId": "grp", "artifactId": "exact-art", "version": "1.0", "status": "fetched",
+            "sources_jar_path": sources_jar,
+            "classdiff": {"sources_only": [], "binary_only": [], "common": 1},
+            "content_identity": {"status": "sha1-exact",
+                                  "source": "evidence/b117/maven-repo1.json", "sha1": "deadbeef"},
+        })
+        name_index, sha_index, verdicts = m.build_upstream_index(self.root)
+        self.assertEqual(verdicts.get("sha1-exact"), 1)
+        rec = self._record("pkg/ExactClass", (name_index, sha_index))
+        self.assertEqual(rec["best_kind"], "upstream")
+        self.assertIn("sha1-exact", rec["reason"])
+
+    def test_mixed_artifact_resolves_trust_per_occurrence_not_by_other_occurrence(self):
+        """Orchestrator-found defect fix: when an artifact's occurrences disagree (b117 exact for
+        one, genuinely different for another), tools/n5-upstream-sources.py records a "mixed"
+        artifact-level content_identity and a per-OCCURRENCE content_identity + binary_sha256.
+        A population linked (by its own jar_sha256) to the TRUSTED occurrence must be trusted;
+        one linked to the UNTRUSTED occurrence must NOT be -- never by collapsing to whichever
+        occurrence looks best, and never via the weak class-name-only index (which cannot tell
+        which occurrence it corresponds to)."""
+        m = _load()
+        _write_class(self.mod_root / "extracted" / "pkg" / "MixedClass.class")
+        sources_jar = self._write_sources_jar(("grp", "mixed-art", "1.0"),
+                                               {"pkg/MixedClass.java": b"// shared sources\n"})
+        trusted_sha256 = "aa" * 32
+        untrusted_sha256 = "bb" * 32
+        self._write_manifest({
+            "groupId": "grp", "artifactId": "mixed-art", "version": "1.0", "status": "fetched",
+            "sources_jar_path": sources_jar,
+            "classdiff": {"sources_only": [], "binary_only": [], "common": 1},
+            "content_identity": {"status": "mixed", "source": "per-occurrence",
+                                  "reason": "occurrences disagree"},
+            "occurrences": [
+                {"kind": "LIB-INF", "name": "mod.jar!LIB-INF/mixed-art-1.0.jar",
+                 "binary_sha256": trusted_sha256,
+                 "content_identity": {"status": "sha1-exact",
+                                       "source": "evidence/b117/maven-repo1.json"}},
+                {"kind": "bin/ext", "name": "bin/ext/mixed-art-1.0.jar",
+                 "binary_sha256": untrusted_sha256,
+                 "content_identity": {"status": "vendor-modified", "classes_identical": 0,
+                                       "classes_different": 0, "classes_local_only": 1,
+                                       "different_classes": [], "local_only_classes": []}},
+            ],
+        })
+        name_index, sha_index, verdicts = m.build_upstream_index(self.root)
+        self.assertEqual(verdicts.get("mixed"), 1)
+        self.assertIn(trusted_sha256, sha_index)
+        self.assertIn(untrusted_sha256, sha_index)
+
+        trusted_rec = self._record("pkg/MixedClass", (name_index, sha_index),
+                                    jar_sha256=trusted_sha256)
+        self.assertEqual(trusted_rec["best_kind"], "upstream")
+
+        untrusted_rec = self._record("pkg/MixedClass", (name_index, sha_index),
+                                      jar_sha256=untrusted_sha256)
+        self.assertNotEqual(untrusted_rec["best_kind"], "upstream")
+        alt = [a for a in untrusted_rec["alternates"] if a["kind"] == "upstream-different-build"]
+        self.assertEqual(len(alt), 1)
+
+        # No jar-sha256 link at all (name-only match): a mixed artifact is never blindly trusted
+        # via the weak name-only index either -- it doesn't know which occurrence applies.
+        unlinked_rec = self._record("pkg/MixedClass", (name_index, sha_index),
+                                     jar_sha256="cc" * 32)
+        self.assertNotEqual(unlinked_rec["best_kind"], "upstream")
+
 
 def m_hash(data: bytes) -> str:
     import hashlib
