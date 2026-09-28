@@ -472,6 +472,496 @@ class MainPlanSubcommandTest(unittest.TestCase):
 
 
 
+def _solr_response(docs):
+    return json.dumps({"responseHeader": {"status": 0}, "response": {"numFound": len(docs), "start": 0, "docs": docs}}).encode()
+
+
+class JarBasenameTest(unittest.TestCase):
+    def test_strips_lib_inf_prefix_and_extension(self):
+        m = _load()
+        self.assertEqual(m.jar_basename("apachePoi.jar!LIB-INF/poi-5.5.1.jar"), "poi-5.5.1")
+
+    def test_strips_bin_ext_path_and_extension(self):
+        m = _load()
+        self.assertEqual(m.jar_basename("bin/ext/bcfips/bc-fips-2.1.2.jar"), "bc-fips-2.1.2")
+
+
+class ParseArtifactVersionFromBasenameTest(unittest.TestCase):
+    def test_simple_artifact_and_version(self):
+        m = _load()
+        self.assertEqual(m.parse_artifact_version_from_basename("asm-9.10.1"), ("asm", "9.10.1"))
+
+    def test_multi_segment_artifact_id(self):
+        m = _load()
+        self.assertEqual(
+            m.parse_artifact_version_from_basename("kotlin-stdlib-jdk7-2.4.10"),
+            ("kotlin-stdlib-jdk7", "2.4.10"),
+        )
+
+    def test_version_with_embedded_dash(self):
+        # prosys-opc-ua-sdk-client-server-5.7.0-248: the version itself contains a dash, but the
+        # artifact/version boundary is the FIRST "-<digit>" transition, not the last.
+        m = _load()
+        self.assertEqual(
+            m.parse_artifact_version_from_basename("prosys-opc-ua-sdk-client-server-5.7.0-248"),
+            ("prosys-opc-ua-sdk-client-server", "5.7.0-248"),
+        )
+
+    def test_dotted_artifact_id_with_underscore(self):
+        m = _load()
+        self.assertEqual(
+            m.parse_artifact_version_from_basename("org.eclipse.swt.win32.win32.x86_64-3.134.0"),
+            ("org.eclipse.swt.win32.win32.x86_64", "3.134.0"),
+        )
+
+    def test_none_when_no_version_boundary(self):
+        m = _load()
+        self.assertIsNone(m.parse_artifact_version_from_basename("nodigitshere"))
+
+
+class LoadBinaryBytesFromMirrorTest(unittest.TestCase):
+    def test_reads_lib_inf_nested_jar_from_mirror_modules_dir(self):
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir = os.path.join(td, "modules")
+            os.makedirs(modules_dir)
+            outer = os.path.join(modules_dir, "outer.jar")
+            with zipfile.ZipFile(outer, "w") as z:
+                z.writestr("LIB-INF/inner-1.0.jar", b"inner-bytes")
+            occ = {"kind": "LIB-INF", "name": "outer.jar!LIB-INF/inner-1.0.jar"}
+            self.assertEqual(
+                m.load_binary_bytes_from_mirror(occ, modules_dir=modules_dir, binext_dir=os.path.join(td, "bin-ext")),
+                b"inner-bytes",
+            )
+
+    def test_reads_bin_ext_jar_from_mirror_binext_dir(self):
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            binext_dir = os.path.join(td, "bin-ext", "bcfips")
+            os.makedirs(binext_dir)
+            with open(os.path.join(binext_dir, "bc-fips-2.1.2.jar"), "wb") as f:
+                f.write(b"bc-bytes")
+            occ = {"kind": "bin/ext", "name": "bin/ext/bcfips/bc-fips-2.1.2.jar"}
+            self.assertEqual(
+                m.load_binary_bytes_from_mirror(occ, modules_dir=os.path.join(td, "modules"),
+                                                 binext_dir=os.path.join(td, "bin-ext")),
+                b"bc-bytes",
+            )
+
+    def test_returns_none_when_mirror_jar_missing(self):
+        m = _load()
+        occ = {"kind": "bin/ext", "name": "bin/ext/nope.jar"}
+        self.assertIsNone(m.load_binary_bytes_from_mirror(occ, modules_dir="/nonexistent/modules",
+                                                            binext_dir="/nonexistent/bin-ext"))
+
+
+class SearchMavenCentralBySha1Test(unittest.TestCase):
+    def test_hit_returns_docs(self):
+        m = _load()
+
+        def opener(url, timeout=30):
+            self.assertIn("q=1:aaaa", url)
+            return _FakeResponse(_solr_response([{"g": "org.ow2.asm", "a": "asm", "v": "9.10.1"}]))
+
+        r = m.search_maven_central_by_sha1("aaaa", opener, sleep=lambda s: None)
+        self.assertEqual(r["status"], "hit")
+        self.assertEqual(r["docs"][0]["a"], "asm")
+
+    def test_no_hit_returns_no_hit(self):
+        m = _load()
+
+        def opener(url, timeout=30):
+            return _FakeResponse(_solr_response([]))
+
+        r = m.search_maven_central_by_sha1("bbbb", opener, sleep=lambda s: None)
+        self.assertEqual(r["status"], "no-hit")
+
+    def test_network_error_is_typed(self):
+        m = _load()
+
+        def opener(url, timeout=30):
+            raise TimeoutError("slow")
+
+        r = m.search_maven_central_by_sha1("cccc", opener, sleep=lambda s: None, retries=1)
+        self.assertEqual(r["status"], "network-error")
+
+    def test_malformed_response_is_typed_network_error(self):
+        m = _load()
+
+        def opener(url, timeout=30):
+            return _FakeResponse(b"not json")
+
+        r = m.search_maven_central_by_sha1("dddd", opener, sleep=lambda s: None)
+        self.assertEqual(r["status"], "network-error")
+
+
+class BinarySha1FromCentralTest(unittest.TestCase):
+    def test_found_returns_central_sha1(self):
+        m = _load()
+
+        def opener(url, timeout=30):
+            self.assertTrue(url.endswith("asm-9.10.1.jar.sha1"))
+            return _FakeResponse(b"deadbeef")
+
+        r = m.binary_sha1_from_central("org.ow2.asm", "asm", "9.10.1", opener, sleep=lambda s: None)
+        self.assertEqual(r["status"], "fetched")
+        self.assertEqual(r["central_sha1"], "deadbeef")
+
+    def test_404_is_not_found(self):
+        m = _load()
+        import urllib.error
+
+        def opener(url, timeout=30):
+            raise urllib.error.HTTPError(url, 404, "Not Found", {}, None)
+
+        r = m.binary_sha1_from_central("g", "a", "v", opener, sleep=lambda s: None)
+        self.assertEqual(r["status"], "not-found")
+
+    def test_network_error_is_typed(self):
+        m = _load()
+
+        def opener(url, timeout=30):
+            raise TimeoutError("slow")
+
+        r = m.binary_sha1_from_central("g", "a", "v", opener, sleep=lambda s: None, retries=1)
+        self.assertEqual(r["status"], "network-error")
+
+
+class IdentifyUnidentifiedEntryTest(unittest.TestCase):
+    def test_sha1_search_hit_is_identified(self):
+        m = _load()
+
+        def opener(url, timeout=30):
+            self.assertIn("solrsearch", url)
+            return _FakeResponse(_solr_response([{"g": "org.apache.poi", "a": "poi", "v": "5.5.1"}]))
+
+        entry = {"kind": "LIB-INF", "name": "apachePoi.jar!LIB-INF/poi-5.5.1.jar"}
+        r = m.identify_unidentified_entry(entry, "aaaa", opener, sleep=lambda s: None)
+        self.assertEqual(r["status"], "identified-by-sha1")
+        self.assertEqual((r["groupId"], r["artifactId"], r["version"]), ("org.apache.poi", "poi", "5.5.1"))
+        self.assertEqual(r["method"], "sha1-search")
+
+    def test_no_hit_known_group_guess_confirmed_by_matching_sha1(self):
+        m = _load()
+        local_sha1 = "matchingsha1"
+
+        def opener(url, timeout=30):
+            if "solrsearch" in url:
+                return _FakeResponse(_solr_response([]))
+            self.assertIn("org/ow2/asm/asm/9.10.1/asm-9.10.1.jar.sha1", url)
+            return _FakeResponse(local_sha1.encode())
+
+        entry = {"kind": "bin/ext", "name": "bin/ext/asm-9.10.1.jar"}
+        r = m.identify_unidentified_entry(entry, local_sha1, opener, sleep=lambda s: None)
+        self.assertEqual(r["status"], "identified-by-sha1")
+        self.assertEqual((r["groupId"], r["artifactId"], r["version"]), ("org.ow2.asm", "asm", "9.10.1"))
+        self.assertEqual(r["method"], "filename-guess")
+
+    def test_no_hit_known_group_guess_mismatched_sha1_is_vendor_modified(self):
+        # Real 2026-09-28 finding: local bin/ext/asm-9.10.1.jar's sha1 does NOT match
+        # org.ow2.asm:asm:9.10.1 on Central (verified live) -- same g:a:v, different bytes.
+        m = _load()
+
+        def opener(url, timeout=30):
+            if "solrsearch" in url:
+                return _FakeResponse(_solr_response([]))
+            return _FakeResponse(b"ada2141c0cc52ee8f5c48cd5fa4ce0e794f22236")
+
+        entry = {"kind": "bin/ext", "name": "bin/ext/asm-9.10.1.jar"}
+        r = m.identify_unidentified_entry(entry, "360d8f9fc733d7003c152487e9b55bbe3a5ac32f", opener, sleep=lambda s: None)
+        self.assertEqual(r["status"], "vendor-modified")
+        self.assertEqual((r["groupId"], r["artifactId"], r["version"]), ("org.ow2.asm", "asm", "9.10.1"))
+
+    def test_no_hit_unknown_group_is_not_on_central(self):
+        m = _load()
+
+        def opener(url, timeout=30):
+            self.assertIn("solrsearch", url)
+            return _FakeResponse(_solr_response([]))
+
+        entry = {"kind": "LIB-INF", "name": "snmpLibs.jar!LIB-INF/mibble-mibs-2.10.1.jar"}
+        r = m.identify_unidentified_entry(entry, "aaaa", opener, sleep=lambda s: None)
+        self.assertEqual(r["status"], "not-on-central")
+
+    def test_no_hit_known_proprietary_group_is_not_on_central_without_guess_network_call(self):
+        m = _load()
+        calls = []
+
+        def opener(url, timeout=30):
+            calls.append(url)
+            return _FakeResponse(_solr_response([]))
+
+        entry = {"kind": "bin/ext", "name": "bin/ext/jxbrowser/jxbrowser-9.5.0.jar"}
+        r = m.identify_unidentified_entry(entry, "aaaa", opener, sleep=lambda s: None)
+        self.assertEqual(r["status"], "not-on-central")
+        self.assertEqual(r["reason"], "known-proprietary-or-unpublished")
+        # only the sha1-search call was made; no wasted guess-verify network call
+        self.assertEqual(len(calls), 1)
+
+    def test_guess_coordinate_404_is_not_on_central(self):
+        m = _load()
+        import urllib.error
+
+        def opener(url, timeout=30):
+            if "solrsearch" in url:
+                return _FakeResponse(_solr_response([]))
+            raise urllib.error.HTTPError(url, 404, "Not Found", {}, None)
+
+        entry = {"kind": "bin/ext", "name": "bin/ext/asm-9.10.1.jar"}
+        r = m.identify_unidentified_entry(entry, "aaaa", opener, sleep=lambda s: None)
+        self.assertEqual(r["status"], "not-on-central")
+        self.assertEqual(r["reason"], "guessed-coordinate-404")
+
+    def test_sha1_search_network_error_is_typed(self):
+        m = _load()
+
+        def opener(url, timeout=30):
+            raise TimeoutError("slow")
+
+        entry = {"kind": "bin/ext", "name": "bin/ext/asm-9.10.1.jar"}
+        r = m.identify_unidentified_entry(entry, "aaaa", opener, sleep=lambda s: None, retries=1)
+        self.assertEqual(r["status"], "network-error")
+
+
+class ComputeVendorModifiedOverlapTest(unittest.TestCase):
+    def test_computes_overlap_percentage_against_central_binary(self):
+        m = _load()
+        central_jar = _jar_bytes({"a/Foo.class": b"", "a/Bar.class": b"", "a/Baz.class": b""})
+        local_jar = _jar_bytes({"a/Foo.class": b"", "a/Bar.class": b""})
+
+        def opener(url, timeout=30):
+            self.assertTrue(url.endswith(".jar"))
+            return _FakeResponse(central_jar)
+
+        r = m.compute_vendor_modified_overlap(local_jar, "g", "a", "1.0", opener, sleep=lambda s: None)
+        self.assertEqual(r["status"], "compared")
+        self.assertEqual(r["overlap_pct"], 100.0)  # both local classes present in central
+
+    def test_network_error_is_typed(self):
+        m = _load()
+
+        def opener(url, timeout=30):
+            raise TimeoutError("slow")
+
+        r = m.compute_vendor_modified_overlap(b"", "g", "a", "1.0", opener, sleep=lambda s: None, retries=1)
+        self.assertEqual(r["status"], "network-error")
+
+
+class RunIdentifyUnidentifiedTest(unittest.TestCase):
+    def _mirror(self, td, entries):
+        modules_dir = os.path.join(td, "modules")
+        binext_dir = os.path.join(td, "bin-ext")
+        os.makedirs(modules_dir, exist_ok=True)
+        os.makedirs(binext_dir, exist_ok=True)
+        return modules_dir, binext_dir
+
+    def test_identified_entry_moves_from_unidentified_to_artifacts(self):
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir, binext_dir = self._mirror(td, [])
+            with open(os.path.join(binext_dir, "asm-9.10.1.jar"), "wb") as f:
+                f.write(b"asm-bytes")
+            local_sha1 = hashlib.sha1(b"asm-bytes").hexdigest()
+
+            def opener(url, timeout=30):
+                return _FakeResponse(_solr_response([{"g": "org.ow2.asm", "a": "asm", "v": "9.10.1"}]))
+
+            plan = {"artifacts": [], "unidentified": [
+                {"kind": "bin/ext", "name": "bin/ext/asm-9.10.1.jar", "reason": "no-pom-properties"},
+            ]}
+            summary = m.run_identify_unidentified(plan, mirror_modules_dir=modules_dir, mirror_binext_dir=binext_dir,
+                                                    opener=opener, sleep=lambda s: None, pace=0)
+            self.assertEqual(summary["identified-by-sha1"], 1)
+            self.assertEqual(len(plan["artifacts"]), 1)
+            self.assertEqual(plan["artifacts"][0]["groupId"], "org.ow2.asm")
+            self.assertEqual(plan["artifacts"][0]["occurrences"][0]["binary_sha1"], local_sha1)
+            self.assertEqual(plan["unidentified"], [])
+
+    def test_vendor_modified_entry_stays_out_of_unidentified_with_overlap_recorded(self):
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir, binext_dir = self._mirror(td, [])
+            local_jar = _jar_bytes({"org/objectweb/asm/ClassReader.class": b"local"})
+            with open(os.path.join(binext_dir, "asm-9.10.1.jar"), "wb") as f:
+                f.write(local_jar)
+            central_jar = _jar_bytes({"org/objectweb/asm/ClassReader.class": b""})
+
+            def opener(url, timeout=30):
+                if "solrsearch" in url:
+                    return _FakeResponse(_solr_response([]))
+                if url.endswith(".sha1"):
+                    return _FakeResponse(b"different-sha1-on-central")
+                return _FakeResponse(central_jar)
+
+            plan = {"artifacts": [], "unidentified": [
+                {"kind": "bin/ext", "name": "bin/ext/asm-9.10.1.jar", "reason": "no-pom-properties"},
+            ]}
+            summary = m.run_identify_unidentified(plan, mirror_modules_dir=modules_dir, mirror_binext_dir=binext_dir,
+                                                    opener=opener, sleep=lambda s: None, pace=0)
+            self.assertEqual(summary["vendor-modified"], 1)
+            self.assertEqual(len(plan["artifacts"]), 1)
+            self.assertIn("vendor_modified", plan["artifacts"][0])
+            self.assertEqual(plan["artifacts"][0]["vendor_modified"]["overlap"]["status"], "compared")
+            self.assertEqual(plan["unidentified"], [])
+
+    def test_not_on_central_entry_stays_in_unidentified_with_refined_reason(self):
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir, binext_dir = self._mirror(td, [])
+            with open(os.path.join(binext_dir, "unknown-1.0.jar"), "wb") as f:
+                f.write(b"unknown-bytes")
+
+            def opener(url, timeout=30):
+                return _FakeResponse(_solr_response([]))
+
+            plan = {"artifacts": [], "unidentified": [
+                {"kind": "bin/ext", "name": "bin/ext/unknown-1.0.jar", "reason": "no-pom-properties"},
+            ]}
+            summary = m.run_identify_unidentified(plan, mirror_modules_dir=modules_dir, mirror_binext_dir=binext_dir,
+                                                    opener=opener, sleep=lambda s: None, pace=0)
+            self.assertEqual(summary["not-on-central"], 1)
+            self.assertEqual(plan["artifacts"], [])
+            self.assertEqual(len(plan["unidentified"]), 1)
+            self.assertNotEqual(plan["unidentified"][0]["reason"], "no-pom-properties")
+
+    def test_entries_with_other_reasons_are_left_untouched(self):
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir, binext_dir = self._mirror(td, [])
+            plan = {"artifacts": [], "unidentified": [
+                {"kind": "bin/ext", "name": "x.jar", "reason": "some-other-reason"},
+            ]}
+
+            def opener(url, timeout=30):
+                raise AssertionError("should not be called for non-no-pom-properties entries")
+
+            summary = m.run_identify_unidentified(plan, mirror_modules_dir=modules_dir, mirror_binext_dir=binext_dir,
+                                                    opener=opener, sleep=lambda s: None, pace=0)
+            self.assertEqual(plan["unidentified"], [{"kind": "bin/ext", "name": "x.jar", "reason": "some-other-reason"}])
+            self.assertEqual(summary["identified-by-sha1"], 0)
+
+    def test_mirror_jar_missing_is_reported_without_network_call(self):
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir, binext_dir = self._mirror(td, [])
+
+            def opener(url, timeout=30):
+                raise AssertionError("should not be called when the mirror jar is missing")
+
+            plan = {"artifacts": [], "unidentified": [
+                {"kind": "bin/ext", "name": "bin/ext/gone.jar", "reason": "no-pom-properties"},
+            ]}
+            summary = m.run_identify_unidentified(plan, mirror_modules_dir=modules_dir, mirror_binext_dir=binext_dir,
+                                                    opener=opener, sleep=lambda s: None, pace=0)
+            self.assertEqual(summary["mirror-unavailable"], 1)
+            self.assertEqual(plan["unidentified"][0]["reason"], "mirror-jar-not-found")
+
+
+class RunFetchPropagatesSha1IdentificationFieldsTest(unittest.TestCase):
+    """Real-run finding (2026-09-28): run_fetch rebuilds each manifest record from an explicit
+    field allowlist, so a T26a-identified artifact's "vendor_modified" / "identification_method"
+    silently vanished between plan.json and manifest.json -- the report's vendor-modified table
+    rendered empty even though run_identify_unidentified found 24 vendor-modified jars."""
+
+    def test_vendor_modified_and_identification_method_survive_fetch(self):
+        m = _load()
+        jar_bytes = b"src"
+        sha1 = hashlib.sha1(jar_bytes).hexdigest()
+
+        def opener(url, timeout=30):
+            if url.endswith(".sha1"):
+                return _FakeResponse(sha1.encode())
+            return _FakeResponse(jar_bytes)
+
+        plan = {
+            "unidentified": [],
+            "artifacts": [{
+                "groupId": "org.ow2.asm", "artifactId": "asm", "version": "9.10.1",
+                "occurrences": [{"kind": "bin/ext", "name": "bin/ext/asm-9.10.1.jar", "binary_sha1": "local"}],
+                "_candidate_versions": ["9.10.1"],
+                "identification_method": "filename-guess",
+                "vendor_modified": {"central_sha1": "x", "local_sha1": "local",
+                                     "overlap": {"status": "compared", "overlap_pct": 42.0}},
+            }],
+        }
+        # run_fetch writes sources jars under a path relative to REPO_ROOT (it records
+        # sources_jar_path via .relative_to(REPO_ROOT)), so the out_dir must live under the repo,
+        # not under an arbitrary system tempdir; use a throwaway subdir of the gitignored
+        # organized/ tree and remove it afterwards.
+        import shutil
+        out_dir = m.REPO_ROOT / "organized" / "_test_tmp_run_fetch_propagation"
+        self.addCleanup(shutil.rmtree, out_dir, True)
+        manifest = m.run_fetch(plan, out_dir, opener=opener, sleep=lambda s: None, pace=0)
+        art = manifest["artifacts"][0]
+        self.assertEqual(art.get("identification_method"), "filename-guess")
+        self.assertIn("vendor_modified", art)
+        self.assertEqual(art["vendor_modified"]["overlap"]["overlap_pct"], 42.0)
+
+
+class RunAllThirdPartyCoverageTest(unittest.TestCase):
+    def test_denominator_includes_unidentified_jar_classes(self):
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir = os.path.join(td, "modules")
+            binext_dir = os.path.join(td, "bin-ext")
+            os.makedirs(modules_dir)
+            os.makedirs(binext_dir)
+            with open(os.path.join(binext_dir, "still-unknown.jar"), "wb") as f:
+                f.write(_jar_bytes({"a/One.class": b"", "a/Two.class": b""}))
+            manifest = {
+                "artifacts": [
+                    {"groupId": "g", "artifactId": "a", "version": "1", "status": "fetched",
+                     "classdiff": {"common": 8, "binary_total": 10}},
+                ],
+                "unidentified": [
+                    {"kind": "bin/ext", "name": "bin/ext/still-unknown.jar", "reason": "not-on-central"},
+                ],
+            }
+            coverage = m.run_all_third_party_coverage(manifest, mirror_modules_dir=modules_dir, mirror_binext_dir=binext_dir)
+            self.assertEqual(coverage["classes_with_upstream_source"], 8)
+            self.assertEqual(coverage["classes_total"], 12)  # 10 fetched-artifact classes + 2 unidentified
+
+    def test_vendor_modified_artifact_excluded_from_covered_but_included_in_total(self):
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir = os.path.join(td, "modules")
+            binext_dir = os.path.join(td, "bin-ext")
+            os.makedirs(modules_dir)
+            os.makedirs(binext_dir)
+            manifest = {
+                "artifacts": [
+                    {"groupId": "g", "artifactId": "a", "version": "1", "status": "fetched",
+                     "classdiff": {"common": 5, "binary_total": 5}, "vendor_modified": {"overlap": {}}},
+                ],
+                "unidentified": [],
+            }
+            coverage = m.run_all_third_party_coverage(manifest, mirror_modules_dir=modules_dir, mirror_binext_dir=binext_dir)
+            self.assertEqual(coverage["classes_with_upstream_source"], 0)
+            self.assertEqual(coverage["classes_total"], 5)
+
+
+class RenderReportAllThirdPartyHeadlineTest(unittest.TestCase):
+    def test_headline_states_explicit_denominator(self):
+        m = _load()
+        manifest = {"artifacts": [], "unidentified": []}
+        text = m.render_report(manifest, all_third_party_coverage={"classes_with_upstream_source": 21000, "classes_total": 47700})
+        self.assertIn("21000", text)
+        self.assertIn("47700", text)
+        self.assertIn("ALL third-party classes", text)
+
+    def test_identify_summary_rendered(self):
+        m = _load()
+        manifest = {"artifacts": [], "unidentified": [
+            {"kind": "bin/ext", "name": "bin/ext/jxbrowser/jxbrowser-9.5.0.jar", "reason": "not-on-central:known-proprietary-or-unpublished"},
+        ]}
+        text = m.render_report(manifest, identify_summary={
+            "identified-by-sha1": 10, "vendor-modified": 2, "not-on-central": 30, "network-error": 0, "mirror-unavailable": 0,
+        })
+        self.assertIn("identified-by-sha1", text)
+        self.assertIn("vendor-modified", text)
+        self.assertIn("not-on-central:known-proprietary-or-unpublished", text)
+
+
 class TestJavapFailureIsNeverAMatch(unittest.TestCase):
     """Review review-38b7ff2daec0bf35: javap failing on both sides produced [] == [] -> a false MATCH."""
 

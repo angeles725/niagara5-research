@@ -250,6 +250,21 @@ make the decompile complete and as faithful as possible.
       corpus-wide, narrowly explained). Verification: full `bats tools/tests/n5-decompile.bats` 67/67 (incl. the 4 new
       a/b/c/d tests), `shellcheck tools/n5-decompile.sh` clean, `python3 -m unittest discover -s tools/tests`
       319/319 (1 pre-existing skip). Route: direct (bounded writer assignment; not delegated further).
+- [x] T26a (t26a-upstream-sha1 branch, worktree) Identify the 44 no-pom-properties jars by content SHA-1 against Maven
+      Central (search.maven.org solrsearch by SHA-1; on a miss, one filename-derived g:a:v guess accepted only if
+      Central's own published binary-jar SHA-1 matches). Real run: 9 identified-by-sha1 (real upstream sources fetched
+      and byte-verified: apache poi/poi-ooxml/poi-ooxml-lite 5.5.1, xmlbeans 5.3.0, kotlin-stdlib 2.3.0, json-path
+      2.10.0, hsqldb 2.7.4, testng 7.12.0, jcommander 1.83 — jcommander resolved to groupId org.jcommander, not
+      com.beust), 24 vendor-modified (same g:a:v on Central, different bytes -- asm/asm-* 9.10.1, bc*-fips/-jdk18on,
+      jna/jna-platform 5.19.1, kotlin-stdlib(-jdk7/-jdk8) 2.4.10, libthrift 0.24.0, okhttp/okhttp-jvm 5.5.0, okio-jvm
+      3.18.1, resilience4j-core/-retry 2.4.0 -- their fetched sources are marked non-ground-truth, class-name overlap
+      recorded), 11 truly not-on-central (mostly commercial/unpublished: jxbrowser x5, prosys-opc-ua-sdk, bc-bcfkswrapprov,
+      mibble-mibs, jffi-native, SWT win32 native fragment, xml-apis-ext guess 404). Fixed a real pipeline bug found by
+      the live run: run_fetch rebuilt each manifest record from a field allowlist and silently dropped
+      identification_method/vendor_modified (regression test added). docs/upstream-sources-report.md headline now
+      states the ALL-third-party-classes denominator explicitly: 26915/48868 (55.1%), vs the old fetched-only-scoped
+      92.4%/72.7% that got misread downstream. Route: delegated writer (TDD, hermetic HTTP mocks, real network run
+      against repo1.maven.org + search.maven.org only).
 - [x] T5 (9592b82) Porting guide: the only N5-only claim (`NiagaraSlotProcessor`) was false vs BOTH N4.14 and N4.15 — it is a
       relocation (javax.baja.nre... in bin/ext/nre.jar → niagara.nre... in module niagaraAnnotationProcessors); fixed.
 - [ ] T16b Extend lint-block R1/R2/R8 to docs/*.md (the porting guide carried an R8 error the linter could not see). TDD.
