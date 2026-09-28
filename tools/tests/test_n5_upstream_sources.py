@@ -747,6 +747,111 @@ class ComputeVendorModifiedOverlapTest(unittest.TestCase):
         self.assertEqual(r["status"], "network-error")
 
 
+class AllClassEntryHashesTest(unittest.TestCase):
+    def test_hashes_every_class_entry_including_nested(self):
+        m = _load()
+        jar = _jar_bytes({"a/Foo.class": b"foo", "a/Foo$Inner.class": b"inner",
+                           "META-INF/MANIFEST.MF": b"mf"})
+        hashes = m.all_class_entry_hashes(jar)
+        self.assertEqual(set(hashes), {"a/Foo.class", "a/Foo$Inner.class"})
+        self.assertEqual(hashes["a/Foo.class"], hashlib.sha256(b"foo").hexdigest())
+
+
+class ClassifyJarIdentityTest(unittest.TestCase):
+    """Real 2026-09-28 orchestrator finding: bin/ext/asm-9.10.1.jar's 39/39 .class entries are
+    byte-identical to org.ow2.asm:asm:9.10.1 on Central; only Niagara's added
+    META-INF/NIAGARA4.SF + .RSA signature differs. A whole-jar SHA-1 mismatch (the previous T26a
+    "vendor-modified" signal) is NOT enough to say the sources aren't ground truth -- only a
+    per-.class comparison can."""
+
+    def test_resigned_identical_when_every_class_matches_and_only_signature_differs(self):
+        m = _load()
+        local = _jar_bytes({"a/Foo.class": b"same", "a/Bar.class": b"same2",
+                             "META-INF/NIAGARA4.SF": b"sig", "META-INF/NIAGARA4.RSA": b"sig2"})
+        central = _jar_bytes({"a/Foo.class": b"same", "a/Bar.class": b"same2"})
+        r = m.classify_jar_identity(local, central)
+        self.assertEqual(r["status"], "resigned-identical")
+        self.assertEqual(r["classes_identical"], 2)
+        self.assertEqual(r["classes_different"], 0)
+        self.assertEqual(r["classes_local_only"], 0)
+        self.assertEqual(sorted(r["differing_non_class_entries"]),
+                          ["META-INF/NIAGARA4.RSA", "META-INF/NIAGARA4.SF"])
+
+    def test_partially_modified_when_some_classes_differ(self):
+        m = _load()
+        local = _jar_bytes({"a/Foo.class": b"same", "a/Bar.class": b"CHANGED"})
+        central = _jar_bytes({"a/Foo.class": b"same", "a/Bar.class": b"original"})
+        r = m.classify_jar_identity(local, central)
+        self.assertEqual(r["status"], "partially-modified")
+        self.assertEqual(r["classes_identical"], 1)
+        self.assertEqual(r["classes_different"], 1)
+        self.assertEqual(r["different_classes"], ["a/Bar.class"])
+
+    def test_partially_modified_when_some_classes_are_local_only(self):
+        m = _load()
+        local = _jar_bytes({"a/Foo.class": b"same", "a/Extra.class": b"only-local"})
+        central = _jar_bytes({"a/Foo.class": b"same"})
+        r = m.classify_jar_identity(local, central)
+        self.assertEqual(r["status"], "partially-modified")
+        self.assertEqual(r["classes_local_only"], 1)
+        self.assertEqual(r["local_only_classes"], ["a/Extra.class"])
+
+    def test_vendor_modified_when_no_class_matches_at_all(self):
+        m = _load()
+        local = _jar_bytes({"a/Foo.class": b"local-version"})
+        central = _jar_bytes({"a/Foo.class": b"central-version"})
+        r = m.classify_jar_identity(local, central)
+        self.assertEqual(r["status"], "vendor-modified")
+        self.assertEqual(r["classes_identical"], 0)
+
+
+class FetchCentralBinaryJarTest(unittest.TestCase):
+    def test_fetched_and_sha1_verified(self):
+        m = _load()
+        jar_bytes = b"central-jar-bytes"
+        sha1 = hashlib.sha1(jar_bytes).hexdigest()
+
+        def opener(url, timeout=30):
+            if url.endswith(".sha1"):
+                return _FakeResponse(sha1.encode())
+            return _FakeResponse(jar_bytes)
+
+        r = m.fetch_central_binary_jar("g", "a", "1.0", opener, sleep=lambda s: None)
+        self.assertEqual(r["status"], "fetched")
+        self.assertEqual(r["bytes"], jar_bytes)
+        self.assertEqual(r["sha1"], sha1)
+
+    def test_not_found(self):
+        m = _load()
+        import urllib.error
+
+        def opener(url, timeout=30):
+            raise urllib.error.HTTPError(url, 404, "Not Found", {}, None)
+
+        r = m.fetch_central_binary_jar("g", "a", "1.0", opener, sleep=lambda s: None)
+        self.assertEqual(r["status"], "not-found")
+
+    def test_checksum_mismatch(self):
+        m = _load()
+
+        def opener(url, timeout=30):
+            if url.endswith(".sha1"):
+                return _FakeResponse(b"0" * 40)
+            return _FakeResponse(b"different-bytes")
+
+        r = m.fetch_central_binary_jar("g", "a", "1.0", opener, sleep=lambda s: None)
+        self.assertEqual(r["status"], "checksum-mismatch")
+
+    def test_network_error_is_typed(self):
+        m = _load()
+
+        def opener(url, timeout=30):
+            raise TimeoutError("slow")
+
+        r = m.fetch_central_binary_jar("g", "a", "1.0", opener, sleep=lambda s: None, retries=1)
+        self.assertEqual(r["status"], "network-error")
+
+
 class RunIdentifyUnidentifiedTest(unittest.TestCase):
     def _mirror(self, td, entries):
         modules_dir = os.path.join(td, "modules")
@@ -777,20 +882,27 @@ class RunIdentifyUnidentifiedTest(unittest.TestCase):
             self.assertEqual(plan["artifacts"][0]["occurrences"][0]["binary_sha1"], local_sha1)
             self.assertEqual(plan["unidentified"], [])
 
-    def test_vendor_modified_entry_stays_out_of_unidentified_with_overlap_recorded(self):
+    def test_whole_jar_mismatch_but_every_class_identical_is_resigned_identical(self):
+        # Real 2026-09-28 orchestrator finding: bin/ext/asm-9.10.1.jar's whole-jar SHA-1 differs
+        # from Central's asm-9.10.1.jar only because Niagara ADDS a signature (META-INF/
+        # NIAGARA4.SF/.RSA); every .class entry is byte-identical. The old whole-jar-SHA-1-only
+        # check called this "vendor-modified" and excluded it from coverage -- wrong: a per-class
+        # SHA-256 compare proves the sources ARE ground truth here.
         m = _load()
         with tempfile.TemporaryDirectory() as td:
             modules_dir, binext_dir = self._mirror(td, [])
-            local_jar = _jar_bytes({"org/objectweb/asm/ClassReader.class": b"local"})
+            local_jar = _jar_bytes({"a/Foo.class": b"same", "META-INF/NIAGARA4.SF": b"sig",
+                                     "META-INF/NIAGARA4.RSA": b"sig2"})
             with open(os.path.join(binext_dir, "asm-9.10.1.jar"), "wb") as f:
                 f.write(local_jar)
-            central_jar = _jar_bytes({"org/objectweb/asm/ClassReader.class": b""})
+            central_jar = _jar_bytes({"a/Foo.class": b"same"})
+            central_sha1 = hashlib.sha1(central_jar).hexdigest()
 
             def opener(url, timeout=30):
                 if "solrsearch" in url:
                     return _FakeResponse(_solr_response([]))
                 if url.endswith(".sha1"):
-                    return _FakeResponse(b"different-sha1-on-central")
+                    return _FakeResponse(central_sha1.encode())
                 return _FakeResponse(central_jar)
 
             plan = {"artifacts": [], "unidentified": [
@@ -798,11 +910,94 @@ class RunIdentifyUnidentifiedTest(unittest.TestCase):
             ]}
             summary = m.run_identify_unidentified(plan, mirror_modules_dir=modules_dir, mirror_binext_dir=binext_dir,
                                                     opener=opener, sleep=lambda s: None, pace=0)
-            self.assertEqual(summary["vendor-modified"], 1)
-            self.assertEqual(len(plan["artifacts"]), 1)
-            self.assertIn("vendor_modified", plan["artifacts"][0])
-            self.assertEqual(plan["artifacts"][0]["vendor_modified"]["overlap"]["status"], "compared")
+            self.assertEqual(summary["resigned-identical"], 1)
+            self.assertEqual(summary["vendor-modified"], 0)
+            art = plan["artifacts"][0]
+            self.assertEqual(art["content_identity"]["status"], "resigned-identical")
+            self.assertEqual(art["content_identity"]["classes_identical"], 1)
             self.assertEqual(plan["unidentified"], [])
+
+    def test_whole_jar_mismatch_with_real_class_differences_is_partially_modified(self):
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir, binext_dir = self._mirror(td, [])
+            local_jar = _jar_bytes({"a/Foo.class": b"same", "a/Bar.class": b"CHANGED"})
+            with open(os.path.join(binext_dir, "lib-1.0.jar"), "wb") as f:
+                f.write(local_jar)
+            central_jar = _jar_bytes({"a/Foo.class": b"same", "a/Bar.class": b"original"})
+            central_sha1 = hashlib.sha1(central_jar).hexdigest()
+
+            def opener(url, timeout=30):
+                if "solrsearch" in url:
+                    return _FakeResponse(_solr_response([]))
+                if url.endswith(".sha1"):
+                    return _FakeResponse(central_sha1.encode())
+                return _FakeResponse(central_jar)
+
+            plan = {"artifacts": [], "unidentified": [
+                {"kind": "bin/ext", "name": "bin/ext/lib-1.0.jar", "reason": "no-pom-properties"},
+            ]}
+            # "lib" has no KNOWN_GROUP_GUESSES entry -- patch one in for this test only.
+            m.KNOWN_GROUP_GUESSES["lib"] = "com.example"
+            self.addCleanup(m.KNOWN_GROUP_GUESSES.pop, "lib", None)
+            summary = m.run_identify_unidentified(plan, mirror_modules_dir=modules_dir, mirror_binext_dir=binext_dir,
+                                                    opener=opener, sleep=lambda s: None, pace=0)
+            self.assertEqual(summary["partially-modified"], 1)
+            art = plan["artifacts"][0]
+            self.assertEqual(art["content_identity"]["status"], "partially-modified")
+            self.assertEqual(art["content_identity"]["different_classes"], ["a/Bar.class"])
+
+    def test_vendor_modified_when_deep_compare_finds_no_matching_class(self):
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir, binext_dir = self._mirror(td, [])
+            local_jar = _jar_bytes({"a/Foo.class": b"local-version"})
+            with open(os.path.join(binext_dir, "lib2-1.0.jar"), "wb") as f:
+                f.write(local_jar)
+            central_jar = _jar_bytes({"a/Foo.class": b"central-version"})
+            central_sha1 = hashlib.sha1(central_jar).hexdigest()
+
+            def opener(url, timeout=30):
+                if "solrsearch" in url:
+                    return _FakeResponse(_solr_response([]))
+                if url.endswith(".sha1"):
+                    return _FakeResponse(central_sha1.encode())
+                return _FakeResponse(central_jar)
+
+            plan = {"artifacts": [], "unidentified": [
+                {"kind": "bin/ext", "name": "bin/ext/lib2-1.0.jar", "reason": "no-pom-properties"},
+            ]}
+            m.KNOWN_GROUP_GUESSES["lib2"] = "com.example"
+            self.addCleanup(m.KNOWN_GROUP_GUESSES.pop, "lib2", None)
+            summary = m.run_identify_unidentified(plan, mirror_modules_dir=modules_dir, mirror_binext_dir=binext_dir,
+                                                    opener=opener, sleep=lambda s: None, pace=0)
+            self.assertEqual(summary["vendor-modified"], 1)
+            self.assertEqual(plan["artifacts"][0]["content_identity"]["status"], "vendor-modified")
+
+    def test_unverifiable_when_central_binary_cannot_be_fetched(self):
+        m = _load()
+        import urllib.error
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir, binext_dir = self._mirror(td, [])
+            with open(os.path.join(binext_dir, "lib3-1.0.jar"), "wb") as f:
+                f.write(_jar_bytes({"a/Foo.class": b"x"}))
+
+            def opener(url, timeout=30):
+                if "solrsearch" in url:
+                    return _FakeResponse(_solr_response([]))
+                if url.endswith(".sha1"):
+                    return _FakeResponse(b"deadbeef")
+                raise urllib.error.HTTPError(url, 404, "Not Found", {}, None)
+
+            plan = {"artifacts": [], "unidentified": [
+                {"kind": "bin/ext", "name": "bin/ext/lib3-1.0.jar", "reason": "no-pom-properties"},
+            ]}
+            m.KNOWN_GROUP_GUESSES["lib3"] = "com.example"
+            self.addCleanup(m.KNOWN_GROUP_GUESSES.pop, "lib3", None)
+            summary = m.run_identify_unidentified(plan, mirror_modules_dir=modules_dir, mirror_binext_dir=binext_dir,
+                                                    opener=opener, sleep=lambda s: None, pace=0)
+            self.assertEqual(summary["unverifiable"], 1)
+            self.assertEqual(plan["artifacts"][0]["content_identity"]["status"], "unverifiable")
 
     def test_not_on_central_entry_stays_in_unidentified_with_refined_reason(self):
         m = _load()
@@ -859,11 +1054,11 @@ class RunIdentifyUnidentifiedTest(unittest.TestCase):
 
 class RunFetchPropagatesSha1IdentificationFieldsTest(unittest.TestCase):
     """Real-run finding (2026-09-28): run_fetch rebuilds each manifest record from an explicit
-    field allowlist, so a T26a-identified artifact's "vendor_modified" / "identification_method"
-    silently vanished between plan.json and manifest.json -- the report's vendor-modified table
-    rendered empty even though run_identify_unidentified found 24 vendor-modified jars."""
+    field allowlist, so a T26a-identified artifact's "content_identity" / "identification_method"
+    silently vanished between plan.json and manifest.json -- the report's content-identity table
+    rendered empty even though run_identify_unidentified found real classifications."""
 
-    def test_vendor_modified_and_identification_method_survive_fetch(self):
+    def test_content_identity_and_identification_method_survive_fetch(self):
         m = _load()
         jar_bytes = b"src"
         sha1 = hashlib.sha1(jar_bytes).hexdigest()
@@ -880,8 +1075,9 @@ class RunFetchPropagatesSha1IdentificationFieldsTest(unittest.TestCase):
                 "occurrences": [{"kind": "bin/ext", "name": "bin/ext/asm-9.10.1.jar", "binary_sha1": "local"}],
                 "_candidate_versions": ["9.10.1"],
                 "identification_method": "filename-guess",
-                "vendor_modified": {"central_sha1": "x", "local_sha1": "local",
-                                     "overlap": {"status": "compared", "overlap_pct": 42.0}},
+                "content_identity": {"status": "resigned-identical", "classes_identical": 39,
+                                      "classes_different": 0, "classes_local_only": 0,
+                                      "classes_total_local": 39},
             }],
         }
         # run_fetch writes sources jars under a path relative to REPO_ROOT (it records
@@ -894,8 +1090,9 @@ class RunFetchPropagatesSha1IdentificationFieldsTest(unittest.TestCase):
         manifest = m.run_fetch(plan, out_dir, opener=opener, sleep=lambda s: None, pace=0)
         art = manifest["artifacts"][0]
         self.assertEqual(art.get("identification_method"), "filename-guess")
-        self.assertIn("vendor_modified", art)
-        self.assertEqual(art["vendor_modified"]["overlap"]["overlap_pct"], 42.0)
+        self.assertIn("content_identity", art)
+        self.assertEqual(art["content_identity"]["status"], "resigned-identical")
+        self.assertEqual(art["content_identity"]["classes_identical"], 39)
 
 
 class RunAllThirdPartyCoverageTest(unittest.TestCase):
@@ -921,7 +1118,7 @@ class RunAllThirdPartyCoverageTest(unittest.TestCase):
             self.assertEqual(coverage["classes_with_upstream_source"], 8)
             self.assertEqual(coverage["classes_total"], 12)  # 10 fetched-artifact classes + 2 unidentified
 
-    def test_vendor_modified_artifact_excluded_from_covered_but_included_in_total(self):
+    def test_vendor_modified_content_identity_excluded_from_covered_but_included_in_total(self):
         m = _load()
         with tempfile.TemporaryDirectory() as td:
             modules_dir = os.path.join(td, "modules")
@@ -931,13 +1128,202 @@ class RunAllThirdPartyCoverageTest(unittest.TestCase):
             manifest = {
                 "artifacts": [
                     {"groupId": "g", "artifactId": "a", "version": "1", "status": "fetched",
-                     "classdiff": {"common": 5, "binary_total": 5}, "vendor_modified": {"overlap": {}}},
+                     "classdiff": {"common": 5, "binary_total": 5},
+                     "content_identity": {"status": "vendor-modified", "classes_identical": 0,
+                                           "classes_total_local": 5}},
                 ],
                 "unidentified": [],
             }
             coverage = m.run_all_third_party_coverage(manifest, mirror_modules_dir=modules_dir, mirror_binext_dir=binext_dir)
             self.assertEqual(coverage["classes_with_upstream_source"], 0)
             self.assertEqual(coverage["classes_total"], 5)
+
+    def test_resigned_identical_content_identity_fully_covered(self):
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir = os.path.join(td, "modules")
+            binext_dir = os.path.join(td, "bin-ext")
+            os.makedirs(modules_dir)
+            os.makedirs(binext_dir)
+            manifest = {
+                "artifacts": [
+                    {"groupId": "g", "artifactId": "a", "version": "1", "status": "fetched",
+                     "classdiff": {"common": 39, "binary_total": 39},
+                     "content_identity": {"status": "resigned-identical", "classes_identical": 39,
+                                           "classes_total_local": 39}},
+                ],
+                "unidentified": [],
+            }
+            coverage = m.run_all_third_party_coverage(manifest, mirror_modules_dir=modules_dir, mirror_binext_dir=binext_dir)
+            self.assertEqual(coverage["classes_with_upstream_source"], 39)
+            self.assertEqual(coverage["classes_total"], 39)
+
+    def test_partially_modified_content_identity_counts_only_identical_classes(self):
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir = os.path.join(td, "modules")
+            binext_dir = os.path.join(td, "bin-ext")
+            os.makedirs(modules_dir)
+            os.makedirs(binext_dir)
+            manifest = {
+                "artifacts": [
+                    {"groupId": "g", "artifactId": "a", "version": "1", "status": "fetched",
+                     "classdiff": {"common": 10, "binary_total": 10},
+                     "content_identity": {"status": "partially-modified", "classes_identical": 7,
+                                           "classes_total_local": 10}},
+                ],
+                "unidentified": [],
+            }
+            coverage = m.run_all_third_party_coverage(manifest, mirror_modules_dir=modules_dir, mirror_binext_dir=binext_dir)
+            self.assertEqual(coverage["classes_with_upstream_source"], 7)
+            self.assertEqual(coverage["classes_total"], 10)
+
+    def test_content_identity_with_zero_local_classes_is_not_treated_as_missing(self):
+        # Real 2026-09-28 finding: bin/ext/okhttp-5.5.0.jar (the Kotlin Multiplatform metadata
+        # artifact, not okhttp-jvm) has classes_total_local == 0 -- a legitimate value, not a
+        # missing one. `if not total_n` treats 0 the same as None and wrongly falls back to
+        # classdiff's binary_total instead of trusting the real (zero) count.
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir = os.path.join(td, "modules")
+            binext_dir = os.path.join(td, "bin-ext")
+            os.makedirs(modules_dir)
+            os.makedirs(binext_dir)
+            manifest = {
+                "artifacts": [
+                    {"groupId": "g", "artifactId": "okhttp", "version": "5.5.0", "status": "fetched",
+                     "classdiff": {"common": 0, "binary_total": 999},  # a stale/unrelated fallback
+                     "content_identity": {"status": "vendor-modified", "classes_identical": 0,
+                                           "classes_total_local": 0}},
+                ],
+                "unidentified": [],
+            }
+            coverage = m.run_all_third_party_coverage(manifest, mirror_modules_dir=modules_dir, mirror_binext_dir=binext_dir)
+            self.assertEqual(coverage["classes_with_upstream_source"], 0)
+            self.assertEqual(coverage["classes_total"], 0)  # NOT 999
+
+
+class RunRecheckPomIdentifiedGapsTest(unittest.TestCase):
+    """Orchestrator follow-up: artifacts identified via pom.properties (the original 154, i.e. no
+    T26a identification_method) whose evidence/b117 record shows a whole-jar SHA-1 mismatch were
+    never class-level verified. Reuse b117's own "identical-non-META-INF" finding where present
+    (no network); do a live per-class check for the rest (download-failed / real diffs)."""
+
+    def _install(self, td):
+        install_dir = os.path.join(td, "install")
+        os.makedirs(os.path.join(install_dir, "bin", "ext"), exist_ok=True)
+        return install_dir
+
+    def test_skips_t26a_identified_artifacts(self):
+        m = _load()
+        manifest = {"artifacts": [
+            {"groupId": "g", "artifactId": "a", "version": "1", "status": "fetched",
+             "identification_method": "sha1-search",
+             "occurrences": [{"kind": "bin/ext", "name": "bin/ext/a-1.jar"}]},
+        ]}
+
+        def opener(url, timeout=30):
+            raise AssertionError("should not fetch for a T26a-identified artifact")
+
+        summary = m.run_recheck_pom_identified_gaps(manifest, [], opener=opener, sleep=lambda s: None)
+        self.assertNotIn("content_identity", manifest["artifacts"][0])
+
+    def test_skips_exact_whole_jar_match(self):
+        m = _load()
+        manifest = {"artifacts": [
+            {"groupId": "g", "artifactId": "a", "version": "1", "status": "fetched",
+             "occurrences": [{"kind": "bin/ext", "name": "bin/ext/a-1.jar"}]},
+        ]}
+        evidence = [{"kind": "bin/ext", "name": "bin/ext/a-1.jar", "result": "exact"}]
+
+        def opener(url, timeout=30):
+            raise AssertionError("should not fetch for an already-exact whole-jar match")
+
+        m.run_recheck_pom_identified_gaps(manifest, evidence, opener=opener, sleep=lambda s: None)
+        self.assertNotIn("content_identity", manifest["artifacts"][0])
+
+    def test_reuses_b117_identical_non_meta_inf_without_network(self):
+        m = _load()
+        manifest = {"artifacts": [
+            {"groupId": "g", "artifactId": "a", "version": "1", "status": "fetched",
+             "occurrences": [{"kind": "bin/ext", "name": "bin/ext/a-1.jar"}]},
+        ]}
+        evidence = [{"kind": "bin/ext", "name": "bin/ext/a-1.jar", "result": "differs",
+                     "content": "identical-non-META-INF", "meta_inf_local": ["META-INF/NIAGARA4.SF"]}]
+
+        def opener(url, timeout=30):
+            raise AssertionError("should reuse b117's evidence, not fetch")
+
+        summary = m.run_recheck_pom_identified_gaps(manifest, evidence, opener=opener, sleep=lambda s: None)
+        self.assertEqual(summary["reused-resigned-identical"], 1)
+        ci = manifest["artifacts"][0]["content_identity"]
+        self.assertEqual(ci["status"], "resigned-identical")
+        self.assertEqual(ci["source"], "b117-reused")
+
+    def test_live_checks_a_download_failed_b117_entry(self):
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            install_dir = self._install(td)
+            local_jar = _jar_bytes({"a/Foo.class": b"same"})
+            with open(os.path.join(install_dir, "bin", "ext", "a-1.jar"), "wb") as f:
+                f.write(local_jar)
+            central_jar = _jar_bytes({"a/Foo.class": b"same"})
+            central_sha1 = hashlib.sha1(central_jar).hexdigest()
+
+            def opener(url, timeout=30):
+                if url.endswith(".sha1"):
+                    return _FakeResponse(central_sha1.encode())
+                return _FakeResponse(central_jar)
+
+            manifest = {"artifacts": [
+                {"groupId": "g", "artifactId": "a", "version": "1", "status": "fetched",
+                 "occurrences": [{"kind": "bin/ext", "name": "bin/ext/a-1.jar"}]},
+            ]}
+            evidence = [{"kind": "bin/ext", "name": "bin/ext/a-1.jar", "result": "differs",
+                         "content": "download-failed"}]
+            summary = m.run_recheck_pom_identified_gaps(manifest, evidence, opener=opener,
+                                                          sleep=lambda s: None, install_dir=install_dir, pace=0)
+            self.assertEqual(summary["resigned-identical"], 1)
+            ci = manifest["artifacts"][0]["content_identity"]
+            self.assertEqual(ci["status"], "resigned-identical")
+            self.assertEqual(ci["source"], "live-recheck")
+
+    def test_uses_resolved_version_not_pom_version_for_central_lookup(self):
+        # Real 2026-09-28 finding: mssql-jdbc's pom.properties version is "13.4.0" but the
+        # artifact only exists on Central under "13.4.0.jre11" (candidate_versions' own
+        # correction, already used to fetch its SOURCES jar via "resolved_version"). Looking up
+        # the BINARY jar by the plain "version" 404s and wrongly reports "unverifiable".
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            install_dir = self._install(td)
+            local_jar = _jar_bytes({"a/Foo.class": b"same"})
+            with open(os.path.join(install_dir, "bin", "ext", "mssql-jdbc-13.4.0.jre11.jar"), "wb") as f:
+                f.write(local_jar)
+            central_jar = _jar_bytes({"a/Foo.class": b"same"})
+            central_sha1 = hashlib.sha1(central_jar).hexdigest()
+            seen_urls = []
+
+            def opener(url, timeout=30):
+                seen_urls.append(url)
+                if "/13.4.0/" in url:
+                    import urllib.error
+                    raise urllib.error.HTTPError(url, 404, "Not Found", {}, None)
+                if url.endswith(".sha1"):
+                    return _FakeResponse(central_sha1.encode())
+                return _FakeResponse(central_jar)
+
+            manifest = {"artifacts": [
+                {"groupId": "com.microsoft.sqlserver", "artifactId": "mssql-jdbc", "version": "13.4.0",
+                 "resolved_version": "13.4.0.jre11", "status": "fetched",
+                 "occurrences": [{"kind": "bin/ext", "name": "bin/ext/mssql-jdbc-13.4.0.jre11.jar"}]},
+            ]}
+            evidence = [{"kind": "bin/ext", "name": "bin/ext/mssql-jdbc-13.4.0.jre11.jar",
+                         "result": "not-on-central"}]
+            summary = m.run_recheck_pom_identified_gaps(manifest, evidence, opener=opener,
+                                                          sleep=lambda s: None, install_dir=install_dir, pace=0)
+            self.assertTrue(any("13.4.0.jre11" in u for u in seen_urls))
+            self.assertEqual(summary["resigned-identical"], 1)
+            self.assertEqual(manifest["artifacts"][0]["content_identity"]["status"], "resigned-identical")
 
 
 class RenderReportAllThirdPartyHeadlineTest(unittest.TestCase):
@@ -955,11 +1341,35 @@ class RenderReportAllThirdPartyHeadlineTest(unittest.TestCase):
             {"kind": "bin/ext", "name": "bin/ext/jxbrowser/jxbrowser-9.5.0.jar", "reason": "not-on-central:known-proprietary-or-unpublished"},
         ]}
         text = m.render_report(manifest, identify_summary={
-            "identified-by-sha1": 10, "vendor-modified": 2, "not-on-central": 30, "network-error": 0, "mirror-unavailable": 0,
+            "identified-by-sha1": 10, "resigned-identical": 9, "partially-modified": 1,
+            "vendor-modified": 2, "unverifiable": 0, "not-on-central": 30, "network-error": 0,
+            "mirror-unavailable": 0,
         })
         self.assertIn("identified-by-sha1", text)
+        self.assertIn("resigned-identical", text)
         self.assertIn("vendor-modified", text)
         self.assertIn("not-on-central:known-proprietary-or-unpublished", text)
+
+    def test_content_identity_table_rendered(self):
+        m = _load()
+        manifest = {"unidentified": [], "artifacts": [
+            {"artifactId": "asm", "version": "9.10.1", "groupId": "org.ow2.asm", "status": "fetched",
+             "content_identity": {"status": "resigned-identical", "classes_identical": 39,
+                                   "classes_different": 0, "classes_local_only": 0,
+                                   "classes_total_local": 39,
+                                   "differing_non_class_entries": ["META-INF/NIAGARA4.SF", "META-INF/NIAGARA4.RSA"],
+                                   "source": "live-recheck"}},
+            {"artifactId": "lz4-java", "version": "1.11.2", "groupId": "org.lz4", "status": "fetched",
+             "content_identity": {"status": "partially-modified", "classes_identical": 7,
+                                   "classes_different": 3, "classes_local_only": 0,
+                                   "classes_total_local": 10, "different_classes": ["a/X.class"],
+                                   "differing_non_class_entries": [], "source": "b117-reused"}},
+        ]}
+        text = m.render_report(manifest)
+        self.assertIn("resigned-identical", text)
+        self.assertIn("partially-modified", text)
+        self.assertIn("NIAGARA4.SF", text)
+        self.assertIn("a/X.class", text)
 
 
 class TestJavapFailureIsNeverAMatch(unittest.TestCase):

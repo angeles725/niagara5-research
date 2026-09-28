@@ -27,13 +27,26 @@ Subcommands:
                     exact shipped bytes (read from the local jar mirror) and look it up on Maven
                     Central by SHA-1; on a miss, try one filename-derived groupId:artifactId:version
                     guess and accept it only if Central's own published binary-jar SHA-1 confirms
-                    it. Moves each resolved jar from plan["unidentified"] into plan["artifacts"]
-                    (status one of identified-by-sha1 / vendor-modified) so the existing fetch/
-                    classdiff pipeline picks it up unchanged; jars that stay unplaceable keep a
-                    refined `reason` (not-on-central / network-error / mirror-unavailable).
+                    it. On a whole-jar SHA-1 mismatch, fetches Central's own binary jar and runs a
+                    per-.class SHA-256 comparison (classify_jar_identity) before calling it
+                    vendor-modified -- a Niagara re-signature (added META-INF/NIAGARA4.SF/.RSA)
+                    changes the whole-jar hash without touching a single class, so that alone is
+                    resigned-identical (sources ARE ground truth), not vendor-modified. Moves each
+                    resolved jar from plan["unidentified"] into plan["artifacts"] (status one of
+                    identified-by-sha1 / resigned-identical / partially-modified / vendor-modified /
+                    unverifiable) so the existing fetch/classdiff pipeline picks it up unchanged;
+                    jars that stay unplaceable keep a refined `reason` (not-on-central /
+                    network-error / mirror-unavailable).
+  recheck-pom-identified  (T26a follow-up) the same per-.class check, applied to the ORIGINAL 154
+                    pom.properties-identified artifacts whose evidence/b117 record shows the whole
+                    shipped BINARY jar's SHA-1 differs from Central's -- those were only ever
+                    proven identical by their SOURCES jar's own SHA-1. Reuses b117's own
+                    non-META-INF content check where already conclusive (no network); does a live
+                    check for the rest (b117's own download failures, real content differences,
+                    and jars this tool's own candidate-version corrections resolved).
   report            render docs/upstream-sources-report.md from manifest.json + the above.
   all               run plan, identify-unidentified, fetch, classdiff, paho-diff, recompile-check,
-                    report in order.
+                    recheck-pom-identified, report in order.
 """
 from __future__ import annotations
 
@@ -424,6 +437,27 @@ def compute_vendor_modified_overlap(local_bytes: bytes, group_id: str, artifact_
     return {"status": "compared", "overlap_pct": round(overlap_pct, 1), "classname_diff": diff}
 
 
+def fetch_central_binary_jar(group_id: str, artifact_id: str, version: str, opener: Callable,
+                              sleep: Callable = time.sleep, retries: int = 3) -> dict:
+    """Fetch and SHA-1-verify Central's own binary jar for one g:a:v (needed for the real
+    per-.class content comparison in classify_jar_identity -- a whole-jar SHA-1 mismatch alone
+    doesn't say WHICH bytes differ). Returns {"status": "fetched", "bytes": ..., "sha1": ...} or
+    a typed failure: not-found | checksum-mismatch | network-error."""
+    expect = binary_sha1_from_central(group_id, artifact_id, version, opener, sleep=sleep, retries=retries)
+    if expect["status"] == "network-error":
+        return {"status": "network-error", "stage": "sha1", "detail": expect.get("detail")}
+    if expect["status"] == "not-found":
+        return {"status": "not-found"}
+    url = f"{MAVEN_CENTRAL}/{group_id.replace('.', '/')}/{artifact_id}/{version}/{artifact_id}-{version}.jar"
+    result = fetch_with_retry(url, opener, sleep=sleep, retries=retries)
+    if not result["ok"]:
+        return {"status": "network-error", "stage": "jar", "detail": result}
+    actual_sha1 = hashlib.sha1(result["bytes"]).hexdigest()
+    if actual_sha1 != expect["central_sha1"]:
+        return {"status": "checksum-mismatch", "expected": expect["central_sha1"], "actual": actual_sha1}
+    return {"status": "fetched", "bytes": result["bytes"], "sha1": actual_sha1}
+
+
 # ---------------------------------------------------------------------------
 # Jar/class inspection (no network).
 # ---------------------------------------------------------------------------
@@ -451,6 +485,66 @@ def classname_diff(sources_names: set[str], binary_names: set[str]) -> dict:
         "common": len(sources_names & binary_names),
         "sources_total": len(sources_names),
         "binary_total": len(binary_names),
+    }
+
+
+def all_class_entry_hashes(jar_bytes: bytes) -> dict:
+    """SHA-256 of EVERY .class entry (including nested/anonymous classes -- unlike
+    class_names_from_zip, this is a byte-content check, not a source-file-name-set comparison, so
+    inner classes matter too), keyed by the entry's full path inside the jar."""
+    out: dict[str, str] = {}
+    with zipfile.ZipFile(io.BytesIO(jar_bytes)) as z:
+        for info in z.infolist():
+            if info.is_dir() or not info.filename.endswith(".class"):
+                continue
+            out[info.filename] = hashlib.sha256(z.read(info)).hexdigest()
+    return out
+
+
+def classify_jar_identity(local_bytes: bytes, central_bytes: bytes) -> dict:
+    """Per-.class-entry SHA-256 comparison between the local (shipped) jar and Central's binary
+    jar for the SAME groupId:artifactId:version. A whole-jar SHA-1 mismatch alone does not mean
+    the sources aren't ground truth -- Niagara commonly re-signs a jar (adds
+    META-INF/NIAGARA4.SF + .RSA), which changes the whole-jar hash without touching a single
+    class. Real 2026-09-28 finding: bin/ext/asm-9.10.1.jar's whole-jar SHA-1 differs from
+    org.ow2.asm:asm:9.10.1 on Central, but all 39/39 .class entries are byte-identical.
+
+    Returns a dict with "status" one of:
+      resigned-identical  -- every local .class entry matches Central; only non-class entries
+                              differ (typically just the added signature) -- sources ARE ground
+                              truth for every class in this jar.
+      partially-modified  -- some .class entries match, some differ or are local-only -- only the
+                              matching ones are ground-truth-covered; the rest still need decompile.
+      vendor-modified     -- no .class entry matches Central at all.
+    Also records differing_non_class_entries (e.g. the added signature files) for transparency.
+    """
+    local_classes = all_class_entry_hashes(local_bytes)
+    central_classes = all_class_entry_hashes(central_bytes)
+    identical = sorted(n for n, h in local_classes.items() if central_classes.get(n) == h)
+    different = sorted(n for n, h in local_classes.items()
+                        if n in central_classes and central_classes[n] != h)
+    local_only = sorted(n for n in local_classes if n not in central_classes)
+    if identical and not different and not local_only:
+        status = "resigned-identical"
+    elif identical:
+        status = "partially-modified"
+    else:
+        status = "vendor-modified"
+    with zipfile.ZipFile(io.BytesIO(local_bytes)) as lz, zipfile.ZipFile(io.BytesIO(central_bytes)) as cz:
+        local_non_class = {i.filename: hashlib.sha256(lz.read(i)).hexdigest()
+                            for i in lz.infolist() if not i.is_dir() and not i.filename.endswith(".class")}
+        central_non_class = {i.filename: hashlib.sha256(cz.read(i)).hexdigest()
+                              for i in cz.infolist() if not i.is_dir() and not i.filename.endswith(".class")}
+    differing_non_class = sorted(
+        n for n in (set(local_non_class) | set(central_non_class))
+        if local_non_class.get(n) != central_non_class.get(n)
+    )
+    return {
+        "status": status,
+        "classes_identical": len(identical), "classes_different": len(different),
+        "classes_local_only": len(local_only), "classes_total_local": len(local_classes),
+        "different_classes": different, "local_only_classes": local_only,
+        "differing_non_class_entries": differing_non_class,
     }
 
 
@@ -565,9 +659,9 @@ def run_fetch(plan: dict, out_dir: Path, opener: Callable = urllib.request.urlop
             "status": result["status"], "resolved_version": result.get("resolved_version"),
         }
         # T26a: carry over the sha1-identification provenance a plan artifact may already have
-        # (identification_method, vendor_modified) -- these aren't derived by fetch itself, but a
+        # (identification_method, content_identity) -- these aren't derived by fetch itself, but a
         # plain field allowlist here would otherwise silently drop them between plan and manifest.
-        for extra_key in ("identification_method", "vendor_modified"):
+        for extra_key in ("identification_method", "content_identity"):
             if extra_key in art:
                 record[extra_key] = art[extra_key]
         dest_dir = out_dir / art["groupId"] / art["artifactId"] / art["version"]
@@ -599,13 +693,24 @@ def run_identify_unidentified(plan: dict, mirror_modules_dir=MIRROR_MODULES_DIR,
                                pace: float = 0.15) -> dict:
     """T26a. Mutates plan in place: every plan["unidentified"] entry whose reason is
     "no-pom-properties" is hashed from the local mirror and looked up on Central. A resolved jar
-    (identified-by-sha1 or vendor-modified) is moved into plan["artifacts"] as a new
-    single-occurrence artifact -- shaped exactly like run_plan's own output -- so the existing
-    fetch/classdiff pipeline picks it up unchanged. An unresolved jar stays in plan["unidentified"]
-    with its reason refined from the generic "no-pom-properties" to the specific outcome. Entries
-    with any other reason (e.g. from a future evidence run) are left untouched. Returns counts by
-    outcome, including "mirror-unavailable" for jars the local mirror doesn't have."""
-    summary = {"identified-by-sha1": 0, "vendor-modified": 0, "not-on-central": 0,
+    is moved into plan["artifacts"] as a new single-occurrence artifact -- shaped exactly like
+    run_plan's own output -- so the existing fetch/classdiff pipeline picks it up unchanged. An
+    unresolved jar stays in plan["unidentified"] with its reason refined from the generic
+    "no-pom-properties" to the specific outcome. Entries with any other reason (e.g. from a
+    future evidence run) are left untouched.
+
+    identify_unidentified_entry's coarse "vendor-modified" (same g:a:v on Central, different
+    whole-jar bytes) is NOT the final word: a Niagara re-signature changes the whole-jar SHA-1
+    without touching a single class (real finding: bin/ext/asm-9.10.1.jar). On that signal, this
+    function fetches Central's binary jar and runs classify_jar_identity (per-.class SHA-256) to
+    get the real classification -- resigned-identical / partially-modified / vendor-modified --
+    stored as the artifact's "content_identity". If Central's binary itself can't be fetched, the
+    classification is "unverifiable" (with a class-name-only overlap as a diagnostic fallback).
+
+    Returns counts by outcome, including "mirror-unavailable" for jars the local mirror doesn't
+    have."""
+    summary = {"identified-by-sha1": 0, "resigned-identical": 0, "partially-modified": 0,
+               "vendor-modified": 0, "unverifiable": 0, "not-on-central": 0,
                "network-error": 0, "mirror-unavailable": 0}
     still_unidentified = []
     for u in plan["unidentified"]:
@@ -622,8 +727,8 @@ def run_identify_unidentified(plan: dict, mirror_modules_dir=MIRROR_MODULES_DIR,
         result = identify_unidentified_entry(u, local_sha1, opener, sleep=sleep, retries=retries)
         if pace:
             sleep(pace)
-        summary[result["status"]] += 1
         if result["status"] == "identified-by-sha1":
+            summary["identified-by-sha1"] += 1
             plan["artifacts"].append({
                 "groupId": result["groupId"], "artifactId": result["artifactId"],
                 "version": result["version"],
@@ -632,19 +737,35 @@ def run_identify_unidentified(plan: dict, mirror_modules_dir=MIRROR_MODULES_DIR,
                 "identification_method": result["method"],
             })
         elif result["status"] == "vendor-modified":
-            overlap = compute_vendor_modified_overlap(
-                local_bytes, result["groupId"], result["artifactId"], result["version"],
-                opener, sleep=sleep, retries=retries)
+            central_fetch = fetch_central_binary_jar(result["groupId"], result["artifactId"],
+                                                       result["version"], opener, sleep=sleep,
+                                                       retries=retries)
+            if pace:
+                sleep(pace)
+            if central_fetch["status"] == "fetched":
+                content_identity = classify_jar_identity(local_bytes, central_fetch["bytes"])
+                content_identity["central_sha1"] = central_fetch["sha1"]
+            else:
+                content_identity = {
+                    "status": "unverifiable", "reason": central_fetch["status"],
+                    "detail": central_fetch.get("detail"),
+                    "name_overlap": compute_vendor_modified_overlap(
+                        local_bytes, result["groupId"], result["artifactId"], result["version"],
+                        opener, sleep=sleep, retries=retries),
+                }
+            content_identity["local_sha1"] = local_sha1
+            content_identity.setdefault("source", "live-recheck")
+            summary[content_identity["status"]] = summary.get(content_identity["status"], 0) + 1
             plan["artifacts"].append({
                 "groupId": result["groupId"], "artifactId": result["artifactId"],
                 "version": result["version"],
                 "occurrences": [{"kind": u["kind"], "name": u["name"], "binary_sha1": local_sha1}],
                 "_candidate_versions": [result["version"]],
                 "identification_method": result["method"],
-                "vendor_modified": {"central_sha1": result.get("central_sha1"),
-                                     "local_sha1": local_sha1, "overlap": overlap},
+                "content_identity": content_identity,
             })
         else:
+            summary[result["status"]] += 1
             reason_detail = result.get("reason") or result.get("stage") or ""
             still_unidentified.append(dict(u, reason=f"{result['status']}:{reason_detail}"
                                             if reason_detail else result["status"],
@@ -658,20 +779,34 @@ def run_all_third_party_coverage(manifest: dict, mirror_modules_dir=MIRROR_MODUL
                                   mirror_binext_dir=MIRROR_BINEXT_DIR) -> dict:
     """T26a headline fix: the class-coverage percentage must state its denominator over ALL
     third-party classes (identified + unidentified), not only artifacts with a fetched sources
-    jar. Numerator: classes_with_upstream_source (fetched, non-vendor-modified artifacts only --
-    a vendor-modified artifact's "sources" are for a different build, not ground truth, so its
-    classes count toward the denominator but never the numerator). Denominator adds every
-    artifact's binary_total plus the local mirror's own class count for every jar that never got
-    an upstream match at all."""
+    jar. Numerator: classes_with_upstream_source. For an artifact with a real per-.class
+    content_identity check (see classify_jar_identity): resigned-identical counts every class as
+    covered, partially-modified counts only its classes_identical, vendor-modified/unverifiable
+    counts none -- but its classes still count toward the denominator (content_identity's own
+    classes_total_local is preferred; classdiff's binary_total is the fallback). Without a
+    content_identity (whole-jar-identical artifacts -- proven ground truth by the exact SHA-1
+    match itself), classdiff's name-based common/binary_total is used as before. Denominator adds
+    the local mirror's own class count for every jar that never got an upstream match at all."""
     covered = 0
     total = 0
     for art in manifest["artifacts"]:
+        ci = art.get("content_identity")
         cd = art.get("classdiff")
+        if ci:
+            total_n = ci.get("classes_total_local")
+            if total_n is None:
+                total_n = cd.get("binary_total", 0) if cd else 0
+            total += total_n
+            if ci["status"] == "resigned-identical":
+                covered += total_n
+            elif ci["status"] == "partially-modified":
+                covered += ci.get("classes_identical", 0)
+            # vendor-modified / unverifiable: 0 covered, already counted in total
+            continue
         if not cd or "binary_total" not in cd:
             continue
         total += cd["binary_total"]
-        if not art.get("vendor_modified"):
-            covered += cd["common"]
+        covered += cd["common"]
     for u in manifest.get("unidentified", []):
         binary_bytes = load_binary_bytes_from_mirror(u, mirror_modules_dir, mirror_binext_dir)
         if binary_bytes is None:
@@ -683,6 +818,71 @@ def run_all_third_party_coverage(manifest: dict, mirror_modules_dir=MIRROR_MODUL
     coverage = {"classes_with_upstream_source": covered, "classes_total": total}
     manifest["all_third_party_coverage"] = coverage
     return coverage
+
+
+def run_recheck_pom_identified_gaps(manifest: dict, evidence_entries: list,
+                                     opener: Callable = urllib.request.urlopen,
+                                     sleep: Callable = time.sleep, retries: int = 3,
+                                     mod_dir: Path = N5_MOD_DIR, install_dir: Path = N5_INSTALL_DIR,
+                                     pace: float = 0.15) -> dict:
+    """Orchestrator review follow-up (2026-09-28): the ORIGINAL 154 pom.properties-identified
+    artifacts (every manifest artifact WITHOUT a T26a identification_method) were only ever
+    proven identical to Central by their SOURCES jar's own SHA-1 -- for the ones whose evidence/
+    b117 record shows the whole shipped BINARY jar's SHA-1 differs from Central's (result ==
+    "differs" or "not-on-central"), class-level identity was never checked, same gap T26a's own
+    vendor-modified jars had.
+
+    evidence/b117's own maven_content.py already ran a non-META-INF (not class-only, but a
+    superset) byte comparison for every result=="differs" jar; reuse its
+    content == "identical-non-META-INF" finding (no network) as "resigned-identical". For jars
+    whose b117 recheck failed ("download-failed"), found a real difference ("differs:N"), or
+    whose whole-jar SHA-1 lookup itself 404'd ("not-on-central" -- resolved anyway by this tool's
+    own candidate-version corrections, e.g. mssql-jdbc, kotlin-reflect), do a LIVE per-.class
+    check via classify_jar_identity, same as T26a. A plain "exact" whole-jar match needs no
+    re-check at all -- that already IS class-level proof.
+
+    Mutates each matched manifest artifact in place (adds "content_identity"); returns counts by
+    outcome, split into "reused-resigned-identical" (no network) vs the live-checked statuses."""
+    mod_dir, install_dir = Path(mod_dir), Path(install_dir)
+    evidence_by_name = {(e.get("kind"), e.get("name")): e for e in evidence_entries}
+    summary = {"reused-resigned-identical": 0, "resigned-identical": 0, "partially-modified": 0,
+               "vendor-modified": 0, "unverifiable": 0}
+    for art in manifest["artifacts"]:
+        if art.get("identification_method") or art.get("status") != "fetched":
+            continue
+        occ = art["occurrences"][0]
+        ev = evidence_by_name.get((occ["kind"], occ["name"]))
+        if ev is None or ev.get("result") == "exact":
+            continue
+        if ev.get("content") == "identical-non-META-INF":
+            art["content_identity"] = {
+                "status": "resigned-identical", "source": "b117-reused",
+                "b117_meta_inf_local": ev.get("meta_inf_local"),
+            }
+            summary["reused-resigned-identical"] += 1
+            continue
+        local_bytes = load_binary_bytes(occ, mod_dir, install_dir)
+        if local_bytes is None:
+            continue
+        # Some artifacts (e.g. mssql-jdbc) only exist on Central under a version this tool's own
+        # candidate_versions correction found, not the raw pom.properties "version" -- run_fetch
+        # already used "resolved_version" to fetch the sources jar; reuse it here too, or a plain
+        # whole-jar lookup at the wrong version 404s and this reports "unverifiable" for nothing.
+        lookup_version = art.get("resolved_version") or art["version"]
+        central_fetch = fetch_central_binary_jar(art["groupId"], art["artifactId"], lookup_version,
+                                                   opener, sleep=sleep, retries=retries)
+        if pace:
+            sleep(pace)
+        if central_fetch["status"] == "fetched":
+            ci = classify_jar_identity(local_bytes, central_fetch["bytes"])
+            ci["central_sha1"] = central_fetch["sha1"]
+        else:
+            ci = {"status": "unverifiable", "reason": central_fetch["status"]}
+        ci["source"] = "live-recheck"
+        art["content_identity"] = ci
+        summary[ci["status"]] = summary.get(ci["status"], 0) + 1
+    manifest["pom_identified_recheck_summary"] = summary
+    return summary
 
 
 def run_classdiff(manifest: dict, out_dir: Path, mod_dir: Path = N5_MOD_DIR,
@@ -827,7 +1027,8 @@ def render_report(manifest: dict, paho_result: Optional[dict] = None,
                    classdiff_coverage: Optional[dict] = None,
                    recompile_results: Optional[list[dict]] = None,
                    identify_summary: Optional[dict] = None,
-                   all_third_party_coverage: Optional[dict] = None) -> str:
+                   all_third_party_coverage: Optional[dict] = None,
+                   pom_recheck_summary: Optional[dict] = None) -> str:
     artifacts = manifest["artifacts"]
     unidentified = manifest.get("unidentified", [])
     status_counts: dict[str, int] = {}
@@ -935,32 +1136,79 @@ def render_report(manifest: dict, paho_result: Optional[dict] = None,
             "For the jars evidence/b117 could not identify from pom.properties, this step hashes "
             "the exact shipped bytes (from the local jar mirror) and looks the SHA-1 up on Maven "
             "Central; on a miss, one filename-derived g:a:v guess is tried and accepted only if "
-            "Central's own published binary-jar SHA-1 for that guess matches."
+            "Central's own published binary-jar SHA-1 for that guess matches. A whole-jar SHA-1 "
+            "mismatch then gets a full per-.class re-check (see the section below) before being "
+            "called vendor-modified."
         )
         lines.append("")
         lines.append("| outcome | count |")
         lines.append("|---|---|")
-        for status in ("identified-by-sha1", "vendor-modified", "not-on-central",
+        for status in ("identified-by-sha1", "resigned-identical", "partially-modified",
+                       "vendor-modified", "unverifiable", "not-on-central",
                        "network-error", "mirror-unavailable"):
             lines.append(f"| {status} | {identify_summary.get(status, 0)} |")
         lines.append("")
-        vendor_modified = [a for a in artifacts if a.get("vendor_modified")]
-        if vendor_modified:
-            lines.append(
-                "Vendor-modified: Central has the same groupId:artifactId:version, but with "
-                "different bytes -- the fetched sources jar (if any) is for that different build, "
-                "not ground truth for the shipped class files. Class-name overlap % is how much "
-                "of the local jar's class set the same-coordinate upstream binary still shares."
-            )
+
+    if pom_recheck_summary:
+        lines.append("## Pom-identified artifacts re-check (orchestrator review follow-up)")
+        lines.append("")
+        lines.append(
+            "The original 154 pom.properties-identified artifacts were only ever proven identical "
+            "to Central by their SOURCES jar's own SHA-1. For the ones whose evidence/b117 record "
+            "shows the whole shipped BINARY jar's SHA-1 differs from Central's, this reuses "
+            "b117's own non-META-INF content check where it already found `identical-non-META-INF` "
+            "(no network), and does a live per-.class check (same method as T26a) for the rest "
+            "(b117's own download failures, real content differences, and jars this tool's own "
+            "candidate-version corrections resolved after a `not-on-central` whole-jar lookup)."
+        )
+        lines.append("")
+        lines.append("| outcome | count |")
+        lines.append("|---|---|")
+        for status in ("reused-resigned-identical", "resigned-identical", "partially-modified",
+                       "vendor-modified", "unverifiable"):
+            lines.append(f"| {status} | {pom_recheck_summary.get(status, 0)} |")
+        lines.append("")
+
+    content_checked = [a for a in artifacts if a.get("content_identity")]
+    if content_checked:
+        lines.append("## Class-content identity re-check (per-.class SHA-256 vs Central)")
+        lines.append("")
+        lines.append(
+            "A whole-jar SHA-1 mismatch alone does not mean Central's sources aren't ground truth "
+            "-- Niagara commonly re-signs a jar (adds META-INF/NIAGARA4.SF + .RSA) without "
+            "touching a single class. This compares every `.class` entry's SHA-256 against "
+            "Central's own binary jar for the same groupId:artifactId:version. "
+            "`resigned-identical` = every class matches (sources ARE ground truth for this jar); "
+            "`partially-modified` = only some classes match (only those are covered, the rest "
+            "still need decompile); `vendor-modified` = no class matched; `unverifiable` = "
+            "Central's own binary jar could not be fetched to compare against."
+        )
+        lines.append("")
+        lines.append("| artifact | version | status | identical | different | local-only | source |")
+        lines.append("|---|---|---|---|---|---|---|")
+        for a in sorted(content_checked,
+                         key=lambda x: (x["content_identity"]["status"], x.get("artifactId", ""))):
+            ci = a["content_identity"]
+            lines.append(f"| {a.get('artifactId')} | {a.get('version')} | {ci['status']} | "
+                         f"{ci.get('classes_identical', '-')} | {ci.get('classes_different', '-')} | "
+                         f"{ci.get('classes_local_only', '-')} | {ci.get('source', '-')} |")
+        lines.append("")
+        detail_rows = [a for a in content_checked
+                       if a["content_identity"].get("different_classes")
+                       or a["content_identity"].get("differing_non_class_entries")]
+        if detail_rows:
+            lines.append("Per-jar detail (differing/local-only classes, and any non-class entry "
+                         "that differs -- typically an added signature file):")
             lines.append("")
-            lines.append("| artifact | version | overlap % | local sha1 | central sha1 |")
-            lines.append("|---|---|---|---|---|")
-            for a in sorted(vendor_modified, key=lambda x: x["artifactId"]):
-                vm = a["vendor_modified"]
-                overlap = vm.get("overlap", {})
-                overlap_str = f"{overlap['overlap_pct']}%" if overlap.get("status") == "compared" else overlap.get("status", "n/a")
-                lines.append(f"| {a['artifactId']} | {a['version']} | {overlap_str} | "
-                             f"{vm.get('local_sha1')} | {vm.get('central_sha1')} |")
+            for a in sorted(detail_rows, key=lambda x: x.get("artifactId", "")):
+                ci = a["content_identity"]
+                diff_sample = ", ".join(ci.get("different_classes", [])[:8]) or "-"
+                local_only_sample = ", ".join(ci.get("local_only_classes", [])[:8]) or "-"
+                non_class = ", ".join(ci.get("differing_non_class_entries", [])[:8]) or "-"
+                lines.append(f"- **{a.get('artifactId')} {a.get('version')}** "
+                             f"({ci['status']}): different classes: {diff_sample}; "
+                             f"local-only classes: {local_only_sample}; "
+                             f"differing non-class entries: {non_class}")
             lines.append("")
 
     if unidentified:
@@ -1007,6 +1255,10 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     sr = sub.add_parser("recompile-check")
     sr.add_argument("--out", default=str(DEFAULT_OUT_DIR))
+
+    srck = sub.add_parser("recheck-pom-identified")
+    srck.add_argument("--evidence", default=str(DEFAULT_EVIDENCE))
+    srck.add_argument("--out", default=str(DEFAULT_OUT_DIR))
 
     srep = sub.add_parser("report")
     srep.add_argument("--out", default=str(DEFAULT_OUT_DIR))
@@ -1060,6 +1312,14 @@ def main(argv: Optional[list[str]] = None) -> int:
         run_recompile_check(manifest, out_dir)
         return 0
 
+    if args.cmd == "recheck-pom-identified":
+        manifest = json.load(open(out_dir / "manifest.json"))
+        evidence_entries = json.load(open(args.evidence))
+        summary = run_recheck_pom_identified_gaps(manifest, evidence_entries)
+        json.dump(manifest, open(out_dir / "manifest.json", "w"), indent=1)
+        print(summary)
+        return 0
+
     if args.cmd == "report":
         manifest = json.load(open(out_dir / "manifest.json"))
         paho = next((a.get("paho_diff") for a in manifest["artifacts"]
@@ -1074,7 +1334,8 @@ def main(argv: Optional[list[str]] = None) -> int:
                               classdiff_coverage=manifest.get("classdiff_coverage"),
                               recompile_results=recompile_results,
                               identify_summary=manifest.get("sha1_identify_summary"),
-                              all_third_party_coverage=all_coverage)
+                              all_third_party_coverage=all_coverage,
+                              pom_recheck_summary=manifest.get("pom_identified_recheck_summary"))
         Path(args.report).parent.mkdir(parents=True, exist_ok=True)
         Path(args.report).write_text(text)
         print(f"wrote {args.report}")
@@ -1091,6 +1352,8 @@ def main(argv: Optional[list[str]] = None) -> int:
         run_paho_diff(manifest, out_dir)
         recompile_results = run_recompile_check(manifest, out_dir)
         manifest = json.load(open(out_dir / "manifest.json"))
+        evidence_entries = json.load(open(args.evidence))
+        run_recheck_pom_identified_gaps(manifest, evidence_entries)
         paho = next((a.get("paho_diff") for a in manifest["artifacts"]
                      if (a["groupId"], a["artifactId"], a["version"]) == PAHO_GAV), None)
         all_coverage = run_all_third_party_coverage(manifest)
@@ -1099,7 +1362,8 @@ def main(argv: Optional[list[str]] = None) -> int:
                               classdiff_coverage=manifest.get("classdiff_coverage"),
                               recompile_results=recompile_results,
                               identify_summary=manifest.get("sha1_identify_summary"),
-                              all_third_party_coverage=all_coverage)
+                              all_third_party_coverage=all_coverage,
+                              pom_recheck_summary=manifest.get("pom_identified_recheck_summary"))
         Path(args.report).parent.mkdir(parents=True, exist_ok=True)
         Path(args.report).write_text(text)
         print(f"wrote {args.report}")

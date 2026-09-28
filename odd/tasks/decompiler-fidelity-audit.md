@@ -265,6 +265,30 @@ make the decompile complete and as faithful as possible.
       states the ALL-third-party-classes denominator explicitly: 26915/48868 (55.1%), vs the old fetched-only-scoped
       92.4%/72.7% that got misread downstream. Route: delegated writer (TDD, hermetic HTTP mocks, real network run
       against repo1.maven.org + search.maven.org only).
+- [x] T26b (t26a-upstream-sha1 branch, same worktree, 2nd commit) Orchestrator correction to T26a: manually verified
+      bin/ext/asm-9.10.1.jar's 39/39 `.class` entries are byte-identical to org.ow2.asm:asm:9.10.1 on Central by sha256
+      — the ONLY difference is Niagara's added META-INF/NIAGARA4.SF+.RSA signature — so T26a's whole-jar-SHA-1-only
+      "vendor-modified" call was wrong for it; sources ARE ground truth. Fix: new classify_jar_identity does a real
+      per-`.class` SHA-256 compare against Central's own binary jar (fetch_central_binary_jar) before ever calling
+      something vendor-modified, with a 3-way outcome — resigned-identical (all classes match, only non-class/signature
+      entries differ) / partially-modified (some match — those are covered, the rest still need decompile) /
+      vendor-modified (none match) — plus `unverifiable` when Central's binary can't be fetched. Real run on the T26a
+      44: 9 identified-by-sha1 + 23 resigned-identical + 1 vendor-modified (`okhttp` — the Kotlin-Multiplatform
+      metadata artifact, 0 local classes) + 11 not-on-central (unchanged). Also applied the SAME check to the ORIGINAL
+      154 pom.properties-identified artifacts whose evidence/b117 record showed a whole-jar SHA-1 mismatch (only ever
+      proven by their SOURCES jar's own SHA-1, never the BINARY): reused b117's own non-META-INF check where already
+      conclusive (64 resigned-identical, no network) and live-checked the rest (7 more resigned-identical incl.
+      mssql-jdbc and kotlin-reflect at their corrected versions; 2 genuinely vendor-modified — oauth2-oidc-sdk 0/533
+      classes match, org.eclipse.paho.client.mqttv3 0/110 match, confirming B117's prior "rebuilt-by-vendor" finding
+      for paho and extending it to oauth2-oidc-sdk, which had NO prior special-casing and was silently counted as
+      fully covered before this fix). Two more real bugs found and fixed by the live run itself: (1) the pom-identified
+      recheck looked up Central by the raw pom.properties `version` instead of `resolved_version`, 404ing
+      mssql-jdbc (13.4.0 vs the real 13.4.0.jre11) into a false "unverifiable"; (2) `classes_total_local == 0` (the
+      `okhttp` KMP metadata jar has zero local classes) was treated as falsy/missing and wrongly fell back to a stale
+      classdiff total. Both have regression tests. New headline: 51067/60314 (84.7%), up from 26915/48868 (55.1%) —
+      the T26a run had wrongly zeroed out coverage for every resigned/re-signed jar, not just the truly vendor-modified
+      ones. Verification: 98 unit tests + `make test` (342, both green before AND after the two extra bug fixes), real
+      run against repo1.maven.org + search.maven.org only. Route: delegated writer (TDD, hermetic HTTP mocks).
 - [x] T5 (9592b82) Porting guide: the only N5-only claim (`NiagaraSlotProcessor`) was false vs BOTH N4.14 and N4.15 — it is a
       relocation (javax.baja.nre... in bin/ext/nre.jar → niagara.nre... in module niagaraAnnotationProcessors); fixed.
 - [ ] T16b Extend lint-block R1/R2/R8 to docs/*.md (the porting guide carried an R8 error the linter could not see). TDD.

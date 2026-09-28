@@ -4,7 +4,7 @@ For third-party jars that are byte-identical (or vendor-resigned-only-different)
 
 Total third-party jars: 204 (matches evidence/b117's 204: 193 occurrences of 187 distinct upstream artifacts + 11 unidentified).
 
-**Coverage over ALL third-party classes: 26915 of 48868 classes (55.1%) have a byte-adjacent original upstream source.** Denominator = every class in every third-party jar in this corpus (identified + still-unidentified), not only artifacts with a fetched sources jar; numerator excludes vendor-modified artifacts (same coordinate on Central, different bytes -- their "source" is for a different build, not ground truth for these classes). See T26a.
+**Coverage over ALL third-party classes: 51067 of 60314 classes (84.7%) have a byte-adjacent original upstream source.** Denominator = every class in every third-party jar in this corpus (identified + still-unidentified), not only artifacts with a fetched sources jar; numerator excludes vendor-modified artifacts (same coordinate on Central, different bytes -- their "source" is for a different build, not ground truth for these classes). See T26a.
 
 ## Fetch status counts
 
@@ -50,44 +50,168 @@ No method-signature diffs in 5 sampled classes (same public API, different build
 
 ## SHA-1 identification of pom-less jars (T26a)
 
-For the jars evidence/b117 could not identify from pom.properties, this step hashes the exact shipped bytes (from the local jar mirror) and looks the SHA-1 up on Maven Central; on a miss, one filename-derived g:a:v guess is tried and accepted only if Central's own published binary-jar SHA-1 for that guess matches.
+For the jars evidence/b117 could not identify from pom.properties, this step hashes the exact shipped bytes (from the local jar mirror) and looks the SHA-1 up on Maven Central; on a miss, one filename-derived g:a:v guess is tried and accepted only if Central's own published binary-jar SHA-1 for that guess matches. A whole-jar SHA-1 mismatch then gets a full per-.class re-check (see the section below) before being called vendor-modified.
 
 | outcome | count |
 |---|---|
 | identified-by-sha1 | 9 |
-| vendor-modified | 24 |
+| resigned-identical | 23 |
+| partially-modified | 0 |
+| vendor-modified | 1 |
+| unverifiable | 0 |
 | not-on-central | 11 |
 | network-error | 0 |
 | mirror-unavailable | 0 |
 
-Vendor-modified: Central has the same groupId:artifactId:version, but with different bytes -- the fetched sources jar (if any) is for that different build, not ground truth for the shipped class files. Class-name overlap % is how much of the local jar's class set the same-coordinate upstream binary still shares.
+## Pom-identified artifacts re-check (orchestrator review follow-up)
 
-| artifact | version | overlap % | local sha1 | central sha1 |
-|---|---|---|---|---|
-| asm | 9.10.1 | 100.0% | 360d8f9fc733d7003c152487e9b55bbe3a5ac32f | ada2141c0cc52ee8f5c48cd5fa4ce0e794f22236 |
-| asm-analysis | 9.10.1 | 100.0% | f1d33ba6147ac7fa72c11288546423a26f301654 | 8d49f14d51f632cb1d87c88d1ceaf50db0d8af1b |
-| asm-commons | 9.10.1 | 100.0% | 9ede26538ee8acb66daa6687cb548373bdfccf35 | 4229e4c55fd8e01c23f9fe9884075cc628aacc50 |
-| asm-tree | 9.10.1 | 100.0% | 3380a0e926483b24eb26c9b103f61cf9905de055 | e244332a17564c1d1572449399a842de35881be2 |
-| asm-util | 9.10.1 | 100.0% | 1da8b65e70ce5a1d44db6d01bfa330686e392806 | 7bb9d450e8d4cbf9f9e04096c44bbfe7fba80b15 |
-| bc-fips | 2.1.2 | 100.0% | a7a8809caa1d6cbd142220d7376231c3850bd7ec | 061fbe8383f70489dda95a11a2a4739eb818ff2c |
-| bcpkix-fips | 2.1.12 | 100.0% | ba73035c3108c65f3f561b344f4a1c8bc1214f2b | 9617cb32c55d8abba1929f5a228a63686106a388 |
-| bcpkix-jdk18on | 1.85 | 100.0% | 9b0d47e9aaaded918f919bf1d47f57bac8963685 | b33d047adc6801a1cfc8ffe1634b23b306a670c1 |
-| bcprov-jdk18on | 1.85.2 | 100.0% | 993ca5d60997653b2959b47a57d783daf09c1e21 | aeb3dac02f799ed4783d5ed5900513339880727f |
-| bctls-fips | 2.1.24 | 100.0% | aa4e3d10a5a0b8cc02ace1ee442c3c853a1d695a | 91f6d18adf4e3c81ab5487485d1a5545d991f7bd |
-| bctls-jdk18on | 1.85 | 100.0% | 672141926083ed3e9e98cff99f24e677759c149b | 97da3e2c93c0ce8b29eddf5012f6734c447dc7dc |
-| bcutil-fips | 2.1.7 | 100.0% | 51a1c70b39499cbf4951b4a3be6270ba239f3536 | c6b5c948e154766f1c4df54e0e2359537c43358a |
-| bcutil-jdk18on | 1.85 | 100.0% | 59159d3677ae413928903e0a34fc6d4786cb7193 | c41082d6f61628919b675970563f5615e4427c9f |
-| jna | 5.19.1 | 100.0% | 44b9f6b6bd8a935bdc09dca094bba4d26afd5ec4 | ca303052cd617c1af2e2c8d344c98a706fb63143 |
-| jna-platform | 5.19.1 | 100.0% | 39effdb4dec249ade65a223302f3b63527fb994a | d1e54d9231da5ca3fa730d52960deaa555475468 |
-| kotlin-stdlib | 2.4.10 | 100.0% | e2dc611c57737994c1aeb11d8c3103072096b69c | 8943c84ddc6d5cc00a10dbc3736c397066eeaab5 |
-| kotlin-stdlib-jdk7 | 2.4.10 | 100.0% | 3d4eb23a79f57a389bbc62d2bb9c0f97b71aa879 | 1a2328fa30364b3e20416f466f05ea9e5dc95ee8 |
-| kotlin-stdlib-jdk8 | 2.4.10 | 100.0% | 7b6198198531361812c836c3f954e3bdeb9c7591 | 9502a89455064a43ac526d15d132a57bedfd8d8e |
-| libthrift | 0.24.0 | 100.0% | d96a013d425cc45db95072fdf409cc3ee42663e6 | c33207007e07e60c8ee6dfa1b1680d99816f11cc |
-| okhttp | 5.5.0 | 0.0% | 6392147b3cf7d7e1778bdb9b64b547ca474c83c9 | eb39f0d8a8bb9d0ad292551b830d662fea547d90 |
-| okhttp-jvm | 5.5.0 | 100.0% | b5d5e1a1ceec6b9e2cc1d9873d69fd74aa9ad342 | cefe1eb26408176d30511420b7e36b065e38bca0 |
-| okio-jvm | 3.18.1 | 100.0% | c1cbd747acb1a6a6afe98c3a8d69f417975f7203 | a3a8128bb3a0157d23ecc18c17e8330d9c0ac96c |
-| resilience4j-core | 2.4.0 | 100.0% | 95c0dba5f15ce7990c47c2d45df8698f630935e3 | 917315545f2ae0221ef3d6c27337b9ba6cba2702 |
-| resilience4j-retry | 2.4.0 | 100.0% | e56d7de3ba710ecec5d7cf7db6b7f40e04fbb645 | 7072ed9351dc3a38a7c5a4a1ca21d3355e1f6453 |
+The original 154 pom.properties-identified artifacts were only ever proven identical to Central by their SOURCES jar's own SHA-1. For the ones whose evidence/b117 record shows the whole shipped BINARY jar's SHA-1 differs from Central's, this reuses b117's own non-META-INF content check where it already found `identical-non-META-INF` (no network), and does a live per-.class check (same method as T26a) for the rest (b117's own download failures, real content differences, and jars this tool's own candidate-version corrections resolved after a `not-on-central` whole-jar lookup).
+
+| outcome | count |
+|---|---|
+| reused-resigned-identical | 64 |
+| resigned-identical | 7 |
+| partially-modified | 0 |
+| vendor-modified | 2 |
+| unverifiable | 0 |
+
+## Class-content identity re-check (per-.class SHA-256 vs Central)
+
+A whole-jar SHA-1 mismatch alone does not mean Central's sources aren't ground truth -- Niagara commonly re-signs a jar (adds META-INF/NIAGARA4.SF + .RSA) without touching a single class. This compares every `.class` entry's SHA-256 against Central's own binary jar for the same groupId:artifactId:version. `resigned-identical` = every class matches (sources ARE ground truth for this jar); `partially-modified` = only some classes match (only those are covered, the rest still need decompile); `vendor-modified` = no class matched; `unverifiable` = Central's own binary jar could not be fetched to compare against.
+
+| artifact | version | status | identical | different | local-only | source |
+|---|---|---|---|---|---|---|
+| angus-activation | 2.0.3 | resigned-identical | - | - | - | b117-reused |
+| asm | 9.10.1 | resigned-identical | 39 | 0 | 0 | live-recheck |
+| asm-analysis | 9.10.1 | resigned-identical | 15 | 0 | 0 | live-recheck |
+| asm-commons | 9.10.1 | resigned-identical | 28 | 0 | 0 | live-recheck |
+| asm-tree | 9.10.1 | resigned-identical | 39 | 0 | 0 | live-recheck |
+| asm-util | 9.10.1 | resigned-identical | 28 | 0 | 0 | live-recheck |
+| bc-fips | 2.1.2 | resigned-identical | 6784 | 0 | 0 | live-recheck |
+| bcpkix-fips | 2.1.12 | resigned-identical | 857 | 0 | 0 | live-recheck |
+| bcpkix-jdk18on | 1.85 | resigned-identical | 1029 | 0 | 0 | live-recheck |
+| bcprov-jdk18on | 1.85.2 | resigned-identical | 7163 | 0 | 0 | live-recheck |
+| bctls-fips | 2.1.24 | resigned-identical | 1000 | 0 | 0 | live-recheck |
+| bctls-jdk18on | 1.85 | resigned-identical | 1013 | 0 | 0 | live-recheck |
+| bcutil-fips | 2.1.7 | resigned-identical | 639 | 0 | 0 | live-recheck |
+| bcutil-jdk18on | 1.85 | resigned-identical | 618 | 0 | 0 | live-recheck |
+| byte-buddy | 1.18.12 | resigned-identical | - | - | - | b117-reused |
+| commons-codec | 1.22.1 | resigned-identical | - | - | - | b117-reused |
+| commons-lang3 | 3.20.0 | resigned-identical | - | - | - | b117-reused |
+| commons-logging | 1.4.0 | resigned-identical | - | - | - | b117-reused |
+| concurrentlinkedhashmap-lru | 1.4.2 | resigned-identical | - | - | - | b117-reused |
+| encoder | 1.4.0 | resigned-identical | - | - | - | b117-reused |
+| httpclient5 | 5.6.4 | resigned-identical | - | - | - | b117-reused |
+| httpcore5 | 5.4.3 | resigned-identical | - | - | - | b117-reused |
+| httpcore5-h2 | 5.4.3 | resigned-identical | - | - | - | b117-reused |
+| istack-commons-runtime | 4.2.0 | resigned-identical | - | - | - | b117-reused |
+| jakarta.annotation-api | 3.0.0 | resigned-identical | - | - | - | b117-reused |
+| jakarta.el-api | 6.0.1 | resigned-identical | - | - | - | b117-reused |
+| jakarta.enterprise.cdi-api | 4.1.0 | resigned-identical | - | - | - | b117-reused |
+| jakarta.enterprise.lang-model | 4.1.0 | resigned-identical | 26 | 0 | 0 | live-recheck |
+| jakarta.inject-api | 2.0.1 | resigned-identical | 7 | 0 | 0 | live-recheck |
+| jakarta.interceptor-api | 2.2.0 | resigned-identical | 11 | 0 | 0 | live-recheck |
+| jakarta.servlet-api | 6.1.0 | resigned-identical | 85 | 0 | 0 | live-recheck |
+| jakarta.transaction-api | 2.0.1 | resigned-identical | 20 | 0 | 0 | live-recheck |
+| jaxb-core | 4.0.9 | resigned-identical | - | - | - | b117-reused |
+| jaxb-runtime | 4.0.9 | resigned-identical | - | - | - | b117-reused |
+| jetty-alpn-client | 12.1.13 | resigned-identical | - | - | - | b117-reused |
+| jetty-annotations | 12.1.13 | resigned-identical | - | - | - | b117-reused |
+| jetty-client | 12.1.13 | resigned-identical | - | - | - | b117-reused |
+| jetty-compression-common | 12.1.13 | resigned-identical | - | - | - | b117-reused |
+| jetty-compression-gzip | 12.1.13 | resigned-identical | - | - | - | b117-reused |
+| jetty-compression-server | 12.1.13 | resigned-identical | - | - | - | b117-reused |
+| jetty-deploy | 12.1.13 | resigned-identical | - | - | - | b117-reused |
+| jetty-ee-webapp | 12.1.13 | resigned-identical | - | - | - | b117-reused |
+| jetty-ee11-annotations | 12.1.13 | resigned-identical | - | - | - | b117-reused |
+| jetty-ee11-plus | 12.1.13 | resigned-identical | - | - | - | b117-reused |
+| jetty-ee11-servlet | 12.1.13 | resigned-identical | - | - | - | b117-reused |
+| jetty-ee11-servlets | 12.1.13 | resigned-identical | - | - | - | b117-reused |
+| jetty-ee11-webapp | 12.1.13 | resigned-identical | - | - | - | b117-reused |
+| jetty-ee11-websocket-jetty-server | 12.1.13 | resigned-identical | - | - | - | b117-reused |
+| jetty-ee11-websocket-servlet | 12.1.13 | resigned-identical | - | - | - | b117-reused |
+| jetty-http | 12.1.13 | resigned-identical | - | - | - | b117-reused |
+| jetty-io | 12.1.13 | resigned-identical | - | - | - | b117-reused |
+| jetty-jmx | 12.1.13 | resigned-identical | - | - | - | b117-reused |
+| jetty-jndi | 12.1.13 | resigned-identical | - | - | - | b117-reused |
+| jetty-plus | 12.1.13 | resigned-identical | - | - | - | b117-reused |
+| jetty-security | 12.1.13 | resigned-identical | - | - | - | b117-reused |
+| jetty-server | 12.1.13 | resigned-identical | - | - | - | b117-reused |
+| jetty-session | 12.1.13 | resigned-identical | - | - | - | b117-reused |
+| jetty-util | 12.1.13 | resigned-identical | - | - | - | b117-reused |
+| jetty-websocket-core-client | 12.1.13 | resigned-identical | - | - | - | b117-reused |
+| jetty-websocket-core-common | 12.1.13 | resigned-identical | - | - | - | b117-reused |
+| jetty-websocket-core-server | 12.1.13 | resigned-identical | - | - | - | b117-reused |
+| jetty-websocket-jetty-api | 12.1.13 | resigned-identical | - | - | - | b117-reused |
+| jetty-websocket-jetty-client | 12.1.13 | resigned-identical | - | - | - | b117-reused |
+| jetty-websocket-jetty-common | 12.1.13 | resigned-identical | - | - | - | b117-reused |
+| jetty-websocket-jetty-server | 12.1.13 | resigned-identical | - | - | - | b117-reused |
+| jetty-xml | 12.1.13 | resigned-identical | - | - | - | b117-reused |
+| jffi | 1.4.0 | resigned-identical | - | - | - | b117-reused |
+| jna | 5.19.1 | resigned-identical | 125 | 0 | 0 | live-recheck |
+| jna-platform | 5.19.1 | resigned-identical | 1333 | 0 | 0 | live-recheck |
+| jnr-a64asm | 1.0.0 | resigned-identical | - | - | - | b117-reused |
+| jnr-constants | 0.11.0 | resigned-identical | - | - | - | b117-reused |
+| jnr-ffi | 2.3.1 | resigned-identical | - | - | - | b117-reused |
+| jnr-posix | 3.2.2 | resigned-identical | - | - | - | b117-reused |
+| jnr-x86asm | 1.0.2 | resigned-identical | - | - | - | b117-reused |
+| jose4j | 0.9.6 | resigned-identical | - | - | - | b117-reused |
+| json | 20260814 | resigned-identical | - | - | - | b117-reused |
+| kotlin-reflect | 2.1.21 | resigned-identical | 1965 | 0 | 0 | live-recheck |
+| kotlin-stdlib | 2.4.10 | resigned-identical | 990 | 0 | 0 | live-recheck |
+| kotlin-stdlib-jdk7 | 2.4.10 | resigned-identical | 1 | 0 | 0 | live-recheck |
+| kotlin-stdlib-jdk8 | 2.4.10 | resigned-identical | 1 | 0 | 0 | live-recheck |
+| libthrift | 0.24.0 | resigned-identical | 262 | 0 | 0 | live-recheck |
+| lz4-java | 1.11.2 | resigned-identical | - | - | - | b117-reused |
+| mssql-jdbc | 13.4.0 | resigned-identical | 458 | 0 | 0 | live-recheck |
+| okhttp-jvm | 5.5.0 | resigned-identical | 384 | 0 | 0 | live-recheck |
+| okio-jvm | 3.18.1 | resigned-identical | 121 | 0 | 0 | live-recheck |
+| orientdb-client | 3.2.55 | resigned-identical | - | - | - | b117-reused |
+| orientdb-core | 3.2.55 | resigned-identical | - | - | - | b117-reused |
+| orientdb-server | 3.2.55 | resigned-identical | - | - | - | b117-reused |
+| orientdb-tools | 3.2.55 | resigned-identical | - | - | - | b117-reused |
+| resilience4j-core | 2.4.0 | resigned-identical | 77 | 0 | 0 | live-recheck |
+| resilience4j-retry | 2.4.0 | resigned-identical | 31 | 0 | 0 | live-recheck |
+| slf4j-api | 2.0.18 | resigned-identical | - | - | - | b117-reused |
+| slf4j-jdk14 | 2.0.18 | resigned-identical | - | - | - | b117-reused |
+| txw2 | 4.0.9 | resigned-identical | - | - | - | b117-reused |
+| oauth2-oidc-sdk | 11.26 | vendor-modified | 0 | 533 | 0 | live-recheck |
+| okhttp | 5.5.0 | vendor-modified | 0 | 0 | 0 | live-recheck |
+| org.eclipse.paho.client.mqttv3 | 1.2.5 | vendor-modified | 0 | 110 | 0 | live-recheck |
+
+Per-jar detail (differing/local-only classes, and any non-class entry that differs -- typically an added signature file):
+
+- **asm 9.10.1** (resigned-identical): different classes: -; local-only classes: -; differing non-class entries: META-INF/MANIFEST.MF, META-INF/NIAGARA4.RSA, META-INF/NIAGARA4.SF
+- **asm-analysis 9.10.1** (resigned-identical): different classes: -; local-only classes: -; differing non-class entries: META-INF/MANIFEST.MF, META-INF/NIAGARA4.RSA, META-INF/NIAGARA4.SF
+- **asm-commons 9.10.1** (resigned-identical): different classes: -; local-only classes: -; differing non-class entries: META-INF/MANIFEST.MF, META-INF/NIAGARA4.RSA, META-INF/NIAGARA4.SF
+- **asm-tree 9.10.1** (resigned-identical): different classes: -; local-only classes: -; differing non-class entries: META-INF/MANIFEST.MF, META-INF/NIAGARA4.RSA, META-INF/NIAGARA4.SF
+- **asm-util 9.10.1** (resigned-identical): different classes: -; local-only classes: -; differing non-class entries: META-INF/MANIFEST.MF, META-INF/NIAGARA4.RSA, META-INF/NIAGARA4.SF
+- **bc-fips 2.1.2** (resigned-identical): different classes: -; local-only classes: -; differing non-class entries: META-INF/NIAGARA4.RSA, META-INF/NIAGARA4.SF
+- **bcpkix-fips 2.1.12** (resigned-identical): different classes: -; local-only classes: -; differing non-class entries: META-INF/NIAGARA4.RSA, META-INF/NIAGARA4.SF
+- **bcpkix-jdk18on 1.85** (resigned-identical): different classes: -; local-only classes: -; differing non-class entries: META-INF/NIAGARA4.RSA, META-INF/NIAGARA4.SF
+- **bcprov-jdk18on 1.85.2** (resigned-identical): different classes: -; local-only classes: -; differing non-class entries: META-INF/NIAGARA4.RSA, META-INF/NIAGARA4.SF
+- **bctls-fips 2.1.24** (resigned-identical): different classes: -; local-only classes: -; differing non-class entries: META-INF/NIAGARA4.RSA, META-INF/NIAGARA4.SF
+- **bctls-jdk18on 1.85** (resigned-identical): different classes: -; local-only classes: -; differing non-class entries: META-INF/NIAGARA4.RSA, META-INF/NIAGARA4.SF
+- **bcutil-fips 2.1.7** (resigned-identical): different classes: -; local-only classes: -; differing non-class entries: META-INF/NIAGARA4.RSA, META-INF/NIAGARA4.SF
+- **bcutil-jdk18on 1.85** (resigned-identical): different classes: -; local-only classes: -; differing non-class entries: META-INF/NIAGARA4.RSA, META-INF/NIAGARA4.SF
+- **jakarta.enterprise.lang-model 4.1.0** (resigned-identical): different classes: -; local-only classes: -; differing non-class entries: META-INF/MANIFEST.MF, META-INF/NIAGARA4.RSA, META-INF/NIAGARA4.SF
+- **jakarta.inject-api 2.0.1** (resigned-identical): different classes: -; local-only classes: -; differing non-class entries: META-INF/MANIFEST.MF, META-INF/NIAGARA4.RSA, META-INF/NIAGARA4.SF
+- **jakarta.interceptor-api 2.2.0** (resigned-identical): different classes: -; local-only classes: -; differing non-class entries: META-INF/MANIFEST.MF, META-INF/NIAGARA4.RSA, META-INF/NIAGARA4.SF
+- **jakarta.servlet-api 6.1.0** (resigned-identical): different classes: -; local-only classes: -; differing non-class entries: META-INF/MANIFEST.MF, META-INF/NIAGARA4.RSA, META-INF/NIAGARA4.SF
+- **jakarta.transaction-api 2.0.1** (resigned-identical): different classes: -; local-only classes: -; differing non-class entries: META-INF/MANIFEST.MF, META-INF/NIAGARA4.RSA, META-INF/NIAGARA4.SF
+- **jna 5.19.1** (resigned-identical): different classes: -; local-only classes: -; differing non-class entries: META-INF/MANIFEST.MF, META-INF/NIAGARA4.RSA, META-INF/NIAGARA4.SF
+- **jna-platform 5.19.1** (resigned-identical): different classes: -; local-only classes: -; differing non-class entries: META-INF/MANIFEST.MF, META-INF/NIAGARA4.RSA, META-INF/NIAGARA4.SF
+- **kotlin-stdlib 2.4.10** (resigned-identical): different classes: -; local-only classes: -; differing non-class entries: META-INF/MANIFEST.MF, META-INF/NIAGARA4.RSA, META-INF/NIAGARA4.SF
+- **kotlin-stdlib-jdk7 2.4.10** (resigned-identical): different classes: -; local-only classes: -; differing non-class entries: META-INF/MANIFEST.MF, META-INF/NIAGARA4.RSA, META-INF/NIAGARA4.SF
+- **kotlin-stdlib-jdk8 2.4.10** (resigned-identical): different classes: -; local-only classes: -; differing non-class entries: META-INF/MANIFEST.MF, META-INF/NIAGARA4.RSA, META-INF/NIAGARA4.SF
+- **libthrift 0.24.0** (resigned-identical): different classes: -; local-only classes: -; differing non-class entries: META-INF/MANIFEST.MF, META-INF/NIAGARA4.RSA, META-INF/NIAGARA4.SF
+- **oauth2-oidc-sdk 11.26** (vendor-modified): different classes: com/nimbusds/oauth2/sdk/AbstractAuthenticatedRequest.class, com/nimbusds/oauth2/sdk/AbstractConfigurationRequest.class, com/nimbusds/oauth2/sdk/AbstractOptionallyAuthenticatedRequest.class, com/nimbusds/oauth2/sdk/AbstractOptionallyIdentifiedRequest.class, com/nimbusds/oauth2/sdk/AbstractRequest.class, com/nimbusds/oauth2/sdk/AccessTokenResponse.class, com/nimbusds/oauth2/sdk/AssertionGrant.class, com/nimbusds/oauth2/sdk/AuthorizationCode.class; local-only classes: -; differing non-class entries: META-INF/MANIFEST.MF, iso3166_1alpha-2-3-map.properties, iso3166_1alpha2-codes.properties, iso3166_1alpha3-codes.properties, iso3166_3-codes.properties
+- **okhttp 5.5.0** (vendor-modified): different classes: -; local-only classes: -; differing non-class entries: META-INF/MANIFEST.MF, META-INF/NIAGARA4.RSA, META-INF/NIAGARA4.SF
+- **okhttp-jvm 5.5.0** (resigned-identical): different classes: -; local-only classes: -; differing non-class entries: META-INF/MANIFEST.MF, META-INF/NIAGARA4.RSA, META-INF/NIAGARA4.SF
+- **okio-jvm 3.18.1** (resigned-identical): different classes: -; local-only classes: -; differing non-class entries: META-INF/MANIFEST.MF, META-INF/NIAGARA4.RSA, META-INF/NIAGARA4.SF
+- **org.eclipse.paho.client.mqttv3 1.2.5** (vendor-modified): different classes: org/eclipse/paho/client/mqttv3/BufferedMessage.class, org/eclipse/paho/client/mqttv3/DisconnectedBufferOptions.class, org/eclipse/paho/client/mqttv3/IMqttActionListener.class, org/eclipse/paho/client/mqttv3/IMqttAsyncClient.class, org/eclipse/paho/client/mqttv3/IMqttClient.class, org/eclipse/paho/client/mqttv3/IMqttDeliveryToken.class, org/eclipse/paho/client/mqttv3/IMqttMessageListener.class, org/eclipse/paho/client/mqttv3/IMqttToken.class; local-only classes: -; differing non-class entries: META-INF/ECLIPSE_.RSA, META-INF/ECLIPSE_.SF, META-INF/MANIFEST.MF, META-INF/maven/org.eclipse.paho/org.eclipse.paho.client.mqttv3/pom.properties
+- **resilience4j-core 2.4.0** (resigned-identical): different classes: -; local-only classes: -; differing non-class entries: META-INF/MANIFEST.MF, META-INF/NIAGARA4.RSA, META-INF/NIAGARA4.SF
+- **resilience4j-retry 2.4.0** (resigned-identical): different classes: -; local-only classes: -; differing non-class entries: META-INF/MANIFEST.MF, META-INF/NIAGARA4.RSA, META-INF/NIAGARA4.SF
 
 ## Unidentified jars (no coordinates guessed)
 
