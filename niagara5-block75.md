@@ -299,6 +299,11 @@ contexts; inside a station, JxBrowser succeeding or the browser being effectivel
 
 ## 75.5 — B36-G1 CLOSED: `doc/js/buildingJS.html` is CONFIRMED-STALE, unmodified-for-N5 N4-era content — explicit "Niagara 4" framing, a wizard transcript defaulting to version "4.10", and a Gradle plugin id (`com.tridium.n-grunt`) absent from this install's own local Maven repository `[CERT-doc]`
 
+> **Correction (added by [Block 102], §14 cross-block).** "Unmodified-for-N5" is overstated. A `diff -u` against
+> the N4 excerpts shows 15+ deliberate edits in buildingJS (Gradle/nodeHome paragraph, `niagara_config_home`,
+> `-ux` submodule removal, changed plugin id) and a deleted Hx bullet in requirejs. The individual stale
+> citations noted here remain accurate. See [Block 102].
+
 [Block 36] §36.7 found `doc/js/buildingJS.html`/`doc/requirejs.html` present and on-topic by grep only, and
 `[INFER]`'d that their content is "very likely a near-identical revision" of the N4 guides N4 corpus
 Blocks 1132/1119 already excerpted, given the `com.tridium.niagara-grunt → com.tridium.grunt` plugin-id

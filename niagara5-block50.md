@@ -180,6 +180,10 @@ re-reading the guide's prose.
 
 ## 50.4 — Child gaps (guide claims this synthesis could not fully ground)
 
+> **Correction (added by [Block 106], §14 cross-block).** B50-G5's batik-awt-util fix is version-locked: only
+> 1.18+ carries the `Automatic-Module-Name` that gx.jar requires; 1.14–1.17 fail with `module not found`. See
+> [Block 106].
+
 - **B50-G1** — **No driver-type module has ever been built against N5 end-to-end.** Guide §2 (the entire
   step-by-step procedure) was validated by three real build PoCs — ColdRoomPan-rt (control logic, [B16]),
   CompPan-rt (control logic, [B28]), DashboardPan-rt (control logic + servlet, [B28]) — none of which is a

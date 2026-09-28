@@ -154,6 +154,14 @@ This index guides through the **61 blocks** of this research. The flat catalog l
 | 96 | Cloud connectors, licensing features, NCS agent: nine gap closures spanning Forge payload bodies, Forge tenant proxying, platform license-key censuses, a corpus-wide… | [block96](niagara5-block96.md) |
 | 97 | N5 build-toolchain gaps closed: a self-referencing moduleTest classpath, the real NDriver/VideoDriver scaffold manifest against buildN5.html's own inaccurate example… | [block97](niagara5-block97.md) |
 | 98 | The N4-4.15.3.28 OEM install closes five long-open N4-side gaps: JDK SHA-1 policy, SRP6 group-size cross-check, `backup.jar`'s KeyRing-in-`.dist` mechanism,… | [block98](niagara5-block98.md) |
+| 99 | RPC/permission fail-open census and crypto service callers: the `BComponentRpc`-literal fail-open shape stays a corpus-wide outlier, but the SAME bug class resurfaces… | [block99](niagara5-block99.md) |
+| 100 | Native binaries and N4 runtime residue: NCS-Agent's stripped Go pclntab recovered, `defaultToNonFIPS`'s dead-end confirmed corpus-wide, N4's firewall processors… | [block100](niagara5-block100.md) |
+| 101 | N5 install-layout capstone: the `jar-cache/<module>/` extraction mechanism traced to its source, two `com.tridium.json` writer classes' real call-site census, the… | [block101](niagara5-block101.md) |
+| 102 | Workbench/web UI stack: closing the B21/B36/B79 JS-build-toolchain gaps, correcting Block 75's "unmodified" `buildingJS.html` verdict, the exact `buildN5.html`… | [block102](niagara5-block102.md) |
+| 103 | Closing six named child gaps across three unrelated clusters: docDeveloperAnalytics's own bajadoc index, PatternFilter's full wildcard grammar, the exact Slot-Sheet… | [block103](niagara5-block103.md) |
+| 104 | `BNiagaraStation`'s base connection-handshake bodies, the `findReachableStations` wire protocol (both hops), `BComponent`'s unconditional `isChildLegal` default,… | [block104](niagara5-block104.md) |
+| 105 | Census residues and dependency-graph deltas: closing eight cross-block child gaps | [block105](niagara5-block105.md) |
+| 106 | Ten build-toolchain-residue and third-party-library child gaps closed: `ThreadDeath`/`finalize()` idioms, a Gradle default-capability rule, a version-gated Batik… | [block106](niagara5-block106.md) |
 
 ---
 
@@ -526,6 +534,15 @@ This index guides through the **61 blocks** of this research. The flat catalog l
 - [x] B88-G1, B90-G2/G4, B85-G3, B77-G4, B18-G5 Forge schemas, platform types, license overrides, NCS identity convergence → [Block 96]
 - [x] B89-G4, B50-G6, B51-G4/G6, B10-G4/G6, B29-G3 templates, N5 RPC injection, kit lints, port-script fix → [Block 97]
 - [x] B62-G1/G2, B38-G4, B66-G1, B47-G2, B82-G1/G3, B57-G4, B90-G1 N4-4.15 crypto parity, live .kr backup, reflect body → [Block 98]
+
+- [x] B91-G4, B94-G1/G6, B32-G4, B15-G4; signingService copies CA:TRUE into non-CA certs (MEDIUM-HIGH conditional) → [Block 99]
+- [x] B96-G1, B94-G3/G4, B95-G4, B98-G1/G2 NCS-Agent pclntab, N4 SecurityManager on → [Block 100]
+- [x] B95-G2/G3/G5, B34-G6, B13-G5/G6 jar-cache extraction, Atlas ARM64 target → [Block 101]
+- [x] B36-G3/B79-G1/G2/G3, B75-G3, B97-G4, B93-G1/G2, B102-G1 grunt-niagara, WebDev toggle, docs diff, pxEditor ships → [Block 102]
+- [x] B59-G4, B75-G2, B72-G2/G4, B4-G4 dual doc index, glob grammar, agent specificity → [Block 103]
+- [x] B73-G1..G4, B92-G2/G3, B10-G3 station discovery, isChildLegal, BACnet chassis → [Block 104]
+- [x] B98-G3, B70-G1, B60-G3/G4, B92-G1 ZKM logs, bajaui census fix, module.xml consolidation → [Block 105]
+- [x] B55-G1/G2, B39-G2, B44-G4, B64-G3, B67-G1 javac.exe, okio, batik ≥1.18, finalize idiom → [Block 106]
 
 ## Non-investigable gaps (without a running N5 station)
 

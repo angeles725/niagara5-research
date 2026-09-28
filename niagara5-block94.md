@@ -649,17 +649,17 @@ Ran `bash ~/investigacion/sdd-investigacion/research-sdd/toolbelt/verify-block.s
 | 19 | `platCrypto` daemon transport is HTTP (`crypto?action=...`) via `BDaemonSession`, served by `CryptoServlet` | [CERT] | `BDaemonSession.java:923-933,152`; `CryptoServlet.java:79,86-89`; `CryptoServletMessage.java:11,18` |
 | 20 | `CryptoServlet` daemon-side admin gate requires `hasHostAdminAccess()` for nearly every action | [CERT] | `organized/_bin-ext/niagarad/vineflower/com/tridium/niagarad/util/DaemonAuthUtil.java:80` |
 
-**Tally (exact, from the actual tool run, this session, exit 0):** raw marker counts — `[CERT-hw]` 12 (adj 11),
-`[CERT]` 51 (adj 50), doc-grade marker 2 raw / 1 adjusted (the one adjusted hit is this paragraph itself
-NAMING the marker in prose, not a fresh body claim), web-grade marker 2 raw / 1 adjusted (same self-reference
-reason), `[CERT-a]` 5 (all quote [Block 33]'s OWN marker on ITS OWN citation, not a fresh claim of this
-block's own — see §94.5/Connections/Corrections text), `[INFER]` 7 (adj 6). Ratio `[INFER]`/`[CERT]`-family
-(adjusted) = 6/68 ≈ 0.09 — an EVIDENCE block, consistent with a low ratio. Citation resolution: 39 of 45
-backticked `file:line` tokens resolved against this corpus; the 6 unresolved are legitimate cross-repo/
-cross-format `extern` citations — into `/home/cristian/niagara-research` (the N4 baseline corpus, a different
-git root the script cannot resolve into by design) and `niagara-mental-model-bloque27.md` (a prose source
-document, not a `.java` file) — the script's own `== exit 0 ==` confirms none of these are treated as a
-failure.
+**Tally (exact, from the actual tool run, this session, `== exit 0 ==`):** raw marker counts — `[CERT-hw]` 13
+(adj 11), `[CERT]` 52 (adj 50), doc-grade and web-grade markers 0 raw/0 adjusted (this block uses neither —
+the header legend names them only in prose, not in bracket form, so no self-reference pollutes the count),
+`[CERT-a]` 6 (adj 5; all quote [Block 33]'s OWN marker on ITS OWN citation, not a fresh claim of this block's
+own — see §94.5/Connections/Corrections text), `[INFER]` 8 (adj 6). Ratio `[INFER]`/`[CERT]`-family
+(adjusted) = 6/66 ≈ 0.09 — an EVIDENCE block, consistent with a low ratio for a `mixed`-type block that mostly
+closes gaps with fresh evidence rather than leaving inference open. Citation resolution: 39 of 45 backticked
+`file:line` tokens resolved against this corpus; the 6 unresolved are legitimate cross-repo/cross-format
+`extern` citations — into `/home/cristian/niagara-research` (the N4 baseline corpus, a different git root the
+script cannot resolve into by design) and `niagara-mental-model-bloque27.md` (a prose source document, not a
+`.java` file) — the script's own `== exit 0 ==` confirms none of these are treated as a failure.
 
 **Artifacts:** scratchpad `/tmp/claude-1000/-home-cristian-niagara-research/dcc4f40c-fb17-49fb-afa5-3b08dcc8e0bd/
 scratchpad/b94/` holds `nre.dll`/`njre.dll` (re-hashed copies, matching [Block 87]), `initFips.txt`,
