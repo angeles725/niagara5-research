@@ -14,7 +14,20 @@
 
 setup_file() {
   REPO_ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)"
-  N5_MODULES_DIR="${N5_MODULES_DIR:-/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules}"
+  # Orchestrator note (2026-09-28): reading ~440 jars from /mnt/c (WSL 9p) is
+  # the main slowdown for decompile/grade runs. A sha256-verified local
+  # mirror (spot-checked against known recon.json sha256s this session)
+  # exists at $mirror — prefer it when present, falling back to the original
+  # read-only Windows-side mount otherwise. Byte-identical, so every test
+  # assertion is unaffected; only wall-clock time changes.
+  local mirror="/home/cristian/niagara5-research-localcache/jar-mirror-5.0.0.28"
+  if [[ -d "$mirror/modules" ]]; then
+    N5_MODULES_DIR="${N5_MODULES_DIR:-$mirror/modules}"
+    N5_BIN_EXT_DIR="${N5_BIN_EXT_DIR:-$mirror/bin-ext}"
+  else
+    N5_MODULES_DIR="${N5_MODULES_DIR:-/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules}"
+    N5_BIN_EXT_DIR="${N5_BIN_EXT_DIR:-/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext}"
+  fi
   MODULE="lontunnel"
 
   echo "$REPO_ROOT" > "$BATS_FILE_TMPDIR/repo_root"
@@ -28,7 +41,7 @@ setup_file() {
     return 0
   fi
 
-  export N5_MODULES_DIR N5_OUT_DIR="$BATS_FILE_TMPDIR/organized"
+  export N5_MODULES_DIR N5_BIN_EXT_DIR N5_OUT_DIR="$BATS_FILE_TMPDIR/organized"
   "$REPO_ROOT/tools/n5-decompile.sh" "$MODULE" > "$BATS_FILE_TMPDIR/first_run.log" 2>&1
   echo "$?" > "$BATS_FILE_TMPDIR/first_run_status"
 
@@ -52,6 +65,13 @@ setup_file() {
   N5_JDK25_HOME="${N5_JDK25_HOME:-/home/linuxbrew/.linuxbrew/opt/openjdk@25/libexec}" \
     "$REPO_ROOT/tools/n5-decompile.sh" --variant v2 "$MODULE" > "$BATS_FILE_TMPDIR/v2_run.log" 2>&1
   echo "$?" > "$BATS_FILE_TMPDIR/v2_run_status"
+
+  # One shared --variant cons run (T22, niagara5-block118.md §118.1's
+  # conservative + line-mapped view), reused by every cons-flag-assertion test
+  # below, same sharing rationale as v2's above.
+  N5_JDK25_HOME="${N5_JDK25_HOME:-/home/linuxbrew/.linuxbrew/opt/openjdk@25/libexec}" \
+    "$REPO_ROOT/tools/n5-decompile.sh" --variant cons "$MODULE" > "$BATS_FILE_TMPDIR/cons_run.log" 2>&1
+  echo "$?" > "$BATS_FILE_TMPDIR/cons_run_status"
 }
 
 # Build a tiny synthetic module jar (module.xml + optional LIB-INF/<name>.jar nested inside) for
@@ -71,6 +91,21 @@ with zipfile.ZipFile(dest, "w") as z:
         with zipfile.ZipFile(inner, "w") as iz:
             iz.writestr("lib-marker.txt", libinf_name)
         z.writestr(f"LIB-INF/{libinf_name}", inner.getvalue())
+PY
+}
+
+# Like make_fake_jar, but with caller-controlled marker CONTENT (not just the
+# destination path) so a test can produce two jars at the SAME path with
+# deliberately DIFFERENT bytes/sha256 (T19-hardening fix 1: a source jar
+# changed at the same manifest path must be re-hashed, not trusted from cache).
+make_versioned_jar() {
+  local dest="$1" vendor="${2:-Tridium}" content="$3"
+  python3 - "$dest" "$vendor" "$content" <<'PY'
+import sys, zipfile
+dest, vendor, content = sys.argv[1], sys.argv[2], sys.argv[3]
+with zipfile.ZipFile(dest, "w") as z:
+    z.writestr("META-INF/module.xml", f'<module vendor="{vendor}"/>')
+    z.writestr("marker.txt", content)
 PY
 }
 
@@ -200,6 +235,189 @@ setup() {
 
   status_field=$(python3 -c "import json;print(json.load(open('$N5_OUT_DIR/$MODULE/recon.json'))['v2']['status'])")
   [ "$status_field" = "ok" ]
+}
+
+# --- --variant cons (B118 §118.1's conservative + line-mapped view, T22) ---
+# Reuses v2's entire library-context machinery; only the flag set, output
+# dirs (vineflower-cons/+fallback-cons/), and recon.json's "cons" key differ.
+
+@test "--variant cons exits 0 and produces vineflower-cons/ output" {
+  status="$(cat "$BATS_FILE_TMPDIR/cons_run_status")"
+  [ "$status" -eq 0 ]
+  count=$(find "$N5_OUT_DIR/$MODULE/vineflower-cons" -name '*.java' 2>/dev/null | wc -l)
+  [ "$count" -ge 1 ]
+}
+
+@test "--variant cons passes the B118 conservative flags, all false/resugaring-off except bytecode-source-mapping, before -e" {
+  cmd_line="$(grep '^CMD:' "$N5_OUT_DIR/_logs/$MODULE.cons.log" | head -1)"
+  [[ -n "$cmd_line" ]]
+  for flag in '--pattern-matching=false' '--decompile-switch-expressions=false' '--ternary-in-if=false' \
+      '--prettify-ifs=false' '--inline-simple-lambdas=false' '--bytecode-source-mapping=true' \
+      '--__dump_original_lines__=true'; do
+    [[ "$cmd_line" == *"$flag"* ]]
+  done
+  # every Additional option must precede -e (the same undocumented Vineflower
+  # ordering requirement v2 already guards against)
+  before_e="${cmd_line%%-e=*}"
+  [[ "$before_e" == *"--bytecode-source-mapping=true"* ]]
+  [[ "$before_e" == *"--__dump_original_lines__=true"* ]]
+}
+
+@test "--variant cons command line has no Vineflower 'missing ... ignored' parse-order warnings" {
+  run grep -c 'warn: missing' "$N5_OUT_DIR/_logs/$MODULE.cons.log"
+  [ "$status" -ne 0 ]
+  [ "$output" -eq 0 ]
+}
+
+@test "--variant cons does not touch v1's vineflower/ or v2's vineflower2/ output" {
+  find "$N5_OUT_DIR/$MODULE/vineflower" -name '*.java' | sort | xargs -r sha256sum \
+    > "$BATS_TEST_TMPDIR/v1_hashes_after_cons.txt"
+  diff "$BATS_FILE_TMPDIR/v1_vineflower_hashes_before.txt" "$BATS_TEST_TMPDIR/v1_hashes_after_cons.txt"
+  count=$(find "$N5_OUT_DIR/$MODULE/vineflower2" -name '*.java' 2>/dev/null | wc -l)
+  [ "$count" -ge 1 ]
+}
+
+@test "recon.json keeps its v1 AND v2 fields and gains a separate cons sub-object" {
+  v2_status=$(python3 -c "import json;print(json.load(open('$N5_OUT_DIR/$MODULE/recon.json'))['v2']['status'])")
+  [ "$v2_status" = "ok" ]
+
+  cons_variant=$(python3 -c "import json;print(json.load(open('$N5_OUT_DIR/$MODULE/recon.json'))['cons']['variant'])")
+  [ "$cons_variant" = "cons" ]
+
+  cons_sha=$(python3 -c "import json;print(json.load(open('$N5_OUT_DIR/$MODULE/recon.json'))['cons']['jar_sha256'])")
+  expected_sha=$(sha256sum "$N5_MODULES_DIR/$MODULE.jar" | awk '{print $1}')
+  [ "$cons_sha" = "$expected_sha" ]
+
+  cons_status=$(python3 -c "import json;print(json.load(open('$N5_OUT_DIR/$MODULE/recon.json'))['cons']['status'])")
+  [ "$cons_status" = "ok" ]
+
+  # v2 and cons idempotency keys must differ (different flags -> different key)
+  v2_key=$(python3 -c "import json;print(json.load(open('$N5_OUT_DIR/$MODULE/recon.json'))['v2']['idempotency_key'])")
+  cons_key=$(python3 -c "import json;print(json.load(open('$N5_OUT_DIR/$MODULE/recon.json'))['cons']['idempotency_key'])")
+  [ "$v2_key" != "$cons_key" ]
+
+  cons_flags_pm=$(python3 -c "import json;print(json.load(open('$N5_OUT_DIR/$MODULE/recon.json'))['cons']['flags']['pattern_matching'])")
+  [ "$cons_flags_pm" = "False" ]
+}
+
+@test "--variant cons is idempotent (rerunning without --force skips)" {
+  before=$(stat -c %Y "$N5_OUT_DIR/$MODULE/recon.json")
+  sleep 1
+  run "$REPO_ROOT/tools/n5-decompile.sh" --variant cons "$MODULE"
+  [ "$status" -eq 0 ]
+  after=$(stat -c %Y "$N5_OUT_DIR/$MODULE/recon.json")
+  [ "$before" -eq "$after" ]
+}
+
+# --- --extra-tridium (T22): the 10 out-of-pipeline Tridium jars (B117 §117.4)
+# and the Tridium-owned nested LIB-INF jars (B117 §117.2) ---
+
+@test "run_extra_tridium classifies mechanically via the existing >50% Tridium-namespace rule and routes etc-m2 vs lib into separate output roots (synthetic fixtures)" {
+  local_dir="$BATS_TEST_TMPDIR/extra1"
+  mkdir -p "$local_dir/modules" "$local_dir/etc-m2/com/tridium/tools/foo/1.0" "$local_dir/lib" "$local_dir/out"
+  # a real >50%-Tridium jar (classify only inspects the zip namelist, not bytecode)
+  python3 - "$local_dir/etc-m2/com/tridium/tools/foo/1.0/foo-1.0.jar" <<'PY'
+import sys, zipfile
+with zipfile.ZipFile(sys.argv[1], "w") as z:
+    z.writestr("com/tridium/foo/A.class", b"stub")
+    z.writestr("com/tridium/foo/B.class", b"stub")
+PY
+  python3 - "$local_dir/lib/bar-1.0.jar" <<'PY'
+import sys, zipfile
+with zipfile.ZipFile(sys.argv[1], "w") as z:
+    z.writestr("com/tridium/bar/A.class", b"stub")
+PY
+  # a third-party (non-Tridium) jar that must be SKIPPED
+  python3 - "$local_dir/etc-m2/com/tridium/tools/foo/1.0/thirdparty-1.0.jar" <<'PY'
+import sys, zipfile
+with zipfile.ZipFile(sys.argv[1], "w") as z:
+    z.writestr("org/apache/Thing.class", b"stub")
+PY
+  N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR=/nonexistent N5_OUT_DIR="$local_dir/out" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --prepare-libcache
+  [ "$status" -eq 0 ]
+  N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR=/nonexistent N5_OUT_DIR="$local_dir/out" \
+    N5_ETC_M2_DIR="$local_dir/etc-m2" N5_LIB_DIR="$local_dir/lib" \
+    N5_JDK25_HOME="$BATS_TEST_TMPDIR/fake-jdk" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --extra-tridium
+  [ -d "$local_dir/out/_etc-m2/foo-1.0" ]
+  [ -d "$local_dir/out/_lib/bar-1.0" ]
+  [ ! -d "$local_dir/out/_etc-m2/thirdparty-1.0" ]
+  [ -f "$local_dir/out/_etc-m2/foo-1.0/recon.json" ]
+  language=$(python3 -c "import json;print(json.load(open('$local_dir/out/_etc-m2/foo-1.0/recon.json'))['language'])")
+  [ "$language" = "java" ]
+}
+
+@test "run_extra_tridium_libinf routes a Tridium-owned nested LIB-INF jar into organized/<mod>/lib-inf/<stem>/" {
+  local_dir="$BATS_TEST_TMPDIR/extra2"
+  mkdir -p "$local_dir/modules" "$local_dir/out/somemod/extracted/LIB-INF"
+  python3 - "$local_dir/out/somemod/extracted/LIB-INF/tridiumlib-1.0.jar" <<'PY'
+import sys, zipfile
+with zipfile.ZipFile(sys.argv[1], "w") as z:
+    z.writestr("com/tridium/x/A.class", b"stub")
+PY
+  python3 - "$local_dir/out/somemod/extracted/LIB-INF/thirdparty-2.0.jar" <<'PY'
+import sys, zipfile
+with zipfile.ZipFile(sys.argv[1], "w") as z:
+    z.writestr("org/apache/Thing.class", b"stub")
+PY
+  N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR=/nonexistent N5_OUT_DIR="$local_dir/out" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --prepare-libcache
+  [ "$status" -eq 0 ]
+  N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR=/nonexistent N5_OUT_DIR="$local_dir/out" \
+    N5_ETC_M2_DIR=/nonexistent N5_LIB_DIR=/nonexistent \
+    N5_JDK25_HOME="$BATS_TEST_TMPDIR/fake-jdk" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --extra-tridium
+  [ -d "$local_dir/out/somemod/lib-inf/tridiumlib-1.0" ]
+  [ ! -d "$local_dir/out/somemod/lib-inf/thirdparty-2.0" ]
+}
+
+@test "--extra-tridium on the real corpus: a small out-of-pipeline etc/m2 jar decompiles (v2+cons) and n-conv-plugin is flagged Kotlin" {
+  real_etc_m2="/mnt/c/Program Files/Niagara/5.0.0.28/etc/m2/repository"
+  [[ -d "$real_etc_m2" ]] || skip "etc/m2 not available at $real_etc_m2"
+  filetypes_jar="$(find "$real_etc_m2/com/tridium/tools/filetypes" -name '*.jar' -print -quit 2>/dev/null)"
+  [[ -n "$filetypes_jar" ]] || skip "filetypes jar not found under $real_etc_m2"
+  ncp_jar="$(find "$real_etc_m2/com/tridium/tools/n-conv-plugin" -name '*.jar' -print -quit 2>/dev/null)"
+  [[ -n "$ncp_jar" ]] || skip "n-conv-plugin jar not found under $real_etc_m2"
+
+  out="$BATS_TEST_TMPDIR/organized_extra_real"
+  mkdir -p "$out"
+  ln -s "$N5_OUT_DIR/_v2-libcache" "$out/_v2-libcache"
+  local_etc="$BATS_TEST_TMPDIR/etc-m2-subset"
+  mkdir -p "$local_etc/filetypes" "$local_etc/n-conv-plugin"
+  cp "$filetypes_jar" "$local_etc/filetypes/"
+  cp "$ncp_jar" "$local_etc/n-conv-plugin/"
+
+  N5_OUT_DIR="$out" N5_ETC_M2_DIR="$local_etc" N5_LIB_DIR=/nonexistent \
+    "$REPO_ROOT/tools/n5-decompile.sh" --extra-tridium
+  status=$?
+  [ "$status" -eq 0 ]
+
+  ft_stem="$(basename "$filetypes_jar" .jar)"
+  [ -f "$out/_etc-m2/$ft_stem/recon.json" ]
+  ft_v2_status=$(python3 -c "import json;print(json.load(open('$out/_etc-m2/$ft_stem/recon.json'))['v2']['status'])")
+  [ "$ft_v2_status" = "ok" ]
+  ft_cons_status=$(python3 -c "import json;print(json.load(open('$out/_etc-m2/$ft_stem/recon.json'))['cons']['status'])")
+  [ "$ft_cons_status" = "ok" ]
+
+  ncp_stem="$(basename "$ncp_jar" .jar)"
+  ncp_lang=$(python3 -c "import json;print(json.load(open('$out/_etc-m2/$ncp_stem/recon.json'))['language'])")
+  [ "$ncp_lang" = "kotlin" ]
+}
+
+@test "--extra-tridium on the real corpus: devkit's LIB-INF n-templates (Tridium-owned, non-Kotlin) decompiles into organized/devkit/lib-inf/" {
+  [[ -f "$N5_OUT_DIR/devkit/extracted/LIB-INF/n-templates-5.0.54.9.2.jar" ]] \
+    || skip "devkit not yet decompiled in this shared organized/ tree"
+  out="$N5_OUT_DIR"
+  N5_ETC_M2_DIR=/nonexistent N5_LIB_DIR=/nonexistent \
+    "$REPO_ROOT/tools/n5-decompile.sh" --extra-tridium
+  status=$?
+  [ "$status" -eq 0 ]
+  [ -f "$out/devkit/lib-inf/n-templates-5.0.54.9.2/recon.json" ]
+  lang=$(python3 -c "import json;print(json.load(open('$out/devkit/lib-inf/n-templates-5.0.54.9.2/recon.json'))['language'])")
+  [ "$lang" = "java" ]
+  v2_status=$(python3 -c "import json;print(json.load(open('$out/devkit/lib-inf/n-templates-5.0.54.9.2/recon.json'))['v2']['status'])")
+  [ "$v2_status" = "ok" ]
 }
 
 # --- T19 fix: v2 library-context race + hardening (odd/tasks/decompiler-fidelity-audit.md) ---
@@ -425,6 +643,225 @@ setup() {
   cfr_cmd_line="$(grep '^CMD:' "$out/_logs/$MODULE.v2.log" | grep 'cfr' | head -1)"
   [[ -n "$cfr_cmd_line" ]]
   [[ "$cfr_cmd_line" == *"--extraclasspath"* ]]
+}
+
+# --- T19-hardening (RDD review-56f32a364d16cec0, folded in under T22): 5 reproducibility
+# holes in the v2 library-context machinery that --variant cons also reuses. ---
+
+@test "T19h1: compute_v2_idempotency_key re-hashes a source jar whose content changed at the same manifest path, instead of trusting a stale cached sha256" {
+  local_dir="$BATS_TEST_TMPDIR/t19h1"
+  mkdir -p "$local_dir/modules" "$local_dir/out"
+  make_versioned_jar "$local_dir/modules/modA.jar" Tridium "a"
+  make_versioned_jar "$local_dir/modules/modB.jar" Tridium "v1"
+  N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR=/nonexistent N5_OUT_DIR="$local_dir/out" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --prepare-libcache
+  [ "$status" -eq 0 ]
+  key_before="$(bash -c "
+    set -euo pipefail
+    N5_MODULES_DIR='$local_dir/modules' N5_BIN_EXT_DIR=/nonexistent N5_OUT_DIR='$local_dir/out'
+    export N5_MODULES_DIR N5_BIN_EXT_DIR N5_OUT_DIR
+    source '$REPO_ROOT/tools/n5-decompile.sh'
+    compute_v2_library_jars
+    build_v2_external_lists '$local_dir/modules/modA.jar'
+    build_v2_flags
+    compute_v2_idempotency_key deadbeef vfsha cfrsha testflags
+  ")"
+  sleep 1
+  # modB's content changes AT THE SAME PATH, WITHOUT re-running --prepare-libcache
+  # (simulates a module jar upgraded between a manifest build and the next v2 run).
+  make_versioned_jar "$local_dir/modules/modB.jar" Tridium "v2-different-content"
+  key_after="$(bash -c "
+    set -euo pipefail
+    N5_MODULES_DIR='$local_dir/modules' N5_BIN_EXT_DIR=/nonexistent N5_OUT_DIR='$local_dir/out'
+    export N5_MODULES_DIR N5_BIN_EXT_DIR N5_OUT_DIR
+    source '$REPO_ROOT/tools/n5-decompile.sh'
+    compute_v2_library_jars
+    build_v2_external_lists '$local_dir/modules/modA.jar'
+    build_v2_flags
+    compute_v2_idempotency_key deadbeef vfsha cfrsha testflags
+  ")"
+  [ "$key_before" != "$key_after" ]
+}
+
+@test "T19h2a: an interrupted --prepare-libcache (missing completion marker) is never treated as ready by --variant v2" {
+  local_dir="$BATS_TEST_TMPDIR/t19h2a"
+  mkdir -p "$local_dir/modules" "$local_dir/out/_v2-libcache"
+  make_fake_jar "$local_dir/modules/modA.jar" Tridium ""
+  N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR=/nonexistent N5_OUT_DIR="$local_dir/out" \
+    N5_JDK25_HOME="$BATS_TEST_TMPDIR/fake-jdk" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --variant v2 modA
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"--prepare-libcache"* ]]
+}
+
+@test "T19h2b: --prepare-libcache writes a completion marker whose recorded count matches the cache's actual jar count" {
+  local_dir="$BATS_TEST_TMPDIR/t19h2b"
+  mkdir -p "$local_dir/modules" "$local_dir/out"
+  make_fake_jar "$local_dir/modules/modA.jar" Tridium "libx-1.0.jar"
+  N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR=/nonexistent N5_OUT_DIR="$local_dir/out" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --prepare-libcache
+  [ "$status" -eq 0 ]
+  [ -f "$local_dir/out/_v2-libcache/.complete" ]
+  recorded=$(grep -o 'count=[0-9]*' "$local_dir/out/_v2-libcache/.complete" | cut -d= -f2)
+  actual=$(find "$local_dir/out/_v2-libcache" -maxdepth 1 -name '*.jar' | wc -l)
+  [ "$recorded" -eq "$actual" ]
+}
+
+@test "T19h2c: a stale completion marker (count mismatch against actual cache contents) is treated as not-ready" {
+  local_dir="$BATS_TEST_TMPDIR/t19h2c"
+  mkdir -p "$local_dir/modules" "$local_dir/out"
+  make_fake_jar "$local_dir/modules/modA.jar" Tridium "libx-1.0.jar"
+  N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR=/nonexistent N5_OUT_DIR="$local_dir/out" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --prepare-libcache
+  [ "$status" -eq 0 ]
+  f=$(find "$local_dir/out/_v2-libcache" -maxdepth 1 -name '*.jar' | head -1)
+  rm -f "$f"
+  N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR=/nonexistent N5_OUT_DIR="$local_dir/out" \
+    N5_JDK25_HOME="$BATS_TEST_TMPDIR/fake-jdk" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --variant v2 modA
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"--prepare-libcache"* ]]
+}
+
+@test "T19h3: compute_v2_library_jars excludes libcache entries no longer referenced by any current source jar (pruned from the active set, not physically deleted)" {
+  local_dir="$BATS_TEST_TMPDIR/t19h3"
+  mkdir -p "$local_dir/modules" "$local_dir/out"
+  make_fake_jar "$local_dir/modules/modA.jar" Tridium "libx-1.0.jar"
+  N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR=/nonexistent N5_OUT_DIR="$local_dir/out" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --prepare-libcache
+  [ "$status" -eq 0 ]
+  old_entry=$(find "$local_dir/out/_v2-libcache" -maxdepth 1 -name '*.jar')
+  [ -n "$old_entry" ]
+  # modA's embedded lib is superseded by a different-content one (a version bump)
+  make_fake_jar "$local_dir/modules/modA.jar" Tridium "libx-2.0.jar"
+  N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR=/nonexistent N5_OUT_DIR="$local_dir/out" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --prepare-libcache
+  [ "$status" -eq 0 ]
+  [ -f "$old_entry" ]
+  run bash -c "
+    set -euo pipefail
+    N5_MODULES_DIR='$local_dir/modules' N5_BIN_EXT_DIR=/nonexistent N5_OUT_DIR='$local_dir/out'
+    export N5_MODULES_DIR N5_BIN_EXT_DIR N5_OUT_DIR
+    source '$REPO_ROOT/tools/n5-decompile.sh'
+    compute_v2_library_jars
+    printf '%s\n' \"\${V2_ALL_LIB_JARS[@]}\"
+  "
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"$(basename "$old_entry")"* ]]
+}
+
+@test "T19h4a: ensure_extracted_for_v2 does not write the extraction-provenance marker when unzip fails" {
+  local_dir="$BATS_TEST_TMPDIR/t19h4a"
+  mkdir -p "$local_dir/moddir"
+  run bash -c "
+    set -euo pipefail
+    N5_MODULES_DIR=/nonexistent N5_OUT_DIR='$local_dir/out'
+    export N5_MODULES_DIR N5_OUT_DIR
+    source '$REPO_ROOT/tools/n5-decompile.sh'
+    ensure_extracted_for_v2 '$local_dir/does-not-exist.jar' '$local_dir/moddir' false fakemod v2
+  "
+  [ "$status" -ne 0 ]
+  [ ! -f "$local_dir/moddir/extracted/.jar_sha256" ]
+}
+
+@test "T19h4b: ensure_extracted_for_v2 writes the marker on a real, complete extraction" {
+  local_dir="$BATS_TEST_TMPDIR/t19h4b"
+  mkdir -p "$local_dir/moddir"
+  make_fake_jar "$local_dir/modA.jar" Tridium ""
+  run bash -c "
+    set -euo pipefail
+    N5_MODULES_DIR=/nonexistent N5_OUT_DIR='$local_dir/out'
+    export N5_MODULES_DIR N5_OUT_DIR
+    source '$REPO_ROOT/tools/n5-decompile.sh'
+    ensure_extracted_for_v2 '$local_dir/modA.jar' '$local_dir/moddir' false modA v2
+  "
+  [ "$status" -eq 0 ]
+  [ -f "$local_dir/moddir/extracted/.jar_sha256" ]
+}
+
+@test "T19h4c: ensure_extracted_for_v2 fails and withholds the marker when extracted/ ends up with fewer .class files than the jar lists (partial extraction, unzip still exits 0)" {
+  local_dir="$BATS_TEST_TMPDIR/t19h4c"
+  mkdir -p "$local_dir/moddir" "$local_dir/fakebin"
+  python3 - "$local_dir/modA.jar" <<'PY'
+import sys, zipfile
+with zipfile.ZipFile(sys.argv[1], "w") as z:
+    z.writestr("META-INF/module.xml", '<module vendor="Tridium"/>')
+    z.writestr("a/A.class", b"stub")
+    z.writestr("a/B.class", b"stub")
+PY
+  cat > "$local_dir/fakebin/unzip" <<'SH'
+#!/usr/bin/env bash
+if [[ "$1" == "-l" ]]; then
+  echo "  Length      Date    Time    Name"
+  echo "a/A.class"
+  echo "a/B.class"
+  exit 0
+fi
+dest=""
+prev=""
+for a in "$@"; do
+  if [[ "$prev" == "-d" ]]; then dest="$a"; fi
+  prev="$a"
+done
+mkdir -p "$dest/META-INF"
+echo stub > "$dest/META-INF/module.xml"
+exit 0
+SH
+  chmod +x "$local_dir/fakebin/unzip"
+  run bash -c "
+    set -euo pipefail
+    PATH='$local_dir/fakebin:'\$PATH
+    N5_MODULES_DIR=/nonexistent N5_OUT_DIR='$local_dir/out'
+    export N5_MODULES_DIR N5_OUT_DIR PATH
+    source '$REPO_ROOT/tools/n5-decompile.sh'
+    ensure_extracted_for_v2 '$local_dir/modA.jar' '$local_dir/moddir' false modA v2
+  "
+  [ "$status" -ne 0 ]
+  [ ! -f "$local_dir/moddir/extracted/.jar_sha256" ]
+}
+
+@test "T19h5: prepare_v2_libcache uses one shared LIB-INF caching helper for modules/ and bin/ext/ (no duplicated scan loop)" {
+  count=$(grep -c "unzip -o -q \"\$jar\" 'LIB-INF/\*\.jar'" "$REPO_ROOT/tools/n5-decompile.sh")
+  [ "$count" -le 1 ]
+}
+
+@test "T19h6: v2_libcache_ready/compute_v2_library_jars/prepare_v2_libcache tolerate a symlinked _v2-libcache/ (GNU find -P silently returns 0 on a symlinked starting arg without -L)" {
+  local_dir="$BATS_TEST_TMPDIR/t19h6"
+  mkdir -p "$local_dir/modules" "$local_dir/real-out"
+  make_fake_jar "$local_dir/modules/modA.jar" Tridium "libx-1.0.jar"
+  N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR=/nonexistent N5_OUT_DIR="$local_dir/real-out" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --prepare-libcache
+  [ "$status" -eq 0 ]
+  real_count=$(find "$local_dir/real-out/_v2-libcache" -maxdepth 1 -name '*.jar' | wc -l)
+  [ "$real_count" -ge 1 ]
+
+  # a SECOND N5_OUT_DIR whose _v2-libcache is a SYMLINK to the first — this is
+  # exactly the shape tools/tests/n5-decompile.bats' own "real corpus" tests
+  # use (ln -s "$N5_OUT_DIR/_v2-libcache" "$out/_v2-libcache") to share one
+  # prepared cache across an isolated per-test output dir.
+  mkdir -p "$local_dir/symlinked-out"
+  ln -s "$local_dir/real-out/_v2-libcache" "$local_dir/symlinked-out/_v2-libcache"
+
+  run bash -c "
+    set -euo pipefail
+    N5_OUT_DIR='$local_dir/symlinked-out'
+    export N5_OUT_DIR
+    source '$REPO_ROOT/tools/n5-decompile.sh'
+    v2_libcache_ready && echo READY || echo NOT_READY
+  "
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"READY"* ]]
+  [[ "$output" != *"NOT_READY"* ]]
+
+  # rerunning --prepare-libcache through the symlink must not corrupt the
+  # shared real cache's .complete count (the bug this test guards: it used to
+  # silently rebuild with a "scanned 0" view of the same jars and overwrite
+  # .complete with count=0 while leaving the physical jar files untouched).
+  N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR=/nonexistent N5_OUT_DIR="$local_dir/symlinked-out" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --prepare-libcache
+  [ "$status" -eq 0 ]
+  recorded=$(grep -o 'count=[0-9]*' "$local_dir/real-out/_v2-libcache/.complete" | cut -d= -f2)
+  [ "$recorded" -eq "$real_count" ]
 }
 
 @test "rerunning without --force is idempotent (skips, does not re-extract)" {

@@ -7,10 +7,16 @@
 #   tools/n5-decompile.sh --docsource     # only extract docSource.jar (original .java sources)
 #   tools/n5-decompile.sh --bin-ext       # decompile the Tridium-owned jars under bin/ext/
 #   tools/n5-decompile.sh --force <name>  # ignore the sha256 cache, redo it
-#   tools/n5-decompile.sh --prepare-libcache    # v2 only: build organized/_v2-libcache/ (see below)
+#   tools/n5-decompile.sh --prepare-libcache    # v2/cons: build organized/_v2-libcache/ (see below)
 #   tools/n5-decompile.sh --variant v2 <name>   # v2: same module, WITH library context
 #   tools/n5-decompile.sh --variant v2 --all    # v2 over every module jar (see below)
 #   tools/n5-decompile.sh --variant v2 --bin-ext [<name>]  # v2 over included bin/ext jar(s)
+#   tools/n5-decompile.sh --variant cons <name> # cons: B118 §118.1's conservative + line-mapped
+#                                                # view (same lib context as v2, see below)
+#   tools/n5-decompile.sh --variant cons --all  # cons over every module jar
+#   tools/n5-decompile.sh --extra-tridium       # v2+cons over the 10 out-of-pipeline Tridium
+#                                                # etc/m2+lib jars AND the Tridium-owned nested
+#                                                # LIB-INF jars (see below; T22)
 #
 # --prepare-libcache (T19 fix, odd/tasks/decompiler-fidelity-audit.md): a required, explicit,
 # ONE-TIME, serial step before any --variant v2 decompile. It extracts every module/bin-ext
@@ -50,6 +56,37 @@
 # full run), a bare `--variant v2` is a usage error, so an omitted argument can never
 # silently trigger the full ~250-module library-context run by accident.
 #
+# --variant cons (T22, niagara5-block118.md §118.1): a THIRD decompile, alongside v1 and v2,
+# writing organized/<mod>/vineflower-cons/ (+fallback-cons/). Reuses v2's entire
+# library-context machinery UNCHANGED (immutable libcache, --add-external, --include-runtime,
+# idempotency key, failure semantics) — only the Vineflower flag set differs: resugaring OFF
+# (--pattern-matching=false --decompile-switch-expressions=false --ternary-in-if=false
+# --prettify-ifs=false --inline-simple-lambdas=false, so instanceof-pattern/switch-expression/
+# collapsed-if syntax never renders — B90/B98's resugaring caveat, closed mechanically) and
+# ORIGINAL-source line mapping ON (--bytecode-source-mapping=true plus the HIDDEN
+# --__dump_original_lines__=true, found only in IFernflowerPreferences.class's constant pool,
+# not --help). B118 measured 669/669 mapped lines correct against docSource originals. cons is a
+# second, syntax-neutral, line-cited view for corroboration, not a replacement for v1/v2 — a real
+# pattern switch (e.g. BNumericWritable) renders more faithfully in v1/v2; cons shows the
+# desugared bytecode-shaped state machine instead, still line-mapped.
+#
+# --extra-tridium (T22, niagara5-block117.md §117.2 + §117.4): the pipeline above only ever
+# scans $N5_MODULES_DIR and $N5_BIN_EXT_DIR. Two further Tridium-owned code populations exist:
+#  - 10 out-of-pipeline jars under $N5_ETC_M2_DIR (com/tridium/tools/*, com/tridium/xelem/*) and
+#    $N5_LIB_DIR (tridium-niagara-baja-doclet). Classified with tools/n5-classify-binext.py's
+#    EXISTING >50%-Tridium-namespace rule, unchanged — mechanical, not a hand-picked list
+#    (verified this session: exactly the 10 names niagara5-block117.md §117.4 lists). Each gets
+#    v2 AND cons, into organized/_etc-m2/<jar-stem>/ or organized/_lib/<jar-stem>/. 4 of the 10
+#    (n-plugin, n-conv-plugin, settings, utils) carry Lkotlin/Metadata; in their bytecode — this
+#    is recorded per-jar as "language": "kotlin" in recon.json (write_recon_language), and
+#    Vineflower 1.12.0's bundled Kotlin plugin (--kt-enable, default true) applies to them.
+#  - Tridium-owned nested LIB-INF jars (niagara5-block117.md §117.2: 98 LIB-INF jars exist, only
+#    2 — devkit's n-templates and tridium-niagara-slotomatic-library — are Tridium's own code by
+#    the same >50% rule). Found by scanning every ALREADY-EXTRACTED
+#    organized/<mod>/extracted/LIB-INF/*.jar (not the deduplicated-by-sha256 libcache, so
+#    per-module identity is kept), decompiled (v2+cons) into
+#    organized/<mod>/lib-inf/<jar-stem>/{extracted,vineflower2,vineflower-cons,...}.
+#
 # Undocumented Vineflower 1.12.0 CLI ordering requirement (verified empirically
 # 2026-09-28, not documented anywhere in --help): an "Additional option" such as
 # --include-runtime or --use-lvt-names placed AFTER a "General option" such as
@@ -77,6 +114,10 @@
 #                    JDK home (with lib/modules) is one level down, at opt/openjdk@25/libexec.
 #                    Passing opt/openjdk@25 itself crashes Vineflower with a NullPointerException
 #                    in JrtFinder.addRuntime (verified empirically 2026-09-28).
+#   N5_ETC_M2_DIR    default: /mnt/c/Program Files/Niagara/5.0.0.28/etc/m2/repository
+#                    (--extra-tridium only) scanned for *.jar recursively.
+#   N5_LIB_DIR       default: /mnt/c/Program Files/Niagara/5.0.0.28/lib
+#                    (--extra-tridium only) scanned for *.jar, -maxdepth 1.
 # --bin-ext: the 247 module jars are not the whole N5 install — bin/ext/ carries
 # ~109 more jars the daemon/tools load at runtime, most of them third-party
 # libraries (Jetty, BouncyCastle under bcfips/bcstd, Kotlin stdlib, ASM, JNA/JNR,
@@ -132,6 +173,8 @@ N5_VINEFLOWER="${N5_VINEFLOWER:-$REPO_ROOT/tools/decompilers/vineflower-1.12.0.j
 N5_CFR="${N5_CFR:-$REPO_ROOT/tools/decompilers/cfr-0.152.jar}"
 N5_PRIMARY_TIMEOUT="${N5_PRIMARY_TIMEOUT:-240}"
 N5_JDK25_HOME="${N5_JDK25_HOME:-/home/linuxbrew/.linuxbrew/opt/openjdk@25/libexec}"
+N5_ETC_M2_DIR="${N5_ETC_M2_DIR:-/mnt/c/Program Files/Niagara/5.0.0.28/etc/m2/repository}"
+N5_LIB_DIR="${N5_LIB_DIR:-/mnt/c/Program Files/Niagara/5.0.0.28/lib}"
 
 LOG_DIR="$N5_OUT_DIR/_logs"
 mkdir -p "$LOG_DIR"
@@ -386,74 +429,152 @@ decompile_binext() {
 # shipped by multiple modules and (b) makes staleness moot — a changed LIB-INF
 # jar gets a different key, never collides with or overwrites an old one.
 # Idempotent: an existing cache entry is left alone unless --force.
+# Shared by both the modules/ and bin/ext/ scans below (T19-hardening fix 5,
+# RDD review-56f32a364d16cec0: the two scans used to be near-identical
+# duplicated while-loop bodies). Extracts $1's own LIB-INF/*.jar entries,
+# copies each into $2 keyed by ITS OWN sha256 (content-addressed — naturally
+# dedups identical embedded libs shipped by multiple modules; a changed lib
+# gets a different key, never collides with or overwrites an old one), and
+# appends every resulting sha256 to the caller's PREP_CURRENT_LIBINF_SHAS
+# array (T19-hardening fix 3's pruning list — see compute_v2_library_jars).
+# Updates the caller's PREP_ADDED_COUNT.
+cache_source_jar_libinf() {
+  local jar="$1" cache_dir="$2" force="$3"
+  local tmpdir libjar libsha dest
+  tmpdir="$(mktemp -d)"
+  unzip -o -q "$jar" 'LIB-INF/*.jar' -d "$tmpdir" 2>/dev/null || true
+  while IFS= read -r -d '' libjar; do
+    libsha="$(sha256_of "$libjar")"
+    [[ -z "$libsha" ]] && continue
+    PREP_CURRENT_LIBINF_SHAS+=("$libsha")
+    dest="$cache_dir/$libsha.jar"
+    if [[ "$force" == "true" || ! -f "$dest" ]]; then
+      cp "$libjar" "$dest.tmp.$$"
+      mv "$dest.tmp.$$" "$dest"
+      PREP_ADDED_COUNT=$((PREP_ADDED_COUNT + 1))
+    fi
+  done < <(find "$tmpdir" -name '*.jar' -print0 2>/dev/null)
+  rm -rf "$tmpdir"
+}
+
+# T19-hardening (RDD review-56f32a364d16cec0) additions folded into this
+# function, on top of the original T19 fix:
+#  - completion sentinel (.complete, recording the expected *.jar count),
+#    written LAST and atomically (write-to-temp then rename) — a reader
+#    (v2_libcache_ready) can then tell a COMPLETE cache from one an
+#    interrupted run left half-built, instead of trusting the directory's
+#    mere existence (fix 2).
+#  - _source_shas.tsv now also records each source jar's own size+mtime, so a
+#    jar replaced at the SAME PATH after this manifest was written gets
+#    re-hashed live by compute_v2_idempotency_key instead of silently keeping
+#    a now-wrong cached hash forever (fix 1; see load_v2_source_shas below).
+#  - _current_entries.tsv records the sha256 of every LIB-INF jar CURRENTLY
+#    referenced by a source jar, THIS run. compute_v2_library_jars only offers
+#    a cache entry listed here — the cache dir itself stays content-addressed
+#    and is never pruned (an old recon.json's idempotency key may still name a
+#    superseded entry), but a stale/orphaned version drops out of every
+#    FUTURE decompile's -e= list instead of accumulating forever (fix 3).
 prepare_v2_libcache() {
   local force="${1:-false}"
   local cache_dir="$N5_OUT_DIR/_v2-libcache"
   mkdir -p "$cache_dir"
-  local jar tmpdir added=0 scanned=0
+  # An in-progress rebuild must never look complete to a concurrent reader.
+  rm -f "$cache_dir/.complete"
+
+  PREP_ADDED_COUNT=0
+  PREP_CURRENT_LIBINF_SHAS=()
   local -a all_source_jars=()
+  local jar scanned=0
+
   # $N5_MODULES_DIR is flat (-maxdepth 1); $N5_BIN_EXT_DIR is scanned
   # recursively, matching compute_v2_library_jars' own bin/ext scan (and
   # decompile_binext's), which is NOT -maxdepth 1 — bin/ext ships several
   # jars nested under subdirectories (bcfips/, bcstd/, jxbrowser/, system/,
   # securityBridge/). A --maxdepth 1 scan here would silently miss those
-  # jars' own LIB-INF content and leave them out of the _source_shas.tsv
-  # performance manifest (compute_v2_idempotency_key would still hash them
-  # correctly via its per-jar fallback — just slower, not incorrect — but the
-  # LIB-INF omission would be a real, if unlikely, fidelity gap).
+  # jars' own LIB-INF content.
   while IFS= read -r -d '' jar; do
     [[ "$(basename "$jar" .jar)" == "docSource" ]] && continue
     all_source_jars+=("$jar")
     scanned=$((scanned + 1))
-    tmpdir="$(mktemp -d)"
-    unzip -o -q "$jar" 'LIB-INF/*.jar' -d "$tmpdir" 2>/dev/null || true
-    local libjar
-    while IFS= read -r -d '' libjar; do
-      local libsha; libsha="$(sha256_of "$libjar")"
-      local dest="$cache_dir/$libsha.jar"
-      if [[ "$force" == "true" || ! -f "$dest" ]]; then
-        cp "$libjar" "$dest.tmp.$$"
-        mv "$dest.tmp.$$" "$dest"
-        added=$((added + 1))
-      fi
-    done < <(find "$tmpdir" -name '*.jar' -print0 2>/dev/null)
-    rm -rf "$tmpdir"
-  done < <(find "$N5_MODULES_DIR" -maxdepth 1 -name '*.jar' -print0 2>/dev/null)
+    cache_source_jar_libinf "$jar" "$cache_dir" "$force"
+  done < <(find -L "$N5_MODULES_DIR" -maxdepth 1 -name '*.jar' -print0 2>/dev/null)
   if [[ -d "$N5_BIN_EXT_DIR" ]]; then
     while IFS= read -r -d '' jar; do
       all_source_jars+=("$jar")
       scanned=$((scanned + 1))
-      tmpdir="$(mktemp -d)"
-      unzip -o -q "$jar" 'LIB-INF/*.jar' -d "$tmpdir" 2>/dev/null || true
-      local libjar
-      while IFS= read -r -d '' libjar; do
-        local libsha; libsha="$(sha256_of "$libjar")"
-        local dest="$cache_dir/$libsha.jar"
-        if [[ "$force" == "true" || ! -f "$dest" ]]; then
-          cp "$libjar" "$dest.tmp.$$"
-          mv "$dest.tmp.$$" "$dest"
-          added=$((added + 1))
-        fi
-      done < <(find "$tmpdir" -name '*.jar' -print0 2>/dev/null)
-      rm -rf "$tmpdir"
-    done < <(find "$N5_BIN_EXT_DIR" -name '*.jar' -print0 2>/dev/null)
+      cache_source_jar_libinf "$jar" "$cache_dir" "$force"
+    done < <(find -L "$N5_BIN_EXT_DIR" -name '*.jar' -print0 2>/dev/null)
   fi
 
   # Performance (not a correctness requirement): also pre-hash every scanned
-  # module/bin-ext jar ITSELF (not just its LIB-INF content) into one manifest,
-  # _source_shas.tsv (sha256sum's own "<hash>  <path>" format, one batched
-  # invocation). compute_v2_idempotency_key needs every library jar's sha256 on
-  # every single-module v2 invocation (T19 fix, requirement 2); without this,
-  # each of ~250 module invocations would separately re-hash the same ~360
-  # jars — expensive when $N5_MODULES_DIR/$N5_BIN_EXT_DIR live on a slow mount
-  # (e.g. /mnt/c under WSL). Rebuilt fresh each --prepare-libcache run (jars
-  # rarely change; --force is not required to refresh it).
+  # module/bin-ext jar ITSELF (not just its LIB-INF content), plus its size and
+  # mtime, into one manifest, _source_shas.tsv (tab-separated:
+  # sha256<TAB>size<TAB>mtime<TAB>path). compute_v2_idempotency_key needs every
+  # library jar's sha256 on every single-module v2/cons invocation; without
+  # this, each of ~250 module invocations would separately re-hash the same
+  # ~360 jars — expensive when $N5_MODULES_DIR/$N5_BIN_EXT_DIR live on a slow
+  # mount (e.g. /mnt/c under WSL). size+mtime let a later run detect a jar that
+  # changed at the SAME path without rebuilding the whole manifest (fix 1).
+  # Rebuilt fresh each --prepare-libcache run (jars rarely change; --force is
+  # not required to refresh it).
   if [[ "${#all_source_jars[@]}" -gt 0 ]]; then
-    sha256sum "${all_source_jars[@]}" > "$cache_dir/_source_shas.tsv.tmp.$$" 2>/dev/null || true
+    : > "$cache_dir/_source_shas.tsv.tmp.$$"
+    local p sha size mtime
+    for p in "${all_source_jars[@]}"; do
+      sha="$(sha256_of "$p")"
+      size="$(stat -c '%s' "$p" 2>/dev/null || echo 0)"
+      mtime="$(stat -c '%Y' "$p" 2>/dev/null || echo 0)"
+      printf '%s\t%s\t%s\t%s\n' "$sha" "$size" "$mtime" "$p" >> "$cache_dir/_source_shas.tsv.tmp.$$"
+    done
     mv "$cache_dir/_source_shas.tsv.tmp.$$" "$cache_dir/_source_shas.tsv"
   fi
 
-  log "_prepare-libcache" "scanned $scanned module/bin-ext jar(s), added/updated $added lib jar(s) into $cache_dir"
+  if [[ "${#PREP_CURRENT_LIBINF_SHAS[@]}" -gt 0 ]]; then
+    printf '%s\n' "${PREP_CURRENT_LIBINF_SHAS[@]}" | sort -u > "$cache_dir/_current_entries.tsv.tmp.$$"
+    mv "$cache_dir/_current_entries.tsv.tmp.$$" "$cache_dir/_current_entries.tsv"
+  else
+    : > "$cache_dir/_current_entries.tsv"
+  fi
+
+  local actual_count
+  actual_count="$(find -L "$cache_dir" -maxdepth 1 -name '*.jar' | wc -l)"
+  printf 'count=%s\n' "$actual_count" > "$cache_dir/.complete.tmp.$$"
+  mv "$cache_dir/.complete.tmp.$$" "$cache_dir/.complete"
+
+  log "_prepare-libcache" "scanned $scanned module/bin-ext jar(s), added/updated $PREP_ADDED_COUNT lib jar(s), cache now has $actual_count entry/entries in $cache_dir"
+}
+
+# T19-hardening fix 2: the completion sentinel. Both --variant v2 and
+# --variant cons call this instead of a bare `[[ -d ... ]]` before trusting
+# the libcache — an interrupted or in-progress --prepare-libcache must never
+# be treated as ready.
+#
+# BUGFIX (found via a bats test that symlinks organized/_v2-libcache/,
+# 2026-09-28): every `find` in this file that scans `$cache_dir` or
+# `$N5_OUT_DIR/_v2-libcache` now passes `-L`. GNU find's default (`-P`) mode
+# does NOT descend into a directory given as ITS OWN starting argument when
+# that argument is a symlink (confirmed empirically: `find symlink-to-dir
+# -maxdepth 1 -name '*.jar'` silently returns 0 results, while `[[ -d
+# symlink-to-dir ]]` and `[[ -f symlink-to-dir/x ]]` both correctly follow it)
+# — a real correctness gap, not just a test artifact, if `_v2-libcache` (or
+# $N5_OUT_DIR itself) is ever reached via a symlink. Without `-L`,
+# `v2_libcache_ready` would see `.complete`'s recorded count via `-f` (which
+# DOES follow the symlink) but `actual=0` via `find` (which did NOT) — a
+# spurious mismatch that then made `prepare_v2_libcache` rebuild into the
+# SAME (symlinked, so really the shared) cache dir with a genuinely-empty
+# source-jar scan, overwriting `.complete` with `count=0` while the physical
+# jar files were left untouched — corrupting a shared cache for every later
+# reader. `-L` makes every one of these `find` calls behave the same whether
+# the path is a real directory or a symlink to one.
+v2_libcache_ready() {
+  local cache_dir="$N5_OUT_DIR/_v2-libcache"
+  [[ -d "$cache_dir" ]] || return 1
+  [[ -f "$cache_dir/.complete" ]] || return 1
+  local recorded actual
+  recorded="$(grep -o 'count=[0-9]*' "$cache_dir/.complete" 2>/dev/null | cut -d= -f2)"
+  [[ -n "$recorded" ]] || return 1
+  actual="$(find -L "$cache_dir" -maxdepth 1 -name '*.jar' | wc -l)"
+  [[ "$recorded" == "$actual" ]]
 }
 
 # Populates global array V2_ALL_LIB_JARS with every jar to offer Vineflower as
@@ -475,13 +596,35 @@ compute_v2_library_jars() {
   while IFS= read -r -d '' jar; do
     [[ "$(basename "$jar" .jar)" == "docSource" ]] && continue
     V2_ALL_LIB_JARS+=("$jar")
-  done < <(find "$N5_MODULES_DIR" -maxdepth 1 -name '*.jar' -print0)
+  done < <(find -L "$N5_MODULES_DIR" -maxdepth 1 -name '*.jar' -print0)
   while IFS= read -r -d '' jar; do
     V2_ALL_LIB_JARS+=("$jar")
-  done < <(find "$N5_BIN_EXT_DIR" -name '*.jar' -print0 2>/dev/null)
+  done < <(find -L "$N5_BIN_EXT_DIR" -name '*.jar' -print0 2>/dev/null)
+
+  # T19-hardening fix 3: only offer a libcache entry CURRENTLY referenced by
+  # some source jar's LIB-INF, per prepare_v2_libcache's _current_entries.tsv
+  # (rebuilt fresh every --prepare-libcache run). The cache dir itself is
+  # content-addressed and never pruned (an old recon.json's idempotency key
+  # may still name a superseded entry), but a stale/orphaned version must not
+  # silently re-enter a NEW decompile's -e= list forever. A cache built before
+  # this fix existed (no _current_entries.tsv yet) falls back to the old
+  # "offer everything in the cache dir" behavior rather than excluding
+  # everything.
+  local current_manifest="$N5_OUT_DIR/_v2-libcache/_current_entries.tsv"
+  local -A current_shas=()
+  if [[ -f "$current_manifest" ]]; then
+    local sha
+    while IFS= read -r sha; do
+      [[ -n "$sha" ]] && current_shas["$sha"]=1
+    done < "$current_manifest"
+  fi
   while IFS= read -r -d '' jar; do
+    local base; base="$(basename "$jar" .jar)"
+    if [[ -f "$current_manifest" ]] && [[ -z "${current_shas[$base]:-}" ]]; then
+      continue
+    fi
     V2_ALL_LIB_JARS+=("$jar")
-  done < <(find "$N5_OUT_DIR/_v2-libcache" -maxdepth 1 -name '*.jar' -print0 2>/dev/null)
+  done < <(find -L "$N5_OUT_DIR/_v2-libcache" -maxdepth 1 -name '*.jar' -print0 2>/dev/null)
 }
 
 # Builds V2_LIB_CSV (comma-joined, for Vineflower -e=), V2_LIB_COLON
@@ -548,51 +691,90 @@ build_v2_flags() {
   V2_FLAGS_JSON="$flags_json"
 }
 
-# T19 fix, requirement 2: idempotency key = sha256 of (module jar sha256 +
-# sorted library-set sha256 list + JDK home + flag list + tool jar sha256s). A
-# change in ANY of these must trigger a re-decompile, not just a changed module
-# jar. Library jars already living in $N5_OUT_DIR/_v2-libcache/ are keyed by
-# their own sha256 already (their filename IS the hash), so those are reused
-# directly; every other jar in the set (every $N5_MODULES_DIR / $N5_BIN_EXT_DIR
-# jar) is hashed with one batched `sha256sum` call rather than one process per
-# jar, since the full set (V2_LIB_ARRAY) can be ~450 entries.
 # Lazily loads $N5_OUT_DIR/_v2-libcache/_source_shas.tsv (prepare_v2_libcache's
-# performance manifest, sha256sum's own "<hash>  <path>" format) into
-# V2_SOURCE_SHA_BY_PATH, once per process. A path with no manifest entry (the
+# performance manifest: sha256<TAB>size<TAB>mtime<TAB>path, one line per
+# scanned module/bin-ext jar) into V2_SOURCE_SHA_BY_PATH/_SIZE_BY_PATH/
+# _MTIME_BY_PATH, once per process. A path with no manifest entry (the
 # manifest is missing entirely, or a jar was added after --prepare-libcache
-# last ran) is simply absent from the map — compute_v2_idempotency_key falls
+# last ran) is simply absent from the maps — compute_v2_idempotency_key falls
 # back to hashing it directly, so a stale/missing manifest only costs
-# performance, never correctness.
+# performance, never correctness. (T19-hardening fix 5 note: this doc comment
+# used to sit above load_v2_source_shas but actually documented BOTH this
+# function and compute_v2_idempotency_key's key formula below it — split so
+# each function's comment sits directly above it.)
 declare -A V2_SOURCE_SHA_BY_PATH=()
+declare -A V2_SOURCE_SIZE_BY_PATH=()
+declare -A V2_SOURCE_MTIME_BY_PATH=()
 V2_SOURCE_SHA_LOADED="false"
 load_v2_source_shas() {
   [[ "$V2_SOURCE_SHA_LOADED" == "true" ]] && return 0
   V2_SOURCE_SHA_LOADED="true"
   local manifest="$N5_OUT_DIR/_v2-libcache/_source_shas.tsv"
   [[ -f "$manifest" ]] || return 0
-  local line hash rest
-  while IFS= read -r line; do
-    [[ -z "$line" ]] && continue
-    hash="${line%%  *}"
-    rest="${line#*  }"
-    V2_SOURCE_SHA_BY_PATH["$rest"]="$hash"
+  local hash size mtime path
+  while IFS=$'\t' read -r hash size mtime path; do
+    [[ -z "$hash" ]] && continue
+    V2_SOURCE_SHA_BY_PATH["$path"]="$hash"
+    V2_SOURCE_SIZE_BY_PATH["$path"]="$size"
+    V2_SOURCE_MTIME_BY_PATH["$path"]="$mtime"
   done < "$manifest"
 }
 
+# T19-hardening fix 1: a manifest entry is trusted only when the jar's CURRENT
+# size+mtime still match what was recorded when the manifest was written — a
+# jar replaced at the same path (e.g. a module upgrade) after
+# --prepare-libcache last ran is re-hashed live here instead of silently
+# keeping a now-wrong cached sha256 forever. Prints the trustworthy cached
+# hash and returns 0, or returns 1 (nothing printed) when the entry is
+# missing or stale, leaving the caller to hash $1 itself.
+v2_source_sha_current() {
+  local p="$1"
+  load_v2_source_shas
+  local cached="${V2_SOURCE_SHA_BY_PATH[$p]:-}"
+  [[ -z "$cached" ]] && return 1
+  local cur_size cur_mtime
+  cur_size="$(stat -c '%s' "$p" 2>/dev/null || true)"
+  cur_mtime="$(stat -c '%Y' "$p" 2>/dev/null || true)"
+  if [[ -n "$cur_size" ]] && [[ "$cur_size" == "${V2_SOURCE_SIZE_BY_PATH[$p]:-}" ]] \
+      && [[ "$cur_mtime" == "${V2_SOURCE_MTIME_BY_PATH[$p]:-}" ]]; then
+    printf '%s' "$cached"
+    return 0
+  fi
+  return 1
+}
+
+# T19 fix, requirement 2: idempotency key = sha256 of (module jar sha256 +
+# sorted library-set sha256 list + JDK home + flag list + tool jar sha256s). A
+# change in ANY of these must trigger a re-decompile, not just a changed module
+# jar. Library jars already living in $N5_OUT_DIR/_v2-libcache/ are keyed by
+# their own sha256 already (their filename IS the hash), so those are reused
+# directly; every other jar in the set (every $N5_MODULES_DIR / $N5_BIN_EXT_DIR
+# jar) is looked up via v2_source_sha_current (T19-hardening fix 1's staleness
+# check) and only actually re-hashed (one batched `sha256sum` call, not one
+# process per jar — the full set, V2_LIB_ARRAY, can be ~450 entries) when the
+# manifest entry is missing or stale.
+#
+# BUGFIX (found running --variant cons for real, 2026-09-28): this function
+# used to read the global $V2_FLAGS_JSON directly instead of taking the
+# caller's flags as a parameter — under `set -u` that crashed a cons-only
+# invocation outright (build_v2_flags is never called on the cons path, so
+# V2_FLAGS_JSON was unbound), and even when V2_FLAGS_JSON happened to be set
+# (e.g. a v2 run earlier in the same process), it silently used v2's flags for
+# a cons idempotency key too, so v2 and cons could never actually be told
+# apart by their key. flags_json is now an explicit 4th argument.
 compute_v2_idempotency_key() {
   local jar_sha="$1"
-  local vf_sha="$2" cfr_sha="$3"
+  local vf_sha="$2" cfr_sha="$3" flags_json="$4"
   local -a lib_hashes=()
   local -a to_hash=()
-  local p
+  local p cached
   for p in "${V2_LIB_ARRAY[@]}"; do
     if [[ "$p" == "$N5_OUT_DIR/_v2-libcache/"* ]]; then
       lib_hashes+=("$(basename "$p" .jar)")
       continue
     fi
-    load_v2_source_shas
-    if [[ -n "${V2_SOURCE_SHA_BY_PATH[$p]:-}" ]]; then
-      lib_hashes+=("${V2_SOURCE_SHA_BY_PATH[$p]}")
+    if cached="$(v2_source_sha_current "$p")"; then
+      lib_hashes+=("$cached")
     else
       to_hash+=("$p")
     fi
@@ -607,7 +789,7 @@ compute_v2_idempotency_key() {
   {
     printf 'jar_sha256=%s\n' "$jar_sha"
     printf 'jdk_home=%s\n' "$N5_JDK25_HOME"
-    printf 'flags=%s\n' "$V2_FLAGS_JSON"
+    printf 'flags=%s\n' "$flags_json"
     printf 'vineflower_sha256=%s\n' "$vf_sha"
     printf 'cfr_sha256=%s\n' "$cfr_sha"
     printf 'libs=%s\n' "$sorted_libs"
@@ -630,8 +812,17 @@ compute_v2_idempotency_key() {
 # re-extracted once; after that it always carries the marker. This also means
 # --force can never reopen the T19 race: it no longer performs an unconditional
 # rm -rf on a tree other workers might read.
+# T19-hardening fix 4: unzip's exit status is now checked explicitly, and the
+# extraction-provenance marker is written only after VERIFYING the extracted
+# .class count matches the jar's own listing. This function is reached from
+# inside `if decompile_module_v2 ...`/`if "$decompile_fn" ...` in the run_*
+# drivers below, where bash disables errexit for the ENTIRE call chain (a
+# well-known bash gotcha: `if cmd; then` suppresses -e for every command cmd
+# runs, transitively) — so an unchecked unzip failure here would otherwise
+# fall through silently and this marker would get written even for a
+# failed/partial extraction. Returns 1 (marker withheld) on either failure.
 ensure_extracted_for_v2() {
-  local jar="$1" moddir="$2" _force_unused="$3" module="$4"
+  local jar="$1" moddir="$2" _force_unused="$3" module="$4" variant_label="${5:-v2}"
   local sha; sha="$(sha256_of "$jar")"
   local need_extract="false"
   local marker="$moddir/extracted/.jar_sha256"
@@ -649,15 +840,28 @@ ensure_extracted_for_v2() {
   fi
 
   if [[ "$need_extract" != "true" ]]; then
-    log "$module" "v2 reusing existing extracted/+resources/ (jar sha256 $sha matches extracted/.jar_sha256)"
+    log "$module" "$variant_label reusing existing extracted/+resources/ (jar sha256 $sha matches extracted/.jar_sha256)"
     return 0
   fi
 
   mkdir -p "$moddir/extracted" "$moddir/resources"
-  log "$module" "v2 extracting $jar (extracted/ missing, empty, or stale vs the current jar sha256)"
+  log "$module" "$variant_label extracting $jar (extracted/ missing, empty, or stale vs the current jar sha256)"
   rm -rf "${moddir:?}/extracted"
   mkdir -p "$moddir/extracted"
-  unzip -o -q "$jar" -d "$moddir/extracted"
+
+  local unzip_rc=0
+  unzip -o -q "$jar" -d "$moddir/extracted" || unzip_rc=$?
+  if [[ "$unzip_rc" -ne 0 ]]; then
+    log "$module" "$variant_label FATAL: unzip exited $unzip_rc extracting $jar — not writing the extraction-provenance marker"
+    return 1
+  fi
+  local jar_class_count extracted_class_count
+  jar_class_count="$(unzip -l "$jar" 2>/dev/null | grep -c '\.class$' || true)"
+  extracted_class_count="$(find "$moddir/extracted" -name '*.class' | wc -l)"
+  if [[ "$jar_class_count" != "$extracted_class_count" ]]; then
+    log "$module" "$variant_label FATAL: extraction verification failed for $jar (jar lists $jar_class_count .class entries, extracted/ has $extracted_class_count) — not writing the extraction-provenance marker"
+    return 1
+  fi
   printf '%s' "$sha" > "$moddir/extracted/.jar_sha256"
 
   rm -rf "${moddir:?}/resources"
@@ -669,16 +873,51 @@ ensure_extracted_for_v2() {
       done
 }
 
-# Merges a "v2" sub-object into organized/<mod>/recon.json, leaving every v1
-# top-level field untouched (recon.json may not exist yet if v2 is run on a
-# module that never went through v1 — in that case a minimal file is created).
+# B118 §118.1's conservative + line-mapped view (niagara5-block118.md): the
+# resugaring toggles OFF, ORIGINAL-source line mapping ON. Every flag name is
+# confirmed to exist in vineflower-1.12.0.jar's own --help (verified this
+# session), except DUMP_ORIGINAL_LINES, which --help does NOT print — it is
+# read from the constant pool of
+# org/jetbrains/java/decompiler/main/extern/IFernflowerPreferences.class
+# (`javap -constants`: DUMP_ORIGINAL_LINES = "__dump_original_lines__"), per
+# B118 §118.1. It is passed separately as CONS_HIDDEN_FLAG rather than folded
+# into CONS_FLAG_NAMES/VALUES, because build_cons_flags' name//-/_  ->  JSON-key
+# transform (borrowed from build_v2_flags) would turn its leading double
+# underscore into a confusing JSON key; it is still recorded, verbatim, in
+# recon.json's "cons".flags.
+CONS_FLAG_NAMES=(pattern-matching decompile-switch-expressions ternary-in-if prettify-ifs
+  inline-simple-lambdas bytecode-source-mapping)
+CONS_FLAG_VALUES=(false false false false false true)
+CONS_HIDDEN_FLAG="--__dump_original_lines__=true"
+
+build_cons_flags() {
+  CONS_FLAG_ARGS=()
+  local flags_json="{" first=true i
+  for i in "${!CONS_FLAG_NAMES[@]}"; do
+    CONS_FLAG_ARGS+=("--${CONS_FLAG_NAMES[$i]}=${CONS_FLAG_VALUES[$i]}")
+    local key="${CONS_FLAG_NAMES[$i]//-/_}"
+    $first || flags_json+=","
+    first=false
+    flags_json+="\"$key\": ${CONS_FLAG_VALUES[$i]}"
+  done
+  CONS_FLAG_ARGS+=("$CONS_HIDDEN_FLAG")
+  flags_json+=',"__dump_original_lines__": true}'
+  CONS_FLAGS_JSON="$flags_json"
+}
+
+# Merges a "$1" (recon_key: "v2" or "cons") sub-object into
+# organized/<mod>/recon.json, leaving every other top-level field (v1's, and
+# the other variant's) untouched (recon.json may not exist yet if this is the
+# first library-context variant run on a module that never went through v1 —
+# in that case a minimal file is created).
 #
-# KNOWN INTERACTION (pre-existing, not introduced by v2): v1's write_recon
-# (tools/n5-recon-helper.py) always fully overwrites recon.json — it has no
-# concept of a "v2" key to preserve. So `tools/n5-decompile.sh --force <mod>`
-# (v1) run AFTER a --variant v2 run silently drops that module's "v2"
-# sub-object. If both v1 --force and v2 data are needed for the same module,
-# rerun --variant v2 again afterward to re-merge it.
+# KNOWN INTERACTION (pre-existing, not introduced by this refactor): v1's
+# write_recon (tools/n5-recon-helper.py) always fully overwrites recon.json —
+# it has no concept of a "v2"/"cons" key to preserve. So
+# `tools/n5-decompile.sh --force <mod>` (v1) run AFTER a --variant v2/cons run
+# silently drops that module's "v2"/"cons" sub-object. If v1 --force and
+# v2/cons data are both needed for the same module, rerun --variant v2/cons
+# again afterward to re-merge it.
 #
 # T19 fix, requirement 7: every value that could conceivably contain a
 # double-quote, backslash, or other Python-string-literal metacharacter
@@ -686,19 +925,24 @@ ensure_extracted_for_v2() {
 # ENVIRONMENT, never interpolated into the heredoc's text — the heredoc itself
 # is quoted (<<'PYEOF'), so bash performs no expansion on it at all and the
 # Python source is fixed, literal code regardless of what these values contain.
-write_recon_v2() {
-  local module="$1" moddir="$2" sha="$3" primary_status="$4" primary_time="$5" \
-        fallback_used="$6" fallback_reason="$7" status="$8" idempotency_key="$9"
-  local vf_sha cfr_sha vf_version cfr_version
+write_recon_variant() {
+  local recon_key="$1" module="$2" moddir="$3" jar="$4" sha="$5" primary_status="$6" \
+        primary_time="$7" fallback_used="$8" fallback_reason="$9"
+  shift 9
+  local status="$1" idempotency_key="$2" out_dir_name="$3"
+  local vf_sha cfr_sha vf_version cfr_version flags_json
   vf_sha="$(sha256_of "$N5_VINEFLOWER")"
   cfr_sha="$(sha256_of "$N5_CFR")"
   vf_version="$(basename "$N5_VINEFLOWER" .jar)"
   cfr_version="$(basename "$N5_CFR" .jar)"
+  if [[ "$recon_key" == "cons" ]]; then flags_json="$CONS_FLAGS_JSON"; else flags_json="$V2_FLAGS_JSON"; fi
   local markers
-  markers="$(scan_marker_files "$moddir/vineflower2" | wc -l | tr -d ' ')"
+  markers="$(scan_marker_files "$moddir/$out_dir_name" | wc -l | tr -d ' ')"
 
   RECON_PATH="$moddir/recon.json" \
+  RECON_KEY="$recon_key" \
   RECON_MODULE="$module" \
+  RECON_JAR_PATH="$jar" \
   RECON_JAR_SHA256="$sha" \
   RECON_VF_VERSION="$vf_version" \
   RECON_VF_SHA256="$vf_sha" \
@@ -706,7 +950,7 @@ write_recon_v2() {
   RECON_CFR_SHA256="$cfr_sha" \
   RECON_LIB_COUNT="$V2_LIB_COUNT" \
   RECON_INCLUDE_RUNTIME="$N5_JDK25_HOME" \
-  RECON_FLAGS_JSON="$V2_FLAGS_JSON" \
+  RECON_FLAGS_JSON="$flags_json" \
   RECON_PRIMARY_STATUS="$primary_status" \
   RECON_PRIMARY_TIME="$primary_time" \
   RECON_FALLBACK_USED="$fallback_used" \
@@ -718,14 +962,21 @@ write_recon_v2() {
 import json, os
 
 path = os.environ["RECON_PATH"]
+key = os.environ["RECON_KEY"]
 try:
     with open(path) as fh:
         recon = json.load(fh)
 except (OSError, json.JSONDecodeError):
     recon = {"module": os.environ["RECON_MODULE"]}
 
-recon["v2"] = {
-    "variant": "v2",
+recon[key] = {
+    "variant": key,
+    # provenance (orchestrator note, 2026-09-28): the exact jar path actually
+    # decompiled — lets a reader tell whether a run used the read-only N5
+    # install or the sha256-verified local mirror
+    # (niagara5-research-localcache/jar-mirror-5.0.0.28/), which are
+    # byte-identical but live at different paths.
+    "jar_path": os.environ["RECON_JAR_PATH"],
     "jar_sha256": os.environ["RECON_JAR_SHA256"],
     "vineflower_version": os.environ["RECON_VF_VERSION"],
     "vineflower_sha256": os.environ["RECON_VF_SHA256"],
@@ -749,103 +1000,124 @@ with open(path, "w") as fh:
 PYEOF
 }
 
-decompile_module_v2() {
-  local jar="$1"
-  local module; module="$(basename "$jar" .jar)"
-  local force="${2:-false}"
-  local moddir="${3:-$N5_OUT_DIR/$module}"
+# Shared by decompile_module_v2 and decompile_module_cons (T19-hardening fix
+#5's "don't duplicate" principle applied to the v2/cons split too): the
+# machinery is identical between them — immutable libcache, --add-external
+# library context, whole-jar timeout + CFR fallback with the same
+# --extraclasspath, per-class fallback for output the primary flagged, and the
+# "status=failed only when NEITHER decompiler produced anything" rule. Only
+# what differs — fidelity flags, output/fallback directory names, and which
+# recon.json sub-key to write — is passed in. Every internal failure this
+# function must not silently swallow is checked explicitly (not left to
+# errexit), because callers invoke it as `if decompile_module_v2 ...; then`,
+# where bash disables errexit for this whole call chain (T19-hardening fix 4).
+decompile_module_variant() {
+  local variant_label="$1" out_dir_name="$2" fallback_dir_name="$3" recon_key="$4"
+  local jar="$5" force="$6" moddir="$7"
+  shift 7
+  # "$@" = this variant's Vineflower flag args, in the order to record.
 
-  # T19 fix, requirement 1: the library context MUST come from the immutable
-  # cache, never a live organized/*/extracted/ scan — fail loudly rather than
-  # silently decompiling with a weaker (or, worse, non-deterministic) library
-  # set if the cache was never built.
-  if [[ ! -d "$N5_OUT_DIR/_v2-libcache" ]]; then
-    echo "FATAL: $N5_OUT_DIR/_v2-libcache does not exist — run 'tools/n5-decompile.sh --prepare-libcache' once, serially, before any --variant v2 decompile (T19 fix: the v2 library context must never be built from a live organized/*/extracted/ tree, which a concurrent worker may be mid rm-rf+unzip on)." >&2
+  # T19 fix, requirement 1 + T19-hardening fix 2: the library context MUST
+  # come from a COMPLETE immutable cache (v2_libcache_ready, not a bare
+  # directory-exists check) — fail loudly rather than silently decompiling
+  # with a weaker, or an interrupted/partial, library set.
+  if ! v2_libcache_ready; then
+    echo "FATAL: $N5_OUT_DIR/_v2-libcache is missing or incomplete — run 'tools/n5-decompile.sh --prepare-libcache' once, serially, before any --variant $variant_label decompile (the v2/cons library context must never be built from a live organized/*/extracted/ tree, nor trusted mid-build; T19 fix + T19-hardening fix 2)." >&2
     exit 1
   fi
 
+  local module; module="$(basename "$jar" .jar)"
   local sha; sha="$(sha256_of "$jar")"
   mkdir -p "$moddir"
-  ensure_extracted_for_v2 "$jar" "$moddir" "$force" "$module"
+  if ! ensure_extracted_for_v2 "$jar" "$moddir" "$force" "$module" "$variant_label"; then
+    log "$module" "$variant_label FAILED: extraction verification failed, aborting this module's $variant_label decompile"
+    return 1
+  fi
 
   local class_count
   class_count="$(find "$moddir/extracted" -name '*.class' | wc -l)"
 
   compute_v2_library_jars
   build_v2_external_lists "$jar"
-  build_v2_flags
 
   local vf_sha cfr_sha
   vf_sha="$(sha256_of "$N5_VINEFLOWER")"
   cfr_sha="$(sha256_of "$N5_CFR")"
 
+  # This variant's own flags_json (same lookup write_recon_variant uses below)
+  # — NOT a hardcoded global — so v2 and cons compute genuinely different keys
+  # for the same jar (bugfix found running --variant cons for real: this used
+  # to read $V2_FLAGS_JSON unconditionally, which crashed a cons-only process
+  # under `set -u` and would have silently collided the two variants' keys
+  # even when it happened not to crash).
+  local variant_flags_json
+  if [[ "$recon_key" == "cons" ]]; then variant_flags_json="$CONS_FLAGS_JSON"; else variant_flags_json="$V2_FLAGS_JSON"; fi
+
   # T19 fix, requirement 2: idempotency key covers the module jar, the full
-  # resolved library set, the JDK runtime home, the fidelity flags, and the
-  # decompiler tool jars themselves — not just the module jar's sha256 like the
-  # first v2 campaign checked. Any change in any of these forces a redo, even
-  # under an unchanged module jar and without --force.
+  # resolved library set, the JDK runtime home, the fidelity flags (so v2 and
+  # cons never collide despite decompiling the same jar), and the decompiler
+  # tool jars themselves.
   local idempotency_key
-  idempotency_key="$(compute_v2_idempotency_key "$sha" "$vf_sha" "$cfr_sha")"
+  idempotency_key="$(compute_v2_idempotency_key "$sha" "$vf_sha" "$cfr_sha" "$variant_flags_json")"
 
   if [[ "$force" != "true" ]] && [[ -f "$moddir/recon.json" ]]; then
     local prev_key prev_status
-    prev_key="$(python3 -c "
-import json, sys
+    prev_key="$(RECON_KEY="$recon_key" python3 -c "
+import json, os, sys
 try:
     d = json.load(open(sys.argv[1]))
 except Exception:
     d = {}
-print(d.get('v2', {}).get('idempotency_key', ''))
+print(d.get(os.environ['RECON_KEY'], {}).get('idempotency_key', ''))
 " "$moddir/recon.json" 2>/dev/null || true)"
-    prev_status="$(python3 -c "
-import json, sys
+    prev_status="$(RECON_KEY="$recon_key" python3 -c "
+import json, os, sys
 try:
     d = json.load(open(sys.argv[1]))
 except Exception:
     d = {}
-print(d.get('v2', {}).get('status', ''))
+print(d.get(os.environ['RECON_KEY'], {}).get('status', ''))
 " "$moddir/recon.json" 2>/dev/null || true)"
     # T19 fix, requirement 4: a module recorded status=failed is NEVER treated
-    # as up to date, regardless of the idempotency key — a failed module must
-    # always be retried until it actually succeeds or is explicitly forced.
+    # as up to date, regardless of the idempotency key.
     if [[ "$prev_key" == "$idempotency_key" ]] && [[ "$prev_status" == "ok" ]]; then
-      log "$module" "v2 up to date (idempotency key $idempotency_key), skipping"
+      log "$module" "$variant_label up to date (idempotency key $idempotency_key), skipping"
       return 0
     fi
   fi
 
-  # T19 fix, requirement 5: fallback2/ is cleared unconditionally at the start
-  # of each run (mirroring vineflower2/ below) so a class that used to need the
-  # CFR fallback but no longer does can never leave a stale fallback2/*.java
-  # behind that a reader might mistake for current output.
-  rm -rf "${moddir:?}/fallback2"
-  # Recreated (empty) immediately, not only inside the fallback branches below:
-  # under `set -o pipefail`, `find "$moddir/fallback2" ... | wc -l` later in
-  # this function would otherwise fail (find exits nonzero on a missing path,
-  # pipefail propagates that through `| wc -l`) whenever primary succeeds and
-  # no fallback is needed, aborting the whole script via errexit.
-  mkdir -p "$moddir/fallback2"
+  # T19 fix, requirement 5: the fallback dir is cleared unconditionally at the
+  # start of each run so a class that used to need the CFR fallback but no
+  # longer does can never leave a stale *.java behind that a reader might
+  # mistake for current output. Recreated (empty) immediately, not only inside
+  # the fallback branches below: under `set -o pipefail`, `find
+  # "$moddir/$fallback_dir_name" ... | wc -l` later in this function would
+  # otherwise fail (find exits nonzero on a missing path, pipefail propagates
+  # that through `| wc -l`), aborting via errexit whenever primary succeeds
+  # and no fallback is needed.
+  rm -rf "${moddir:?}/$fallback_dir_name"
+  mkdir -p "$moddir/$fallback_dir_name"
 
-  rm -rf "${moddir:?}/vineflower2"
-  mkdir -p "$moddir/vineflower2"
-  log "$module" "v2 primary(vineflower) starting on $class_count classes (lib_count=$V2_LIB_COUNT, runtime=$N5_JDK25_HOME)"
+  rm -rf "${moddir:?}/$out_dir_name"
+  mkdir -p "$moddir/$out_dir_name"
+  log "$module" "$variant_label primary(vineflower) starting on $class_count classes (lib_count=$V2_LIB_COUNT, runtime=$N5_JDK25_HOME)"
 
-  # Additional options MUST precede -e/--add-external — see the header comment's
-  # "Undocumented Vineflower 1.12.0 CLI ordering requirement". V2_FLAG_ARGS
-  # (built by build_v2_flags, requirement 8's single source of truth) supplies
-  # every Additional option here, in the same order recorded in recon.json.
-  local vf2_cmd=(
+  # Additional options MUST precede -e/--add-external — see the header
+  # comment's "Undocumented Vineflower 1.12.0 CLI ordering requirement". "$@"
+  # supplies every Additional option here, in the same order recorded in
+  # recon.json.
+  local vf_cmd=(
     "$N5_JAVA" -jar "$N5_VINEFLOWER" --log-level=error
     --include-runtime="$N5_JDK25_HOME"
-    "${V2_FLAG_ARGS[@]}"
+    "$@"
     -e="$V2_LIB_CSV"
-    "$jar" "$moddir/vineflower2"
+    "$jar" "$moddir/$out_dir_name"
   )
-  { printf 'CMD:'; printf ' %q' "${vf2_cmd[@]}"; printf '\n'; } >> "$LOG_DIR/$module.v2.log"
+  { printf 'CMD:'; printf ' %q' "${vf_cmd[@]}"; printf '\n'; } >> "$LOG_DIR/$module.$variant_label.log"
 
   local t0 t1 primary_time primary_status
   t0="$(date +%s)"
-  if timeout "$N5_PRIMARY_TIMEOUT" "${vf2_cmd[@]}" >> "$LOG_DIR/$module.v2.log" 2>&1; then
+  if timeout "$N5_PRIMARY_TIMEOUT" "${vf_cmd[@]}" >> "$LOG_DIR/$module.$variant_label.log" 2>&1; then
     primary_status="ok"
   else
     local rc=$?
@@ -857,74 +1129,95 @@ print(d.get('v2', {}).get('status', ''))
   fi
   t1="$(date +%s)"
   primary_time=$(( t1 - t0 ))
-  log "$module" "v2 primary(vineflower) status=$primary_status time=${primary_time}s"
+  log "$module" "$variant_label primary(vineflower) status=$primary_status time=${primary_time}s"
 
   local fallback_used="false" fallback_reason="none"
   local produced
-  produced="$(find "$moddir/vineflower2" -name '*.java' | wc -l)"
+  produced="$(find "$moddir/$out_dir_name" -name '*.java' | wc -l)"
 
   if [[ "$primary_status" != "ok" ]] || [[ "$produced" -eq 0 && "$class_count" -gt 0 ]]; then
     fallback_used="true"
     fallback_reason="primary_${primary_status}_whole_module"
-    log "$module" "v2 fallback(cfr) whole-module reason=$fallback_reason"
-    mkdir -p "$moddir/fallback2"
-    local cfr2_cmd=("$N5_JAVA" -jar "$N5_CFR" "$jar" --outputdir "$moddir/fallback2" --silent true --extraclasspath "$V2_LIB_COLON")
-    { printf 'CMD:'; printf ' %q' "${cfr2_cmd[@]}"; printf '\n'; } >> "$LOG_DIR/$module.v2.log"
-    "${cfr2_cmd[@]}" >> "$LOG_DIR/$module.v2.log" 2>&1 || log "$module" "v2 fallback(cfr) also failed"
+    log "$module" "$variant_label fallback(cfr) whole-module reason=$fallback_reason"
+    mkdir -p "$moddir/$fallback_dir_name"
+    local cfr_cmd=("$N5_JAVA" -jar "$N5_CFR" "$jar" --outputdir "$moddir/$fallback_dir_name" --silent true --extraclasspath "$V2_LIB_COLON")
+    { printf 'CMD:'; printf ' %q' "${cfr_cmd[@]}"; printf '\n'; } >> "$LOG_DIR/$module.$variant_label.log"
+    "${cfr_cmd[@]}" >> "$LOG_DIR/$module.$variant_label.log" 2>&1 || log "$module" "$variant_label fallback(cfr) also failed"
   else
     local marker_files
-    marker_files="$(scan_marker_files "$moddir/vineflower2")"
+    marker_files="$(scan_marker_files "$moddir/$out_dir_name")"
     if [[ -n "$marker_files" ]]; then
       fallback_used="true"
       fallback_reason="per_class_decompiler_marker"
-      mkdir -p "$moddir/fallback2"
+      mkdir -p "$moddir/$fallback_dir_name"
       local n=0
       while IFS= read -r javafile; do
         [[ -z "$javafile" ]] && continue
-        local rel="${javafile#"$moddir"/vineflower2/}"
+        local rel="${javafile#"$moddir"/"$out_dir_name"/}"
         local classrel="${rel%.java}.class"
         local classfile="$moddir/extracted/$classrel"
         if [[ -f "$classfile" ]]; then
-          local cfr2c_cmd=("$N5_JAVA" -jar "$N5_CFR" "$classfile" --outputdir "$moddir/fallback2" --silent true --extraclasspath "$V2_LIB_COLON")
-          { printf 'CMD:'; printf ' %q' "${cfr2c_cmd[@]}"; printf '\n'; } >> "$LOG_DIR/$module.v2.log"
-          "${cfr2c_cmd[@]}" >> "$LOG_DIR/$module.v2.log" 2>&1 || true
+          local cfrc_cmd=("$N5_JAVA" -jar "$N5_CFR" "$classfile" --outputdir "$moddir/$fallback_dir_name" --silent true --extraclasspath "$V2_LIB_COLON")
+          { printf 'CMD:'; printf ' %q' "${cfrc_cmd[@]}"; printf '\n'; } >> "$LOG_DIR/$module.$variant_label.log"
+          "${cfrc_cmd[@]}" >> "$LOG_DIR/$module.$variant_label.log" 2>&1 || true
           n=$((n+1))
         fi
       done <<< "$marker_files"
-      log "$module" "v2 fallback(cfr) per-class reran $n classes flagged by primary"
+      log "$module" "$variant_label fallback(cfr) per-class reran $n classes flagged by primary"
     fi
   fi
 
   # T19 fix, requirement 4: a module where BOTH decompilers produced nothing
-  # (jar has classes, but neither vineflower2/ nor fallback2/ has a .java) is
-  # NOT a success — record status=failed, exit non-zero, and (per the
-  # idempotency check above) never treat it as cached/done on a later run.
+  # (jar has classes, but neither output dir has a .java) is NOT a success.
   local total_produced status="ok"
   total_produced=$(( \
-    $(find "$moddir/vineflower2" -name '*.java' 2>/dev/null | wc -l) \
-    + $(find "$moddir/fallback2" -name '*.java' 2>/dev/null | wc -l) \
+    $(find "$moddir/$out_dir_name" -name '*.java' 2>/dev/null | wc -l) \
+    + $(find "$moddir/$fallback_dir_name" -name '*.java' 2>/dev/null | wc -l) \
   ))
   if [[ "$class_count" -gt 0 && "$total_produced" -eq 0 ]]; then
     status="failed"
   fi
 
-  write_recon_v2 "$module" "$moddir" "$sha" "$primary_status" "$primary_time" \
-    "$fallback_used" "$fallback_reason" "$status" "$idempotency_key"
+  write_recon_variant "$recon_key" "$module" "$moddir" "$jar" "$sha" "$primary_status" "$primary_time" \
+    "$fallback_used" "$fallback_reason" "$status" "$idempotency_key" "$out_dir_name"
 
   if [[ "$status" == "failed" ]]; then
-    log "$module" "v2 FAILED: both Vineflower and CFR produced zero output for $class_count classes"
+    log "$module" "$variant_label FAILED: both Vineflower and CFR produced zero output for $class_count classes"
     return 1
   fi
-  log "$module" "v2 done"
+  log "$module" "$variant_label done"
 }
 
-# T19 fix: --all always prepares the libcache first, serially, exactly once,
-# before decompiling any module — this is what makes it safe to then drive
-# per-module v2 work in parallel (external `xargs -P`, or a future internal
-# parallelism): every worker reads the SAME already-complete, immutable cache
-# instead of racing to build it from live extracted/ trees.
-run_v2_all_modules() {
-  local force="$1"
+decompile_module_v2() {
+  local jar="$1" force="${2:-false}"
+  local moddir="${3:-$N5_OUT_DIR/$(basename "$jar" .jar)}"
+  build_v2_flags
+  decompile_module_variant "v2" "vineflower2" "fallback2" "v2" "$jar" "$force" "$moddir" "${V2_FLAG_ARGS[@]}"
+}
+
+# --variant cons — B118 §118.1's conservative + line-mapped Vineflower view:
+# resugaring off (no instanceof-pattern/switch-expression/ternary-in-if/
+# prettify-ifs/inline-simple-lambdas rendering), ORIGINAL source line numbers
+# mapped onto the output (bytecode-source-mapping +
+# __dump_original_lines__). Reuses v2's entire library-context machinery
+# (immutable libcache, --add-external, --include-runtime, idempotency,
+# failure semantics) unchanged — only the flag set, the output directories
+# (vineflower-cons/ + fallback-cons/), and the recon.json sub-key ("cons")
+# differ. See CONS_FLAG_NAMES/CONS_FLAG_VALUES/CONS_HIDDEN_FLAG above.
+decompile_module_cons() {
+  local jar="$1" force="${2:-false}"
+  local moddir="${3:-$N5_OUT_DIR/$(basename "$jar" .jar)}"
+  build_cons_flags
+  decompile_module_variant "cons" "vineflower-cons" "fallback-cons" "cons" "$jar" "$force" "$moddir" "${CONS_FLAG_ARGS[@]}"
+}
+
+# Shared by run_v2_all_modules/run_cons_all_modules (T19 fix: --all always
+# prepares the libcache first, serially, exactly once, before decompiling any
+# module — this is what makes it safe to then drive per-module work in
+# parallel, e.g. external `xargs -P`: every worker reads the SAME
+# already-complete, immutable cache instead of racing to build it).
+run_variant_all_modules() {
+  local decompile_fn="$1" variant_label="$2" force="$3"
   prepare_v2_libcache "$force"
   local excluded=0 failed=0 ok=0 jar module
   while IFS= read -r -d '' jar; do
@@ -933,23 +1226,25 @@ run_v2_all_modules() {
       continue
     fi
     if ! is_tridium_module "$jar"; then
-      log "$module" "v2 EXCLUDED: module.xml vendor=\"$(module_vendor "$jar")\" (not \"Tridium\"), skipping"
+      log "$module" "$variant_label EXCLUDED: module.xml vendor=\"$(module_vendor "$jar")\" (not \"Tridium\"), skipping"
       excluded=$((excluded + 1))
       continue
     fi
-    if decompile_module_v2 "$jar" "$force"; then
+    if "$decompile_fn" "$jar" "$force"; then
       ok=$((ok + 1))
     else
       failed=$((failed + 1))
     fi
-  done < <(find "$N5_MODULES_DIR" -maxdepth 1 -name '*.jar' -print0)
-  log "_full-run" "v2 vendor filter: excluded $excluded non-Tridium jar(s) from $N5_MODULES_DIR"
-  log "_full-run" "v2 done: ok=$ok failed=$failed excluded=$excluded"
+  done < <(find -L "$N5_MODULES_DIR" -maxdepth 1 -name '*.jar' -print0)
+  log "_full-run" "$variant_label vendor filter: excluded $excluded non-Tridium jar(s) from $N5_MODULES_DIR"
+  log "_full-run" "$variant_label done: ok=$ok failed=$failed excluded=$excluded"
   [[ "$failed" -eq 0 ]]
 }
+run_v2_all_modules() { run_variant_all_modules decompile_module_v2 "v2" "$1"; }
+run_cons_all_modules() { run_variant_all_modules decompile_module_cons "cons" "$1"; }
 
-run_v2_binext() {
-  local force="$1" only="$2"
+run_variant_binext() {
+  local decompile_fn="$1" variant_label="$2" force="$3" only="$4"
   local out_root="$N5_OUT_DIR/_bin-ext"
   mkdir -p "$out_root"
   prepare_v2_libcache "$force"
@@ -957,7 +1252,7 @@ run_v2_binext() {
   if [[ -n "$only" && "$only" != "--all" ]]; then
     only="${only%.jar}"
     local jar
-    jar="$(find "$N5_BIN_EXT_DIR" -name "$only.jar" -print -quit 2>/dev/null)"
+    jar="$(find -L "$N5_BIN_EXT_DIR" -name "$only.jar" -print -quit 2>/dev/null)"
     if [[ -z "$jar" ]]; then
       echo "no such bin/ext jar: $only.jar under $N5_BIN_EXT_DIR" >&2
       return 1
@@ -965,10 +1260,10 @@ run_v2_binext() {
     local verdict
     verdict="$(python3 "$SCRIPT_DIR/n5-classify-binext.py" "$jar" 2>>"$LOG_DIR/_bin-ext.log" || true)"
     if [[ "$verdict" != include* ]]; then
-      log "_bin-ext" "v2 skipping $only ($verdict)"
+      log "_bin-ext" "$variant_label skipping $only ($verdict)"
       return 0
     fi
-    decompile_module_v2 "$jar" "$force" "$out_root/$only"
+    "$decompile_fn" "$jar" "$force" "$out_root/$only"
     return $?
   fi
 
@@ -977,18 +1272,169 @@ run_v2_binext() {
     module="$(basename "$jar" .jar)"
     verdict="$(python3 "$SCRIPT_DIR/n5-classify-binext.py" "$jar" 2>>"$LOG_DIR/_bin-ext.log" || true)"
     if [[ "$verdict" == include* ]]; then
-      log "_bin-ext" "v2 including $module ($verdict)"
-      if decompile_module_v2 "$jar" "$force" "$out_root/$module"; then
+      log "_bin-ext" "$variant_label including $module ($verdict)"
+      if "$decompile_fn" "$jar" "$force" "$out_root/$module"; then
         included=$((included + 1))
       else
         failed=$((failed + 1))
       fi
     else
-      log "_bin-ext" "v2 skipping $module ($verdict)"
+      log "_bin-ext" "$variant_label skipping $module ($verdict)"
       skipped=$((skipped + 1))
     fi
-  done < <(find "$N5_BIN_EXT_DIR" -name '*.jar' -print0)
-  log "_bin-ext" "v2 done: included=$included skipped=$skipped failed=$failed"
+  done < <(find -L "$N5_BIN_EXT_DIR" -name '*.jar' -print0)
+  log "_bin-ext" "$variant_label done: included=$included skipped=$skipped failed=$failed"
+  [[ "$failed" -eq 0 ]]
+}
+run_v2_binext() { run_variant_binext decompile_module_v2 "v2" "$1" "$2"; }
+run_cons_binext() { run_variant_binext decompile_module_cons "cons" "$1" "$2"; }
+
+# ---------------------------------------------------------------------------
+# --extra-tridium — the 10 out-of-pipeline Tridium jars (B117 §117.4: 9 under
+# etc/m2/repository/com/tridium/**, 1 under lib/) and the Tridium-owned nested
+# LIB-INF jars (B117 §117.2: devkit's n-templates + slotomatic, 160 classes,
+# plus any other LIB-INF jar passing the same rule). Neither is a "module"
+# (no module.xml / not reachable from organized/<mod>/extracted/ the normal
+# way), so each gets its own decompile_module_v2 + decompile_module_cons pair
+# into a purpose-built moddir. The Tridium/non-Tridium split reuses
+# n5-classify-binext.py's existing >50%-of-classes-under-com/tridium|niagara|
+# javax/baja rule UNCHANGED — this is what makes the 10-jar list mechanical
+# (verified this session: exactly the 10 B117 §117.4 names) rather than
+# hand-picked.
+# ---------------------------------------------------------------------------
+
+# Records language (Kotlin vs Java) on a jar-level (not per-variant) basis:
+# fraction of .class entries carrying Lkotlin/Metadata; in their constant
+# pool, same rule as B117 §117.4's "constant-pool byte scan". Written directly
+# onto recon.json's top level (not under "v2"/"cons" — this is a fact about
+# the SOURCE jar, independent of which decompiler variant read it).
+# Vineflower 1.12.0 ships a Kotlin plugin (--kt-enable, default true, verified
+# via --help this session) — vineflower_kotlin_plugin_used records whether
+# that plugin was relevant for this jar.
+write_recon_language() {
+  local jar="$1" moddir="$2"
+  RECON_PATH="$moddir/recon.json" \
+  RECON_JAR="$jar" \
+  python3 <<'PYEOF'
+import json, os, zipfile
+
+path = os.environ["RECON_PATH"]
+jar = os.environ["RECON_JAR"]
+try:
+    with open(path) as fh:
+        recon = json.load(fh)
+except (OSError, json.JSONDecodeError):
+    recon = {}
+
+kotlin = 0
+total = 0
+with zipfile.ZipFile(jar) as zf:
+    for name in zf.namelist():
+        if not name.endswith(".class"):
+            continue
+        total += 1
+        try:
+            data = zf.read(name)
+        except Exception:
+            continue
+        if b"Lkotlin/Metadata;" in data:
+            kotlin += 1
+
+recon["language"] = "kotlin" if kotlin > 0 else "java"
+recon["kotlin_classes"] = kotlin
+recon["kotlin_total_classes"] = total
+recon["kotlin_ratio"] = round(kotlin / total, 4) if total else 0.0
+recon["vineflower_kotlin_plugin_used"] = kotlin > 0
+
+with open(path, "w") as fh:
+    json.dump(recon, fh, indent=2)
+    fh.write("\n")
+PYEOF
+}
+
+# Decompiles ($jar, both v2 and cons) into $moddir, then records language.
+# Returns 1 if either variant failed.
+decompile_extra_tridium_jar() {
+  local jar="$1" force="$2" moddir="$3"
+  local ok=0
+  decompile_module_v2 "$jar" "$force" "$moddir" || ok=1
+  decompile_module_cons "$jar" "$force" "$moddir" || ok=1
+  write_recon_language "$jar" "$moddir"
+  return "$ok"
+}
+
+# The 9 etc/m2 jars + 1 lib/ jar (B117 §117.4). Classified mechanically with
+# n5-classify-binext.py's existing >50% rule — no hand-picked jar list.
+run_extra_tridium() {
+  local force="$1"
+  v2_libcache_ready || prepare_v2_libcache "$force"
+  local etc_root="$N5_OUT_DIR/_etc-m2"
+  local lib_root="$N5_OUT_DIR/_lib"
+  mkdir -p "$etc_root" "$lib_root"
+
+  local -a candidates=()
+  local jar
+  while IFS= read -r -d '' jar; do
+    candidates+=("$jar|etc-m2")
+  done < <(find -L "$N5_ETC_M2_DIR" -name '*.jar' -print0 2>/dev/null)
+  while IFS= read -r -d '' jar; do
+    candidates+=("$jar|lib")
+  done < <(find -L "$N5_LIB_DIR" -maxdepth 1 -name '*.jar' -print0 2>/dev/null)
+
+  local entry loc stem out_root verdict included=0 skipped=0 failed=0
+  for entry in "${candidates[@]}"; do
+    jar="${entry%|*}"
+    loc="${entry##*|}"
+    stem="$(basename "$jar" .jar)"
+    verdict="$(python3 "$SCRIPT_DIR/n5-classify-binext.py" "$jar" 2>>"$LOG_DIR/_extra-tridium.log" || true)"
+    if [[ "$verdict" != include* ]]; then
+      log "_extra-tridium" "skipping $stem ($verdict)"
+      skipped=$((skipped + 1))
+      continue
+    fi
+    if [[ "$loc" == "etc-m2" ]]; then out_root="$etc_root"; else out_root="$lib_root"; fi
+    log "_extra-tridium" "including $stem ($verdict) -> $out_root/$stem"
+    if decompile_extra_tridium_jar "$jar" "$force" "$out_root/$stem"; then
+      included=$((included + 1))
+    else
+      failed=$((failed + 1))
+    fi
+  done
+  log "_extra-tridium" "etc-m2+lib done: included=$included skipped=$skipped failed=$failed"
+  [[ "$failed" -eq 0 ]]
+}
+
+# Tridium-owned nested LIB-INF jars (B117 §117.2), found by scanning every
+# ALREADY-EXTRACTED organized/<mod>/extracted/LIB-INF/*.jar (real corpus, not
+# the deduplicated-by-sha256 libcache, so per-module identity is preserved for
+# the organized/<mod>/lib-inf/<stem>/ destination the task calls for) and
+# classifying each with the same >50% rule.
+run_extra_tridium_libinf() {
+  local force="$1"
+  v2_libcache_ready || prepare_v2_libcache "$force"
+  local jar mod stem verdict moddir included=0 skipped=0 failed=0
+  while IFS= read -r -d '' jar; do
+    # $jar = $N5_OUT_DIR/<mod>/extracted/LIB-INF/<stem>.jar: strip 3 path
+    # components (LIB-INF/<stem>.jar, extracted, <mod>) to land on <mod> —
+    # verified 2026-09-28: an earlier version of this line was one dirname
+    # short and returned "extracted" instead of the module name (caught by
+    # tools/tests/n5-decompile.bats' run_extra_tridium_libinf test).
+    mod="$(basename "$(dirname "$(dirname "$(dirname "$jar")")")")"
+    stem="$(basename "$jar" .jar)"
+    verdict="$(python3 "$SCRIPT_DIR/n5-classify-binext.py" "$jar" 2>>"$LOG_DIR/_extra-tridium.log" || true)"
+    if [[ "$verdict" != include* ]]; then
+      skipped=$((skipped + 1))
+      continue
+    fi
+    moddir="$N5_OUT_DIR/$mod/lib-inf/$stem"
+    log "_extra-tridium" "including LIB-INF $mod/$stem ($verdict) -> $moddir"
+    if decompile_extra_tridium_jar "$jar" "$force" "$moddir"; then
+      included=$((included + 1))
+    else
+      failed=$((failed + 1))
+    fi
+  done < <(find -L "$N5_OUT_DIR" -mindepth 4 -maxdepth 4 -path '*/extracted/LIB-INF/*.jar' -print0 2>/dev/null)
+  log "_extra-tridium" "LIB-INF done: included=$included skipped=$skipped failed=$failed"
   [[ "$failed" -eq 0 ]]
 }
 
@@ -1031,12 +1477,16 @@ main() {
         mode="bin-ext"
         shift
         ;;
+      --extra-tridium)
+        mode="extra-tridium"
+        shift
+        ;;
       --force)
         force="true"
         shift
         ;;
       --variant)
-        variant="${2:?--variant needs a value (only v2 is implemented)}"
+        variant="${2:?--variant needs a value (v2 or cons)}"
         shift 2
         ;;
       --all)
@@ -1052,25 +1502,35 @@ main() {
 
   mkdir -p "$N5_OUT_DIR"
 
+  if [[ "$mode" == "extra-tridium" ]]; then
+    local rc1=0 rc2=0
+    run_extra_tridium "$force" || rc1=$?
+    run_extra_tridium_libinf "$force" || rc2=$?
+    [[ "$rc1" -eq 0 && "$rc2" -eq 0 ]]
+    exit $?
+  fi
+
   if [[ -n "$variant" ]]; then
-    if [[ "$variant" != "v2" ]]; then
-      echo "unsupported --variant '$variant' (only 'v2' is implemented)" >&2
+    if [[ "$variant" != "v2" && "$variant" != "cons" ]]; then
+      echo "unsupported --variant '$variant' (only 'v2' and 'cons' are implemented)" >&2
       exit 1
     fi
+    local decompile_fn="decompile_module_v2"
+    [[ "$variant" == "cons" ]] && decompile_fn="decompile_module_cons"
     if [[ "$mode" == "docsource" ]]; then
-      echo "--variant v2 does not apply to --docsource (docSource.jar is original sources, not decompiled)" >&2
+      echo "--variant $variant does not apply to --docsource (docSource.jar is original sources, not decompiled)" >&2
       exit 1
     fi
     if [[ "$mode" == "bin-ext" ]]; then
-      run_v2_binext "$force" "$only"
+      if [[ "$variant" == "cons" ]]; then run_cons_binext "$force" "$only"; else run_v2_binext "$force" "$only"; fi
       exit $?
     fi
     if [[ -z "$only" ]]; then
-      echo "--variant v2 needs an explicit <module> or --all: tools/n5-decompile.sh --variant v2 [<module>|--all]" >&2
+      echo "--variant $variant needs an explicit <module> or --all: tools/n5-decompile.sh --variant $variant [<module>|--all]" >&2
       exit 1
     fi
     if [[ "$only" == "--all" ]]; then
-      run_v2_all_modules "$force"
+      if [[ "$variant" == "cons" ]]; then run_cons_all_modules "$force"; else run_v2_all_modules "$force"; fi
       exit $?
     fi
     only="${only%.jar}"
@@ -1080,10 +1540,10 @@ main() {
       exit 1
     fi
     if ! is_tridium_module "$v2_jar"; then
-      log "$only" "v2 EXCLUDED: module.xml vendor=\"$(module_vendor "$v2_jar")\" (not \"Tridium\") — not a real N5-shipped module, skipping"
+      log "$only" "$variant EXCLUDED: module.xml vendor=\"$(module_vendor "$v2_jar")\" (not \"Tridium\") — not a real N5-shipped module, skipping"
       exit 0
     fi
-    decompile_module_v2 "$v2_jar" "$force"
+    "$decompile_fn" "$v2_jar" "$force"
     exit $?
   fi
 

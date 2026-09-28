@@ -669,3 +669,84 @@ collapse, D9's ternary promotion), or precision-only casts Vineflower considers 
 verification rule** (confirm behavior-dependent claims with `javap`/docSource) — it measurably
 improves *readable* fidelity (`@Override`, generics, redundant-cast removal) but leaves the
 semantic defect surface B116 found almost entirely intact.
+
+## `--variant cons` and `--extra-tridium` (T22, `odd/tasks/decompiler-fidelity-audit.md`)
+
+### `--variant cons`: B118 §118.1's conservative + line-mapped view
+
+`tools/n5-decompile.sh --variant cons [<module>|--all]` is a **third** decompile, alongside v1
+(`vineflower/`, no library context) and v2 (`vineflower2/`, full library context), writing
+`organized/<mod>/vineflower-cons/` (+ `fallback-cons/`). It reuses v2's entire library-context
+machinery **unchanged** — the same immutable `organized/_v2-libcache/`, the same
+`--add-external`/`--include-runtime`, the same idempotency-key and failure semantics — only the
+Vineflower flag set differs, taken verbatim from `niagara5-block118.md` §118.1's "conservative +
+line-mapped" set:
+
+```
+--pattern-matching=false --decompile-switch-expressions=false --ternary-in-if=false
+--prettify-ifs=false --inline-simple-lambdas=false --bytecode-source-mapping=true
+--__dump_original_lines__=true
+```
+
+Every documented flag name was re-verified against `vineflower-1.12.0.jar --help` this session
+(all six present, defaults as B118 recorded). `--__dump_original_lines__` is **not** in `--help`
+— it is Vineflower's `DUMP_ORIGINAL_LINES` constant
+(`org/jetbrains/java/decompiler/main/extern/IFernflowerPreferences.class`, `javap -constants`),
+confirmed present in the same jar this session. Like v2, every option is placed **before**
+`-e`/`--add-external` on the command line (`decompile_module_variant`'s shared command
+construction; the v2 bats regression test for the "silently dropped option after `-e`" CLI bug
+applies unchanged to cons, and a cons-specific bats test asserts the same zero
+`warn: missing` lines).
+
+**What cons buys, and what it costs.** Per B118 §118.1: resugaring off means an
+`instanceof`-pattern, switch-expression, or restructured-if never renders even where v1/v2 would
+resugar one — closing the exact ambiguity B90/B98 warned about, mechanically, per class, instead
+of by prose caveat. Line mapping on means every statement's `// N` trailer is the class file's own
+`LineNumberTable` entry, i.e. **Tridium's original source line**, independently of whether a
+`docSource` original exists for that class — B118 measured 669/669 (100%) agreement against the
+four docSource-covered test classes it had, with a +7-line-shift control scoring only 33.8%
+(discriminating, not coincidental agreement). Cost: a real pattern switch (e.g.
+`BNumericWritable.spy`, `niagara5-block118.md` §118.1) renders **less** readably in cons — the
+desugared `SwitchBootstraps.typeSwitch` state machine instead of the `case Action a when ... ->`
+syntax v1/v2 both recover — so cons is a second, syntax-neutral, line-citable view for
+corroboration, never a wholesale replacement for v1/v2.
+
+### `--extra-tridium`: the 10 out-of-pipeline jars + Tridium-owned nested `LIB-INF` jars
+
+`niagara5-block117.md` §117.2 and §117.4 found two Tridium-owned code populations the pipeline
+above never touches, because it only ever scans `$N5_MODULES_DIR` and `$N5_BIN_EXT_DIR`:
+
+1. **10 jars under `etc/m2/` and `lib/`** (958 Tridium classes total): `n-plugin` (722),
+   `tridium-niagara-slotomatic-library` (145), `settings` (20), `n-conv-plugin` (14), `n-templates`
+   (15), `utils` (12), `xelem` (8), `java-utils` (4), `filetypes` (3), and
+   `lib/tridium-niagara-baja-doclet` (15 of 23 classes). `--extra-tridium` derives this list
+   **mechanically**: every `*.jar` under `$N5_ETC_M2_DIR` (recursive) and `$N5_LIB_DIR`
+   (`-maxdepth 1`), classified by `tools/n5-classify-binext.py`'s existing >50%-Tridium-namespace
+   rule, unchanged — re-run against the real install this session, it produces exactly these 10
+   names and nothing else (the sibling `*-plugin-markers` Maven metadata directories under
+   `etc/m2/repository/com/tridium/tools/` carry no `.jar` at all, so they never enter the
+   candidate list in the first place). Each included jar gets **both** v2 and cons, into
+   `organized/_etc-m2/<jar-stem>/` (etc/m2 jars) or `organized/_lib/<jar-stem>/` (the doclet).
+2. **Tridium-owned nested `LIB-INF` jars** (§117.2: 98 `LIB-INF` jars exist across 24 modules;
+   only 2 are Tridium's own code by the same >50% rule — `devkit`'s `n-templates-5.0.54.9.2.jar`
+   and `tridium-niagara-slotomatic-library-5.0.2.jar`, 160 classes total, both re-verified this
+   session against every one of the 97 nested jars actually present in `organized/*/extracted/
+   LIB-INF/`). `--extra-tridium` scans every already-extracted
+   `organized/<mod>/extracted/LIB-INF/*.jar` (real per-module identity, not the
+   deduplicated-by-sha256 libcache) and decompiles (v2+cons) any that pass the rule into
+   `organized/<mod>/lib-inf/<jar-stem>/`.
+
+**Kotlin.** 4 of the 10 etc/m2 jars (`n-plugin`, `n-conv-plugin`, `settings`, `utils`) carry
+`Lkotlin/Metadata;` in their class files (§117.4); `write_recon_language` records
+`"language": "kotlin"` and the Kotlin-classes ratio directly in each jar's `recon.json` (a
+jar-level fact, not nested under `"v2"`/`"cons"` — independent of which decompiler variant read
+it). Vineflower 1.12.0 ships a bundled Kotlin plugin (`--kt-enable`, **default true**, confirmed
+via `--help` this session, `META-INF/plugins/vineflower-kotlin-0.1.0.jar` present inside the tool
+jar) — it is therefore already active by default for every Kotlin-flagged jar decompiled here; no
+extra flag was needed to opt in. Neither `n-templates` nor `tridium-niagara-slotomatic-library`
+(the two `LIB-INF` jars) carries the Kotlin marker.
+
+### Campaign run
+
+<!-- T22 campaign numbers: filled in after the real run against the sha256-verified local
+     mirror (niagara5-research-localcache/jar-mirror-5.0.0.28/), see the writer's report. -->
