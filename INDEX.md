@@ -146,6 +146,14 @@ This index guides through the **61 blocks** of this research. The flat catalog l
 | 88 | `MessageWrapper` retry-count gate, the Forge/Azure Blob upload backend, the cloudLink version-lag explained, and the nCloudDriver→cloudLink lineage statement | [block88](niagara5-block88.md) |
 | 89 | Nine build-toolchain/devkit/test gaps closed by fresh decompiles: `lateinit` native platforms, a triply-inert `compact3` flag, a real javac module-naming defect,… | [block89](niagara5-block89.md) |
 | 90 | Closing five source-level census gaps: a full receiver-type classification of the 211 `getFirst`/`getLast` call sites, a decisive `instanceof`-pattern… | [block90](niagara5-block90.md) |
+| 91 | Web-layer security exposure and Context threading: no first-party null-Context→canRead exploit chain found corpus-wide, `BLegacyBasicAuthenticationScheme` is… | [block91](niagara5-block91.md) |
+| 92 | Closing five child gaps on box protocol internals and the alarm subsystem: alarm-acknowledgment attribution generalizes corpus-wide, the box JSON message-dispatch… | [block92](niagara5-block92.md) |
+| 93 | A full page-by-page read of Tridium's own Summit-2026 "Module Transition" deck adds real Security-Manager/Logger/BACnet breaking-change detail (but zero new… | [block93](niagara5-block93.md) |
+| 94 | Platform daemon, firewall, crypto services, native launcher residue: eight of nine cluster residuals closed (one stays live-station-blocked), with a live disassembly… | [block94](niagara5-block94.md) |
+| 95 | Closing eight standing child gaps across five prior blocks: the 5 automatic-module jars' real packaging shape, `NiagaraRpc`'s defining module,… | [block95](niagara5-block95.md) |
+| 96 | Cloud connectors, licensing features, NCS agent: nine gap closures spanning Forge payload bodies, Forge tenant proxying, platform license-key censuses, a corpus-wide… | [block96](niagara5-block96.md) |
+| 97 | N5 build-toolchain gaps closed: a self-referencing moduleTest classpath, the real NDriver/VideoDriver scaffold manifest against buildN5.html's own inaccurate example… | [block97](niagara5-block97.md) |
+| 98 | The N4-4.15.3.28 OEM install closes five long-open N4-side gaps: JDK SHA-1 policy, SRP6 group-size cross-check, `backup.jar`'s KeyRing-in-`.dist` mechanism,… | [block98](niagara5-block98.md) |
 
 ---
 
@@ -509,6 +517,15 @@ This index guides through the **61 blocks** of this research. The flat catalog l
 - [x] B67-G2/G3/G5 + B13-G2 cloudLink retry, Azure IoT Hub/Blob protocol, network helper, independent versioning → [Block 88]
 - [x] B2-G2/G3, B16-G3, B29-G5, B60-G1/G2, B74-G3 toolchain facts (doc/test.html; Automatic-Module-Name hyphen) → [Block 89]
 - [x] B80-G1, B70-G2/G4, B25-G1, B76-G2, B11-G3 census (instanceof = decompiler resugaring; N4 ZKM 16 modules) → [Block 90]
+
+- [x] B82-G2/B68-G2/B46-G3/B52-G1/G2 .kr export format, RPC setCategoryMask fail-open (MEDIUM, conditional), CSRF severity LOW → [Block 91]
+- [x] B83-G2/G3, B31-G5, B84-G3, B78-G3/B37-G4 alarm ack attribution, box JSON dispatch, alarm.adb fully compatible, license fatalFault → [Block 92]
+- [x] B4-G3/G7, B64-G4/G5, B56-G4 docSource line delta, 0 PDFs, Summit deck full read → [Block 93]
+- [x] B12-G2/G3, B33-G6, B40-G1/G4, B53-G4, B87-G2/G3 platCrypto HTTP protocol, signingService CSR, firewall, cacerts, FIPS initFips → [Block 94]
+- [x] B1-G6, B7-G2, B23-G2/G5/G6, B84-G1/G2, B12-G1 automatic modules, crypto.core revocation disabled, graph drift, oauth2 jar-cache → [Block 95]
+- [x] B88-G1, B90-G2/G4, B85-G3, B77-G4, B18-G5 Forge schemas, platform types, license overrides, NCS identity convergence → [Block 96]
+- [x] B89-G4, B50-G6, B51-G4/G6, B10-G4/G6, B29-G3 templates, N5 RPC injection, kit lints, port-script fix → [Block 97]
+- [x] B62-G1/G2, B38-G4, B66-G1, B47-G2, B82-G1/G3, B57-G4, B90-G1 N4-4.15 crypto parity, live .kr backup, reflect body → [Block 98]
 
 ## Non-investigable gaps (without a running N5 station)
 
