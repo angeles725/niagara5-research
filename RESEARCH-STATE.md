@@ -52,7 +52,7 @@ requires_execution_open: 9
 blocked_open: 46
 deferred_open: 11
 undocumented_findings: 0
-blocks_since_retro: 15
+blocks_since_retro: 0
 last_iteration_ts: 2026-09-28T02:30:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
