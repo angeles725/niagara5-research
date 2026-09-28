@@ -151,6 +151,26 @@ make the decompile complete and as faithful as possible.
       GREEN: full `bats tools/tests/n5-decompile.bats` 63/63 (EXIT=0), `make test` OK, shellcheck clean.
       Route: inline (script + helper + test).
 
+- [x] T28 (67a7324) tools/n5-best-source.py trusted any same-path upstream .java as ground truth, even for a
+      vendor-rebuilt jar (paho mqttv3 0/110 classes identical: 96 classes were marked `upstream`). Now upstream wins
+      only with a manifest identity proof; otherwise the decompile wins and the upstream file is an
+      `upstream-different-build`/`upstream-unproven` alternate. Orchestrator-found; delegated writer (TDD).
+- [x] T30 (b68f84a) 81 manifest artifacts carried no identity verdict although evidence/b117 proved 78 of them
+      whole-jar SHA-1 exact (3 mixed exact/differs): n5-upstream-sources.py now records per-occurrence
+      `content_identity` (sha1-exact / resigned-identical / ... / unverified), best-source resolves the verdict per
+      occurrence. Orchestrator-verified manifest: resigned-identical 98, sha1-exact 78, identified 9, no-classes 2,
+      vendor-modified 1 (paho), 0 without verdict; upstream_unproven_artifacts 81 → 0. Third-party classes with a
+      byte-identical upstream source: 52,436/60,314 (86.9%, all-third-party denominator).
+- [x] T29 (6b1667d) Multi-Release JAR overrides (`META-INF/versions/<N>/`) were silently skipped by Vineflower (no
+      marker, no fallback): shared `vf_handle_mrjar_versions` re-roots each version's classes into a subset jar,
+      decompiles with the same variant context (CFR fallback, `mrjar_unrepresented` never silent). Real
+      `--third-party-libinf --force` (24 min): 94/94 jars, all 27 override classes in 16 jars now have files,
+      0 unrepresented. Full bats 70/70, make test 403 OK, shellcheck clean.
+- [x] Final index (orchestrator run after T29/T30, `tools/n5-best-source.py`): 455 populations, **64,929 classes —
+      docSource 2,809, upstream (proven byte-identical) 37,195, vineflower2 24,924, fallback2 1, missing 0**;
+      upstream_unproven_artifacts 0. Spot check: jackson-core-2.22.2 META-INF/versions/11 BigSignificand.java
+      present with its package/class. Browse: organized/_best/tree.
+
 ## Maximum decompile fidelity (user requirement 2026-09-28: "the decompile must be right, no inventions, not tainted; try everything possible")
 - [x] T13 Integrity + completeness census [CERT-hw]: 252 recon.json (247 modules + bin/ext) — 0 jar sha256 mismatches vs the
       installed jars, 0 missing jars; 14,894 top-level classes, 0 without a .java (CORRECTED by B117: this counted only top-level classes of the module jars — 24,896 classes in 98 nested LIB-INF jars and 958 classes in 10 out-of-pipeline Tridium jars were never decompiled; orchestrator verified 0 .java under any LIB-INF) (vineflower or fallback); CFR fallback used in
