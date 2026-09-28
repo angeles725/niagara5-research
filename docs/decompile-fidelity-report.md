@@ -272,5 +272,63 @@ Unchanged grade: 191
 - v2's higher @Override count relative to v1 is decompiler INFERENCE, not recovered information (B116 A2: @Override is SOURCE-level and never survives compilation to bytecode — javap shows no constant-pool entry or attribute for it on any Tridium class). This grader's roundtrip-exact/roundtrip-equivalent grade is the only fidelity signal used above; @Override counts, line counts, or any other textual growth between the two trees' decompiled source are not evidence of higher (or lower) fidelity.
 - This comparison graded the ldc-vs-ldc_w-width allowlist entry's effect on the v1 (vineflower) tree: exactly 1 of 69 previously-bytecode-only classes in this 43/46-module sample (com/tridium/schedule/BScheduleSnapshotHandler, resolved via the Procyon fallback rung) moved to roundtrip-equivalent once ldc/ldc_w width-only differences were allowlisted; the goto-vs-goto_w-width and jsr-vs-jsr_w-width entries matched zero classes in this sample (present and tested, simply not observed here).
 
+## Best source per class (T25)
+
+Reading the precedence rule above and re-deriving it by hand for every citation does not scale.
+`tools/n5-best-source.py` makes it mechanical: a per-class index of the single most faithful
+representation available anywhere in the corpus, for every class in every population (every
+module, every `_bin-ext`/`_etc-m2`/`_lib` third-party jar, and every module's LIB-INF-nested
+jars).
+
+**Precedence** (most faithful first — same rule as "Source precedence for code claims" in
+`docs/writer-prompt.md`):
+
+1. `organized/docSource/<module>/<pkg>/<Class>.java` — Tridium original source (byte-identical).
+2. A fetched upstream Maven Central `-sources.jar` (`organized/_upstream-sources/...`, T22) —
+   original third-party source, for the classes its own recorded classdiff actually covers.
+   `module-info`/`package-info` are excluded from this cross-artifact match: every artifact has
+   its own, unrelated one under that same filename (a real bug hit on the first full-corpus run:
+   `aaphp`'s `module-info` was matched to `org.eclipse.angus:jakarta.mail`'s).
+3. `organized/<pop>/vineflower2/...` — v2 decompile (recommended tree, see above).
+4. `organized/<pop>/vineflower/...` — v1 decompile, preferred over v2 ONLY when a class is graded
+   on both trees (`fidelity.vineflower2.json` / `fidelity.vineflower.json`) and v1's grade
+   outranks v2's, per the same ordering `tools/n5-fidelity.py`'s `_GRADE_RANK` uses. On the real
+   corpus (2026-09-28) this never actually fires: of 192 classes graded on both trees, v1 never
+   beats v2 (consistent with the 65.1% vs 64.6% round-trip-rate finding above).
+5. `organized/<pop>/fallback2/...` then `fallback/...` — CFR fallback, only ever populated for
+   the specific classes vineflower/vineflower2 produced no output for.
+6. `missing` — no representation anywhere. Still listed in the index (never silently dropped) so
+   an absence is a fact you can cite, not a gap you have to rediscover.
+
+Separately, `organized/<pop>/vineflower-cons/...` — the conservative, original-line-numbered /
+non-resugared tree (useful for line-number or classic-syntax citations, B118 sec 118.1) — is
+recorded per class as `line_mapped_view`, regardless of which rung above was chosen as `best`.
+
+**Populations** the tool discovers structurally (any directory with a sibling `extracted/`):
+every module, every `_bin-ext/<jar>/`, `_etc-m2/<jar>/`, `_lib/<jar>/`, and — real but rare, one
+module only (`devkit`) — a genuine decompiled `<mod>/lib-inf/<jar>/` subtree. Every OTHER
+module's LIB-INF-nested third-party jars are raw, undecompiled files at
+`<mod>/extracted/LIB-INF/<jar>.jar`; the tool treats each as its own population
+(`<mod>/lib-inf-raw/<jar>`), reading class names straight out of the jar's zip entries — there is
+no decompile of them anywhere in the corpus, so absent upstream-sources coverage, their classes
+are correctly `missing`, not silently absent from the index.
+
+**Real run** (2026-09-28, `python3 tools/n5-best-source.py --organized organized --out
+organized/_best --materialize organized/_best/tree`): 361 populations, 40678 classes —
+`docSource` 2809, `upstream` 13023, `vineflower2` 12708, `fallback2` 273, `missing` 11865 (28.2%
+of all classes — almost entirely LIB-INF-nested third-party classes with no upstream-sources
+match), 0 `vineflower`(v1) picks, 0 bare-`fallback` picks (fallback2 always already covers
+whatever bare fallback would, when both exist for a module).
+
+**Browsing**: `organized/_best/best-source.json` is the full machine-readable index (per class:
+`module`, `class`, `best`, `best_kind`, `reason`, `line_mapped_view`, `alternates`, `grade`, plus
+a `summary` block). `organized/_best/tree/` is a browsable mirror — open
+`organized/_best/tree/<module>/<pkg>/<Class>.java` (or `.kt`) directly; it is a RELATIVE symlink
+to the real chosen file, so `cd`-ing into it in a file browser or `git grep`-free editor just
+works. An upstream pick's target is a real extracted file under
+`organized/_best/_upstream-extracted/<groupId>/<artifactId>/<version>/...` (a `.java` inside a
+`-sources.jar` cannot be symlinked to directly; this tool extracts it once, idempotently, instead
+of copying it again on every materialize).
+
 
 

@@ -196,6 +196,21 @@ make the decompile complete and as faithful as possible.
       choose the primary tree by measured round-trip rate, not by text diff. Note: v2's +139% @Override is decompiler inference
       (B116: @Override never survives compilation), not recovered information. Route: delegated writer (TDD).
 - [ ] T21 Full-corpus grading run (all ~15k top-level classes, both trees) — closes B116-G1; long run, forecast first. Route: delegated.
+- [x] T25 (this commit, worktree t25-best-source off feat/n5-wave14@2a08063) Per-class "best available representation"
+      index tools/n5-best-source.py (TDD, 17/17 tests GREEN) + `--materialize` browsable relative-symlink tree, so a
+      reader never has to re-derive the docs/writer-prompt.md precedence rule by hand. Structural discovery found one
+      undocumented split: devkit is the ONLY module with a genuine decompiled `<mod>/lib-inf/<jar>/` subtree; every
+      other module's LIB-INF-nested third-party jars are raw, undecompiled files at `extracted/LIB-INF/<jar>.jar`
+      (no per-class decompile anywhere in the corpus for those). Real run: 361 populations, 40678 classes — docSource
+      2809, upstream 13023, vineflower2 12708, fallback2 273, missing 11865 (28.2%, almost entirely LIB-INF-nested
+      third-party classes with no upstream-sources match); 0 vineflower(v1)-preferred picks (matches T20: v1 never
+      beats v2 on the 192 classes graded on both trees), 0 bare-fallback picks (fallback2 always already covers
+      whatever bare fallback would). Caught and fixed one real bug before reporting numbers: `module-info`/
+      `package-info` were being matched across UNRELATED upstream artifacts by filename alone (aaphp's module-info
+      matched to org.eclipse.angus:jakarta.mail's) — excluded from the upstream cross-artifact index, regression
+      test added. 3 spot-checks by hand (docSource: alarm/AlarmDbConnection; upstream: abstractMqttDriver's
+      jackson-annotations JacksonAnnotation, extracted+symlinked correctly; vineflower2: aaphp/BAaPhpDevice) all
+      resolved to the right file. Route: delegated writer (TDD).
 - [x] T5 (9592b82) Porting guide: the only N5-only claim (`NiagaraSlotProcessor`) was false vs BOTH N4.14 and N4.15 — it is a
       relocation (javax.baja.nre... in bin/ext/nre.jar → niagara.nre... in module niagaraAnnotationProcessors); fixed.
 - [ ] T16b Extend lint-block R1/R2/R8 to docs/*.md (the porting guide carried an R8 error the linter could not see). TDD.
