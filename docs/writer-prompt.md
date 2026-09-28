@@ -84,7 +84,7 @@ See `odd/tasks/decompiler-fidelity-audit.md` for the full experiment and evidenc
   renders classic, N5 (major 69) renders modern, for IDENTICAL bytecode (proven on `BQudtUnitTag`
   N4-4.15 vs N5, `evidence/b115/decompiler-fidelity/`).
 - NEVER assert that Tridium "uses/adopted/rewrote to" a Java language feature, and NEVER report an
-  N4<->N5 syntax delta, from decompiled source. Quoting decompiled code to explain BEHAVIOR is fine.
+  N4<->N5 syntax delta, from decompiled source. Quoting decompiled code to explain BEHAVIOR is fine EXCEPT when the claim depends on overload binding, boxing/unboxing, numeric conversion or casts, `finally`/return control flow, varargs arguments, or whether a name is a local or a field — Vineflower 1.12 gets exactly these wrong in 11 of 36,977 recompiled Tridium methods (niagara5-block116.md, D1-D11; e.g. BDevice.checkFatalFault turns a local into the field `network`). For those, cite javap (`javap -c -p organized/<mod>/extracted/...class`) or the docSource original. CFR is not a semantic oracle either.
 - Bytecode-identical (javap cannot decide; only docSource originals or a non-resugaring decompiler
   like CFR): `instanceof` patterns, `var`, text blocks, string concatenation form.
 - Bytecode-visible (use `javap -v -p` on `organized/<mod>/extracted/...class`): records (Record

@@ -46,6 +46,11 @@
 
 ## 115.1 — Bytecode-distinguishability matrix: 9 old-vs-new Java idiom pairs, `javac 25 --release 25`, `javap -c -p` with and without `-g` `[CERT-hw]`
 
+> **Correction (added by [Block 116], §14 cross-block).** This matrix covers SYNTAX distinguishability only. Neither
+> Vineflower nor CFR is a semantic oracle: [Block 116] confirmed 11 semantically wrong Vineflower methods in the N5 tree
+> (overload binding, boxing, numeric widening, `finally` return, pattern-variable scoping) and CFR drops `(Object)null`
+> casts. Behavior claims in those families need `javap` or docSource — see [Block 116] §116.5-§116.6.
+
 Evidence: `scratchpad/fidelity/{old,new}/F.java` (T1's own experiment, re-read this session), compiled and
 disassembled this session's own re-run to confirm the LocalVariableTable claim concretely (§115.2 reproduces
 one row independently on real Tridium bytecode). Durable copies of the source pairs and `javap` outputs are
