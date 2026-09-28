@@ -187,6 +187,13 @@ make the decompile complete and as faithful as possible.
       multi-occurrence artifacts; extracted upstream copies named after the class, not the original source file;
       `@JvmMultifileClass` facades mapped to one file; kotlin-stdlib/woodstox residual facade gaps (2,468 classes
       corpus-wide); n5-bytecode-xref advisories R2-003/R2-004 from 4505d39's slice (out of that writer's scope).
+      Final RDD (9ddb521..9571e9a, APPROVED + acknowledged) advisories, deferred (0 occurrences in the real corpus):
+      n5-best-source.py — a trusted upstream pick whose sources-jar entry fails to extract becomes `missing`
+      instead of falling back to the decompile rungs (R3/R4-upstream-extraction-failure-*; reason text says so
+      imprecisely, R2-upstream-extraction-failure-reason-misleading); duplicated materialize candidate guard.
+      n5-decompile.sh — MRJAR nested-class parent lookup uses the outermost `$` segment only
+      (R3-mrjar-nested-parent-lookup-uses-outermost-only). Test helpers: duplicated corrupt-entry helper; a bats
+      comment cites a line number.
 
 ## Maximum decompile fidelity (user requirement 2026-09-28: "the decompile must be right, no inventions, not tainted; try everything possible")
 - [x] T13 Integrity + completeness census [CERT-hw]: 252 recon.json (247 modules + bin/ext) — 0 jar sha256 mismatches vs the
