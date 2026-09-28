@@ -511,6 +511,11 @@ PY
   N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR=/nonexistent N5_OUT_DIR="$local_dir/out" \
     N5_JDK25_HOME="$BATS_TEST_TMPDIR/fake-jdk" \
     run "$REPO_ROOT/tools/n5-decompile.sh" --third-party-libinf
+  # decompile-pipeline review fix (R3-004): this run's own exit status was
+  # never asserted -- a regression where --third-party-libinf crashed
+  # outright (before creating ANY output) would still leave the directory
+  # below absent and make this test falsely pass.
+  [ "$status" -eq 0 ]
 
   sha=$(unzip -p "$local_dir/modules/modA.jar" "LIB-INF/tridiumlib-1.0.jar" | sha256sum | awk '{print $1}')
   sha12="${sha:0:12}"
@@ -591,6 +596,46 @@ PY
     run "$REPO_ROOT/tools/n5-decompile.sh" --third-party-libinf
   [ "$status" -eq 0 ]
   [[ "$output" == *"lib-inf-3p: decompiled=0 skipped-up-to-date=1 failed=0 distinct_jars=1"* ]]
+}
+
+@test "(e) run_third_party_libinf surfaces a genuinely corrupt LIB-INF entry instead of silently swallowing unzip's error (decompile-pipeline review: R3-002/R4-002)" {
+  local_dir="$BATS_TEST_TMPDIR/libinf3p_e"
+  mkdir -p "$local_dir/modules" "$local_dir/out"
+  make_fake_jar "$local_dir/modules/base.jar" Tridium ""
+  make_fake_jar "$local_dir/modules/modA.jar" Tridium "thirdparty-1.0.jar"
+
+  # Flip ONE byte inside the (ZIP_STORED, so length-preserving) nested
+  # LIB-INF/thirdparty-1.0.jar entry's raw data -- the CENTRAL DIRECTORY and
+  # every other entry (META-INF/module.xml, marker.txt) stay byte-identical
+  # and readable; only this one entry now fails its own CRC-32 check. `unzip`
+  # still WRITES it (with the bad bytes) and exits 2, not the ordinary
+  # exit-11 "no matching files" every OTHER jar in this suite produces.
+  python3 - "$local_dir/modules/modA.jar" <<'PY'
+import sys, zipfile, struct
+dest = sys.argv[1]
+zf = zipfile.ZipFile(dest)
+info = zf.getinfo("LIB-INF/thirdparty-1.0.jar")
+zf.close()
+header_offset = info.header_offset
+with open(dest, "rb") as f:
+    f.seek(header_offset)
+    header = f.read(30)
+fname_len, extra_len = struct.unpack("<HH", header[26:30])
+data_offset = header_offset + 30 + fname_len + extra_len
+with open(dest, "r+b") as f:
+    f.seek(data_offset + 5)
+    b = f.read(1)
+    f.seek(data_offset + 5)
+    f.write(bytes([b[0] ^ 0xFF]))
+PY
+
+  N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR=/nonexistent N5_OUT_DIR="$local_dir/out" \
+    N5_JDK25_HOME="$BATS_TEST_TMPDIR/fake-jdk" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --third-party-libinf
+  [ "$status" -eq 0 ]
+
+  grep -q "WARNING: unzip exited 2 extracting LIB-INF" "$local_dir/out/_logs/_lib-inf-3p.log"
+  grep -q "from modA " "$local_dir/out/_logs/_lib-inf-3p.log"
 }
 
 # --- T19 fix: v2 library-context race + hardening (odd/tasks/decompiler-fidelity-audit.md) ---
@@ -1344,6 +1389,164 @@ PY
   [ -f "$local_dir/out/t24e_mod/fallback/pkg/Hang.java" ]
 }
 
+@test "T24f: a vineflower-noinner/ secondary view from an EARLIER hung run does not survive a rerun where nothing hangs (decompile-pipeline review: R3-stale-noinner-view-survives-rerun)" {
+  local_dir="$BATS_TEST_TMPDIR/t24f"
+  mkdir -p "$local_dir/modules" "$local_dir/out"
+  t24_use_fake_vineflower
+  N5_MODULES_DIR="$local_dir/modules" \
+    t24_build_module_jar t24f_mod Tridium pkgA/Alpha pkgB/HangClass
+
+  # run 1: HangClass hangs -> isolated -> vineflower-noinner/pkgB/HangClass.java
+  # is genuinely produced, exactly like T24a.
+  N5_MODULES_DIR="$local_dir/modules" N5_OUT_DIR="$local_dir/out" \
+    N5_CFR="$REPO_ROOT/tools/decompilers/cfr-0.152.jar" \
+    N5_PRIMARY_TIMEOUT=3 N5_ISOLATE_TIMEOUT=2 \
+    FAKE_HANG_CLASS="pkgB/HangClass" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" t24f_mod
+  [ "$status" -eq 0 ]
+  [ -f "$local_dir/out/t24f_mod/vineflower-noinner/pkgB/HangClass.java" ]
+
+  # run 2 (--force, same module, no hang this time): the whole-jar primary
+  # never times out, so vf_handle_primary_timeout/vf_render_noinner_view are
+  # never called at all this run -- the fix must proactively clear the STALE
+  # vineflower-noinner/ from run 1 instead of leaving it in place looking like
+  # current output.
+  N5_MODULES_DIR="$local_dir/modules" N5_OUT_DIR="$local_dir/out" \
+    N5_CFR="$REPO_ROOT/tools/decompilers/cfr-0.152.jar" \
+    N5_PRIMARY_TIMEOUT=3 N5_ISOLATE_TIMEOUT=2 \
+    FAKE_HANG_CLASS="" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --force t24f_mod
+  [ "$status" -eq 0 ]
+
+  recon="$local_dir/out/t24f_mod/recon.json"
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['primary_status'])")" = "ok" ]
+  [ -f "$local_dir/out/t24f_mod/vineflower/pkgB/HangClass.java" ]
+  [ ! -e "$local_dir/out/t24f_mod/vineflower-noinner/pkgB/HangClass.java" ]
+  [ ! -d "$local_dir/out/t24f_mod/vineflower-noinner" ]
+}
+
+@test "T24g: the post-isolation excluded re-run itself failing keeps the old whole-module-CFR fallback exactly, isolation_status explains why (decompile-pipeline review: R3-excluded-rerun-failure-untested)" {
+  local_dir="$BATS_TEST_TMPDIR/t24g"
+  mkdir -p "$local_dir/modules" "$local_dir/out"
+  t24_use_fake_vineflower
+  N5_MODULES_DIR="$local_dir/modules" \
+    t24_build_module_jar t24g_mod Tridium pkgA/Alpha pkgB/Hang
+
+  N5_MODULES_DIR="$local_dir/modules" N5_OUT_DIR="$local_dir/out" \
+    N5_CFR="$REPO_ROOT/tools/decompilers/cfr-0.152.jar" \
+    N5_PRIMARY_TIMEOUT=3 N5_ISOLATE_TIMEOUT=2 \
+    FAKE_HANG_CLASS="pkgB/Hang" FAKE_EXCLUDED_RERUN_FAIL=1 \
+    run "$REPO_ROOT/tools/n5-decompile.sh" t24g_mod
+  [ "$status" -eq 0 ]
+
+  recon="$local_dir/out/t24g_mod/recon.json"
+  # isolation DID find the hung class -- excluded_classes is not empty --
+  # but the excluded re-run itself errored, so T24's fix must fall all the
+  # way back to today's original whole-module CFR behavior, unchanged.
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['excluded_classes'])")" = "['pkgB/Hang']" ]
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['isolation_status'])")" = "excluded_rerun_error" ]
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['primary_status'])")" = "timeout" ]
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['fallback_used'])")" = "True" ]
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['fallback_reason'])")" = "primary_timeout_whole_module" ]
+
+  count=$(find "$local_dir/out/t24g_mod/vineflower" -name '*.java' 2>/dev/null | wc -l)
+  [ "$count" -eq 0 ]
+  [ -f "$local_dir/out/t24g_mod/fallback/pkgA/Alpha.java" ]
+  [ -f "$local_dir/out/t24g_mod/fallback/pkgB/Hang.java" ]
+}
+
+@test "T24h: the best-effort noinner secondary view failing must never abort the whole decompile under 'set -e' (decompile-pipeline review: R2-noinner-never-fails-contract)" {
+  local_dir="$BATS_TEST_TMPDIR/t24h"
+  mkdir -p "$local_dir/modules" "$local_dir/out"
+  t24_use_fake_vineflower
+  N5_MODULES_DIR="$local_dir/modules" \
+    t24_build_module_jar t24h_mod Tridium pkgA/Alpha pkgB/HangClass
+
+  # HangClass hangs, gets isolated, and the excluded re-run succeeds (like
+  # T24a) -- but this time the best-effort --decompile-inner=false secondary
+  # view itself fails (FAKE_NOINNER_FAIL=1). Under this script's own
+  # `set -euo pipefail`, vf_render_noinner_view's call site was an unguarded
+  # statement: a non-zero return there aborted the ENTIRE script instead of
+  # being swallowed as the documented "best-effort ... never blocks the
+  # module" behavior. The whole run must still exit 0 and still record
+  # ok_with_excluded, exactly as if the noinner view had never been attempted.
+  N5_MODULES_DIR="$local_dir/modules" N5_OUT_DIR="$local_dir/out" \
+    N5_CFR="$REPO_ROOT/tools/decompilers/cfr-0.152.jar" \
+    N5_PRIMARY_TIMEOUT=3 N5_ISOLATE_TIMEOUT=2 \
+    FAKE_HANG_CLASS="pkgB/HangClass" FAKE_NOINNER_FAIL=1 \
+    run "$REPO_ROOT/tools/n5-decompile.sh" t24h_mod
+  [ "$status" -eq 0 ]
+
+  recon="$local_dir/out/t24h_mod/recon.json"
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['primary_status'])")" = "ok_with_excluded" ]
+  [ -f "$local_dir/out/t24h_mod/vineflower/pkgA/Alpha.java" ]
+  [ -f "$local_dir/out/t24h_mod/fallback/pkgB/HangClass.java" ]
+  [ ! -f "$local_dir/out/t24h_mod/vineflower-noinner/pkgB/HangClass.java" ]
+}
+
+@test "T24i: N5_ISOLATE_TOTAL_BUDGET caps the WHOLE bisection and falls back to whole-module CFR when exhausted, with no partial hung-class list trusted (decompile-pipeline review: R4-isolation-unbounded-total-budget)" {
+  local_dir="$BATS_TEST_TMPDIR/t24i"
+  mkdir -p "$local_dir/modules" "$local_dir/out"
+  t24_use_fake_vineflower
+  N5_MODULES_DIR="$local_dir/modules" \
+    t24_build_module_jar t24i_mod Tridium pkgA/Alpha pkgB/HangClass
+
+  # N5_ISOLATE_TOTAL_BUDGET=0: the total-budget check at the top of the very
+  # FIRST package iteration is already "elapsed(0) >= 0", so isolation gives
+  # up before running even one package-subset probe -- deterministic and
+  # fast, no real per-probe hang/timeout needs to elapse to prove the cap.
+  N5_MODULES_DIR="$local_dir/modules" N5_OUT_DIR="$local_dir/out" \
+    N5_CFR="$REPO_ROOT/tools/decompilers/cfr-0.152.jar" \
+    N5_PRIMARY_TIMEOUT=1 N5_ISOLATE_TIMEOUT=2 N5_ISOLATE_TOTAL_BUDGET=0 \
+    FAKE_HANG_CLASS="pkgB/HangClass" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" t24i_mod
+  [ "$status" -eq 0 ]
+
+  recon="$local_dir/out/t24i_mod/recon.json"
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['isolation_status'])")" = "total_budget_exhausted" ]
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['excluded_classes'])")" = "[]" ]
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['primary_status'])")" = "timeout" ]
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['fallback_used'])")" = "True" ]
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['fallback_reason'])")" = "primary_timeout_whole_module" ]
+
+  # old whole-module-CFR behavior kept exactly, same as T24c/T24g.
+  count=$(find "$local_dir/out/t24i_mod/vineflower" -name '*.java' 2>/dev/null | wc -l)
+  [ "$count" -eq 0 ]
+  [ -f "$local_dir/out/t24i_mod/fallback/pkgA/Alpha.java" ]
+  [ -f "$local_dir/out/t24i_mod/fallback/pkgB/HangClass.java" ]
+}
+
+@test "T24j: --variant v2's own library context (-e=<lib CSV>, own flags) reaches T24's isolation path too, not just v1's context-free one (decompile-pipeline review: R3-variant-isolation-path-unexercised)" {
+  local_dir="$BATS_TEST_TMPDIR/t24j"
+  mkdir -p "$local_dir/modules" "$local_dir/out"
+  t24_use_fake_vineflower
+  N5_MODULES_DIR="$local_dir/modules" \
+    t24_build_module_jar t24j_mod Tridium pkgA/Alpha pkgB/HangClass
+
+  N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR=/nonexistent N5_OUT_DIR="$local_dir/out" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --prepare-libcache
+  [ "$status" -eq 0 ]
+
+  N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR=/nonexistent N5_OUT_DIR="$local_dir/out" \
+    N5_CFR="$REPO_ROOT/tools/decompilers/cfr-0.152.jar" \
+    N5_PRIMARY_TIMEOUT=3 N5_ISOLATE_TIMEOUT=2 \
+    FAKE_HANG_CLASS="pkgB/HangClass" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --variant v2 t24j_mod
+  [ "$status" -eq 0 ]
+
+  recon="$local_dir/out/t24j_mod/recon.json"
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['v2']['primary_status'])")" = "ok_with_excluded" ]
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['v2']['excluded_classes'])")" = "['pkgB/HangClass']" ]
+  [ -f "$local_dir/out/t24j_mod/vineflower2/pkgA/Alpha.java" ]
+  [ ! -f "$local_dir/out/t24j_mod/vineflower2/pkgB/HangClass.java" ]
+  [ -f "$local_dir/out/t24j_mod/fallback2/pkgB/HangClass.java" ]
+
+  # proves v2's OWN library context (not v1's context-free prefix) is what
+  # actually reached the isolation/excluded-rerun path: its CMD line carries
+  # -e=<lib CSV>.
+  grep -q -- '-e=' "$local_dir/out/_logs/t24j_mod.v2.log"
+}
+
 @test "T24d: v1 and --variant v2/cons share ONE Vineflower-hang isolation helper (no copy-paste)" {
   def_count=$(grep -c '^vf_isolate_hung_classes()' "$REPO_ROOT/tools/n5-decompile.sh")
   [ "$def_count" -eq 1 ]
@@ -1460,6 +1663,37 @@ PY
   [ "$(python3 -c "import json;print(json.load(open('$recon'))['mrjar_unrepresented'])")" = "[]" ]
 }
 
+@test "MRJAR: a META-INF/versions/<N> override class is ALSO handled under --variant v2, recorded in recon.json's v2 sub-object, not just v1's (decompile-pipeline review: R3-mrjar-variant-untested)" {
+  local_dir="$BATS_TEST_TMPDIR/mrjar-v2"
+  mkdir -p "$local_dir/modules" "$local_dir/out"
+  mrjar_build_module_jar "$local_dir/modules/mrjar_v2_mod.jar" Tridium 11
+  # A second module jar so --variant v2's -e=<lib CSV> is non-empty (real
+  # corpus usage always has hundreds of other module jars in the list): an
+  # empty "-e=" is a separate, pre-existing Vineflower 1.12.0 CLI quirk
+  # (confirmed unrelated to MRJAR handling -- it identically errors the
+  # WHOLE-MODULE base decompile too, not just the override), irrelevant to
+  # what this test is checking.
+  make_fake_jar "$local_dir/modules/other_mod.jar" Tridium ""
+
+  N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR=/nonexistent N5_OUT_DIR="$local_dir/out" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --prepare-libcache
+  [ "$status" -eq 0 ]
+  N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR=/nonexistent N5_OUT_DIR="$local_dir/out" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --variant v2 mrjar_v2_mod
+  [ "$status" -eq 0 ]
+
+  override_java="$local_dir/out/mrjar_v2_mod/vineflower2/META-INF/versions/11/com/example/Base.java"
+  [ -f "$override_java" ]
+  grep -q "MRJAR_OVERRIDE_MARKER" "$override_java"
+
+  recon="$local_dir/out/mrjar_v2_mod/recon.json"
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['v2']['mrjar_versions']['11']['classes'])")" = "1" ]
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['v2']['mrjar_versions']['11']['decompiled'])")" = "1" ]
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['v2']['mrjar_unrepresented'])")" = "[]" ]
+  # v1's tree must stay untouched -- this run only ever asked for --variant v2.
+  [ ! -d "$local_dir/out/mrjar_v2_mod/vineflower" ]
+}
+
 @test "MRJAR: a class neither Vineflower nor CFR can produce a file for is listed in mrjar_unrepresented, never silently dropped" {
   local_dir="$BATS_TEST_TMPDIR/mrjar-bad"
   mkdir -p "$local_dir/modules" "$local_dir/out"
@@ -1489,6 +1723,117 @@ PY
   [ "$(python3 -c "import json;print(json.load(open('$recon'))['mrjar_versions']['11']['classes'])")" = "1" ]
   [ "$(python3 -c "import json;print(json.load(open('$recon'))['mrjar_versions']['11']['decompiled'])")" = "0" ]
   [ "$(python3 -c "import json;print(json.load(open('$recon'))['mrjar_unrepresented'])")" = "['11:com/example/Base']" ]
+}
+
+@test "MRJAR: an anonymous inner class (Name\$1) inside an override is NOT listed as unrepresented — it is folded into its enclosing top-level class's .java, same as everywhere else in this file (decompile-pipeline review: R2-mrjar-inner-class-count)" {
+  local_dir="$BATS_TEST_TMPDIR/mrjar-inner"
+  mkdir -p "$local_dir/modules" "$local_dir/out"
+  local javac_bin="${N5_JDK25_HOME:-/home/linuxbrew/.linuxbrew/opt/openjdk@25/libexec}/bin/javac"
+  [[ -x "$javac_bin" ]] || javac_bin="$(command -v javac)"
+
+  local base_src base_out override_src override_out
+  base_src="$(mktemp -d)"; base_out="$(mktemp -d)"
+  override_src="$(mktemp -d)"; override_out="$(mktemp -d)"
+  mkdir -p "$base_src/com/example" "$override_src/com/example"
+  cat > "$base_src/com/example/Base.java" <<'JAVA'
+package com.example;
+public class Base {
+  public String marker() { return "BASE_ORIGINAL"; }
+}
+JAVA
+  # the override has an anonymous Runnable -> javac emits a SEPARATE
+  # com/example/Base$1.class alongside com/example/Base.class.
+  cat > "$override_src/com/example/Base.java" <<'JAVA'
+package com.example;
+public class Base {
+  public String marker() {
+    Runnable r = new Runnable() {
+      public void run() { System.out.println("MRJAR_OVERRIDE_INNER"); }
+    };
+    r.run();
+    return "MRJAR_OVERRIDE_MARKER";
+  }
+}
+JAVA
+  "$javac_bin" -d "$base_out" "$base_src/com/example/Base.java"
+  "$javac_bin" -d "$override_out" "$override_src/com/example/Base.java"
+  [ -f "$override_out/com/example/Base\$1.class" ]
+
+  python3 - "$local_dir/modules/mrjar_inner.jar" "$base_out" "$override_out" <<'PY'
+import sys, zipfile, os
+dest, base_out, override_out = sys.argv[1], sys.argv[2], sys.argv[3]
+with zipfile.ZipFile(dest, "w") as z:
+    z.writestr("META-INF/module.xml", '<module vendor="Tridium"/>')
+    z.write(os.path.join(base_out, "com/example/Base.class"), "com/example/Base.class")
+    for f in os.listdir(os.path.join(override_out, "com/example")):
+        z.write(os.path.join(override_out, "com/example", f), f"META-INF/versions/11/com/example/{f}")
+PY
+  rm -rf "$base_src" "$base_out" "$override_src" "$override_out"
+
+  N5_MODULES_DIR="$local_dir/modules" N5_OUT_DIR="$local_dir/out" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" mrjar_inner
+  [ "$status" -eq 0 ]
+
+  recon="$local_dir/out/mrjar_inner/recon.json"
+  # top-level-class UNIT: 1 override class (Base), not 2 raw .class files.
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['mrjar_versions']['11']['classes'])")" = "1" ]
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['mrjar_versions']['11']['decompiled'])")" = "1" ]
+  # the exact regression: Base\$1 must never appear as unrepresented -- it is
+  # folded into Base.java, which IS present.
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['mrjar_unrepresented'])")" = "[]" ]
+  override_java="$local_dir/out/mrjar_inner/vineflower/META-INF/versions/11/com/example/Base.java"
+  [ -f "$override_java" ]
+  grep -q "MRJAR_OVERRIDE_MARKER" "$override_java"
+}
+
+@test "MRJAR: a marker-flagged override class CFR successfully retries is tallied as fallback, not decompiled -- the count must reveal the retry happened (decompile-pipeline review: R3-mrjar-tally-marker-miscount / R2-mrjar-decompiled-count-hides-cfr-retry)" {
+  local_dir="$BATS_TEST_TMPDIR/mrjar-marker"
+  mkdir -p "$local_dir/modules" "$local_dir/out"
+  mrjar_build_module_jar "$local_dir/modules/mrjar_marker.jar" Tridium 11
+
+  run bash -c "
+    set -euo pipefail
+    N5_MODULES_DIR='$local_dir/modules' N5_OUT_DIR='$local_dir/out'
+    export N5_MODULES_DIR N5_OUT_DIR
+    source '$REPO_ROOT/tools/n5-decompile.sh'
+
+    # Stub vf_run_timed (used for the whole-subset primary run) to skip the
+    # real Vineflower entirely and instead write the EXACT decompiler-failure
+    # marker Vineflower itself would leave (see scan_marker_files's doc
+    # comment) into the override's .java -- deterministic, no real Vineflower
+    # bug needs to be reproduced to exercise this path. The REAL CFR retry
+    # that follows (triggered by the real, unmodified scan_marker_files) still
+    # runs for real against the real compiled Base.class this test built via
+    # mrjar_build_module_jar, so the 'fallback' count reflects a genuine CFR
+    # success, not a mock.
+    vf_run_timed() {
+      local outdir=\"\$2\"
+      mkdir -p \"\$outdir/com/example\"
+      {
+        echo 'package com.example;'
+        echo 'public class Base {'
+        echo '  // \$VF: Couldn'\''t be decompiled'
+        echo '  public String marker() { return \"MRJAR_OVERRIDE_MARKER\"; }'
+        echo '}'
+      } > \"\$outdir/com/example/Base.java\"
+      echo ok
+    }
+
+    decompile_module \"$local_dir/modules/mrjar_marker.jar\" false \"$local_dir/out/mrjar_marker\"
+  "
+  [ "$status" -eq 0 ]
+
+  recon="$local_dir/out/mrjar_marker/recon.json"
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['mrjar_versions']['11']['classes'])")" = "1" ]
+  # the exact regression: a marker-flagged class CFR successfully replaced
+  # must count as fallback, NEVER as a clean "decompiled" success.
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['mrjar_versions']['11']['decompiled'])")" = "0" ]
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['mrjar_versions']['11']['fallback'])")" = "1" ]
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['mrjar_unrepresented'])")" = "[]" ]
+  # the marker-flagged primary .java is still on disk (untouched) AND the
+  # real CFR retry produced its own replacement in fallback/.
+  [ -f "$local_dir/out/mrjar_marker/vineflower/META-INF/versions/11/com/example/Base.java" ]
+  [ -f "$local_dir/out/mrjar_marker/fallback/META-INF/versions/11/com/example/Base.java" ]
 }
 
 @test "MRJAR: v1 and --variant v2/cons share ONE MRJAR-version-override helper (no copy-paste)" {

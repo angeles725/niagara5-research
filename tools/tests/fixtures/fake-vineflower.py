@@ -29,6 +29,18 @@ Behaves like the real Vineflower for the options n5-decompile.sh passes:
     what actually hangs on bajaui's NSS2SelectionResult) and lets the T24
     "noinner" secondary view genuinely succeed in these tests instead of
     always being a forced best-effort failure.
+  - exits 1 immediately, instead of decompiling anything, when
+    $FAKE_EXCLUDED_RERUN_FAIL=1 and this invocation carries
+    --excluded-classes=... (i.e. it IS T24's post-isolation excluded re-run) —
+    lets a test exercise the "excluded re-run itself fails" branch
+    (vf_handle_primary_timeout's isolation_status=excluded_rerun_error path),
+    which a hang-only fake could never reach (the plain hang/no-hang decision
+    above always resolves to a clean "ok" once the hung class is excluded).
+  - exits 1 immediately, instead of decompiling anything, when
+    $FAKE_NOINNER_FAIL=1 and this invocation carries
+    --decompile-inner=false — lets a test exercise vf_render_noinner_view's
+    non-"ok" (best-effort-failed) branch deterministically, since
+    --decompile-inner=false otherwise never hangs or errors in this fake.
 """
 import os
 import re
@@ -57,6 +69,13 @@ def main():
         sys.exit(1)
     in_jar, out_dir = positional[-2], positional[-1]
     os.makedirs(out_dir, exist_ok=True)
+
+    if excluded_regex is not None and os.environ.get("FAKE_EXCLUDED_RERUN_FAIL") == "1":
+        sys.stderr.write("fake-vineflower.py: FAKE_EXCLUDED_RERUN_FAIL=1, simulating an excluded re-run error\n")
+        sys.exit(1)
+    if no_inner and os.environ.get("FAKE_NOINNER_FAIL") == "1":
+        sys.stderr.write("fake-vineflower.py: FAKE_NOINNER_FAIL=1, simulating a --decompile-inner=false error\n")
+        sys.exit(1)
 
     excluded_re = re.compile(excluded_regex) if excluded_regex else None
 

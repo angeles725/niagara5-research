@@ -142,6 +142,17 @@
 #   N5_ISOLATE_TIMEOUT   default: 90 (seconds, T24: per-package/per-class budget used ONLY
 #                    after a whole-jar Vineflower run times out, to bisect down to the exact
 #                    top-level class(es) responsible — see "Whole-jar timeout isolation" below)
+#   N5_ISOLATE_TOTAL_BUDGET  default: 1800 (seconds, decompile-pipeline review fix,
+#                    R4-isolation-unbounded-total-budget: a HARD CAP on the WHOLE T24
+#                    bisection (every package probe + every per-class dive combined) for one
+#                    hung module. N5_ISOLATE_TIMEOUT alone bounds each individual probe, but a
+#                    module with many packages/classes had no bound on how many of those
+#                    per-probe budgets could stack up — a worst-case module could burn hours in
+#                    vf_isolate_hung_classes alone. Exceeding this total stops isolation
+#                    immediately (isolation_status=total_budget_exhausted, no partial hung-class
+#                    list kept — see vf_isolate_hung_classes' doc comment) and falls back to
+#                    today's original whole-module CFR behavior, exactly as if no hung class
+#                    could be isolated at all.
 #   N5_PARALLELISM   default: 6 (used only as documentation for callers driving xargs -P)
 #   N5_JDK25_HOME    default: /home/linuxbrew/.linuxbrew/opt/openjdk@25/libexec
 #                    (--variant v2 only) passed to Vineflower's --include-runtime. Must be
@@ -245,6 +256,7 @@ N5_VINEFLOWER="${N5_VINEFLOWER:-$REPO_ROOT/tools/decompilers/vineflower-1.12.0.j
 N5_CFR="${N5_CFR:-$REPO_ROOT/tools/decompilers/cfr-0.152.jar}"
 N5_PRIMARY_TIMEOUT="${N5_PRIMARY_TIMEOUT:-240}"
 N5_ISOLATE_TIMEOUT="${N5_ISOLATE_TIMEOUT:-90}"
+N5_ISOLATE_TOTAL_BUDGET="${N5_ISOLATE_TOTAL_BUDGET:-1800}"
 N5_JDK25_HOME="${N5_JDK25_HOME:-/home/linuxbrew/.linuxbrew/opt/openjdk@25/libexec}"
 N5_ETC_M2_DIR="${N5_ETC_M2_DIR:-/mnt/c/Program Files/Niagara/5.0.0.28/etc/m2/repository}"
 N5_LIB_DIR="${N5_LIB_DIR:-/mnt/c/Program Files/Niagara/5.0.0.28/lib}"
@@ -496,23 +508,33 @@ vf_run_timed() {
   fi
 }
 
-# Bisects $2/extracted for the top-level class(es) that hang a Vineflower run
-# on their own, given the exact command/options/library-context prefix a
-# caller's real whole-jar run used ("$@" from $5 onward — e.g. v1: "$N5_JAVA
-# -jar $N5_VINEFLOWER --log-level=error"; v2/cons: that plus
-# --include-runtime=... plus the variant's own fidelity flags plus
-# -e=<lib CSV>), each subset run given its own $3-second budget instead of
-# $N5_PRIMARY_TIMEOUT. First by PACKAGE (cheap: most packages are innocent and
-# a package-sized subset completes fast); only a package that itself times out
-# is bisected further, by TOP-LEVEL CLASS (that class + its own Name$* nested
-# classes, alone). Deterministic: packages and classes are iterated in sorted
-# order, and the result is sorted+deduped. Parallelism is not attempted (T24
-# doesn't require it; a real corpus run drives whole MODULES in parallel
-# already, via xargs -P, same as every other mode this script has).
+# Bisects $2 (the module's ALREADY-extracted class tree, e.g. "$moddir/extracted"
+# — NOT a path this function appends "/extracted" to itself) for the top-level
+# class(es) that hang a Vineflower run on their own, given the exact
+# command/options/library-context prefix a caller's real whole-jar run used
+# ("$@" from $5 onward — e.g. v1: "$N5_JAVA -jar $N5_VINEFLOWER
+# --log-level=error"; v2/cons: that plus --include-runtime=... plus the
+# variant's own fidelity flags plus -e=<lib CSV>), each subset run given its
+# own $3-second budget instead of $N5_PRIMARY_TIMEOUT. First by PACKAGE
+# (cheap: most packages are innocent and a package-sized subset completes
+# fast); only a package that itself times out is bisected further, by
+# TOP-LEVEL CLASS (that class + its own Name$* nested classes, alone).
+# Deterministic: packages and classes are iterated in sorted order, and the
+# result is sorted+deduped. Parallelism is not attempted (T24 doesn't require
+# it; a real corpus run drives whole MODULES in parallel already, via xargs
+# -P, same as every other mode this script has). The WHOLE bisection (every
+# package probe + every per-class dive combined) is capped at
+# $N5_ISOLATE_TOTAL_BUDGET seconds total (decompile-pipeline review fix,
+# R4-isolation-unbounded-total-budget) — exceeding it abandons isolation
+# entirely (no partial hung-class list is trusted) rather than let a
+# many-package module stack up an unbounded number of per-probe budgets.
 #
 # Sets (globals, read by the caller immediately after calling):
 #   VF_ISOLATE_HUNG_CLASSES=()  sorted internal names of classes that hang ALONE
-#   VF_ISOLATE_STATUS           "isolated" (>=1 found) | "no_hung_class_found"
+#                                (always empty when VF_ISOLATE_STATUS != "isolated")
+#   VF_ISOLATE_STATUS           "isolated" (>=1 found) | "no_hung_class_found" |
+#                                "total_budget_exhausted" (N5_ISOLATE_TOTAL_BUDGET
+#                                hit before every package/class could be tried)
 #   VF_ISOLATE_TIME             wall-clock seconds this whole bisection took
 vf_isolate_hung_classes() {
   local module="$1" extracted_dir="$2" budget="$3" logfile="$4"; shift 4
@@ -520,6 +542,7 @@ vf_isolate_hung_classes() {
 
   local t0 t1; t0="$(date +%s)"
   VF_ISOLATE_HUNG_CLASSES=()
+  local budget_exhausted=false
 
   local -a top_level=()
   local c
@@ -538,8 +561,16 @@ vf_isolate_hung_classes() {
   )
 
   local tmpdir; tmpdir="$(mktemp -d)"
-  local pkg_status
+  local pkg pkg_status
   for pkg in "${packages[@]}"; do
+    # R4-isolation-unbounded-total-budget: checked at the top of EVERY
+    # package iteration (not just once) so a module with many packages can't
+    # stack up an unbounded number of per-probe budgets.
+    if [[ $(( $(date +%s) - t0 )) -ge "$N5_ISOLATE_TOTAL_BUDGET" ]]; then
+      log "$module" "T24 isolate: total isolation budget (${N5_ISOLATE_TOTAL_BUDGET}s) exhausted before every package could be tried, abandoning isolation"
+      budget_exhausted=true
+      break
+    fi
     rm -f "$tmpdir/pkg.jar"; rm -rf "$tmpdir/pkg-out"
     vf_classes_in_package "$extracted_dir" "$pkg" | vf_build_subset_jar "$extracted_dir" "$tmpdir/pkg.jar"
     log "$module" "T24 isolate: testing package '${pkg:-<default>}'"
@@ -549,6 +580,11 @@ vf_isolate_hung_classes() {
       local top_c cls_status
       for top_c in "${top_level[@]}"; do
         [[ "$(vf_package_of "$top_c")" == "$pkg" ]] || continue
+        if [[ $(( $(date +%s) - t0 )) -ge "$N5_ISOLATE_TOTAL_BUDGET" ]]; then
+          log "$module" "T24 isolate: total isolation budget (${N5_ISOLATE_TOTAL_BUDGET}s) exhausted mid-bisection of package '${pkg:-<default>}', abandoning isolation"
+          budget_exhausted=true
+          break
+        fi
         rm -f "$tmpdir/cls.jar"; rm -rf "$tmpdir/cls-out"
         vf_classes_for_top_level "$extracted_dir" "$top_c" | vf_build_subset_jar "$extracted_dir" "$tmpdir/cls.jar"
         cls_status="$(vf_run_timed "$tmpdir/cls.jar" "$tmpdir/cls-out" "$budget" "$logfile" "${prefix[@]}")"
@@ -557,11 +593,18 @@ vf_isolate_hung_classes() {
           VF_ISOLATE_HUNG_CLASSES+=("$top_c")
         fi
       done
+      [[ "$budget_exhausted" == true ]] && break
     fi
   done
   rm -rf "$tmpdir"
 
-  if [[ "${#VF_ISOLATE_HUNG_CLASSES[@]}" -gt 0 ]]; then
+  if [[ "$budget_exhausted" == true ]]; then
+    # No partial hung-class list is trusted once the total budget is blown —
+    # the caller must fall all the way back to today's whole-module CFR
+    # behavior, exactly as if isolation had found nothing at all.
+    VF_ISOLATE_HUNG_CLASSES=()
+    VF_ISOLATE_STATUS="total_budget_exhausted"
+  elif [[ "${#VF_ISOLATE_HUNG_CLASSES[@]}" -gt 0 ]]; then
     local -a sorted_hung=()
     readarray -t sorted_hung < <(printf '%s\n' "${VF_ISOLATE_HUNG_CLASSES[@]}" | sort -u)
     VF_ISOLATE_HUNG_CLASSES=("${sorted_hung[@]}")
@@ -574,8 +617,9 @@ vf_isolate_hung_classes() {
 }
 
 # Vineflower 1.12.0's --excluded-classes=<regex> semantics, verified
-# EMPIRICALLY 2026-09-28 (not documented in --help; see
-# docs/decompiler-bakeoff.md's T24 section for the experiment this comment
+# EMPIRICALLY 2026-09-28 (not documented in --help; see docs/decompiler-bakeoff.md's
+# "Resolved (T24)" bullet under its "### Campaign run" section (itself under
+# "## `--variant cons` and `--extra-tridium`") for the experiment this comment
 # summarizes) against the real vineflower-1.12.0.jar with a synthetic jar
 # reproducing bajaui's actual shape (a top-level class with a method-local
 # class, NSS2SelectionResult(\$1ValueAndAdvice), plus an unrelated sibling
@@ -699,8 +743,13 @@ vf_handle_primary_timeout() {
   VFH_EXCLUDED_CLASSES=("${VF_ISOLATE_HUNG_CLASSES[@]}")
 
   if [[ "$VF_ISOLATE_STATUS" != "isolated" ]]; then
-    VFH_ISOLATION_STATUS="no_hung_class_found"
-    log "$module" "T24: no single hung class found in ${VFH_ISOLATE_TIME}s, keeping whole-module CFR fallback"
+    # R4-isolation-unbounded-total-budget: propagate the REAL status
+    # ("no_hung_class_found" or "total_budget_exhausted") instead of
+    # hardcoding "no_hung_class_found" — recon.json's isolation_status field
+    # must be able to tell "isolation genuinely tried every package/class and
+    # found nothing" apart from "isolation gave up early on the total budget".
+    VFH_ISOLATION_STATUS="$VF_ISOLATE_STATUS"
+    log "$module" "T24: no single hung class found in ${VFH_ISOLATE_TIME}s (isolation_status=$VF_ISOLATE_STATUS), keeping whole-module CFR fallback"
     return 1
   fi
   log "$module" "T24: found ${#VFH_EXCLUDED_CLASSES[@]} hung class(es) in ${VFH_ISOLATE_TIME}s: ${VFH_EXCLUDED_CLASSES[*]}"
@@ -746,8 +795,16 @@ vf_handle_primary_timeout() {
     [[ "${#own_flags[@]}" -gt 0 ]] && noinner_cmd+=("${own_flags[@]}")
     noinner_cmd+=(--decompile-inner=false)
     [[ -n "$dash_e" ]] && noinner_cmd+=("$dash_e")
+    # decompile-pipeline review fix (orchestrator, 2026-09-28,
+    # R2-noinner-never-fails-contract): this call was an unguarded statement.
+    # vf_render_noinner_view's own doc comment and log message both promise a
+    # "best-effort secondary view, never blocks the module" contract, but its
+    # `return 1` on a non-"ok" status, left unguarded here under this script's
+    # `set -euo pipefail`, actually ABORTED THE WHOLE SCRIPT instead — the
+    # exact opposite of "never blocks". `|| true` makes the call really honor
+    # its documented contract.
     vf_render_noinner_view "$module" "$extracted_dir" "$moddir/$noinner_dir_name" "$N5_ISOLATE_TIMEOUT" "$logfile" \
-      "${noinner_cmd[@]}" -- "${VFH_EXCLUDED_CLASSES[@]}"
+      "${noinner_cmd[@]}" -- "${VFH_EXCLUDED_CLASSES[@]}" || true
   fi
 
   VFH_PRIMARY_STATUS="ok_with_excluded"
@@ -907,6 +964,17 @@ vf_handle_mrjar_versions() {
     # per-class marker scan (same pattern as the whole-module one in
     # decompile_module/decompile_module_variant): a class Vineflower DID emit
     # a .java for but flagged internally still needs a CFR retry.
+    #
+    # decompile-pipeline review fix (orchestrator, 2026-09-28,
+    # R3-mrjar-tally-marker-miscount / R2-mrjar-decompiled-count-hides-cfr-retry):
+    # remember which internal names were marker-flagged here (is_marker_flagged),
+    # so the tally below can tell "primary genuinely succeeded cleanly" apart
+    # from "primary left a decompiler-failure marker and CFR replaced it" — the
+    # marker-flagged .java stays in target_dir (Vineflower writes it even for a
+    # class it flags as failed), so without this the tally counted every
+    # marker-flagged-and-CFR-retried class as a clean "decompiled" success and
+    # never revealed the retry happened at all.
+    local -A is_marker_flagged=()
     local marker_files; marker_files="$(scan_marker_files "$target_dir")"
     if [[ -n "$marker_files" ]]; then
       mkdir -p "$fb_dir"
@@ -914,6 +982,7 @@ vf_handle_mrjar_versions() {
       while IFS= read -r javafile; do
         [[ -z "$javafile" ]] && continue
         relj="${javafile#"$target_dir"/}"
+        is_marker_flagged["${relj%.java}"]=1
         classrel="${relj%.java}.class"
         [[ -f "$reroot_dir/$classrel" ]] || continue
         local -a cfr_cmd=("$N5_JAVA" -jar "$N5_CFR" "$reroot_dir/$classrel" --outputdir "$fb_dir" --silent true)
@@ -922,12 +991,36 @@ vf_handle_mrjar_versions() {
       done <<< "$marker_files"
     fi
 
-    # tally: for each class, decompiled iff a .java exists in target_dir at its
-    # exact relative path; fallback iff not decompiled but a .java exists in
-    # fb_dir; unrepresented (silent zero — must never go unrecorded) iff neither.
-    local decompiled=0 fallback=0
+    # R2-mrjar-inner-class-count: tally in TOP-LEVEL classes only — the SAME
+    # unit vf_list_top_level_classes/vf_classes_for_top_level use everywhere
+    # else in this file. A nested/local/anon class (Name$N) never gets its own
+    # .java file; it is folded into its enclosing top-level class's source.
+    # Tallying raw .class files here (the old $internal_names, still used
+    # above to build the reroot/subset jar with every class Vineflower needs)
+    # produced FALSE "unrepresented" entries for every override that happened
+    # to carry an inner class, even though it was fully represented inside its
+    # parent's .java (confirmed empirically: a synthetic override with one
+    # anonymous Runnable reported its Name$1 as unrepresented every time).
+    local -a top_level_names=()
     for internal in "${internal_names[@]}"; do
-      if [[ -f "$target_dir/$internal.java" ]]; then
+      case "$(basename "$internal")" in
+        *'$'*) continue ;;
+        *) top_level_names+=("$internal") ;;
+      esac
+    done
+    total="${#top_level_names[@]}"
+
+    # tally: for each TOP-LEVEL class, fallback iff it was marker-flagged AND
+    # CFR actually produced a replacement in fb_dir; decompiled iff a .java
+    # exists in target_dir at its exact relative path (and it wasn't a marker
+    # CFR successfully replaced); fallback iff not decompiled but a .java
+    # exists in fb_dir; unrepresented (silent zero — must never go unrecorded)
+    # iff neither.
+    local decompiled=0 fallback=0
+    for internal in "${top_level_names[@]}"; do
+      if [[ -n "${is_marker_flagged[$internal]:-}" && -f "$fb_dir/$internal.java" ]]; then
+        fallback=$((fallback + 1))
+      elif [[ -f "$target_dir/$internal.java" ]]; then
         decompiled=$((decompiled + 1))
       elif [[ -f "$fb_dir/$internal.java" ]]; then
         fallback=$((fallback + 1))
@@ -935,7 +1028,7 @@ vf_handle_mrjar_versions() {
         VFM_UNREPRESENTED+=("$n:$internal")
       fi
     done
-    log "$module" "mrjar: version $n classes=$total decompiled=$decompiled fallback=$fallback unrepresented=$((total - decompiled - fallback))"
+    log "$module" "mrjar: version $n top-level classes=$total decompiled=$decompiled fallback=$fallback unrepresented=$((total - decompiled - fallback))"
 
     $first_v || versions_json+=","
     first_v=false
@@ -995,6 +1088,15 @@ decompile_module() {
   # T27: fallback/ belongs to THIS run only (v2/cons already clear theirs); a
   # stale CFR file from an earlier attempt would otherwise pose as current.
   rm -rf "${moddir:?}/fallback"
+  # decompile-pipeline review fix (orchestrator, 2026-09-28): vineflower-noinner/
+  # (T24's best-effort --decompile-inner=false secondary view) is written ONLY
+  # inside vf_render_noinner_view, which runs ONLY when THIS run's primary hangs
+  # and isolation finds a hung class. A rerun where nothing hangs never touches
+  # vineflower-noinner/ at all — without this, a noinner/ view from an EARLIER
+  # run that used to hang would silently survive and a reader could mistake it
+  # for current output, exactly the "stale fallback/" failure mode T27 already
+  # fixed for fallback/ above; clear it unconditionally here too.
+  rm -rf "${moddir:?}/vineflower-noinner"
   log "$module" "primary(vineflower) starting on $class_count classes"
   local t0 t1 primary_time primary_status
   t0="$(date +%s)"
@@ -1158,7 +1260,23 @@ cache_source_jar_libinf() {
   local jar="$1" cache_dir="$2" force="$3"
   local tmpdir libjar libsha dest
   tmpdir="$(mktemp -d)"
-  unzip -o -q "$jar" 'LIB-INF/*.jar' -d "$tmpdir" 2>/dev/null || true
+  # decompile-pipeline review fix (orchestrator, 2026-09-28,
+  # R3-002/R4-002): exit 11 ("no matching files") is the ordinary case for
+  # the overwhelming majority of jars, which carry no LIB-INF/*.jar at all —
+  # but unzip ALSO returns nonzero (and still writes whatever bytes it
+  # managed, e.g. a CRC-mismatched entry) on a genuinely corrupt/truncated
+  # LIB-INF entry, which this used to swallow identically and silently via a
+  # blanket `2>/dev/null || true`. A corrupted entry would then be hashed and
+  # cached under ITS OWN (wrong) sha256 as if it were a legitimate distinct
+  # lib jar, with no trace anywhere that the extraction itself had failed.
+  # Any OTHER nonzero exit is now surfaced as a warning (unzip's own message,
+  # captured instead of discarded) so a reader can tell "no LIB-INF here"
+  # apart from "LIB-INF extraction actually failed".
+  local unzip_out unzip_rc=0
+  unzip_out="$(unzip -o -q "$jar" 'LIB-INF/*.jar' -d "$tmpdir" 2>&1)" || unzip_rc=$?
+  if [[ "$unzip_rc" -ne 0 && "$unzip_rc" -ne 11 ]]; then
+    log "_prepare-libcache" "WARNING: unzip exited $unzip_rc extracting LIB-INF/*.jar from $jar — a partially/incorrectly extracted entry may be cached under a misleading sha256; unzip output: $unzip_out"
+  fi
   while IFS= read -r -d '' libjar; do
     libsha="$(sha256_of "$libjar")"
     [[ -z "$libsha" ]] && continue
@@ -1850,6 +1968,14 @@ print(d.get(os.environ['RECON_KEY'], {}).get('status', ''))
   rm -rf "${moddir:?}/$fallback_dir_name"
   mkdir -p "$moddir/$fallback_dir_name"
 
+  # decompile-pipeline review fix (orchestrator, 2026-09-28): same "stale
+  # secondary view" hazard as v1's vineflower-noinner/ clear above — this
+  # variant's own "$out_dir_name-noinner" dir is written only inside
+  # vf_render_noinner_view, called only when THIS run's primary hangs, so a
+  # rerun where nothing hangs would otherwise leave an earlier run's noinner
+  # view sitting there posing as current.
+  rm -rf "${moddir:?}/${out_dir_name}-noinner"
+
   rm -rf "${moddir:?}/$out_dir_name"
   mkdir -p "$moddir/$out_dir_name"
   log "$module" "$variant_label primary(vineflower) starting on $class_count classes (lib_count=$V2_LIB_COUNT, runtime=$N5_JDK25_HOME)"
@@ -2307,7 +2433,17 @@ run_third_party_libinf() {
   for src in "${source_jars[@]}"; do
     modname="$(basename "$src" .jar)"
     tmpdir="$(mktemp -d)"
-    unzip -o -q "$src" 'LIB-INF/*.jar' -d "$tmpdir" 2>/dev/null || true
+    # decompile-pipeline review fix (orchestrator, 2026-09-28, R3-002/R4-002):
+    # see cache_source_jar_libinf's identical fix above for the full
+    # rationale — exit 11 ("no matching files") is the ordinary case, any
+    # OTHER nonzero exit means a genuinely corrupt/truncated LIB-INF entry
+    # was extracted anyway (with bad bytes) and used to be swallowed
+    # identically and silently.
+    local unzip_out unzip_rc=0
+    unzip_out="$(unzip -o -q "$src" 'LIB-INF/*.jar' -d "$tmpdir" 2>&1)" || unzip_rc=$?
+    if [[ "$unzip_rc" -ne 0 && "$unzip_rc" -ne 11 ]]; then
+      log "_lib-inf-3p" "WARNING: unzip exited $unzip_rc extracting LIB-INF/*.jar from $modname — a partially/incorrectly extracted entry may be recorded under a misleading sha256; unzip output: $unzip_out"
+    fi
     while IFS= read -r -d '' entry; do
       rel="${entry#"$tmpdir"/}"
       stem="$(basename "$entry" .jar)"
