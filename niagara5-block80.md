@@ -48,6 +48,10 @@ corpus-wide idiom** — closing [Block 25] §25.2's and [Block 70] §70.5's "onl
 
 ## 80.2 — B70-G1 ADVANCED: the `SequencedCollection` *default methods* (`getFirst`/`getLast` on `List`) ARE adopted in `baja` core — a second, wider adoption form the type-name census in §80.1 cannot see `[CERT]`+`[INFER]`
 
+> **Correction (added by [Block 105], §14 cross-block).** The corpus-wide census missed `bajaui`, whose code lives
+> only under `fallback/` (Vineflower failed). Corrected totals: 217 sites / 115 files (95 new, 63 old, 59 other).
+> See [Block 105].
+
 > **Correction (added by [Block 90], §14 cross-block).** The `EngineManager.peakScanStats`/`peakInterscanStats`
 > sites left `[INFER]` below are definitively the OLD `Deque` API: both fields are declared
 > `LinkedList<EngineManager.EngineStats>` (`EngineManager.java:58-59`). Full 211-site classification

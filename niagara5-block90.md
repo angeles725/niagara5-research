@@ -46,6 +46,9 @@
 
 ## 90.1 — B80-G1 CLOSED: all 211 call sites across the 110 files classified by declared receiver type — 91 NEW, 61 OLD, 59 OTHER (homonym), 0 unresolved `[CERT]`
 
+> **Correction (added by [Block 105], §14 cross-block).** The 211-site population excluded `bajaui/fallback/` (6 more
+> sites: 4 new, 2 old). Corrected totals: 217 sites / 115 files, 95 new / 63 old / 59 other. See [Block 105].
+
 Re-running [Block 80]'s own `find organized -name '*.java' -exec grep -lE
 '\.(getFirst|getLast|addFirst|addLast|removeFirst|removeLast)\('` (excluding `fallback/`) reproduces
 **exactly 110 files** `[CERT]` — confirming [Block 80] §80.2's own count before extending it. The

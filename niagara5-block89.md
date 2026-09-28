@@ -419,6 +419,9 @@ closed**: the only path to a definitive answer remains a real, licensed `niagara
 
 ## 89.7 — B74-G1 ADVANCED, not fully closed: `VideoDriverModuleGenerator` is now `[CERT]`-confirmed to mirror `NDriverModuleGenerator`'s exact queue-then-Slotomatic mechanism; one representative template statically reconstructed; no wizard was actually invoked `[CERT]`
 
+> **Correction (added by [Block 102], §14 cross-block).** The VideoDriver generator queues 32 template writes
+> (18 unconditional + 14 conditional), not 24. The package-by-package manifest here is unaffected. See [Block 102].
+
 [Block 74] §74.1 fully traced `NDriverModuleGenerator`'s mechanism (queue up to 17 conditional
 `.java.vm` template writes → `super.generate()` → direct in-process `Slotomatic.builder()…
 runSlotomatic()`) but left `VideoDriverModuleGenerator`'s own body unread, `[INFER]`ring only "that it

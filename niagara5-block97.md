@@ -259,6 +259,10 @@ beyond the class-declaration-level census performed here — is opened as low-pr
 
 ## 97.3 — B9-G4 ADVANCED, not fully closed: both wizard generators' REAL file manifests are now traced to source with certainty — and `buildN5.html`'s own "Example File Tree" sections turn out to both omit real generated files and name files the generator never produces, for the VideoDriver case specifically `[CERT]`
 
+> **Correction (added by [Block 102], §14 cross-block).** VideoDriver write count is 32 (18 unconditional + 14
+> conditional), not 24; buildN5.html's tree has more fictional entries than listed here. Corrected tree in
+> [Block 102] §102.8.
+
 [Block 9] §9.6.G4 (tracked as **B9-G4**) named the gap precisely: an NDriver/VideoDriver scaffold,
 per `buildN5.html`'s 2nd/3rd example file trees, "was not attempted — only the plain-module tree." A
 live wizard/Gradle execution remains out of scope this session (no writes into the N5 install, no
