@@ -38,12 +38,40 @@ setup_file() {
   find "$N5_OUT_DIR/$MODULE/vineflower" -name '*.java' 2>/dev/null | sort \
     | xargs -r sha256sum > "$BATS_FILE_TMPDIR/v1_vineflower_hashes_before.txt"
 
+  # T19 fix (odd/tasks/decompiler-fidelity-audit.md): the v2 library context for
+  # LIB-INF-embedded jars must come from an immutable cache built serially,
+  # never from a live organized/*/extracted/ tree — --prepare-libcache is now a
+  # required, explicit, one-time step before any --variant v2 decompile.
+  N5_JDK25_HOME="${N5_JDK25_HOME:-/home/linuxbrew/.linuxbrew/opt/openjdk@25/libexec}" \
+    "$REPO_ROOT/tools/n5-decompile.sh" --prepare-libcache > "$BATS_FILE_TMPDIR/libcache_prep.log" 2>&1
+  echo "$?" > "$BATS_FILE_TMPDIR/libcache_prep_status"
+
   # One shared --variant v2 run, reused by every v2-flag-assertion test below
   # (mirrors the v1 sharing pattern above: one real decompile per file, not
   # per test, since library-context resolution over ~450 jars is real work).
   N5_JDK25_HOME="${N5_JDK25_HOME:-/home/linuxbrew/.linuxbrew/opt/openjdk@25/libexec}" \
     "$REPO_ROOT/tools/n5-decompile.sh" --variant v2 "$MODULE" > "$BATS_FILE_TMPDIR/v2_run.log" 2>&1
   echo "$?" > "$BATS_FILE_TMPDIR/v2_run_status"
+}
+
+# Build a tiny synthetic module jar (module.xml + optional LIB-INF/<name>.jar nested inside) for
+# the fast, isolated T19-fix unit tests below, which must not depend on the ~450-jar real corpus
+# for speed or determinism. `zipfile` (stdlib) is used instead of `jar`/`zip` so no extra tool is
+# required beyond python3, already a hard dependency of this pipeline.
+make_fake_jar() {
+  local dest="$1" vendor="${2:-Tridium}" libinf_name="${3:-}"
+  python3 - "$dest" "$vendor" "$libinf_name" <<'PY'
+import sys, zipfile, io
+dest, vendor, libinf_name = sys.argv[1], sys.argv[2], sys.argv[3]
+with zipfile.ZipFile(dest, "w") as z:
+    z.writestr("META-INF/module.xml", f'<module vendor="{vendor}"/>')
+    z.writestr("marker.txt", dest)
+    if libinf_name:
+        inner = io.BytesIO()
+        with zipfile.ZipFile(inner, "w") as iz:
+            iz.writestr("lib-marker.txt", libinf_name)
+        z.writestr(f"LIB-INF/{libinf_name}", inner.getvalue())
+PY
 }
 
 setup() {
@@ -165,6 +193,207 @@ setup() {
 
   lib_count=$(python3 -c "import json;print(json.load(open('$N5_OUT_DIR/$MODULE/recon.json'))['v2']['add_external_count'])")
   [ "$lib_count" -gt 300 ]
+
+  idem_key=$(python3 -c "import json;print(json.load(open('$N5_OUT_DIR/$MODULE/recon.json'))['v2']['idempotency_key'])")
+  [ -n "$idem_key" ]
+  [ "${#idem_key}" -eq 64 ]
+
+  status_field=$(python3 -c "import json;print(json.load(open('$N5_OUT_DIR/$MODULE/recon.json'))['v2']['status'])")
+  [ "$status_field" = "ok" ]
+}
+
+# --- T19 fix: v2 library-context race + hardening (odd/tasks/decompiler-fidelity-audit.md) ---
+# The first --variant v2 campaign (2026-09-28 07:20-07:32Z) re-extracted 5 modules' extracted/
+# (rm -rf + unzip) WHILE other parallel workers built their -e list by scanning
+# organized/*/extracted/LIB-INF/*.jar live — a race that could silently drop LIB-INF jars from
+# some modules' library context. These tests cover the fix's 9 requirements.
+
+@test "sourcing n5-decompile.sh does not execute main() (needed so the unit tests below can source it safely)" {
+  run bash -c "cd '$REPO_ROOT' && N5_MODULES_DIR=/nonexistent N5_OUT_DIR='$BATS_TEST_TMPDIR/sourceguard' source tools/n5-decompile.sh && echo SOURCED_OK"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"SOURCED_OK"* ]]
+}
+
+@test "--prepare-libcache populates organized/_v2-libcache keyed by the nested LIB-INF jar's own sha256" {
+  local_dir="$BATS_TEST_TMPDIR/v2fix1"
+  mkdir -p "$local_dir/modules" "$local_dir/out"
+  make_fake_jar "$local_dir/modules/modA.jar" Tridium "commons-x-1.0.jar"
+  make_fake_jar "$local_dir/modules/modB.jar" Tridium ""
+  N5_MODULES_DIR="$local_dir/modules" N5_OUT_DIR="$local_dir/out" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --prepare-libcache
+  [ "$status" -eq 0 ]
+  count=$(find "$local_dir/out/_v2-libcache" -maxdepth 1 -name '*.jar' 2>/dev/null | wc -l)
+  [ "$count" -eq 1 ]
+  f=$(find "$local_dir/out/_v2-libcache" -maxdepth 1 -name '*.jar')
+  base="$(basename "$f" .jar)"
+  actual="$(sha256sum "$f" | awk '{print $1}')"
+  [ "$base" = "$actual" ]
+}
+
+@test "--prepare-libcache scans bin/ext recursively (nested subdirectories), matching compute_v2_library_jars' own bin/ext scan" {
+  local_dir="$BATS_TEST_TMPDIR/v2fix1b"
+  mkdir -p "$local_dir/modules" "$local_dir/binext/nested" "$local_dir/out"
+  make_fake_jar "$local_dir/binext/nested/deep.jar" Tridium "nested-lib-1.0.jar"
+  N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR="$local_dir/binext" N5_OUT_DIR="$local_dir/out" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --prepare-libcache
+  [ "$status" -eq 0 ]
+  count=$(find "$local_dir/out/_v2-libcache" -maxdepth 1 -name '*.jar' 2>/dev/null | wc -l)
+  [ "$count" -eq 1 ]
+  grep -q "binext/nested/deep.jar" "$local_dir/out/_v2-libcache/_source_shas.tsv"
+}
+
+@test "compute_v2_library_jars reads LIB-INF context from the libcache, never from a live organized/*/extracted/ tree" {
+  local_dir="$BATS_TEST_TMPDIR/v2fix2"
+  mkdir -p "$local_dir/modules" "$local_dir/binext" "$local_dir/out/_v2-libcache" \
+    "$local_dir/out/staleMod/extracted/LIB-INF"
+  echo fake > "$local_dir/out/_v2-libcache/cafef00dcafef00dcafef00dcafef00dcafef00dcafef00dcafef00dcafef00.jar"
+  echo stale > "$local_dir/out/staleMod/extracted/LIB-INF/stale-lib.jar"
+  run bash -c "
+    set -euo pipefail
+    N5_MODULES_DIR='$local_dir/modules' N5_BIN_EXT_DIR='$local_dir/binext' N5_OUT_DIR='$local_dir/out'
+    export N5_MODULES_DIR N5_BIN_EXT_DIR N5_OUT_DIR
+    source '$REPO_ROOT/tools/n5-decompile.sh'
+    compute_v2_library_jars
+    printf '%s\n' \"\${V2_ALL_LIB_JARS[@]}\"
+  "
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"_v2-libcache/cafef00d"* ]]
+  [[ "$output" != *"stale-lib.jar"* ]]
+}
+
+@test "changing N5_JDK25_HOME changes the recorded idempotency key and forces a redo, jar sha256 unchanged" {
+  key_before=$(python3 -c "import json;print(json.load(open('$N5_OUT_DIR/$MODULE/recon.json'))['v2']['idempotency_key'])")
+  cmd_count_before=$(grep -c '^CMD:' "$N5_OUT_DIR/_logs/$MODULE.v2.log")
+  sleep 1
+  N5_JDK25_HOME="$BATS_TEST_TMPDIR/alt-jdk-home" "$REPO_ROOT/tools/n5-decompile.sh" --variant v2 "$MODULE" || true
+  cmd_count_after=$(grep -c '^CMD:' "$N5_OUT_DIR/_logs/$MODULE.v2.log")
+  [ "$cmd_count_after" -gt "$cmd_count_before" ]
+  key_after=$(python3 -c "import json;print(json.load(open('$N5_OUT_DIR/$MODULE/recon.json'))['v2']['idempotency_key'])")
+  [ "$key_before" != "$key_after" ]
+  sha_after=$(python3 -c "import json;print(json.load(open('$N5_OUT_DIR/$MODULE/recon.json'))['v2']['jar_sha256'])")
+  expected_sha=$(sha256sum "$N5_MODULES_DIR/$MODULE.jar" | awk '{print $1}')
+  [ "$sha_after" = "$expected_sha" ]
+  # restore canonical (default-JDK-home) v2 state so later steady-state-idempotency tests are
+  # unaffected by this test's deliberate mutation
+  "$REPO_ROOT/tools/n5-decompile.sh" --variant v2 "$MODULE"
+}
+
+@test "--variant v2 --force redoes the decompile but does not re-extract when extracted/ already matches the jar" {
+  before_marker=$(cat "$N5_OUT_DIR/$MODULE/extracted/.jar_sha256" 2>/dev/null || true)
+  [ -n "$before_marker" ]
+  before_extract_mtime=$(stat -c %Y "$N5_OUT_DIR/$MODULE/extracted/.jar_sha256")
+  lines_before=$(wc -l < "$N5_OUT_DIR/_logs/$MODULE.log")
+  sleep 1
+  run "$REPO_ROOT/tools/n5-decompile.sh" --variant v2 --force "$MODULE"
+  [ "$status" -eq 0 ]
+  after_extract_mtime=$(stat -c %Y "$N5_OUT_DIR/$MODULE/extracted/.jar_sha256")
+  [ "$before_extract_mtime" -eq "$after_extract_mtime" ]
+  new_lines=$(tail -n +"$((lines_before + 1))" "$N5_OUT_DIR/_logs/$MODULE.log")
+  [[ "$new_lines" == *"v2 reusing existing extracted"* ]]
+  [[ "$new_lines" != *"v2 extracting"* ]]
+}
+
+@test "fallback2/ is cleared at the start of each v2 run" {
+  mkdir -p "$N5_OUT_DIR/$MODULE/fallback2"
+  touch "$N5_OUT_DIR/$MODULE/fallback2/STALE_MARKER.java"
+  run "$REPO_ROOT/tools/n5-decompile.sh" --variant v2 --force "$MODULE"
+  [ "$status" -eq 0 ]
+  [ ! -e "$N5_OUT_DIR/$MODULE/fallback2/STALE_MARKER.java" ]
+}
+
+@test "--variant v2 records status=failed and exits non-zero when both Vineflower and CFR fail, and never caches it as done" {
+  out="$BATS_TEST_TMPDIR/organized_bothfail"
+  mkdir -p "$out"
+  ln -s "$N5_OUT_DIR/_v2-libcache" "$out/_v2-libcache"
+  N5_OUT_DIR="$out" N5_VINEFLOWER="$BATS_TEST_TMPDIR/no-such-vineflower.jar" \
+    N5_CFR="$BATS_TEST_TMPDIR/no-such-cfr.jar" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --variant v2 "$MODULE"
+  [ "$status" -ne 0 ]
+  status_field=$(python3 -c "import json;print(json.load(open('$out/$MODULE/recon.json'))['v2']['status'])")
+  [ "$status_field" = "failed" ]
+
+  cmd_count_before=$(grep -c '^CMD:' "$out/_logs/$MODULE.v2.log")
+  N5_OUT_DIR="$out" N5_VINEFLOWER="$BATS_TEST_TMPDIR/no-such-vineflower.jar" \
+    N5_CFR="$BATS_TEST_TMPDIR/no-such-cfr.jar" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --variant v2 "$MODULE"
+  [ "$status" -ne 0 ]
+  cmd_count_after=$(grep -c '^CMD:' "$out/_logs/$MODULE.v2.log")
+  [ "$cmd_count_after" -gt "$cmd_count_before" ]
+}
+
+@test "write_recon_v2 is safe against Python string-literal injection via N5_JDK25_HOME" {
+  out="$BATS_TEST_TMPDIR/organized_inject"
+  mkdir -p "$out"
+  ln -s "$N5_OUT_DIR/_v2-libcache" "$out/_v2-libcache"
+  malicious="/tmp/pwn\"; import os; os.system('touch $BATS_TEST_TMPDIR/PWNED'); x=\""
+  N5_OUT_DIR="$out" N5_JDK25_HOME="$malicious" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --variant v2 "$MODULE"
+  [ ! -f "$BATS_TEST_TMPDIR/PWNED" ]
+  runtime=$(python3 -c "import json;print(json.load(open('$out/$MODULE/recon.json'))['v2']['include_runtime'])")
+  [ "$runtime" = "$malicious" ]
+}
+
+@test "a library jar path containing ',' fails loudly instead of corrupting Vineflower's -e CSV list" {
+  local_dir="$BATS_TEST_TMPDIR/v2fix3"
+  mkdir -p "$local_dir/modules" "$local_dir/binext,with,commas" "$local_dir/out"
+  make_fake_jar "$local_dir/modules/goodmod.jar" Tridium ""
+  make_fake_jar "$local_dir/binext,with,commas/evil.jar" Tridium ""
+  N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR="$local_dir/binext,with,commas" N5_OUT_DIR="$local_dir/out" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --prepare-libcache
+  [ "$status" -eq 0 ]
+  N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR="$local_dir/binext,with,commas" N5_OUT_DIR="$local_dir/out" \
+    N5_JDK25_HOME="$BATS_TEST_TMPDIR/fake-jdk" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --variant v2 goodmod
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"','"* ]]
+}
+
+@test "a library jar path containing ':' fails loudly instead of corrupting CFR's --extraclasspath list" {
+  local_dir="$BATS_TEST_TMPDIR/v2fix4"
+  mkdir -p "$local_dir/modules" "$local_dir/binext:colon" "$local_dir/out"
+  make_fake_jar "$local_dir/modules/goodmod.jar" Tridium ""
+  make_fake_jar "$local_dir/binext:colon/evil.jar" Tridium ""
+  N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR="$local_dir/binext:colon" N5_OUT_DIR="$local_dir/out" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --prepare-libcache
+  [ "$status" -eq 0 ]
+  N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR="$local_dir/binext:colon" N5_OUT_DIR="$local_dir/out" \
+    N5_JDK25_HOME="$BATS_TEST_TMPDIR/fake-jdk" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --variant v2 goodmod
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"':'"* ]]
+}
+
+@test "the module's own jar is excluded from -e even when reachable via a different (symlinked) path" {
+  local_dir="$BATS_TEST_TMPDIR/v2fix5"
+  mkdir -p "$local_dir/modules" "$local_dir/binext" "$local_dir/out"
+  make_fake_jar "$local_dir/modules/selfmod.jar" Tridium ""
+  ln -s "$local_dir/modules/selfmod.jar" "$local_dir/binext/selfmod-alias.jar"
+  N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR="$local_dir/binext" N5_OUT_DIR="$local_dir/out" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --prepare-libcache
+  [ "$status" -eq 0 ]
+  run bash -c "
+    set -euo pipefail
+    N5_MODULES_DIR='$local_dir/modules' N5_BIN_EXT_DIR='$local_dir/binext' N5_OUT_DIR='$local_dir/out'
+    export N5_MODULES_DIR N5_BIN_EXT_DIR N5_OUT_DIR
+    source '$REPO_ROOT/tools/n5-decompile.sh'
+    compute_v2_library_jars
+    build_v2_external_lists '$local_dir/modules/selfmod.jar'
+    echo \"COUNT=\$V2_LIB_COUNT\"
+    printf '%s\n' \"\${V2_LIB_ARRAY[@]}\"
+  "
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"COUNT=0"* ]]
+  [[ "$output" != *"selfmod.jar"* ]]
+}
+
+@test "--variant v2 <module> fails loudly with a clear message when the libcache was never prepared" {
+  local_dir="$BATS_TEST_TMPDIR/v2fix6"
+  mkdir -p "$local_dir/modules" "$local_dir/out"
+  make_fake_jar "$local_dir/modules/nolibcache.jar" Tridium ""
+  N5_MODULES_DIR="$local_dir/modules" N5_OUT_DIR="$local_dir/out" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" --variant v2 nolibcache
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"--prepare-libcache"* ]]
 }
 
 @test "--variant v2 is idempotent (rerunning without --force skips)" {
@@ -188,6 +417,8 @@ setup() {
 
 @test "--variant v2 CFR fallback receives --extraclasspath of the same library set (forced primary failure)" {
   out="$BATS_TEST_TMPDIR/organized"
+  mkdir -p "$out"
+  ln -s "$N5_OUT_DIR/_v2-libcache" "$out/_v2-libcache"
   N5_OUT_DIR="$out" N5_VINEFLOWER="$BATS_TEST_TMPDIR/no-such-vineflower.jar" \
     run "$REPO_ROOT/tools/n5-decompile.sh" --variant v2 "$MODULE"
   [ -d "$out/$MODULE/fallback2" ]
