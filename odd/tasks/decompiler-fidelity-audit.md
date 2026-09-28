@@ -225,7 +225,7 @@ make the decompile complete and as faithful as possible.
       hsqldb-2.7.4 (465), testng-7.12.0 (402). Spot-checked devkit/lib-inf-raw/n-templates-5.0.54.9.2's `Generator`
       class: `best` and materialized symlink both resolve to `organized/devkit/lib-inf/n-templates-5.0.54.9.2/
       vineflower2/.../Generator.java`, real content confirmed.
-- [x] T26b (this commit, feat/n5-wave14 worktree; TDD bats a/b/c/d RED confirmed then GREEN) `tools/n5-decompile.sh
+- [x] T26b (432b362; TDD bats a/b/c/d RED confirmed then GREEN) `tools/n5-decompile.sh
       --third-party-libinf`: decompiles EVERY non-Tridium nested LIB-INF jar (n5-classify-binext.py verdict "skip" —
       the complement of `--extra-tridium`'s Tridium-owned handling) ONCE per distinct sha256, reusing
       `decompile_module_v2` unchanged (same immutable libcache, same T24 hang-isolation path, no copy of the
@@ -250,7 +250,7 @@ make the decompile complete and as faithful as possible.
       corpus-wide, narrowly explained). Verification: full `bats tools/tests/n5-decompile.bats` 67/67 (incl. the 4 new
       a/b/c/d tests), `shellcheck tools/n5-decompile.sh` clean, `python3 -m unittest discover -s tools/tests`
       319/319 (1 pre-existing skip). Route: direct (bounded writer assignment; not delegated further).
-- [x] T26a (t26a-upstream-sha1 branch, worktree) Identify the 44 no-pom-properties jars by content SHA-1 against Maven
+- [x] T26a (362cfde on feat/n5-wave14; t26a-upstream-sha1 branch) Identify the 44 no-pom-properties jars by content SHA-1 against Maven
       Central (search.maven.org solrsearch by SHA-1; on a miss, one filename-derived g:a:v guess accepted only if
       Central's own published binary-jar SHA-1 matches). Real run: 9 identified-by-sha1 (real upstream sources fetched
       and byte-verified: apache poi/poi-ooxml/poi-ooxml-lite 5.5.1, xmlbeans 5.3.0, kotlin-stdlib 2.3.0, json-path
@@ -265,7 +265,7 @@ make the decompile complete and as faithful as possible.
       states the ALL-third-party-classes denominator explicitly: 26915/48868 (55.1%), vs the old fetched-only-scoped
       92.4%/72.7% that got misread downstream. Route: delegated writer (TDD, hermetic HTTP mocks, real network run
       against repo1.maven.org + search.maven.org only).
-- [x] T26b (t26a-upstream-sha1 branch, same worktree, 2nd commit) Orchestrator correction to T26a: manually verified
+- [x] T26a.2 (4efac11 on feat/n5-wave14; t26a-upstream-sha1 branch, 2nd commit) Orchestrator correction to T26a: manually verified
       bin/ext/asm-9.10.1.jar's 39/39 `.class` entries are byte-identical to org.ow2.asm:asm:9.10.1 on Central by sha256
       — the ONLY difference is Niagara's added META-INF/NIAGARA4.SF+.RSA signature — so T26a's whole-jar-SHA-1-only
       "vendor-modified" call was wrong for it; sources ARE ground truth. Fix: new classify_jar_identity does a real
@@ -289,7 +289,7 @@ make the decompile complete and as faithful as possible.
       the T26a run had wrongly zeroed out coverage for every resigned/re-signed jar, not just the truly vendor-modified
       ones. Verification: 98 unit tests + `make test` (342, both green before AND after the two extra bug fixes), real
       run against repo1.maven.org + search.maven.org only. Route: delegated writer (TDD, hermetic HTTP mocks).
-- [x] T26c (t26a-upstream-sha1 branch, same worktree, 3rd commit) Second orchestrator correction: manually verified
+- [x] T26a.3 (ce1317b on feat/n5-wave14; t26a-upstream-sha1 branch, 3rd commit) Second orchestrator correction: manually verified
       oauth2.jar!LIB-INF/oauth2-oidc-sdk-11.26-jdk11.jar is a Maven CLASSIFIER build ("jdk11") — comparing it against
       Central's classifier-less oauth2-oidc-sdk-11.26.jar (what T26b used) gave a false 0/533; the classifier binary
       oauth2-oidc-sdk-11.26-jdk11.jar is 533/533 byte-identical. Fix: new `split_classifier`/`detect_classifier` +
