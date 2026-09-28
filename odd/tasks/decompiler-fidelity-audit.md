@@ -99,10 +99,17 @@ niagara5-research-localcache/jar-mirror-5.0.0.28 (sha256-verified, ~4.3x faster 
 Research child gaps (B115-B118 G*) are deferred to the next session. Remaining work in THIS session: verify v1 vs v2,
 make the decompile complete and as faithful as possible.
 - [x] T18 (B118, b8eebcd; tool 1ad56eb RDD review-afef2ecdf952d3f2 approved) Logic-recovery method ladder.
-- [ ] T18b (next session) Harden n5-bytecode-xref per its review: overriders must match name+descriptor (R2-001); duplicate
-      class names across modules must not be dropped silently (R2-002); --cha must accept subtype receivers that inherit the
-      method (R3-001, current result can MISS callers); surface parse_errors in every subcommand (R4). Until fixed, treat its
-      caller lists as lower bounds.
+- [x] T18b (TDD; single commit on branch t18b-xref-hardening, worktree niagara5-research-worktrees/t18b-xref-hardening) Hardened
+      n5-bytecode-xref per its review-afef2ecdf952d3f2:
+      overriders now matches name+descriptor, with `--desc` to disambiguate overloads (R2-001); duplicate class names across
+      modules are kept and reported via `idx["duplicates"]`/`duplicate_classes` in every subcommand's output (R2-002); `--cha`
+      now also accepts subtype receivers that inherit the method (invokevirtual/invokeinterface on a subclass that does not
+      redeclare it), stopping descent at any subtype that redeclares it (R3-001); every subcommand's JSON and text output now
+      carries `parse_errors`/`parse error(s)` (R4). Evidence: 11 new/updated unit tests (RED confirmed for each fix, then
+      GREEN), full `make test` green (298 tests, 4 pre-existing skips), real-corpus sanity check on organized/{baja,control}
+      -- `callers niagara.sys.BComponent started --cha` went from 5 sites (old code) to 10 sites (new code), the 5 new ones
+      correctly tagged `subtype-owner`. Caller lists under `--cha` are now complete modulo reflection/invokedynamic (see
+      tools/README.md).
 - [~] T22 Completeness (code bb58475; Tridium-half campaign RUNNING at compact time) (third-party half DONE f591074: 154/154 upstream -sources.jar, 92.4% class coverage; Tridium half + conservative tree delegated): decompile (v2 + conservative line-mapped view) the 10 out-of-pipeline Tridium jars (etc/m2, lib doclet)
       and the Tridium-owned nested LIB-INF jars; for identified third-party jars fetch the upstream -sources.jar by exact
       Maven coordinates (original source beats any decompile); record per-class best representation. Route: delegated,

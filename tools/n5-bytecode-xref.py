@@ -234,8 +234,15 @@ def _module_dirs(organized, modules=None):
 
 
 def build_index(organized, modules=None):
-    """Parse every .class under <organized>/<mod>/extracted (optionally only `modules`)."""
+    """Parse every .class under <organized>/<mod>/extracted (optionally only `modules`).
+
+    A class name seen in more than one module (R2-002: e.g. the same third-party jar vendored
+    into two modules) is never silently dropped: the first-parsed copy is what structural
+    queries (subtypes/callers/overriders) use, but every module it was seen in is recorded in
+    `duplicates` so a caller can see and count the collision instead of losing it quietly.
+    """
     classes = {}
+    seen_in = {}
     errors = []
     for mod, root in _module_dirs(organized, modules):
         for d, _, files in os.walk(root):
@@ -251,12 +258,14 @@ def build_index(organized, modules=None):
                     continue
                 c["module"] = mod
                 c["path"] = p
+                seen_in.setdefault(c["name"], []).append(mod)
                 classes.setdefault(c["name"], c)
+    duplicates = {name: mods for name, mods in seen_in.items() if len(mods) > 1}
     children = {}
     for c in classes.values():
         for s in ([c["super"]] if c["super"] else []) + c["interfaces"]:
             children.setdefault(s, []).append(c["name"])
-    return {"classes": classes, "children": children, "errors": errors}
+    return {"classes": classes, "children": children, "errors": errors, "duplicates": duplicates}
 
 
 def _internal(name):
@@ -290,13 +299,45 @@ def subtypes(idx, name):
     return sorted(_dotted(s) for s in seen)
 
 
-def overriders(idx, name, method):
+def overriders(idx, name, method, desc=None):
+    """<name> and its subtypes that DECLARE <method> (R2-001: name AND descriptor must match, not
+    name alone -- otherwise an unrelated overload with the same name is reported as a false
+    overrider). When `desc` is omitted, it is inferred from <name>'s own declaration of <method>
+    if that declaration is unambiguous (exactly one descriptor); otherwise every descriptor named
+    <method> is accepted, same as before (best effort when the base declaration is not indexed,
+    e.g. an interface method with no body in <name> itself)."""
+    if desc is None:
+        base = idx["classes"].get(_internal(name))
+        if base:
+            base_descs = sorted(set(m["desc"] for m in base["methods"] if m["name"] == method))
+            if len(base_descs) == 1:
+                desc = base_descs[0]
     out = []
     for c in [_internal(name)] + [_internal(s) for s in subtypes(idx, name)]:
         k = idx["classes"].get(c)
-        if k and any(m["name"] == method for m in k["methods"]):
+        if k and any(m["name"] == method and (desc is None or m["desc"] == desc) for m in k["methods"]):
             out.append(_dotted(c))
     return sorted(out)
+
+
+def _inheriting_subtypes(idx, name, method, desc):
+    """R3-001: internal names of subtypes of <name> whose invokevirtual/invokeinterface still
+    dispatches to <name>'s own (method, desc) at run time -- i.e. no override of it exists between
+    them and <name>. Descent stops at any subtype that redeclares (method, desc): its own
+    descendants belong to THAT override, not to <name>'s."""
+    out = []
+    stack = list(idx["children"].get(_internal(name), []))
+    while stack:
+        c = stack.pop()
+        k = idx["classes"].get(c)
+        if not k:
+            continue
+        redeclares = any(m["name"] == method and (desc is None or m["desc"] == desc) for m in k["methods"])
+        if redeclares:
+            continue
+        out.append(c)
+        stack.extend(idx["children"].get(c, []))
+    return out
 
 
 def callers(idx, name, method, desc=None, cha=False):
@@ -307,6 +348,8 @@ def callers(idx, name, method, desc=None, cha=False):
     if cha:
         for s in supertypes(idx, name):
             owners.setdefault(s, "supertype-owner")
+        for s in _inheriting_subtypes(idx, name, method, desc):
+            owners.setdefault(s, "subtype-owner")
     out = []
     for c in idx["classes"].values():
         for m in c["methods"]:
@@ -337,35 +380,52 @@ def main(argv=None):
     p = sp.add_parser("overriders")
     p.add_argument("cls")
     p.add_argument("method")
+    p.add_argument("--desc", help="require this exact method descriptor (disambiguates overloads; R2-001)")
     p.add_argument("--json", action="store_true")
     p = sp.add_parser("casts")
     p.add_argument("cls")
     p.add_argument("--json", action="store_true")
     a = ap.parse_args(argv)
     idx = build_index(a.organized, a.module)
+    # R4: every subcommand surfaces parse errors and duplicate class names in its own
+    # output/summary -- never silently skipped -- while keeping existing CLI shape compatible
+    # (these are additional keys/lines, nothing removed or renumbered).
+    parse_errors = len(idx["errors"])
+    duplicate_classes = len(idx["duplicates"])
     if _internal(a.cls) not in idx["classes"]:
-        print("n5-bytecode-xref: class %s not found in %d indexed classes under %s" %
-              (a.cls, len(idx["classes"]), a.organized), file=sys.stderr)
+        print("n5-bytecode-xref: class %s not found in %d indexed classes under %s "
+              "(%d parse error(s), %d duplicate class name(s))" %
+              (a.cls, len(idx["classes"]), a.organized, parse_errors, duplicate_classes), file=sys.stderr)
         return 2
     if a.cmd == "callers":
         res = {"target": a.cls + "." + a.method, "cha": a.cha, "indexed_classes": len(idx["classes"]),
-               "parse_errors": len(idx["errors"]), "sites": callers(idx, a.cls, a.method, a.desc, a.cha)}
+               "parse_errors": parse_errors, "duplicate_classes": duplicate_classes,
+               "sites": callers(idx, a.cls, a.method, a.desc, a.cha)}
         text = ["%s %s.%s%s:%s  -> %s.%s%s  [%s, %s]" % (r["kind"], r["caller_class"], r["caller_method"],
                                                          r["caller_desc"], r["line"], r["owner"], a.method,
                                                          r["desc"], r["invoke"], r["module"]) for r in res["sites"]]
-        text.append("%d site(s); %d classes indexed; %d parse errors" %
-                    (len(res["sites"]), res["indexed_classes"], res["parse_errors"]))
+        text.append("%d site(s); %d classes indexed; %d parse errors; %d duplicate class name(s)" %
+                    (len(res["sites"]), res["indexed_classes"], parse_errors, duplicate_classes))
     elif a.cmd == "subtypes":
-        res = {"target": a.cls, "subtypes": subtypes(idx, a.cls)}
-        text = res["subtypes"] + ["%d subtype(s)" % len(res["subtypes"])]
+        res = {"target": a.cls, "subtypes": subtypes(idx, a.cls), "parse_errors": parse_errors,
+               "duplicate_classes": duplicate_classes}
+        text = res["subtypes"] + ["%d subtype(s); %d parse error(s); %d duplicate class name(s)" %
+                                  (len(res["subtypes"]), parse_errors, duplicate_classes)]
     elif a.cmd == "overriders":
-        res = {"target": a.cls + "." + a.method, "declared_in": overriders(idx, a.cls, a.method)}
-        text = res["declared_in"]
+        declared_in = overriders(idx, a.cls, a.method, a.desc)
+        res = {"target": a.cls + "." + a.method, "desc": a.desc, "declared_in": declared_in,
+               "parse_errors": parse_errors, "duplicate_classes": duplicate_classes}
+        text = declared_in + ["%d overrider(s); %d parse error(s); %d duplicate class name(s)" %
+                              (len(declared_in), parse_errors, duplicate_classes)]
     else:
         c = idx["classes"][_internal(a.cls)]
-        res = {"target": a.cls, "sites": [dict(s, method=m["name"]) for m in c["methods"] for s in cast_sites(m)]}
+        sites = [dict(s, method=m["name"]) for m in c["methods"] for s in cast_sites(m)]
+        res = {"target": a.cls, "sites": sites, "parse_errors": parse_errors,
+               "duplicate_classes": duplicate_classes}
         text = ["%s:%s instanceof %s -> cast line %s  %s" % (s["method"], s["line"], _dotted(s["type"]),
-                                                             s["cast_line"], s["verdict"]) for s in res["sites"]]
+                                                             s["cast_line"], s["verdict"]) for s in sites]
+        text.append("%d cast site(s); %d parse error(s); %d duplicate class name(s)" %
+                    (len(sites), parse_errors, duplicate_classes))
     print(json.dumps(res, indent=1) if a.json else "\n".join(text))
     return 0
 

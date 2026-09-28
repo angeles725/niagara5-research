@@ -68,6 +68,20 @@ FIXTURES = {
         package fx;
         public class Leaf extends Sub { }
         """,
+    "fx/Other.java": """
+        package fx;
+        public class Other extends Base {
+          public Object perm(String cx) { return "other"; }
+        }
+        """,
+    "fx/CallerLeaf.java": """
+        package fx;
+        public class CallerLeaf {
+          Object viaLeaf(Leaf l) {
+            return l.perm(null);
+          }
+        }
+        """,
     "fx/Caller.java": """
         package fx;
         public class Caller {
@@ -191,16 +205,48 @@ class FixtureTests(unittest.TestCase):
         idx = self.mod.build_index(self.organized)
         res = self.mod.callers(idx, "fx.Sub", "perm", cha=True)
         kinds = sorted((r["caller_method"], r["kind"], r["owner"]) for r in res)
-        self.assertEqual(kinds, [("direct", "exact", "fx.Sub"), ("viaBase", "supertype-owner", "fx.Base")])
+        self.assertEqual(kinds, [("direct", "exact", "fx.Sub"), ("viaBase", "supertype-owner", "fx.Base"),
+                                 ("viaLeaf", "subtype-owner", "fx.Leaf")])
+
+    # R3-001: --cha must also accept a receiver whose static owner is a SUBTYPE that inherits the
+    # method (invokevirtual/invokeinterface on a subclass that does not redeclare it). fx.Leaf
+    # extends fx.Sub without overriding perm, so l.perm(null) in fx.CallerLeaf dispatches to
+    # fx.Sub.perm at run time; the old CHA (supertypes-only) silently missed this real caller.
+    def test_callers_cha_adds_inheriting_subtype_owner_sites(self):
+        idx = self.mod.build_index(self.organized)
+        res = self.mod.callers(idx, "fx.Sub", "perm", cha=True)
+        kinds = sorted((r["caller_class"], r["kind"], r["owner"]) for r in res)
+        self.assertIn(("fx.CallerLeaf", "subtype-owner", "fx.Leaf"), kinds)
+
+    def test_callers_cha_subtype_owner_stops_at_a_redeclaring_override(self):
+        # fx.Other overrides perm with a DIFFERENT descriptor (String, not Object); it must never
+        # be offered as a subtype-owner for fx.Base.perm(Object) callers.
+        idx = self.mod.build_index(self.organized)
+        res = self.mod.callers(idx, "fx.Base", "perm", desc="(Ljava/lang/Object;)Ljava/lang/Object;", cha=True)
+        owners = {r["owner"] for r in res}
+        self.assertNotIn("fx.Other", owners)
 
     def test_subtypes_is_transitive(self):
         idx = self.mod.build_index(self.organized)
-        self.assertEqual(self.mod.subtypes(idx, "fx.Base"), ["fx.Leaf", "fx.Sub"])
+        self.assertEqual(self.mod.subtypes(idx, "fx.Base"), ["fx.Leaf", "fx.Other", "fx.Sub"])
         self.assertEqual(self.mod.subtypes(idx, "fx.Leaf"), [])
 
     def test_overriders_lists_classes_declaring_the_method(self):
         idx = self.mod.build_index(self.organized)
         self.assertEqual(self.mod.overriders(idx, "fx.Base", "perm"), ["fx.Base", "fx.Sub"])
+
+    # R2-001: overriders must match name AND descriptor. fx.Other extends fx.Base and declares a
+    # perm(String) overload -- same name, different descriptor -- so it is a real subtype but NOT
+    # a real overrider of Base.perm(Object). The old name-only match reported it as a false
+    # overrider.
+    def test_overriders_excludes_name_match_with_different_descriptor(self):
+        idx = self.mod.build_index(self.organized)
+        self.assertNotIn("fx.Other", self.mod.overriders(idx, "fx.Base", "perm"))
+
+    def test_overriders_explicit_desc_filters_to_that_overload(self):
+        idx = self.mod.build_index(self.organized)
+        self.assertEqual(self.mod.overriders(idx, "fx.Base", "perm", desc="(Ljava/lang/String;)Ljava/lang/Object;"),
+                         ["fx.Other"])
 
     def test_cast_lines_classify_classic_vs_pattern_or_same_line(self):
         c = self._cf("fx.Casts")
@@ -213,8 +259,11 @@ class FixtureTests(unittest.TestCase):
         out = subprocess.run([sys.executable, SCRIPT, "--organized", self.organized, "callers", "fx.Sub", "perm",
                               "--cha", "--json"], capture_output=True, text=True, check=True).stdout
         data = json.loads(out)
-        self.assertEqual(len(data["sites"]), 2)
+        # exact (fx.Sub), supertype-owner (fx.Base) and subtype-owner (fx.Leaf, R3-001)
+        self.assertEqual(len(data["sites"]), 3)
         self.assertEqual(data["target"], "fx.Sub.perm")
+        self.assertEqual(data["parse_errors"], 0)
+        self.assertEqual(data["duplicate_classes"], 0)
 
     def test_cli_unknown_class_is_an_error_not_a_zero(self):
         p = subprocess.run([sys.executable, SCRIPT, "--organized", self.organized, "callers", "fx.Nope", "perm"],
@@ -228,6 +277,109 @@ class ParserEdgeTests(unittest.TestCase):
         mod = _load()
         with self.assertRaises(ValueError):
             mod.parse_class(b"PK\x03\x04not a class")
+
+
+# R2-002: the same internal class name appearing in two modules must not be dropped silently.
+@unittest.skipUnless(JAVAC, "needs a javac >= 25 (set N5_JAVAC)")
+class DuplicateClassTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load()
+        cls.tmp = tempfile.mkdtemp(prefix="b118xref-dup-")
+        src = os.path.join(cls.tmp, "src")
+        p = os.path.join(src, "dup", "A.java")
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        with open(p, "w") as f:
+            f.write(textwrap.dedent("""
+                package dup;
+                public class A {
+                  public void m() { }
+                }
+                """))
+        cls.organized = os.path.join(cls.tmp, "organized")
+        for modname in ("mod1", "mod2"):
+            root = os.path.join(cls.organized, modname, "extracted")
+            os.makedirs(root)
+            subprocess.run([JAVAC, "-g", "--release", "25", "-d", root, p], check=True)
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.tmp, ignore_errors=True)
+
+    def test_build_index_reports_duplicate_class_and_its_modules(self):
+        idx = self.mod.build_index(self.organized)
+        self.assertIn("dup/A", idx["duplicates"])
+        self.assertEqual(sorted(idx["duplicates"]["dup/A"]), ["mod1", "mod2"])
+        # still indexed and queryable (kept, not dropped)
+        self.assertIn("dup/A", idx["classes"])
+
+    def test_cli_reports_duplicate_count(self):
+        out = subprocess.run([sys.executable, SCRIPT, "--organized", self.organized, "subtypes", "dup.A", "--json"],
+                              capture_output=True, text=True, check=True).stdout
+        data = json.loads(out)
+        self.assertEqual(data.get("duplicate_classes"), 1)
+
+
+# R4: parse errors (classes javap/this parser failed on) must be surfaced in every subcommand's
+# output, never silently skipped.
+@unittest.skipUnless(JAVAC, "needs a javac >= 25 (set N5_JAVAC)")
+class ParseErrorSurfaceTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load()
+        cls.tmp = tempfile.mkdtemp(prefix="b118xref-broken-")
+        src = os.path.join(cls.tmp, "src")
+        p = os.path.join(src, "pe", "Ok.java")
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        with open(p, "w") as f:
+            f.write(textwrap.dedent("""
+                package pe;
+                public class Ok {
+                  public void m() { }
+                }
+                """))
+        cls.organized = os.path.join(cls.tmp, "organized")
+        root = os.path.join(cls.organized, "pemod", "extracted")
+        os.makedirs(root)
+        subprocess.run([JAVAC, "-g", "--release", "25", "-d", root, p], check=True)
+        with open(os.path.join(root, "Broken.class"), "wb") as f:
+            f.write(b"not a class file at all, definitely bogus bytes")
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.tmp, ignore_errors=True)
+
+    def _run(self, *args):
+        return subprocess.run([sys.executable, SCRIPT, "--organized", self.organized] + list(args),
+                               capture_output=True, text=True, check=True)
+
+    def test_build_index_records_the_parse_error(self):
+        idx = self.mod.build_index(self.organized)
+        self.assertEqual(len(idx["errors"]), 1)
+
+    def test_subtypes_json_reports_parse_errors(self):
+        out = json.loads(self._run("subtypes", "pe.Ok", "--json").stdout)
+        self.assertEqual(out.get("parse_errors"), 1)
+
+    def test_overriders_json_reports_parse_errors(self):
+        out = json.loads(self._run("overriders", "pe.Ok", "m", "--json").stdout)
+        self.assertEqual(out.get("parse_errors"), 1)
+
+    def test_casts_json_reports_parse_errors(self):
+        out = json.loads(self._run("casts", "pe.Ok", "--json").stdout)
+        self.assertEqual(out.get("parse_errors"), 1)
+
+    def test_subtypes_text_mentions_parse_errors(self):
+        out = self._run("subtypes", "pe.Ok").stdout
+        self.assertIn("parse error", out)
+
+    def test_overriders_text_mentions_parse_errors(self):
+        out = self._run("overriders", "pe.Ok", "m").stdout
+        self.assertIn("parse error", out)
+
+    def test_casts_text_mentions_parse_errors(self):
+        out = self._run("casts", "pe.Ok").stdout
+        self.assertIn("parse error", out)
 
 
 @unittest.skipUnless(os.path.isdir(os.path.join(ORGANIZED, "history", "extracted")), "needs organized/")
