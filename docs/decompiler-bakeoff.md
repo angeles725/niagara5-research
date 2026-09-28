@@ -748,5 +748,26 @@ extra flag was needed to opt in. Neither `n-templates` nor `tridium-niagara-slot
 
 ### Campaign run
 
-<!-- T22 campaign numbers: filled in after the real run against the sha256-verified local
-     mirror (niagara5-research-localcache/jar-mirror-5.0.0.28/), see the writer's report. -->
+Run 2026-09-28 against the sha256-verified local mirror
+(`niagara5-research-localcache/jar-mirror-5.0.0.28/`), `/tmp/run-cons-campaign.sh`, all numbers
+re-counted by the orchestrator from `organized/` after `ALL_DONE`:
+
+| Phase | Wall clock | Result |
+|---|---|---|
+| `--variant cons` over every module jar (`xargs -P 6`) | 20m00s | 246/246 non-docSource modules have `vineflower-cons/` |
+| `--variant cons --bin-ext` | 1m55s | 6/6 included bin/ext jars |
+| `--extra-tridium` (v2 + cons) | 5m18s | 9 `_etc-m2/` + 1 `_lib/` jars + 2 `devkit/lib-inf/` jars, v2 and cons file counts identical per jar |
+
+- 262/262 `recon.json` files carry `cons.status: ok`; the conservative tree holds 14,957 `.java` +
+  329 `.kt` files.
+- The 4 Kotlin-flagged jars decompile to `.kt` (n-plugin 302 `.kt` for 305 top-level classes,
+  n-conv-plugin 4/4, settings 15/15, utils 8/8); their `fallback*/` `.java` files are CFR reference
+  copies, not a loss.
+- Line mapping (`// N` markers vs docSource original lines, token overlap in a ±1-line window):
+  BNumericWritable 137/137, ValueDocDecoder 409/409, Column 78/78 — 624/624 (100%).
+- **Known gap (T24):** `bajaui` (832 classes) is the only module whose primary Vineflower run hits
+  the 240 s whole-jar budget, in v1, v2 and cons alike (`primary_status: timeout`,
+  `fallback_reason: primary_timeout_whole_module`), so all 566 of its top-level sources are CFR in
+  every tree. A thread dump shows one decompiler thread spinning in `ClassWriter.writeClass` while
+  the other 15 are idle: a single class hangs Vineflower, it is not slowness. This is why the
+  planned `StyleUtils` line-mapping check had no Vineflower file to read.
