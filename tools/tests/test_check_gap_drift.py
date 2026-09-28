@@ -88,5 +88,45 @@ class TestCheckGapDrift(unittest.TestCase):
         self.assertEqual(run(empty.name).returncode, 2)
 
 
+class TestAlternateStateAndBlockDir(unittest.TestCase):
+    """--state and --block-dir let a caller point at materialized (e.g. git-index) copies of
+    RESEARCH-STATE.md and niagara5-block*.md instead of --root's own files -- needed by the
+    pre-commit hook so it checks the STAGED content, not stale working-tree files."""
+
+    def setUp(self):
+        self.state_dir = tempfile.TemporaryDirectory()
+        self.addCleanup(self.state_dir.cleanup)
+        self.block_dir = tempfile.TemporaryDirectory()
+        self.addCleanup(self.block_dir.cleanup)
+        self.state_path = os.path.join(self.state_dir.name, "RESEARCH-STATE.md")
+        with open(self.state_path, "w") as f:
+            f.write(STATE)
+        with open(os.path.join(self.block_dir.name, "niagara5-block7.md"), "w") as f:
+            f.write(BLOCK)
+
+    def test_state_and_block_dir_override_root(self):
+        # --root deliberately points somewhere with NEITHER file, to prove --state/--block-dir
+        # are actually what gets read, not a --root fallback.
+        empty_root = tempfile.TemporaryDirectory()
+        self.addCleanup(empty_root.cleanup)
+        r = subprocess.run(
+            [sys.executable, TOOL, "--root", empty_root.name,
+             "--state", self.state_path, "--block-dir", self.block_dir.name],
+            capture_output=True, text=True)
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("DRIFT? B7-G2", r.stdout)
+        self.assertIn("checked=2 suspects=1", r.stdout)
+
+    def test_state_alone_still_uses_root_for_block_dir(self):
+        # --block-dir omitted -> falls back to --root for block files (backward compatible).
+        with open(os.path.join(self.block_dir.name, "RESEARCH-STATE.md"), "w") as f:
+            f.write("unused -- --state below overrides this")
+        r = subprocess.run(
+            [sys.executable, TOOL, "--root", self.block_dir.name, "--state", self.state_path],
+            capture_output=True, text=True)
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("DRIFT? B7-G2", r.stdout)
+
+
 if __name__ == "__main__":
     unittest.main()

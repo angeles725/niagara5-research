@@ -15,3 +15,8 @@ the real session's permissions `[CERT]`.
 
 The `-PignoreRuntimeProfileCheck` Gradle property bypasses the runtime-profile validation task so a
 CI job can build faster `[CERT]`.
+
+## 9005.4 — positive: paired with 9005.3, same verb, real security consequence
+
+The permission check on `getPermissions(null)` bypasses the assigned-permissions lookup when `cx` is
+null `[CERT]`.

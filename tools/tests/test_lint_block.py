@@ -77,8 +77,23 @@ class TestR3EphemeralEvidence(unittest.TestCase):
     def test_only_tmp_path_fires_others_dont(self):
         r = run("--audit", fx("niagara5-block9003.md"))
         hits = lines_for(r.stdout, "R3")
-        self.assertEqual(len(hits), 1, hits)
-        self.assertIn(":7:", hits[0])
+        joined = "\n".join(hits)
+        # row 1 (plain /tmp path, no line number) fires
+        self.assertIn(":7:", joined, hits)
+        # rows 2/3 (organized/, evidence/ paths) are durable -> suppressed
+        self.assertNotIn(":8:", joined, hits)
+        self.assertNotIn(":9:", joined, hits)
+        self.assertEqual(len(hits), 3, hits)
+
+    def test_tmp_path_with_trailing_line_number_still_fires(self):
+        # Regression for the R3_DURABLE_RE bug: a /tmp (or /tmp/.../scratchpad/...) path that
+        # happens to carry a trailing ":<line>" must never be mistaken for a durable
+        # "path:line" citation like "organized/foo/Bar.java:42".
+        r = run("--audit", fx("niagara5-block9003.md"))
+        hits = lines_for(r.stdout, "R3")
+        joined = "\n".join(hits)
+        self.assertIn(":11:", joined, hits)  # /tmp/.../F.java:12, no "scratchpad" in the path
+        self.assertIn(":12:", joined, hits)  # /tmp/.../scratchpad/F.java:12
 
 
 class TestR4ChildGapHygiene(unittest.TestCase):
@@ -92,17 +107,25 @@ class TestR5Dispatch(unittest.TestCase):
     def test_fail_open_without_dispatch_fires(self):
         r = run("--audit", fx("niagara5-block9005.md"))
         hits = lines_for(r.stdout, "R5")
-        self.assertEqual(len(hits), 1, hits)
+        self.assertIn(":5:", "\n".join(hits), hits)
 
     def test_fail_open_with_dispatch_suppressed(self):
+        # 9005.2 (line 10) is the SAME "fails open"/getPermissions(null) claim as 9005.1, plus a
+        # dispatch: clause -- it must not appear among the R5 hits by its real line number.
         r = run("--audit", fx("niagara5-block9005.md"))
-        self.assertFalse(any("9005.2" in h for h in lines_for(r.stdout, "R5")))
+        self.assertNotIn(":10:", "\n".join(lines_for(r.stdout, "R5")))
 
     def test_bypass_without_permission_context_does_not_fire(self):
         # "bypasses" is common in ordinary build/CI prose; only a permission/security-shaped
-        # consequence is R5's target.
+        # consequence is R5's target. Paired against 9005.4 (line 21), which uses the SAME
+        # "bypasses" verb in a genuine permission-consequence shape and DOES fire -- proving
+        # 9005.3 not firing is because it lacks permission context, not because "bypasses" is
+        # dead wiring in the rule.
         r = run("--audit", fx("niagara5-block9005.md"))
-        self.assertEqual(len(lines_for(r.stdout, "R5")), 1)
+        joined = "\n".join(lines_for(r.stdout, "R5"))
+        self.assertIn(":21:", joined)   # 9005.4 -- bypasses + permission context, no dispatch
+        self.assertNotIn(":16:", joined)  # 9005.3 -- bypasses, unrelated Gradle wording
+        self.assertNotIn(":17:", joined)
 
 
 class TestR6ProseVsRaw(unittest.TestCase):
@@ -112,8 +135,11 @@ class TestR6ProseVsRaw(unittest.TestCase):
         self.assertEqual(len(hits), 1, hits)
 
     def test_raw_path_cited_suppresses(self):
+        # 9006.2 (line 10) is the SAME "does not mention" / [Block N] claim as 9006.1, plus a
+        # raw `organized/...` path citation -- checked by its real line number, not a heading
+        # label that never appears in a finding's quoted excerpt.
         r = run("--audit", fx("niagara5-block9006.md"))
-        self.assertFalse(any("9006.2" in h for h in lines_for(r.stdout, "R6")))
+        self.assertNotIn(":10:", "\n".join(lines_for(r.stdout, "R6")))
 
 
 class TestR7ConstantInlining(unittest.TestCase):
@@ -121,17 +147,22 @@ class TestR7ConstantInlining(unittest.TestCase):
         r = run("--audit", fx("niagara5-block9007.md"))
         hits = lines_for(r.stdout, "R7")
         self.assertEqual(len(hits), 1, hits)
+        self.assertIn(":5:", hits[0])
 
     def test_inline_word_alone_is_not_mistaken_for_evidence(self):
-        # the positive paragraph itself says "an inline literal duplicate" -- that must NOT
-        # be read as the "inlin" evidence token, or the real B96 positive would go dark.
+        # 9007.1 (line 5) is a paragraph whose ONLY candidate evidence-looking word is "inline"
+        # (as in "an inline literal duplicate", the real B96 positive's own phrasing) -- that
+        # must NOT be read as the technical "inlin(e/ing/ed)" evidence token, so R7 must still
+        # fire on exactly this line.
         r = run("--audit", fx("niagara5-block9007.md"))
         hits = lines_for(r.stdout, "R7")
-        self.assertTrue(any("9007" in h for h in hits))
+        self.assertIn(":5:", "\n".join(hits), hits)
 
     def test_compile_time_constant_evidence_suppresses(self):
+        # 9007.2 (line 10) is the SAME shadow-literal claim as 9007.1, plus real bytecode
+        # evidence (ldc / JLS 4.12.4) -- checked by its real line number.
         r = run("--audit", fx("niagara5-block9007.md"))
-        self.assertFalse(any(":11:" in h for h in lines_for(r.stdout, "R7")))
+        self.assertNotIn(":10:", "\n".join(lines_for(r.stdout, "R7")))
 
 
 class TestR8BaselineAttribution(unittest.TestCase):
@@ -141,8 +172,11 @@ class TestR8BaselineAttribution(unittest.TestCase):
         self.assertEqual(len(hits), 1, hits)
 
     def test_with_415_baseline_check_suppresses(self):
+        # 9008.2 (line 9) is the SAME N5-only/module claim shape as 9008.1, plus a real
+        # PowerB/4.15 baseline check -- checked by its real line number, not a heading label
+        # that never appears in a finding's quoted excerpt.
         r = run("--audit", fx("niagara5-block9008.md"))
-        self.assertFalse(any("9008.2" in h for h in lines_for(r.stdout, "R8")))
+        self.assertNotIn(":9:", "\n".join(lines_for(r.stdout, "R8")))
 
 
 class TestWaivers(unittest.TestCase):
@@ -164,6 +198,16 @@ class TestCli(unittest.TestCase):
         summary = r.stdout.splitlines()[-1]
         self.assertIn("R1=", summary)
         self.assertIn("R2=", summary)
+
+    def test_enforced_summary_reports_scanned_enforced_and_findings_separately(self):
+        # block9001 (9001) is below --min-block 9002, so it is scanned but NOT enforced (no
+        # findings reported for it, even though it has R1 findings in --audit mode); block9002
+        # (9002) is enforced and contributes its 1 R2 finding. The old "checked=N" line conflated
+        # "files scanned" with "files whose findings actually gate the exit code".
+        r = run("--min-block", "9002", fx("niagara5-block9001.md"), fx("niagara5-block9002.md"))
+        self.assertEqual(r.returncode, 1)
+        summary = r.stdout.splitlines()[-1]
+        self.assertEqual(summary, "scanned=2 enforced=1 findings=1")
 
     def test_enforced_min_block_boundary(self):
         # block9001 has number 9001; with --min-block 9001 it IS enforced (>=).

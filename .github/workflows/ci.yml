@@ -30,6 +30,5 @@ jobs:
 
       - name: shellcheck tools/githooks/pre-commit
         run: |
-          sudo apt-get update -y
-          sudo apt-get install -y shellcheck
+          command -v shellcheck || (sudo apt-get update -y && sudo apt-get install -y shellcheck)
           shellcheck tools/githooks/pre-commit

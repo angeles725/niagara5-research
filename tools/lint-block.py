@@ -275,7 +275,33 @@ def rule_r2(units):
 # R3 — ephemeral evidence in Self-verify
 # ---------------------------------------------------------------------------
 R3_MARKER_RE = re.compile(r"\[CERT-hw\]|\[CERT-live\]")
-R3_DURABLE_RE = re.compile(r"evidence/|sources/|organized/|poc/|[\w./-]*/[\w.-]+\.\w{1,6}:\d+")
+
+# A path is "durable" only when it is repo-relative under one of these known directories, a
+# niagara5-block*.md filename, or an absolute path under THIS repo's own root. Anything under
+# /tmp or a scratchpad is NEVER durable, even when it carries a trailing ":<line>" that makes it
+# LOOK like a "path:line" citation (e.g. "/tmp/claude-1000/x/scratchpad/F.java:12" must never be
+# read as equivalent to "organized/foo/Bar.java:42" -- the /tmp path is just as ephemeral with a
+# line number appended as without one).
+R3_DURABLE_DIR_PREFIXES = ("evidence/", "sources/", "organized/", "poc/", "tools/", "docs/")
+R3_BLOCK_FILE_RE = re.compile(r"^niagara5-block\d+\.md\b")
+R3_SCRATCH_RE = re.compile(r"/tmp/|scratchpad")
+# Splits evidence-cell text into path-like candidate tokens (backticks/quotes/whitespace/commas
+# and parens never appear inside a real path in this corpus).
+R3_PATH_TOKEN_RE = re.compile(r"[^\s`\"'(),]+")
+
+
+def _is_durable_path_token(token):
+    if R3_SCRATCH_RE.search(token):
+        return False
+    if token.startswith(R3_DURABLE_DIR_PREFIXES) or R3_BLOCK_FILE_RE.match(token):
+        return True
+    if token.startswith("/") and token.startswith(str(ROOT)):
+        return True
+    return False
+
+
+def has_durable_evidence(evidence):
+    return any(_is_durable_path_token(tok) for tok in R3_PATH_TOKEN_RE.findall(evidence))
 
 
 def split_row_cells(row_text):
@@ -301,7 +327,7 @@ def rule_r3(units, lines):
             continue
         if "/tmp/" not in evidence:
             continue
-        if R3_DURABLE_RE.search(evidence):
+        if has_durable_evidence(evidence):
             continue
         if waived(text, "R3"):
             continue
@@ -527,6 +553,7 @@ def main():
 
     counts = {}
     total_findings = 0
+    enforced_count = 0
     any_error = False
     for path in files:
         try:
@@ -539,6 +566,7 @@ def main():
         if not args.audit:
             if bnum is None or bnum < args.min_block:
                 continue
+            enforced_count += 1
         for line, rule, message in findings:
             print(f"{rule} {path.name}:{line}: {message}")
             counts[rule] = counts.get(rule, 0) + 1
@@ -552,7 +580,11 @@ def main():
         print(f"{parts} total={total_findings}")
         return 0
 
-    print(f"checked={len(files)} findings={total_findings}")
+    # "scanned" = every file this invocation read (regardless of its block number); "enforced" =
+    # the subset whose block number is >= --min-block, i.e. the files whose findings actually
+    # gate the exit code. A file that is scanned but not enforced contributes to neither
+    # "enforced" nor "findings", even if it has real R1-R8 hits under --audit.
+    print(f"scanned={len(files)} enforced={enforced_count} findings={total_findings}")
     return 1 if total_findings else 0
 
 

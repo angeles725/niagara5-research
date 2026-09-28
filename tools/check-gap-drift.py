@@ -58,9 +58,16 @@ def main():
                     help="minimum share of row words found in the bullet (default %(default)s)")
     ap.add_argument("--all", action="store_true", help="also check non-pending rows")
     ap.add_argument("--root", type=Path, default=ROOT, help="corpus root (default: repo root)")
+    ap.add_argument("--state", type=Path, default=None,
+                    help="alternate path to RESEARCH-STATE.md (default: --root/RESEARCH-STATE.md); "
+                         "lets a caller point at a materialized copy of the staged blob instead of "
+                         "the working-tree file")
+    ap.add_argument("--block-dir", type=Path, default=None,
+                    help="alternate directory to read niagara5-block<N>.md from (default: --root)")
     args = ap.parse_args()
     root = args.root
-    state = root / "RESEARCH-STATE.md"
+    state = args.state if args.state is not None else root / "RESEARCH-STATE.md"
+    block_dir = args.block_dir if args.block_dir is not None else root
     try:
         state_text = state.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError) as exc:
@@ -76,7 +83,7 @@ def main():
         gid, bnum, text, status = m.groups()
         if not args.all and not status.startswith("pending"):
             continue
-        block_path = root / f"niagara5-block{bnum}.md"
+        block_path = block_dir / f"niagara5-block{bnum}.md"
         if not block_path.exists():
             no_block.append(gid)
             continue

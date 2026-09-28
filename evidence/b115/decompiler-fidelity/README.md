@@ -2,7 +2,8 @@
 
 Cited from [Block 115] (§115.1/§115.2). Two independent probes:
 
-1. `old/` vs `new/` — nine old-vs-new Java idiom pairs, compiled separately, `javap`-diffed.
+1. `old/` vs `new/` — ten old-vs-new Java idiom pairs (`inst`, `v`, `tb`, `ef`, `efi`, `sw`, `ss`, `cat`,
+   `lam`, `tsw` in `old/F.java` / `new/F.java`), compiled separately, `javap`-diffed.
 2. `constinline/` — one compile-time-constant-inlining pair (`K.HOST` referenced from `U.h()`),
    proving R7's target failure shape: Vineflower renders the inlined literal, not the constant
    reference, and this is **not** a decompiler artifact — `javap` shows the same `ldc` the JVM
@@ -10,7 +11,7 @@ Cited from [Block 115] (§115.1/§115.2). Two independent probes:
 
 ## 1. Idiom-pair probe (`old/`, `new/`)
 
-`old/F.java` writes each of 9 constructs the classic way; `new/F.java` writes the same 9 constructs
+`old/F.java` writes each of 10 constructs the classic way; `new/F.java` writes the same 10 constructs
 using the modern Java-21+ syntax. Both compiled and disassembled **twice** (without and with `-g`, to
 check whether `LocalVariableTable`/debug info changes the answer):
 
@@ -35,8 +36,23 @@ docSource original or a non-resugaring decompiler like CFR can):
 **Bytecode-DISTINGUISHABLE**:
 - array for-each: `javac` copies the array reference and caches its length into synthetic locals —
   visible even without `-g`
-- `Iterable` for-each **with `-g`**: no named iterator variable appears in `LocalVariableTable` for
-  the classic explicit-`Iterator` form; the for-each form does show one (heuristic — requires `-g`)
+- `Iterable` for-each **with `-g`**: the classic explicit-`Iterator` form (`old/`, method `efi`) HAS a
+  named iterator entry in `LocalVariableTable`; the for-each form (`new/`, method `efi`) has NO such
+  entry (heuristic — requires `-g`). From `old/javap-g.txt`:
+  ```
+        Start  Length  Slot  Name   Signature
+           28       7     3     s   Ljava/lang/String;
+            9      29     2    it   Ljava/util/Iterator;
+            0      40     0     l   Ljava/util/List;
+            2      38     1     t   I
+  ```
+  vs. `new/javap-g.txt` (same slot 2 that held `it` above is absent — no name is ever assigned to it):
+  ```
+        Start  Length  Slot  Name   Signature
+           28       7     3     s   Ljava/lang/String;
+            0      40     0     l   Ljava/util/List;
+            2      38     1     t   I
+  ```
 - arrow switch / switch expression: value-on-stack-then-single-store/goto shape (heuristic, weaker
   than the others — say so whenever cited)
 - lambda: `invokedynamic LambdaMetafactory`, no `F$1` inner class (vs. an anonymous class, which

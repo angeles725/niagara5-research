@@ -4,7 +4,7 @@
 
 Positive: this heading claims N5-only status with no 4.15 baseline token anywhere in it.
 
-## 9008.2 — negative
+## 9008.2 — negative: paired claim, WITH a 4.15 baseline check
 
-`fooBar` is new in N5 5.0.0.28; PowerB N4-4.15.3.28 has no equivalent module (checked bin/ext and
-config-home) `[CERT]`.
+The `fooBar` module is N5-only, confirmed against PowerB N4-4.15.3.28's own module list (no
+equivalent found in bin/ext or config-home) `[CERT]`.
