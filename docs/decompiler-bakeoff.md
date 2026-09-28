@@ -765,9 +765,35 @@ re-counted by the orchestrator from `organized/` after `ALL_DONE`:
   copies, not a loss.
 - Line mapping (`// N` markers vs docSource original lines, token overlap in a ±1-line window):
   BNumericWritable 137/137, ValueDocDecoder 409/409, Column 78/78 — 624/624 (100%).
-- **Known gap (T24):** `bajaui` (832 classes) is the only module whose primary Vineflower run hits
-  the 240 s whole-jar budget, in v1, v2 and cons alike (`primary_status: timeout`,
-  `fallback_reason: primary_timeout_whole_module`), so all 566 of its top-level sources are CFR in
-  every tree. A thread dump shows one decompiler thread spinning in `ClassWriter.writeClass` while
-  the other 15 are idle: a single class hangs Vineflower, it is not slowness. This is why the
-  planned `StyleUtils` line-mapping check had no Vineflower file to read.
+- **Resolved (T24):** `bajaui` (832 classes) used to be the only module whose primary Vineflower run
+  hit the 240 s whole-jar budget, in v1, v2 and cons alike (`primary_status: timeout`,
+  `fallback_reason: primary_timeout_whole_module`), losing all 566 of its top-level sources to CFR in
+  every tree. A thread dump showed one decompiler thread spinning in `ClassWriter.writeClass` while
+  the other 15 were idle: a single class hangs Vineflower, it is not slowness — the class is
+  `com/tridium/ui/theme/custom/nss/query/NSS2SelectionResult`, whose method-local record
+  `NSS2SelectionResult$1ValueAndAdvice` is what triggers the hang (per-class bisection isolated it to
+  exactly this one class; the rest of the package/module decompiles normally).
+  `tools/n5-decompile.sh` now isolates a hang like this automatically instead of losing the whole
+  module: it bisects the hung whole-jar run by package, then by top-level class, each attempt under
+  its own `N5_ISOLATE_TIMEOUT` (default 90 s) budget; re-runs the whole jar ONCE more with
+  Vineflower's `--excluded-classes=<regex>` excluding exactly the hung class(es) (regex semantics —
+  a FULL match against the `/`-separated internal name — verified empirically against the real
+  vineflower-1.12.0.jar with a synthetic reproduction of this exact case); and gives the hung
+  class(es) CFR output plus a best-effort `--decompile-inner=false` secondary rendering. Real
+  `bajaui` re-run on the local mirror after the fix, all three variants:
+
+  | variant | `primary_status` | `excluded_classes` | primary tree | fallback | noinner secondary view | isolate time | excluded-rerun time |
+  |---|---|---|---|---|---|---|---|
+  | v1   | `ok_with_excluded` | `NSS2SelectionResult` | 565/566 `.java` | 1 (the hung class) | 2 `.java` (class + its local record) | 319 s | 8 s |
+  | v2   | `ok_with_excluded` | `NSS2SelectionResult` | 565/566 `.java` | 1 (the hung class) | 2 `.java` | 357 s | 12 s |
+  | cons | `ok_with_excluded` | `NSS2SelectionResult` | 565/566 `.java` | 1 (the hung class) | 2 `.java` | 357 s | 14 s |
+
+  `recon.json` (or its `v2`/`cons` sub-object) records `primary_status: "ok_with_excluded"`,
+  `fallback_reason: "primary_hang_isolated"`, `excluded_classes`, `isolate_time_seconds` and
+  `primary_timeout_attempt_seconds` (the original ~265-269 s hang, kept for forensics) for every
+  module isolation resolves. Isolation found no other hung class anywhere else in this module; if a
+  future timeout can't be isolated (no single class found hung alone, or the excluded re-run itself
+  times out/errors), today's original whole-module CFR fallback is kept exactly, with a new
+  `isolation_status` field explaining why. This is why the planned `StyleUtils` line-mapping check
+  had no Vineflower file to read before this fix — it now does, for every class except the isolated
+  hang itself.

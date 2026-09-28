@@ -958,3 +958,231 @@ print(subprocess.run(['unzip','-p','$N5_MODULES_DIR/$MODULE.jar','META-INF/modul
   [[ "$output" == *"pkg/A.java"* ]]
   [[ "$output" != *"pkg/B.java"* ]]
 }
+
+# --- T24 (odd/tasks/decompiler-fidelity-audit.md): isolate the class(es) that
+# hang a whole-jar Vineflower run instead of losing the WHOLE module to CFR
+# (bajaui: 832 classes, all 566 top-level sources CFR because ONE local-record
+# class, com/tridium/ui/theme/custom/nss/query/NSS2SelectionResult, hangs
+# Vineflower's ClassWriter forever). Uses a FAKE Vineflower (N5_JAVA overridden
+# to fake-vineflower-java.sh, which wraps fake-vineflower.py — see both files'
+# headers for the exact double-dispatch: only a -jar target equal to
+# $FAKE_VINEFLOWER_JAR is faked; every real CFR invocation the script makes
+# still runs the REAL tools/decompilers/cfr-0.152.jar against real compiled
+# .class bytes) because a real Vineflower hang cannot be reproduced quickly or
+# deterministically in a unit test. Real bajaui numbers are the orchestrator's
+# separate real-corpus run (not part of this bats file — bajaui is not
+# lontunnel-sized, decompiling it for real is a multi-minute campaign).
+
+# Resolves the REAL java binary these tests' fake $N5_JAVA wrapper falls back
+# to for every non-Vineflower invocation (i.e. every real CFR call). Uses the
+# script's own hardcoded default first (same brew keg every other real-corpus
+# test in this file already depends on) and falls back to whatever `java` is
+# on PATH so this doesn't hard-fail on a machine without that exact keg.
+t24_real_java() {
+  local default="/home/linuxbrew/.linuxbrew/opt/openjdk@26/bin/java"
+  if [[ -x "$default" ]]; then
+    printf '%s' "$default"
+  else
+    command -v java
+  fi
+}
+
+# Points N5_JAVA/N5_VINEFLOWER at the T24 fake Vineflower double for the rest
+# of the calling test. $FAKE_VINEFLOWER_JAR itself is never read as a jar (the
+# wrapper only compares the -jar argument by path) — an empty placeholder file
+# is enough, and its sha256 (n5-decompile.sh hashes N5_VINEFLOWER for
+# recon.json/idempotency purposes) is stable and harmless.
+t24_use_fake_vineflower() {
+  FAKE_VINEFLOWER_JAR="$BATS_TEST_TMPDIR/fake-vineflower-marker.jar"
+  : > "$FAKE_VINEFLOWER_JAR"
+  FAKE_VINEFLOWER_PY="$REPO_ROOT/tools/tests/fixtures/fake-vineflower.py"
+  REAL_JAVA="$(t24_real_java)"
+  export FAKE_VINEFLOWER_JAR FAKE_VINEFLOWER_PY REAL_JAVA
+  N5_JAVA="$REPO_ROOT/tools/tests/fixtures/fake-vineflower-java.sh"
+  N5_VINEFLOWER="$FAKE_VINEFLOWER_JAR"
+  export N5_JAVA N5_VINEFLOWER
+}
+
+# Builds a REAL module jar (real javac-compiled .class bytes, not
+# zipfile.writestr placeholders) at $N5_MODULES_DIR/$1.jar, one trivial public
+# top-level class per remaining "pkg/ClassName" argument. Real bytes are
+# needed because T24's CFR fallback for a hung/excluded class is the REAL
+# tools/decompilers/cfr-0.152.jar (see t24_use_fake_vineflower above) — it has
+# to actually decompile something for the "hung class ends up in fallback/"
+# assertions to mean anything. Uses N5_JDK25_HOME's javac (the JDK already a
+# hard dependency of the --variant v2/cons real-corpus tests in this file) so
+# no extra tool/install is required.
+t24_build_module_jar() {
+  local dest_name="$1" vendor="$2"; shift 2
+  local javac_bin="${N5_JDK25_HOME:-/home/linuxbrew/.linuxbrew/opt/openjdk@25/libexec}/bin/javac"
+  [[ -x "$javac_bin" ]] || javac_bin="$(command -v javac)"
+
+  local srcdir compiled_dir
+  srcdir="$(mktemp -d)"
+  compiled_dir="$(mktemp -d)"
+  local name pkg simple
+  for name in "$@"; do
+    pkg="$(dirname "$name")"
+    [[ "$pkg" == "." ]] && pkg=""
+    simple="$(basename "$name")"
+    mkdir -p "$srcdir/$pkg"
+    {
+      [[ -n "$pkg" ]] && printf 'package %s;\n' "${pkg//\//.}"
+      # A no-op method body (not just a field) so a class is a closer analog
+      # of a real Tridium class than an empty marker type would be; nothing
+      # about T24's isolation logic depends on WHAT a class does, only on
+      # its internal name and whether Vineflower/CFR can round-trip it.
+      printf 'public class %s { public void m() { int x = 1; } }\n' "$simple"
+    } > "$srcdir/$pkg/$simple.java"
+  done
+  find "$srcdir" -name '*.java' -print0 | xargs -0 "$javac_bin" -d "$compiled_dir"
+
+  mkdir -p "$N5_MODULES_DIR"
+  python3 - "$N5_MODULES_DIR/$dest_name.jar" "$vendor" "$compiled_dir" <<'PY'
+import os, sys, zipfile
+dest, vendor, compiled_dir = sys.argv[1], sys.argv[2], sys.argv[3]
+with zipfile.ZipFile(dest, "w") as z:
+    z.writestr("META-INF/module.xml", '<module vendor="%s"/>' % vendor)
+    for dirpath, _dirs, files in os.walk(compiled_dir):
+        for f in files:
+            if f.endswith(".class"):
+                full = os.path.join(dirpath, f)
+                z.write(full, os.path.relpath(full, compiled_dir))
+PY
+  rm -rf "$srcdir" "$compiled_dir"
+}
+
+@test "T24a: one hung class -> ok_with_excluded, excluded_classes exact, primary tree keeps the rest, hung class in fallback (+ noinner secondary view)" {
+  local_dir="$BATS_TEST_TMPDIR/t24a"
+  mkdir -p "$local_dir/modules" "$local_dir/out"
+  t24_use_fake_vineflower
+  N5_MODULES_DIR="$local_dir/modules" \
+    t24_build_module_jar t24a_mod Tridium pkgA/Alpha pkgA/Beta pkgB/Gamma pkgB/HangClass
+
+  N5_MODULES_DIR="$local_dir/modules" N5_OUT_DIR="$local_dir/out" \
+    N5_CFR="$REPO_ROOT/tools/decompilers/cfr-0.152.jar" \
+    N5_PRIMARY_TIMEOUT=3 N5_ISOLATE_TIMEOUT=2 \
+    FAKE_HANG_CLASS="pkgB/HangClass" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" t24a_mod
+  [ "$status" -eq 0 ]
+
+  recon="$local_dir/out/t24a_mod/recon.json"
+  [ -f "$recon" ]
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['primary_status'])")" = "ok_with_excluded" ]
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['fallback_used'])")" = "True" ]
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['fallback_reason'])")" = "primary_hang_isolated" ]
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['excluded_classes'])")" = "['pkgB/HangClass']" ]
+  attempt="$(python3 -c "import json;print(json.load(open('$recon'))['primary_timeout_attempt_seconds'])")"
+  [ "$attempt" -ge 3 ]
+  isolate_t="$(python3 -c "import json;print(json.load(open('$recon'))['isolate_time_seconds'])")"
+  [ "$isolate_t" -ge 0 ]
+
+  [ -f "$local_dir/out/t24a_mod/vineflower/pkgA/Alpha.java" ]
+  [ -f "$local_dir/out/t24a_mod/vineflower/pkgA/Beta.java" ]
+  [ -f "$local_dir/out/t24a_mod/vineflower/pkgB/Gamma.java" ]
+  [ ! -f "$local_dir/out/t24a_mod/vineflower/pkgB/HangClass.java" ]
+
+  [ -f "$local_dir/out/t24a_mod/fallback/pkgB/HangClass.java" ]
+
+  # best-effort secondary view (T24 step 3): --decompile-inner=false never
+  # hangs in the fake (see fake-vineflower.py), so this genuinely succeeds.
+  [ -f "$local_dir/out/t24a_mod/vineflower-noinner/pkgB/HangClass.java" ]
+}
+
+@test "T24b: the excluded-classes regex does not over-match a sibling class (Foo hangs, FooBar and Baz must survive in the primary tree)" {
+  local_dir="$BATS_TEST_TMPDIR/t24b"
+  mkdir -p "$local_dir/modules" "$local_dir/out"
+  t24_use_fake_vineflower
+  N5_MODULES_DIR="$local_dir/modules" \
+    t24_build_module_jar t24b_mod Tridium pkg/Foo pkg/FooBar pkg/Baz
+
+  N5_MODULES_DIR="$local_dir/modules" N5_OUT_DIR="$local_dir/out" \
+    N5_CFR="$REPO_ROOT/tools/decompilers/cfr-0.152.jar" \
+    N5_PRIMARY_TIMEOUT=3 N5_ISOLATE_TIMEOUT=2 \
+    FAKE_HANG_CLASS="pkg/Foo" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" t24b_mod
+  [ "$status" -eq 0 ]
+
+  recon="$local_dir/out/t24b_mod/recon.json"
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['primary_status'])")" = "ok_with_excluded" ]
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['excluded_classes'])")" = "['pkg/Foo']" ]
+
+  [ -f "$local_dir/out/t24b_mod/vineflower/pkg/FooBar.java" ]
+  [ -f "$local_dir/out/t24b_mod/vineflower/pkg/Baz.java" ]
+  [ ! -f "$local_dir/out/t24b_mod/vineflower/pkg/Foo.java" ]
+  [ -f "$local_dir/out/t24b_mod/fallback/pkg/Foo.java" ]
+}
+
+@test "T24c: nothing hangs individually but the whole jar times out -> old whole-module-CFR behavior kept, isolation_status explains why" {
+  local_dir="$BATS_TEST_TMPDIR/t24c"
+  mkdir -p "$local_dir/modules" "$local_dir/out"
+  t24_use_fake_vineflower
+  N5_MODULES_DIR="$local_dir/modules" \
+    t24_build_module_jar t24c_mod Tridium pkgA/A1 pkgA/A2 pkgB/B1 pkgB/B2 pkgC/C1 pkgC/C2
+
+  # 6 classes total; every package/class isolation subset this run can ever
+  # build has at most 2 classes (well under the threshold) — only the whole
+  # 6-class jar ever reaches it, so isolation MUST find zero hung classes.
+  N5_MODULES_DIR="$local_dir/modules" N5_OUT_DIR="$local_dir/out" \
+    N5_CFR="$REPO_ROOT/tools/decompilers/cfr-0.152.jar" \
+    N5_PRIMARY_TIMEOUT=3 N5_ISOLATE_TIMEOUT=2 \
+    FAKE_HANG_MIN_CLASSES=5 \
+    run "$REPO_ROOT/tools/n5-decompile.sh" t24c_mod
+  [ "$status" -eq 0 ]
+
+  recon="$local_dir/out/t24c_mod/recon.json"
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['primary_status'])")" = "timeout" ]
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['fallback_used'])")" = "True" ]
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['fallback_reason'])")" = "primary_timeout_whole_module" ]
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['isolation_status'])")" = "no_hung_class_found" ]
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['excluded_classes'])")" = "[]" ]
+
+  # old behavior: whole-module CFR, primary tree left empty
+  count=$(find "$local_dir/out/t24c_mod/vineflower" -name '*.java' 2>/dev/null | wc -l)
+  [ "$count" -eq 0 ]
+  for c in pkgA/A1 pkgA/A2 pkgB/B1 pkgB/B2 pkgC/C1 pkgC/C2; do
+    [ -f "$local_dir/out/t24c_mod/fallback/$c.java" ]
+  done
+}
+
+@test "T24e: a top-level class with NO package (module-info-style, package '') doesn't crash isolation (regression: bash 5.2 'bad array subscript' on an empty associative-array key, found running this on the real bajaui corpus)" {
+  local_dir="$BATS_TEST_TMPDIR/t24e"
+  mkdir -p "$local_dir/modules" "$local_dir/out"
+  t24_use_fake_vineflower
+  # "RootClass" has no '/' in its name -> package "" (t24_build_module_jar
+  # compiles it with no package declaration, placing it at the jar root,
+  # exactly like a real module-info.class).
+  N5_MODULES_DIR="$local_dir/modules" \
+    t24_build_module_jar t24e_mod Tridium RootClass pkg/Hang pkg/Other
+
+  N5_MODULES_DIR="$local_dir/modules" N5_OUT_DIR="$local_dir/out" \
+    N5_CFR="$REPO_ROOT/tools/decompilers/cfr-0.152.jar" \
+    N5_PRIMARY_TIMEOUT=3 N5_ISOLATE_TIMEOUT=2 \
+    FAKE_HANG_CLASS="pkg/Hang" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" t24e_mod
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"bad array subscript"* ]]
+
+  recon="$local_dir/out/t24e_mod/recon.json"
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['primary_status'])")" = "ok_with_excluded" ]
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['excluded_classes'])")" = "['pkg/Hang']" ]
+  [ -f "$local_dir/out/t24e_mod/vineflower/RootClass.java" ]
+  [ -f "$local_dir/out/t24e_mod/vineflower/pkg/Other.java" ]
+  [ -f "$local_dir/out/t24e_mod/fallback/pkg/Hang.java" ]
+}
+
+@test "T24d: v1 and --variant v2/cons share ONE Vineflower-hang isolation helper (no copy-paste)" {
+  def_count=$(grep -c '^vf_isolate_hung_classes()' "$REPO_ROOT/tools/n5-decompile.sh")
+  [ "$def_count" -eq 1 ]
+  regex_def_count=$(grep -c '^vf_build_excluded_classes_regex()' "$REPO_ROOT/tools/n5-decompile.sh")
+  [ "$regex_def_count" -eq 1 ]
+  orchestrator_def_count=$(grep -c '^vf_handle_primary_timeout()' "$REPO_ROOT/tools/n5-decompile.sh")
+  [ "$orchestrator_def_count" -eq 1 ]
+
+  # both decompile_module (v1) and decompile_module_variant (v2/cons, shared
+  # by decompile_module_v2/decompile_module_cons) call it — 'vf_handle_primary_timeout "'
+  # (quote after the space) matches only an actual call, not the header/doc
+  # comments that also mention the function by name.
+  call_count=$(grep -c 'vf_handle_primary_timeout "' "$REPO_ROOT/tools/n5-decompile.sh")
+  [ "$call_count" -ge 2 ]
+}

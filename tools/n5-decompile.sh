@@ -105,6 +105,9 @@
 #   N5_VINEFLOWER    default: <repo>/tools/decompilers/vineflower-1.12.0.jar
 #   N5_CFR           default: <repo>/tools/decompilers/cfr-0.152.jar
 #   N5_PRIMARY_TIMEOUT   default: 240 (seconds, whole-jar primary decompile budget)
+#   N5_ISOLATE_TIMEOUT   default: 90 (seconds, T24: per-package/per-class budget used ONLY
+#                    after a whole-jar Vineflower run times out, to bisect down to the exact
+#                    top-level class(es) responsible — see "Whole-jar timeout isolation" below)
 #   N5_PARALLELISM   default: 6 (used only as documentation for callers driving xargs -P)
 #   N5_JDK25_HOME    default: /home/linuxbrew/.linuxbrew/opt/openjdk@25/libexec
 #                    (--variant v2 only) passed to Vineflower's --include-runtime. Must be
@@ -141,10 +144,45 @@
 # be confirmed with javap or a docSource original, not read off the decompiled text —
 # see niagara5-block116.md and docs/decompiler-bakeoff.md's "Semantic defects (B116)".
 # Fallback: CFR, used for a whole module when Vineflower times out or exits non-zero
-# (observed on this corpus: Vineflower 1.12.0 hangs indefinitely on bajaui.jar's
-# com.tridium.ui.* subtree; CFR decompiles the same jar in ~11s), and per-class when
+# and T24's isolation below could not do better (observed on this corpus: Vineflower
+# 1.12.0 hangs indefinitely on ONE class in bajaui.jar,
+# com/tridium/ui/theme/custom/nss/query/NSS2SelectionResult — its method-local record
+# NSS2SelectionResult$1ValueAndAdvice makes a Vineflower thread spin forever in
+# ClassWriter.writeClass; CFR decompiles the same jar in ~11s), and per-class when
 # Vineflower completes but leaves an explicit decompiler-failure marker in a handful of
 # files. CFR is not a semantic oracle either (B116: it drops `(Object)null` casts).
+#
+# Whole-jar timeout isolation (T24, odd/tasks/decompiler-fidelity-audit.md): a single
+# hanging class used to cost a whole module ALL of its Vineflower fidelity — 832 classes
+# (566 top-level) in bajaui, all three variants, over ONE hang. When the primary
+# whole-jar run times out, decompile_module/decompile_module_variant now call the shared
+# vf_handle_primary_timeout (see its own doc comment, right before decompile_module
+# below) before falling back to whole-module CFR:
+#   1. vf_isolate_hung_classes bisects — first by PACKAGE (every .class file directly in
+#      one directory, run together as a throwaway subset jar, same Vineflower
+#      command/options/library context as the real run, but its own N5_ISOLATE_TIMEOUT
+#      budget), then, for any package that times out, by TOP-LEVEL CLASS (that class plus
+#      its own Name$* nested classes, alone). Deterministic (sorted iteration/output);
+#      parallelism is not attempted.
+#   2. If one or more top-level classes are found hung, the whole jar is re-run ONCE more
+#      with Vineflower's --excluded-classes=<regex> excluding exactly those classes (see
+#      vf_build_excluded_classes_regex's doc comment for the empirically-verified regex
+#      semantics: a FULL match against the '/'-separated internal name).
+#   3. If THAT re-run succeeds: the excluded-run tree becomes the primary tree
+#      (recon.json primary_status="ok_with_excluded", fallback_reason=
+#      "primary_hang_isolated"); each hung class gets CFR output in the fallback dir the
+#      variant already uses (same per-class-fallback convention as a decompiler-failure
+#      marker); and a best-effort Vineflower --decompile-inner=false rendering of just the
+#      hung class group is attempted (own N5_ISOLATE_TIMEOUT budget) into a "-noinner"
+#      sibling of the primary tree, as a secondary view — useful even when the class still
+#      doesn't fully round-trip, since a local/anon/method-scoped class is what actually
+#      tends to hang Vineflower's inner-class handling.
+#   4. If isolation finds NO hung class, or the excluded re-run ALSO times out or errors,
+#      today's original whole-module CFR fallback is kept EXACTLY (primary_status stays
+#      "timeout", fallback_reason stays "primary_timeout_whole_module") — recon.json just
+#      gains an "isolation_status" field explaining why isolation didn't help
+#      ("no_hung_class_found", "excluded_rerun_timeout", "excluded_rerun_error"). Isolation
+#      never claims success it did not observe.
 #
 # Idempotent: skips a module whose jar sha256 matches organized/<module>/recon.json's
 # recorded sha256, unless --force is given. Parallel-safe: every module writes only
@@ -172,6 +210,7 @@ N5_JAVA="${N5_JAVA:-/home/linuxbrew/.linuxbrew/opt/openjdk@26/bin/java}"
 N5_VINEFLOWER="${N5_VINEFLOWER:-$REPO_ROOT/tools/decompilers/vineflower-1.12.0.jar}"
 N5_CFR="${N5_CFR:-$REPO_ROOT/tools/decompilers/cfr-0.152.jar}"
 N5_PRIMARY_TIMEOUT="${N5_PRIMARY_TIMEOUT:-240}"
+N5_ISOLATE_TIMEOUT="${N5_ISOLATE_TIMEOUT:-90}"
 N5_JDK25_HOME="${N5_JDK25_HOME:-/home/linuxbrew/.linuxbrew/opt/openjdk@25/libexec}"
 N5_ETC_M2_DIR="${N5_ETC_M2_DIR:-/mnt/c/Program Files/Niagara/5.0.0.28/etc/m2/repository}"
 N5_LIB_DIR="${N5_LIB_DIR:-/mnt/c/Program Files/Niagara/5.0.0.28/lib}"
@@ -245,6 +284,14 @@ extract_docsource() {
 write_recon() {
   local module="$1" jar="$2" moddir="$3" primary_status="$4" primary_time="$5" \
         fallback_used="$6" fallback_reason="$7" class_count="$8"
+  # T24 (optional, all default to "isolation never ran"): $9=excluded_classes as a
+  # JSON array string, $10=isolate_time_seconds, $11=isolation_status (only ever
+  # non-empty when the whole-jar run originally timed out), $12=
+  # primary_timeout_attempt_seconds (the ORIGINAL timed-out attempt's elapsed time,
+  # kept even after primary_time above is overwritten with the excluded re-run's own
+  # time on success). See vf_handle_primary_timeout's doc comment.
+  local excluded_classes_json="${9:-[]}" isolate_time="${10:-0}" \
+        isolation_status="${11:-}" timeout_attempt_time="${12:-}"
   local sha; sha="$(sha256_of "$jar")"
 
   local signed="false" sig_name="null"
@@ -269,7 +316,377 @@ write_recon() {
     --primary-time "$primary_time" \
     --fallback-used "$fallback_used" \
     --fallback-reason "$fallback_reason" \
+    --excluded-classes "$excluded_classes_json" \
+    --isolate-time "$isolate_time" \
+    --isolation-status "$isolation_status" \
+    --timeout-attempt-time "$timeout_attempt_time" \
     --out "$moddir/recon.json"
+}
+
+# ---------------------------------------------------------------------------
+# T24 (odd/tasks/decompiler-fidelity-audit.md): isolate the top-level class(es)
+# that hang a whole-jar Vineflower run, instead of losing the WHOLE module to
+# CFR over one hanging class. Shared by v1 (decompile_module) and v2/cons
+# (decompile_module_variant, via decompile_module_v2/decompile_module_cons) —
+# every function in this block is called from both places; see the header
+# comment's "Whole-jar timeout isolation" section for the algorithm summary.
+# ---------------------------------------------------------------------------
+
+# Every TOP-LEVEL class's internal name (its path under $1, '/'-separated,
+# WITHOUT the .class extension), sorted. A class is "top-level" when its
+# .class file's basename has no '$' — nested/inner/local/anonymous classes are
+# always compiled as Outer$Something.class (verified against this whole
+# corpus already, T13/T19: no exception found).
+vf_list_top_level_classes() {
+  local extracted_dir="$1" f
+  find "$extracted_dir" -name '*.class' ! -name '*$*' ! -path '*/META-INF/*' \
+    | while IFS= read -r f; do
+        f="${f#"$extracted_dir"/}"
+        printf '%s\n' "${f%.class}"
+      done \
+    | sort
+}
+
+# The package (directory) internal class name $1 lives in — "" for one
+# sitting directly under the extraction root (no package).
+vf_package_of() {
+  local internal="$1"
+  case "$internal" in
+    */*) printf '%s\n' "${internal%/*}" ;;
+    *) printf '%s\n' "" ;;
+  esac
+}
+
+# Every .class file (top-level AND nested/local/anon — anything compiled into
+# the SAME directory) that is a DIRECT child of $1/$2 (one package directory,
+# NON-recursive: a sub-package is a different group), as internal names,
+# sorted. $2="" means the extraction root itself.
+vf_classes_in_package() {
+  local extracted_dir="$1" package="$2" f dir
+  if [[ -n "$package" ]]; then dir="$extracted_dir/$package"; else dir="$extracted_dir"; fi
+  [[ -d "$dir" ]] || return 0
+  find "$dir" -maxdepth 1 -name '*.class' \
+    | while IFS= read -r f; do
+        f="${f#"$extracted_dir"/}"
+        printf '%s\n' "${f%.class}"
+      done \
+    | sort
+}
+
+# Every .class file for top-level class $2 ALONE — itself plus its own
+# Name$*.class nested/local/anon classes, never a sibling top-level class that
+# happens to share a name prefix — as internal names, sorted.
+vf_classes_for_top_level() {
+  local extracted_dir="$1" internal="$2" dir base f
+  dir="$(dirname "$extracted_dir/$internal.class")"
+  base="$(basename "$internal")"
+  [[ -d "$dir" ]] || return 0
+  find "$dir" -maxdepth 1 \( -name "$base.class" -o -name "${base}\$*.class" \) \
+    | while IFS= read -r f; do
+        f="${f#"$extracted_dir"/}"
+        printf '%s\n' "${f%.class}"
+      done \
+    | sort
+}
+
+# Builds a throwaway jar at $2, containing exactly the .class entries named
+# (one internal name per line) on stdin, read from under $1, preserving their
+# directory structure — so Vineflower resolves them the same way it would
+# inside the real module jar. python3's zipfile (already a hard dependency of
+# this pipeline) is used instead of `zip`/`jar` so no extra tool is required.
+vf_build_subset_jar() {
+  local extracted_dir="$1" dest="$2"
+  # -c, not a `python3 - ... <<'PY'` heredoc: a heredoc would itself become
+  # this command's stdin, discarding the piped class-name list callers rely
+  # on (`vf_classes_in_package ... | vf_build_subset_jar ...`).
+  python3 -c '
+import sys, zipfile
+extracted_dir, dest = sys.argv[1], sys.argv[2]
+names = [l.rstrip("\n") for l in sys.stdin if l.strip()]
+with zipfile.ZipFile(dest, "w") as z:
+    for internal in names:
+        rel = internal + ".class"
+        z.write(extracted_dir + "/" + rel, rel)
+' "$extracted_dir" "$dest"
+}
+
+# Runs "$5 $6 ... <jar> <outdir>" (the whole prefix command, "$@" from $5
+# onward) under `timeout $3`, logging it (CMD line + all output) into $4.
+# Prints "ok"/"timeout"/"error" (the same vocabulary decompile_module's own
+# primary-run check already uses) on stdout — nothing else.
+vf_run_timed() {
+  local jar="$1" outdir="$2" budget="$3" logfile="$4"; shift 4
+  local -a cmd=("$@" "$jar" "$outdir")
+  mkdir -p "$outdir"
+  { printf 'CMD(T24):'; printf ' %q' "${cmd[@]}"; printf '\n'; } >> "$logfile"
+  if timeout "$budget" "${cmd[@]}" >> "$logfile" 2>&1; then
+    echo ok
+  else
+    local rc=$?
+    if [[ $rc -eq 124 ]]; then echo timeout; else echo error; fi
+  fi
+}
+
+# Bisects $2/extracted for the top-level class(es) that hang a Vineflower run
+# on their own, given the exact command/options/library-context prefix a
+# caller's real whole-jar run used ("$@" from $5 onward — e.g. v1: "$N5_JAVA
+# -jar $N5_VINEFLOWER --log-level=error"; v2/cons: that plus
+# --include-runtime=... plus the variant's own fidelity flags plus
+# -e=<lib CSV>), each subset run given its own $3-second budget instead of
+# $N5_PRIMARY_TIMEOUT. First by PACKAGE (cheap: most packages are innocent and
+# a package-sized subset completes fast); only a package that itself times out
+# is bisected further, by TOP-LEVEL CLASS (that class + its own Name$* nested
+# classes, alone). Deterministic: packages and classes are iterated in sorted
+# order, and the result is sorted+deduped. Parallelism is not attempted (T24
+# doesn't require it; a real corpus run drives whole MODULES in parallel
+# already, via xargs -P, same as every other mode this script has).
+#
+# Sets (globals, read by the caller immediately after calling):
+#   VF_ISOLATE_HUNG_CLASSES=()  sorted internal names of classes that hang ALONE
+#   VF_ISOLATE_STATUS           "isolated" (>=1 found) | "no_hung_class_found"
+#   VF_ISOLATE_TIME             wall-clock seconds this whole bisection took
+vf_isolate_hung_classes() {
+  local module="$1" extracted_dir="$2" budget="$3" logfile="$4"; shift 4
+  local -a prefix=("$@")
+
+  local t0 t1; t0="$(date +%s)"
+  VF_ISOLATE_HUNG_CLASSES=()
+
+  local -a top_level=()
+  local c
+  while IFS= read -r c; do [[ -n "$c" ]] && top_level+=("$c"); done \
+    < <(vf_list_top_level_classes "$extracted_dir")
+
+  # NOT an associative array keyed by package name: bash 5.2 treats an EMPTY
+  # STRING subscript ("${arr[$x]}" with x="") as a "bad array subscript"
+  # error — and a class with no package at all (e.g. bajaui's real
+  # module-info.class, sitting directly at the extraction root) legitimately
+  # has package "". `sort -u` dedups just as well without that trap.
+  local -a packages=()
+  readarray -t packages < <(
+    local top_c
+    for top_c in "${top_level[@]}"; do vf_package_of "$top_c"; done | sort -u
+  )
+
+  local tmpdir; tmpdir="$(mktemp -d)"
+  local pkg_status
+  for pkg in "${packages[@]}"; do
+    rm -f "$tmpdir/pkg.jar"; rm -rf "$tmpdir/pkg-out"
+    vf_classes_in_package "$extracted_dir" "$pkg" | vf_build_subset_jar "$extracted_dir" "$tmpdir/pkg.jar"
+    log "$module" "T24 isolate: testing package '${pkg:-<default>}'"
+    pkg_status="$(vf_run_timed "$tmpdir/pkg.jar" "$tmpdir/pkg-out" "$budget" "$logfile" "${prefix[@]}")"
+    if [[ "$pkg_status" == "timeout" ]]; then
+      log "$module" "T24 isolate: package '${pkg:-<default>}' timed out, bisecting its top-level classes"
+      local top_c cls_status
+      for top_c in "${top_level[@]}"; do
+        [[ "$(vf_package_of "$top_c")" == "$pkg" ]] || continue
+        rm -f "$tmpdir/cls.jar"; rm -rf "$tmpdir/cls-out"
+        vf_classes_for_top_level "$extracted_dir" "$top_c" | vf_build_subset_jar "$extracted_dir" "$tmpdir/cls.jar"
+        cls_status="$(vf_run_timed "$tmpdir/cls.jar" "$tmpdir/cls-out" "$budget" "$logfile" "${prefix[@]}")"
+        if [[ "$cls_status" == "timeout" ]]; then
+          log "$module" "T24 isolate: class '$top_c' hangs alone"
+          VF_ISOLATE_HUNG_CLASSES+=("$top_c")
+        fi
+      done
+    fi
+  done
+  rm -rf "$tmpdir"
+
+  if [[ "${#VF_ISOLATE_HUNG_CLASSES[@]}" -gt 0 ]]; then
+    local -a sorted_hung=()
+    readarray -t sorted_hung < <(printf '%s\n' "${VF_ISOLATE_HUNG_CLASSES[@]}" | sort -u)
+    VF_ISOLATE_HUNG_CLASSES=("${sorted_hung[@]}")
+    VF_ISOLATE_STATUS="isolated"
+  else
+    VF_ISOLATE_STATUS="no_hung_class_found"
+  fi
+  t1="$(date +%s)"
+  VF_ISOLATE_TIME=$(( t1 - t0 ))
+}
+
+# Vineflower 1.12.0's --excluded-classes=<regex> semantics, verified
+# EMPIRICALLY 2026-09-28 (not documented in --help; see
+# docs/decompiler-bakeoff.md's T24 section for the experiment this comment
+# summarizes) against the real vineflower-1.12.0.jar with a synthetic jar
+# reproducing bajaui's actual shape (a top-level class with a method-local
+# class, NSS2SelectionResult(\$1ValueAndAdvice), plus an unrelated sibling
+# whose name shares the same prefix, NSS2SelectionResultFooBar):
+#   - the value is matched with a FULL match (java.util.regex
+#     Matcher#matches(), i.e. the ENTIRE string must match — not a substring
+#     search) against each class's INTERNAL name: '/'-separated package path,
+#     no leading/trailing slash, no ".class" suffix — e.g.
+#     "com/tridium/ui/theme/custom/nss/query/NSS2SelectionResult" for the
+#     top-level class, "...NSS2SelectionResult$1ValueAndAdvice" for its nested
+#     one. '/' is NOT specially re-encoded — a literal '.' in the pattern
+#     means "any character", exactly like anywhere else in Java regex.
+#   - a bare "<name>.*" pattern therefore OVER-MATCHES: it also excludes an
+#     UNRELATED sibling class whose name simply starts with the same
+#     characters (confirmed: "...NSS2SelectionResult.*" also swallowed
+#     "...NSS2SelectionResultFooBar" — a distinct top-level class — because
+#     Matcher#matches() still succeeds when ".*" just consumes "FooBar" too).
+#   - the correct per-class pattern anchors the nested-class boundary
+#     EXPLICITLY: "<escaped-internal-name>(\$.*)?" — matches the class itself
+#     (the optional group empty) and any of its own nested classes (which
+#     start with a literal '$'), but nothing that merely shares a prefix.
+#     Verified: this pattern excluded NSS2SelectionResult (and would exclude
+#     its nested class if Vineflower ever rendered one as a separate file —
+#     it doesn't, by default, for a method-local class) while leaving
+#     NSS2SelectionResultFooBar alone.
+#   - multiple classes combine with Java regex alternation ('|'); '|' has the
+#     lowest precedence, so "A(\$.*)?|B(\$.*)?" parses as the two intended
+#     independent full-match alternatives, not something narrower.
+# re.escape (not a hand-rolled sed character class) escapes each class's own
+# internal name before this suffix is appended, so a name containing a regex
+# metacharacter (none exist in this corpus, but this must never silently
+# under-exclude one that did) can't corrupt the pattern.
+vf_build_excluded_classes_regex() {
+  python3 -c '
+import re, sys
+parts = [re.escape(n) + r"(\$.*)?" for n in sys.argv[1:]]
+print("|".join(parts), end="")
+' "$@"
+}
+
+# Best-effort secondary view (T24 step 3): re-decompiles just the hung class
+# group (each hung top-level class plus its own Name$* nested classes) with
+# --decompile-inner=false, so a local/anonymous/method-scoped class — the kind
+# that actually tends to hang Vineflower's inner-class handling — renders on
+# its own instead of being desugared invisibly inside its enclosing method.
+# Useful even when it still doesn't fully round-trip. NEVER fails the caller:
+# on timeout/error it just logs and leaves no output directory behind (a
+# reader must never mistake a half-written or stale noinner/ for a real one).
+#
+# $1=module $2=extracted_dir $3=dest_dir $4=budget $5=logfile, then a
+# Vineflower prefix command (N5_JAVA -jar N5_VINEFLOWER --log-level=error
+# [own flags incl. --decompile-inner=false] [-e=<lib CSV>]) up to a literal
+# "--" separator, then the hung top-level classes' internal names.
+vf_render_noinner_view() {
+  local module="$1" extracted_dir="$2" dest_dir="$3" budget="$4" logfile="$5"; shift 5
+  local -a cmd=()
+  while [[ "$#" -gt 0 && "$1" != "--" ]]; do
+    cmd+=("$1"); shift
+  done
+  [[ "$#" -gt 0 ]] && shift # drop the "--" separator
+  local -a hung=("$@")
+  [[ "${#hung[@]}" -gt 0 ]] || return 0
+
+  local tmpdir; tmpdir="$(mktemp -d)"
+  local c
+  {
+    for c in "${hung[@]}"; do
+      vf_classes_for_top_level "$extracted_dir" "$c"
+    done
+  } | sort -u | vf_build_subset_jar "$extracted_dir" "$tmpdir/hung.jar"
+
+  rm -rf "${dest_dir:?}"
+  local status
+  status="$(vf_run_timed "$tmpdir/hung.jar" "$dest_dir" "$budget" "$logfile" "${cmd[@]}")"
+  rm -rf "$tmpdir"
+  if [[ "$status" != "ok" ]]; then
+    log "$module" "T24 noinner view: $status, skipping (best-effort secondary view, never blocks the module)"
+    rm -rf "${dest_dir:?}"
+    return 1
+  fi
+  log "$module" "T24 noinner view: rendered $(find "$dest_dir" -name '*.java' 2>/dev/null | wc -l) file(s) for ${#hung[@]} hung class(es)"
+  return 0
+}
+
+# Orchestrates T24's whole response to a timed-out whole-jar primary run,
+# shared by decompile_module (v1) and decompile_module_variant (v2/cons).
+# Returns 0 and sets VFH_PRIMARY_STATUS/VFH_PRIMARY_TIME/VFH_FALLBACK_USED/
+# VFH_FALLBACK_REASON when isolation resolved it (primary_status=
+# "ok_with_excluded"); returns 1 (the caller must keep ITS OWN original
+# whole-module-CFR-fallback behavior exactly) when it did not. Either way,
+# always sets VFH_ISOLATION_STATUS, VFH_ISOLATE_TIME and VFH_EXCLUDED_CLASSES
+# (an array, possibly empty) — the caller records these in recon.json
+# regardless of outcome (forensics: WHY isolation didn't help matters as much
+# as when it did).
+#
+# $1=module $2=moddir $3=jar (the REAL module jar) $4=out_dir_name (the
+# primary tree, e.g. "vineflower") $5=fallback_dir_name (e.g. "fallback")
+# $6=noinner_dir_name (e.g. "vineflower-noinner"; pass "" to skip the
+# secondary view entirely — no caller does, but keeps this function usable
+# without it) $7=logfile $8=dash_e ("-e=<lib CSV>", or "" for v1's no library
+# context) $9=cfr_extraclasspath (the SAME lib CSV colon-joined for CFR's
+# --extraclasspath, or "" for v1), then "$@" (from $10) = the variant's own
+# "Additional option" flags, in order, EXCLUDING --log-level=error (always
+# added) and EXCLUDING -e/--add-external (dash_e is appended separately, last,
+# per the header's "Undocumented Vineflower 1.12.0 CLI ordering requirement" —
+# every Additional option, including --excluded-classes/--decompile-inner,
+# MUST precede -e for Vineflower to actually apply it).
+vf_handle_primary_timeout() {
+  local module="$1" moddir="$2" jar="$3" out_dir_name="$4" fallback_dir_name="$5" \
+        noinner_dir_name="$6" logfile="$7" dash_e="$8" cfr_extraclasspath="$9"
+  shift 9
+  local -a own_flags=("$@")
+  local extracted_dir="$moddir/extracted"
+
+  local -a isolate_prefix=("$N5_JAVA" -jar "$N5_VINEFLOWER" --log-level=error)
+  [[ "${#own_flags[@]}" -gt 0 ]] && isolate_prefix+=("${own_flags[@]}")
+  [[ -n "$dash_e" ]] && isolate_prefix+=("$dash_e")
+
+  vf_isolate_hung_classes "$module" "$extracted_dir" "$N5_ISOLATE_TIMEOUT" "$logfile" "${isolate_prefix[@]}"
+  VFH_ISOLATE_TIME="$VF_ISOLATE_TIME"
+  VFH_EXCLUDED_CLASSES=("${VF_ISOLATE_HUNG_CLASSES[@]}")
+
+  if [[ "$VF_ISOLATE_STATUS" != "isolated" ]]; then
+    VFH_ISOLATION_STATUS="no_hung_class_found"
+    log "$module" "T24: no single hung class found in ${VFH_ISOLATE_TIME}s, keeping whole-module CFR fallback"
+    return 1
+  fi
+  log "$module" "T24: found ${#VFH_EXCLUDED_CLASSES[@]} hung class(es) in ${VFH_ISOLATE_TIME}s: ${VFH_EXCLUDED_CLASSES[*]}"
+
+  local regex; regex="$(vf_build_excluded_classes_regex "${VFH_EXCLUDED_CLASSES[@]}")"
+  local -a rerun_cmd=("$N5_JAVA" -jar "$N5_VINEFLOWER" --log-level=error)
+  [[ "${#own_flags[@]}" -gt 0 ]] && rerun_cmd+=("${own_flags[@]}")
+  rerun_cmd+=("--excluded-classes=$regex")
+  [[ -n "$dash_e" ]] && rerun_cmd+=("$dash_e")
+
+  rm -rf "${moddir:?}/$out_dir_name"
+  mkdir -p "$moddir/$out_dir_name"
+  local t0 t1 rerun_time rerun_status
+  t0="$(date +%s)"
+  rerun_status="$(vf_run_timed "$jar" "$moddir/$out_dir_name" "$N5_PRIMARY_TIMEOUT" "$logfile" "${rerun_cmd[@]}")"
+  t1="$(date +%s)"
+  rerun_time=$(( t1 - t0 ))
+
+  if [[ "$rerun_status" != "ok" ]]; then
+    VFH_ISOLATION_STATUS="excluded_rerun_${rerun_status}"
+    log "$module" "T24: excluded re-run $rerun_status after ${rerun_time}s, keeping whole-module CFR fallback"
+    return 1
+  fi
+  log "$module" "T24: excluded re-run ok in ${rerun_time}s, $(find "$moddir/$out_dir_name" -name '*.java' | wc -l) file(s)"
+
+  # per-hung-class CFR fallback: same convention as the existing
+  # per-class "decompiler-failure marker" branch below — feed CFR the
+  # top-level .class file alone; it resolves nested classes from the
+  # same directory on its own.
+  mkdir -p "$moddir/$fallback_dir_name"
+  local hung classfile
+  for hung in "${VFH_EXCLUDED_CLASSES[@]}"; do
+    classfile="$extracted_dir/$hung.class"
+    [[ -f "$classfile" ]] || continue
+    local -a cfr_cmd=("$N5_JAVA" -jar "$N5_CFR" "$classfile" --outputdir "$moddir/$fallback_dir_name" --silent true)
+    [[ -n "$cfr_extraclasspath" ]] && cfr_cmd+=(--extraclasspath "$cfr_extraclasspath")
+    { printf 'CMD:'; printf ' %q' "${cfr_cmd[@]}"; printf '\n'; } >> "$logfile"
+    "${cfr_cmd[@]}" >> "$logfile" 2>&1 || log "$module" "T24 fallback(cfr) for hung class $hung also failed"
+  done
+
+  if [[ -n "$noinner_dir_name" ]]; then
+    local -a noinner_cmd=("$N5_JAVA" -jar "$N5_VINEFLOWER" --log-level=error)
+    [[ "${#own_flags[@]}" -gt 0 ]] && noinner_cmd+=("${own_flags[@]}")
+    noinner_cmd+=(--decompile-inner=false)
+    [[ -n "$dash_e" ]] && noinner_cmd+=("$dash_e")
+    vf_render_noinner_view "$module" "$extracted_dir" "$moddir/$noinner_dir_name" "$N5_ISOLATE_TIMEOUT" "$logfile" \
+      "${noinner_cmd[@]}" -- "${VFH_EXCLUDED_CLASSES[@]}"
+  fi
+
+  VFH_PRIMARY_STATUS="ok_with_excluded"
+  VFH_PRIMARY_TIME="$rerun_time"
+  VFH_FALLBACK_USED="true"
+  VFH_FALLBACK_REASON="primary_hang_isolated"
+  VFH_ISOLATION_STATUS="isolated"
+  return 0
 }
 
 # ---------------------------------------------------------------------------
@@ -336,26 +753,42 @@ decompile_module() {
   log "$module" "primary(vineflower) status=$primary_status time=${primary_time}s"
 
   local fallback_used="false" fallback_reason="none"
+  local excluded_classes_json="[]" isolate_time="0" isolation_status="" timeout_attempt_time=""
   local produced
   produced="$(find "$moddir/vineflower" -name '*.java' | wc -l)"
 
-  if [[ "$primary_status" != "ok" ]] || [[ "$produced" -eq 0 && "$class_count" -gt 0 ]]; then
-    # whole-jar fallback to CFR — primary either failed outright or hung with zero output
-    fallback_used="true"
-    fallback_reason="primary_${primary_status}_whole_module"
-    log "$module" "fallback(cfr) whole-module reason=$fallback_reason"
-    mkdir -p "$moddir/fallback"
-    "$N5_JAVA" -jar "$N5_CFR" "$jar" --outputdir "$moddir/fallback" --silent true \
-      >> "$LOG_DIR/$module.log" 2>&1 || log "$module" "fallback(cfr) also failed"
-  else
-    # primary produced output for the whole jar; scan for the decompiler's own
-    # failure markers (not application log strings) and re-run just those classes
-    # through CFR into fallback/.
+  # T24: a hung whole-jar run gets ONE isolation attempt before falling back
+  # to whole-module CFR — see vf_handle_primary_timeout's doc comment. v1 has
+  # no library context at all (no -e, no --extraclasspath).
+  if [[ "$primary_status" == "timeout" ]]; then
+    timeout_attempt_time="$primary_time"
+    local -a v1_own_flags=()
+    if vf_handle_primary_timeout "$module" "$moddir" "$jar" "vineflower" "fallback" \
+        "vineflower-noinner" "$LOG_DIR/$module.log" "" "" "${v1_own_flags[@]}"; then
+      primary_status="$VFH_PRIMARY_STATUS"
+      primary_time="$VFH_PRIMARY_TIME"
+      fallback_used="$VFH_FALLBACK_USED"
+      fallback_reason="$VFH_FALLBACK_REASON"
+    fi
+    isolation_status="$VFH_ISOLATION_STATUS"
+    isolate_time="$VFH_ISOLATE_TIME"
+    excluded_classes_json="$(python3 -c 'import json,sys; print(json.dumps(sys.argv[1:]))' "${VFH_EXCLUDED_CLASSES[@]}")"
+    produced="$(find "$moddir/vineflower" -name '*.java' | wc -l)"
+  fi
+
+  if [[ "$primary_status" == "ok" || "$primary_status" == "ok_with_excluded" ]] \
+      && [[ "$produced" -gt 0 || "$class_count" -eq 0 ]]; then
+    # primary produced output for the whole jar (either the plain run, or
+    # T24's excluded re-run); scan for the decompiler's own failure markers
+    # (not application log strings) left in ANY class it did decompile — a
+    # hung class isn't the only way one can fail — and re-run just those
+    # through CFR into fallback/, on top of whatever T24 already put there
+    # for the hung class(es) themselves.
     local marker_files
     marker_files="$(scan_marker_files "$moddir/vineflower")"
     if [[ -n "$marker_files" ]]; then
       fallback_used="true"
-      fallback_reason="per_class_decompiler_marker"
+      [[ "$fallback_reason" == "none" ]] && fallback_reason="per_class_decompiler_marker"
       mkdir -p "$moddir/fallback"
       local n=0
       while IFS= read -r javafile; do
@@ -371,10 +804,20 @@ decompile_module() {
       done <<< "$marker_files"
       log "$module" "fallback(cfr) per-class reran $n classes flagged by primary"
     fi
+  else
+    # whole-jar fallback to CFR — primary either failed outright, or hung and
+    # T24's isolation+excluded-rerun did not resolve it either.
+    fallback_used="true"
+    fallback_reason="primary_${primary_status}_whole_module"
+    log "$module" "fallback(cfr) whole-module reason=$fallback_reason"
+    mkdir -p "$moddir/fallback"
+    "$N5_JAVA" -jar "$N5_CFR" "$jar" --outputdir "$moddir/fallback" --silent true \
+      >> "$LOG_DIR/$module.log" 2>&1 || log "$module" "fallback(cfr) also failed"
   fi
 
   write_recon "$module" "$jar" "$moddir" "$primary_status" "$primary_time" \
-    "$fallback_used" "$fallback_reason" "$class_count"
+    "$fallback_used" "$fallback_reason" "$class_count" \
+    "$excluded_classes_json" "$isolate_time" "$isolation_status" "$timeout_attempt_time"
   log "$module" "done"
 }
 
@@ -939,6 +1382,12 @@ write_recon_variant() {
         primary_time="$7" fallback_used="$8" fallback_reason="$9"
   shift 9
   local status="$1" idempotency_key="$2" out_dir_name="$3"
+  # T24 (optional, all default to "isolation never ran"): $4=excluded_classes as
+  # a JSON array string, $5=isolate_time_seconds, $6=isolation_status (only
+  # ever non-empty when the whole-jar run originally timed out), $7=
+  # primary_timeout_attempt_seconds. See vf_handle_primary_timeout's doc comment.
+  local excluded_classes_json="${4:-[]}" isolate_time="${5:-0}" \
+        isolation_status="${6:-}" timeout_attempt_time="${7:-}"
   local vf_sha cfr_sha vf_version cfr_version flags_json
   vf_sha="$(sha256_of "$N5_VINEFLOWER")"
   cfr_sha="$(sha256_of "$N5_CFR")"
@@ -967,6 +1416,10 @@ write_recon_variant() {
   RECON_MARKERS="$markers" \
   RECON_STATUS="$status" \
   RECON_IDEMPOTENCY_KEY="$idempotency_key" \
+  RECON_EXCLUDED_CLASSES_JSON="$excluded_classes_json" \
+  RECON_ISOLATE_TIME="$isolate_time" \
+  RECON_ISOLATION_STATUS="$isolation_status" \
+  RECON_TIMEOUT_ATTEMPT_TIME="$timeout_attempt_time" \
   python3 <<'PYEOF'
 import json, os
 
@@ -1001,7 +1454,15 @@ recon[key] = {
     "decompile_failure_markers": int(os.environ["RECON_MARKERS"]),
     "status": os.environ["RECON_STATUS"],
     "idempotency_key": os.environ["RECON_IDEMPOTENCY_KEY"],
+    "excluded_classes": json.loads(os.environ["RECON_EXCLUDED_CLASSES_JSON"]),
+    "isolate_time_seconds": int(os.environ["RECON_ISOLATE_TIME"]),
 }
+_isolation_status = os.environ.get("RECON_ISOLATION_STATUS", "")
+if _isolation_status:
+    recon[key]["isolation_status"] = _isolation_status
+_timeout_attempt = os.environ.get("RECON_TIMEOUT_ATTEMPT_TIME", "")
+if _timeout_attempt:
+    recon[key]["primary_timeout_attempt_seconds"] = int(_timeout_attempt)
 
 with open(path, "w") as fh:
     json.dump(recon, fh, indent=2)
@@ -1141,23 +1602,38 @@ print(d.get(os.environ['RECON_KEY'], {}).get('status', ''))
   log "$module" "$variant_label primary(vineflower) status=$primary_status time=${primary_time}s"
 
   local fallback_used="false" fallback_reason="none"
+  local excluded_classes_json="[]" isolate_time="0" isolation_status="" timeout_attempt_time=""
   local produced
   produced="$(find "$moddir/$out_dir_name" -name '*.java' | wc -l)"
 
-  if [[ "$primary_status" != "ok" ]] || [[ "$produced" -eq 0 && "$class_count" -gt 0 ]]; then
-    fallback_used="true"
-    fallback_reason="primary_${primary_status}_whole_module"
-    log "$module" "$variant_label fallback(cfr) whole-module reason=$fallback_reason"
-    mkdir -p "$moddir/$fallback_dir_name"
-    local cfr_cmd=("$N5_JAVA" -jar "$N5_CFR" "$jar" --outputdir "$moddir/$fallback_dir_name" --silent true --extraclasspath "$V2_LIB_COLON")
-    { printf 'CMD:'; printf ' %q' "${cfr_cmd[@]}"; printf '\n'; } >> "$LOG_DIR/$module.$variant_label.log"
-    "${cfr_cmd[@]}" >> "$LOG_DIR/$module.$variant_label.log" 2>&1 || log "$module" "$variant_label fallback(cfr) also failed"
-  else
+  # T24: a hung whole-jar run gets ONE isolation attempt before falling back
+  # to whole-module CFR — see vf_handle_primary_timeout's doc comment. v2/cons
+  # share this variant's own flag set ("$@") + --include-runtime, and the
+  # SAME -e=<lib CSV>/--extraclasspath library context the plain run used.
+  if [[ "$primary_status" == "timeout" ]]; then
+    timeout_attempt_time="$primary_time"
+    local -a variant_own_flags=("--include-runtime=$N5_JDK25_HOME" "$@")
+    if vf_handle_primary_timeout "$module" "$moddir" "$jar" "$out_dir_name" "$fallback_dir_name" \
+        "${out_dir_name}-noinner" "$LOG_DIR/$module.$variant_label.log" "-e=$V2_LIB_CSV" "$V2_LIB_COLON" \
+        "${variant_own_flags[@]}"; then
+      primary_status="$VFH_PRIMARY_STATUS"
+      primary_time="$VFH_PRIMARY_TIME"
+      fallback_used="$VFH_FALLBACK_USED"
+      fallback_reason="$VFH_FALLBACK_REASON"
+    fi
+    isolation_status="$VFH_ISOLATION_STATUS"
+    isolate_time="$VFH_ISOLATE_TIME"
+    excluded_classes_json="$(python3 -c 'import json,sys; print(json.dumps(sys.argv[1:]))' "${VFH_EXCLUDED_CLASSES[@]}")"
+    produced="$(find "$moddir/$out_dir_name" -name '*.java' | wc -l)"
+  fi
+
+  if [[ "$primary_status" == "ok" || "$primary_status" == "ok_with_excluded" ]] \
+      && [[ "$produced" -gt 0 || "$class_count" -eq 0 ]]; then
     local marker_files
     marker_files="$(scan_marker_files "$moddir/$out_dir_name")"
     if [[ -n "$marker_files" ]]; then
       fallback_used="true"
-      fallback_reason="per_class_decompiler_marker"
+      [[ "$fallback_reason" == "none" ]] && fallback_reason="per_class_decompiler_marker"
       mkdir -p "$moddir/$fallback_dir_name"
       local n=0
       while IFS= read -r javafile; do
@@ -1174,6 +1650,16 @@ print(d.get(os.environ['RECON_KEY'], {}).get('status', ''))
       done <<< "$marker_files"
       log "$module" "$variant_label fallback(cfr) per-class reran $n classes flagged by primary"
     fi
+  else
+    # whole-jar fallback to CFR — primary either failed outright, or hung and
+    # T24's isolation+excluded-rerun did not resolve it either.
+    fallback_used="true"
+    fallback_reason="primary_${primary_status}_whole_module"
+    log "$module" "$variant_label fallback(cfr) whole-module reason=$fallback_reason"
+    mkdir -p "$moddir/$fallback_dir_name"
+    local cfr_cmd=("$N5_JAVA" -jar "$N5_CFR" "$jar" --outputdir "$moddir/$fallback_dir_name" --silent true --extraclasspath "$V2_LIB_COLON")
+    { printf 'CMD:'; printf ' %q' "${cfr_cmd[@]}"; printf '\n'; } >> "$LOG_DIR/$module.$variant_label.log"
+    "${cfr_cmd[@]}" >> "$LOG_DIR/$module.$variant_label.log" 2>&1 || log "$module" "$variant_label fallback(cfr) also failed"
   fi
 
   # T19 fix, requirement 4: a module where BOTH decompilers produced nothing
@@ -1188,7 +1674,8 @@ print(d.get(os.environ['RECON_KEY'], {}).get('status', ''))
   fi
 
   write_recon_variant "$recon_key" "$module" "$moddir" "$jar" "$sha" "$primary_status" "$primary_time" \
-    "$fallback_used" "$fallback_reason" "$status" "$idempotency_key" "$out_dir_name"
+    "$fallback_used" "$fallback_reason" "$status" "$idempotency_key" "$out_dir_name" \
+    "$excluded_classes_json" "$isolate_time" "$isolation_status" "$timeout_attempt_time"
 
   if [[ "$status" == "failed" ]]; then
     log "$module" "$variant_label FAILED: both Vineflower and CFR produced zero output for $class_count classes"

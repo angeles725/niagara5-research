@@ -116,12 +116,27 @@ make the decompile complete and as faithful as possible.
       N5_MODULES_DIR + N5_BIN_EXT_DIR with exit 2 BEFORE touching the cache, so a mistyped/unmounted path can never
       publish a "complete" cache that strips all LIB-INF context. GREEN: 13/13 libcache tests, shellcheck clean.
       Route: inline (one script + one test).
-- [ ] T24 bajaui whole-module Vineflower timeout (found during the T22 line-mapping spot check): `bajaui` (832 classes)
-      is the ONLY module whose primary Vineflower run hit N5_PRIMARY_TIMEOUT=240 s in all three variants (v1 265 s,
-      v2 265 s, cons 268 s; recon.json primary_status=timeout, fallback_reason=primary_timeout_whole_module), so its
-      566 top-level sources in every tree are CFR, not Vineflower. Trial: same v2 command with a 3600 s budget. Then
-      re-run bajaui v1/v2/cons with the budget that completes (or `--max-time-per-method`) and re-check the
-      StyleUtils line mapping. Route: inline.
+- [x] T24 bajaui whole-module Vineflower timeout (found during the T22 line-mapping spot check; TDD, bats,
+      strict-TDD writer): root cause isolated by per-package then per-class bisection to exactly ONE class,
+      `com/tridium/ui/theme/custom/nss/query/NSS2SelectionResult` (its method-local record
+      `NSS2SelectionResult$1ValueAndAdvice` hangs Vineflower's ClassWriter.writeClass forever). Fix (shared by v1/v2/
+      cons, no copy-paste — `vf_handle_primary_timeout`/`vf_isolate_hung_classes`/`vf_build_excluded_classes_regex`/
+      `vf_render_noinner_view` in tools/n5-decompile.sh): on a whole-jar timeout, bisect by package then by top-level
+      class (own N5_ISOLATE_TIMEOUT budget, default 90s), re-run the whole jar ONCE with Vineflower's
+      `--excluded-classes=<regex>` excluding exactly the hung class(es) (regex semantics — FULL match against the
+      `/`-separated internal name — verified empirically against the real vineflower-1.12.0.jar, not guessed), CFR
+      for the hung class(es), plus a best-effort `--decompile-inner=false` secondary view
+      (`vineflower*-noinner/`). New env var N5_ISOLATE_TIMEOUT (default 90s), new recon.json fields
+      (`primary_status: ok_with_excluded`, `fallback_reason: primary_hang_isolated`, `excluded_classes`,
+      `isolate_time_seconds`, `primary_timeout_attempt_seconds`, `isolation_status`); a hang that can't be isolated
+      keeps today's original whole-module-CFR behavior exactly, with `isolation_status` explaining why. Real bajaui
+      re-run on the local mirror, all three variants: `primary_status=ok_with_excluded`,
+      `excluded_classes=[NSS2SelectionResult]`, 565/566 top-level `.java` in the primary tree (v1/v2/cons), 1 file in
+      fallback, 2 files in the noinner secondary view. Found and fixed one real bug along the way (not just a test
+      artifact): bash 5.2 raises "bad array subscript" on an empty-string associative-array key, which real
+      bajaui's `module-info.class` (no package) hits — covered by a dedicated regression test (T24e) and fixed by
+      not using an associative array for package dedup. Evidence: docs/decompiler-bakeoff.md's "Resolved (T24)"
+      bullet; tools/tests/n5-decompile.bats T24a-T24e. Route: delegated writer (TDD, bats).
 
 ## Maximum decompile fidelity (user requirement 2026-09-28: "the decompile must be right, no inventions, not tainted; try everything possible")
 - [x] T13 Integrity + completeness census [CERT-hw]: 252 recon.json (247 modules + bin/ext) — 0 jar sha256 mismatches vs the
