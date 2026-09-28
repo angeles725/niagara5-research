@@ -7,7 +7,9 @@
 | File | Type | Origin (URL) | Date (UTC) | sha256 | Blocks that cite it |
 |---|---|---|---|---|---|
 | datasheets/example.pdf | datasheet | https://... | 2026-06-28T00:00:00Z | abc123… | [Block K] |
-| /mnt/c/Program Files/Niagara/5.0.0.28/NCS-Agent/tridium-ncs-supervisor-amd64-windows.exe | N5 native (Go) | local N5 beta install | 2026-09-28 (date only; hashed in-session by the B96 writer) | e459956a71949d8feeb4e98eba500d790e29ace2f547c822113620a2658b8ac7 | [Block 96] |
+| /mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules/docDeveloperAnalytics.jar | N5 module jar | local N5 beta install (config home) | 2026-09-28 (date only; hashed in-session by the B103 writer) | ef014405671bf945b0505c356fae433d2a40178bb507e8ac737bb5282276f6f8 | [Block 103] |
+| /mnt/c/Program Files/Niagara/5.0.0.28/jre/bin/javac.exe | N5 bundled JDK tool | local N5 beta install | 2026-09-28 (date only; hashed in-session by the B101 writer) | 355c3f45fdffdf5f4f37fe27a32f5eba125b243d20d280a79e54ef33d360366b | [Block 101] |
+| /mnt/c/Program Files/Niagara/5.0.0.28/NCS-Agent/tridium-ncs-supervisor-amd64-windows.exe | N5 native (Go) | local N5 beta install | 2026-09-28 (date only; hashed in-session by the B96 writer) | e459956a71949d8feeb4e98eba500d790e29ace2f547c822113620a2658b8ac7 | [Block 96], [Block 100] |
 | /mnt/c/Program Files/Niagara/5.0.0.28/jre/lib/security/cacerts | N5 truststore (metadata only) | local N5 beta install | 2026-09-28 (date only; hashed in-session by the B94 writer) | 9b5319f17ab786587c2d1729a3b54b8cb9ef1a5acb9199f8a4660491e531e701 | [Block 94] |
 | /mnt/c/PowerB/PowerB-4.15.3.28/bin/ext/nre.jar | N4-4.15 jar | local OEM install (PowerB 4.15.3.28) | 2026-09-28 (date only; hashed in-session by the B84/B87 writers) | 4340f0f6777f6886aba8d6d07eb83e84d02dba7bac980374fe82c792f2670d1f | [Block 84] |
 | /mnt/c/PowerB/PowerB-4.15.3.28/modules/baja.jar | N4-4.15 jar | local OEM install | 2026-09-28 (date only; hashed in-session by the B84/B87 writers) | a58f5ce91d92fa3c35117bb7fd76445ee1afdf4cb5209c80525347c0aee95263 | [Block 84] |
@@ -23,6 +25,7 @@
 | manuals/tri-niagara-summit-2026-session-dd3.pdf | manuals | https://www.tridium.com/content/dam/tridium/en/documents/niagara-summit-2026/developer/tri-niagara-summit-2026-session-dd3.pdf | 2026-09-28T01:15:31Z | 223e328c09d303182a694d12e4bb0ebea9d0b77dadfadfb6b1cdafb98d8ad664 | [Block 93] |
 | manuals/2023-03-23-Customer-Loyalty-Program-QA.pdf | manuals | https://www.tridium.com/content/dam/tridium/en/documents/events/2023-03-23-Customer-Loyalty-Program-QA.pdf | 2026-09-28T01:22:52Z | 287928ca365934718d119231aefcf1d089c13e3ba898cd7a61a68a0b6fe1e045 | [Block 93] |
 | manuals/2023-03-23-Customer-Loyalty-Program-QA-update.pdf | manuals | https://www.tridium.com/content/dam/tridium/en/documents/events/2023-03-23-Customer-Loyalty-Program-QA-update.pdf | 2026-09-28T01:22:52Z | 5ef82eaa4ec3244d454355f2363b55664bb6f35291bee90f0f0300460194ffc6 | [Block 93] |
+| manuals/niagara_cloud_backup_as_a_service_8-7-2025.pdf | manuals | https://downloads.onesight.solutions/Tridium/Niagara%204%20Documents/niagara_cloud_backup_as_a_service_8-7-2025.pdf | 2026-09-28T02:12:10Z | 1fc15f2211f31389e80963f48e3b61741858eae0510b59f499120b0474cf752b | [Block 106] |
 
 > **Non-preserved local install artifacts.** Rows whose File column is an absolute `/mnt/c/...` path or an
 > `N5 bin/...` label are licensed, proprietary install binaries that are NOT copied into this repository.
