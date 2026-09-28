@@ -482,6 +482,12 @@ class TestJavapFailureIsNeverAMatch(unittest.TestCase):
         with self.assertRaises(mod.JavapError):
             mod.run_javap("/nonexistent/definitely/missing.class")
 
+    def test_run_javap_raises_when_javap_binary_is_missing(self):
+        # CI runners have no JDK at the local path: a missing javap must be a typed JavapError too.
+        mod = _load()
+        with self.assertRaises(mod.JavapError):
+            mod.run_javap("/nonexistent/X.class", javap_bin="/nonexistent/bin/javap")
+
     def test_run_javap_raises_on_empty_output(self):
         mod = _load()
         with tempfile.TemporaryDirectory() as d:

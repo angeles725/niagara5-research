@@ -282,8 +282,11 @@ class JavapError(RuntimeError):
 
 
 def run_javap(class_bytes_path: str, javap_bin: str = JAVAP25) -> str:
-    proc = subprocess.run([javap_bin, "-p", "-c", class_bytes_path],
-                          capture_output=True, text=True, check=False)
+    try:
+        proc = subprocess.run([javap_bin, "-p", "-c", class_bytes_path],
+                              capture_output=True, text=True, check=False)
+    except OSError as e:  # javap binary missing or not executable
+        raise JavapError(f"javap not runnable ({javap_bin}): {e}") from e
     if proc.returncode != 0 or not proc.stdout.strip():
         raise JavapError(f"javap rc={proc.returncode} on {class_bytes_path}: {proc.stderr.strip()[:300]}")
     return proc.stdout
