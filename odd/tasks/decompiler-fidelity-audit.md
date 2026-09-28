@@ -66,6 +66,35 @@ MECHANICAL and fail closed:
 - [x] T11 (d458bc1) Versioned writer prompt docs/writer-prompt.md (replaces the session-scratch common.txt) with the checklist.
 - [ ] T12 Orchestrator-side memory: feedback memory + engram; retro kit deltas (T6) mirror R1-R6 into METHODOLOGY proposals.
 
+## RESUME HERE (written 2026-09-28 before a context compact)
+State: branch feat/n5-wave14 pushed; draft PR #15 open (CI was green at d9a6f9b; re-check after bb58475).
+Commits after PR#14 (all tools commits RDD-approved+acknowledged unless noted): 9523a9e B116 · f4e49f8 census ·
+7bc188c B117 · 16fc6a8 grader · 1791db1 v2 · 1ad56eb xref · b8eebcd B118 · 9592b82 porting-guide fix · f591074
+upstream-sources · 1e44e71 v2 hardening · 0aaae58/d9a6f9b javap fixes · 6fb316d tests · 80c5f90 T20 (range RDD
+review-6f1c46518f56b786 approved) · 97a5d23 compare-skips (NOT yet RDD-reviewed) · bb58475 cons + extra-tridium (NOT yet
+RDD-reviewed).
+Running at compact time: `bash /tmp/run-cons-campaign.sh` (log /tmp/cons-campaign.log; phases: cons over 247 modules
+-P 6 → cons --bin-ext → --extra-tridium; prints ALL_DONE). Also a bats run: scratchpad/bats-t22.log (ends EXIT=<rc>).
+Next steps, in order:
+1. Wait for ALL_DONE in /tmp/cons-campaign.log (if the process died: re-run the same script; it is idempotent).
+   Verify: count organized/*/vineflower-cons (expect 247 minus class-less modules), organized/_etc-m2/* + _lib/* (10 jars),
+   organized/*/lib-inf/*; recon.json cons.status all ok.
+2. Run the line-mapping spot check /tmp/linecheck-t22.py (adapted from evidence/b118/linecheck.py; classes
+   BNumericWritable, StyleUtils, ValueDocDecoder, Column) — mapped `// N` must match docSource lines; record result.
+3. Fill the "Campaign run" numbers in docs/decompiler-bakeoff.md (T22 section), commit.
+4. Confirm bats-t22.log EXIT=0.
+5. RDD range review 80c5f90..HEAD (covers 97a5d23, bb58475, docs) in a clean worktree under
+   /home/cristian/niagara5-research-worktrees/rdd-<sha>; read advisories, verify, fix real ones (TDD).
+6. Push, mark PR #15 ready, wait for green CI (`gh pr checks 15`), merge via REST if GraphQL fails:
+   `gh api -X PUT repos/angeles725/niagara5-research/pulls/15/merge -f merge_method=merge`.
+7. Final single notice to the user with verified numbers (user asked for ONE notice when pipeline + verification done).
+Deferred to next session (user decision): all research child gaps (B115-B118 G*), T16 lint R9, T16b docs lint,
+T18b xref hardening, T21 full-corpus grading, grader report follow-ups, upstream-sources integration test.
+Key verified numbers: B116 11/36,977 Vineflower semantic defects (D1-D11); v2 fixes D4/D5; grader sample 192 classes:
+v1 124 exact, v2 125, 0 worse; docSource 3,707 classes byte-identical; B117 21,751 classes byte-exact, 356 jars signed,
+Authenticode 20/20; upstream sources 154/154, 92.4% third-party classes; krak2 -r byte-identical; jar mirror
+niagara5-research-localcache/jar-mirror-5.0.0.28 (sha256-verified, ~4.3x faster grading).
+
 ## Session focus change (user, 2026-09-28)
 Research child gaps (B115-B118 G*) are deferred to the next session. Remaining work in THIS session: verify v1 vs v2,
 make the decompile complete and as faithful as possible.
@@ -74,7 +103,7 @@ make the decompile complete and as faithful as possible.
       class names across modules must not be dropped silently (R2-002); --cha must accept subtype receivers that inherit the
       method (R3-001, current result can MISS callers); surface parse_errors in every subcommand (R4). Until fixed, treat its
       caller lists as lower bounds.
-- [~] T22 Completeness (third-party half DONE f591074: 154/154 upstream -sources.jar, 92.4% class coverage; Tridium half + conservative tree delegated): decompile (v2 + conservative line-mapped view) the 10 out-of-pipeline Tridium jars (etc/m2, lib doclet)
+- [~] T22 Completeness (code bb58475; Tridium-half campaign RUNNING at compact time) (third-party half DONE f591074: 154/154 upstream -sources.jar, 92.4% class coverage; Tridium half + conservative tree delegated): decompile (v2 + conservative line-mapped view) the 10 out-of-pipeline Tridium jars (etc/m2, lib doclet)
       and the Tridium-owned nested LIB-INF jars; for identified third-party jars fetch the upstream -sources.jar by exact
       Maven coordinates (original source beats any decompile); record per-class best representation. Route: delegated,
       after T19b lands (same script).
