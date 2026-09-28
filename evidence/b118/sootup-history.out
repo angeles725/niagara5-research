@@ -1,0 +1,34 @@
+ENTRY loaded: com.tridium.history.fox.BFoxHistorySpace methods=28
+SITE void navEvent(niagara.nav.NavEvent) line=293 : <com.tridium.history.BRootHistoryFolder: niagara.security.BPermissions getPermissions(niagara.sys.Context)>
+SITE void navEvent(niagara.nav.NavEvent) line=356 : <com.tridium.history.BRootHistoryFolder: niagara.security.BPermissions getPermissions(niagara.sys.Context)>
+SITE void navEvent(niagara.nav.NavEvent) line=399 : <com.tridium.history.BRootHistoryFolder: niagara.security.BPermissions getPermissions(niagara.sys.Context)>
+CHA calls=18196 methods=9282 t=2.1s
+  CHA navEvent -> <com.tridium.history.BRootHistoryFolder: niagara.security.BPermissions getPermissions(niagara.sys.Context)>
+RTA calls=540 methods=181 t=0.1s
+  RTA navEvent -> <com.tridium.history.BRootHistoryFolder: niagara.security.BPermissions getPermissions(niagara.sys.Context)>
+TARGET subtypes (whole install): []
+WHOCALLS scanned classes=31688 bodies=262982 bodyFailures=0 t=86.7s
+WHOCALLS exact-owner sites=5
+  EXACT com.tridium.history.fox.BFoxHistorySpace.navEvent:293 -> <com.tridium.history.BRootHistoryFolder: niagara.security.BPermissions getPermissions(niagara.sys.Context)>
+  EXACT com.tridium.history.fox.BFoxHistorySpace.navEvent:356 -> <com.tridium.history.BRootHistoryFolder: niagara.security.BPermissions getPermissions(niagara.sys.Context)>
+  EXACT com.tridium.history.fox.BFoxHistorySpace.navEvent:399 -> <com.tridium.history.BRootHistoryFolder: niagara.security.BPermissions getPermissions(niagara.sys.Context)>
+  EXACT niagara.history.BHistorySpace.getNavChildren:194 -> <com.tridium.history.BRootHistoryFolder: niagara.security.BPermissions getPermissions(niagara.sys.Context)>
+  EXACT niagara.history.BHistorySpace.getNavChildren:205 -> <com.tridium.history.BRootHistoryFolder: niagara.security.BPermissions getPermissions(niagara.sys.Context)>
+WHOCALLS via-supertype-owner sites (CHA-may-dispatch)=42
+  SUPER com.tridium.lonworks.discover.LonLearnUtil.doUpdateDiscoveryRows:66 -> <niagara.security.BIProtected: niagara.security.BPermissions getPermissions(niagara.sys.Context)>
+  SUPER com.tridium.lonworks.discover.LonLearnUtil.addElementRows:132 -> <niagara.security.BIProtected: niagara.security.BPermissions getPermissions(niagara.sys.Context)>
+  SUPER com.tridium.history.BHistory.getPropertySource:2364 -> <niagara.security.BIProtected: niagara.security.BPermissions getPermissions(niagara.sys.Context)>
+  SUPER com.tridium.batchJob.ux.BBatchJobRpcUtil.getJobOrd:192 -> <niagara.security.BIProtected: niagara.security.BPermissions getPermissions(niagara.sys.Context)>
+  SUPER com.tridium.batchJob.ux.BBatchJobRpcUtil.cancelJobs:222 -> <niagara.security.BIProtected: niagara.security.BPermissions getPermissions(niagara.sys.Context)>
+  SUPER com.tridium.util.NiagaraRpcUtil.rpc:240 -> <niagara.security.BIProtected: niagara.security.BPermissions getPermissions(niagara.sys.Context)>
+  SUPER com.tridium.util.NiagaraRpcUtil.rpc:264 -> <niagara.security.BIProtected: niagara.security.BPermissions getPermissions(niagara.sys.Context)>
+  SUPER com.tridium.util.NiagaraRpcUtil.rpc:287 -> <niagara.security.BIProtected: niagara.security.BPermissions getPermissions(niagara.sys.Context)>
+  SUPER com.tridium.queryTable.hx.BHxQueryTableView.hasPermissionsFor:458 -> <niagara.security.BIProtected: niagara.security.BPermissions getPermissions(niagara.sys.Context)>
+  SUPER com.tridium.history.fox.BHistoryChannel.getPermissionsByOrd:3093 -> <niagara.security.BIProtected: niagara.security.BPermissions getPermissions(niagara.sys.Context)>
+  SUPER com.tridium.box.BServerSessionHandler.checkReadPermissions:213 -> <niagara.security.BIProtected: niagara.security.BPermissions getPermissions(niagara.sys.Context)>
+  SUPER com.tridium.box.BServerSessionHandler.hasReadPermissions:230 -> <niagara.security.BIProtected: niagara.security.BPermissions getPermissions(niagara.sys.Context)>
+  SUPER com.tridium.httpClient.util.HttpClientUtils.hasReadPermission:553 -> <niagara.security.BIProtected: niagara.security.BPermissions getPermissions(niagara.sys.Context)>
+  SUPER niagara.search.BSearchResultSet.copyResults:584 -> <niagara.security.BIProtected: niagara.security.BPermissions getPermissions(niagara.sys.Context)>
+  SUPER com.tridium.bacnet.stack.server.BIBacnetExportFolder.operatorCanRead:140 -> <niagara.security.BIProtected: niagara.security.BPermissions getPermissions(niagara.sys.Context)>
+TOTAL t=105.0s
+rc=0

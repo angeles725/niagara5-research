@@ -407,3 +407,576 @@ for fn in sorted(os.listdir(moddir)):
         print(fn, total, short)
 EOF
 ```
+
+## Semantic defects (B116)
+
+Everything above this section measures **syntax** fidelity (does the decompiled text use the
+right modern Java construct, does it recompile at all). It is not a semantic fidelity
+measurement. `niagara5-block116.md` (T14 of `odd/tasks/decompiler-fidelity-audit.md`) ran a
+per-method bytecode oracle — every decompiled method recompiled and compared, normalized,
+against the shipped class's own bytecode — over 36,977 methods across 3,436 class files (the
+2,809 docSource-covered files plus synthetic javac-25 probes) and found **11 confirmed
+semantic defects (D1-D11)**: 9 behavior-changing, 2 precision-edge, 0.030% of methods checked.
+Every D-case is a Vineflower case (the 293 CFR-rendered `bajaui` files in that sample
+contributed none); CFR is not a semantic oracle either — B116 also caught CFR dropping
+`(Object)null` casts.
+
+**The rule this establishes for every consumer of this corpus**: a corpus claim about behavior
+that depends on overload binding, boxing/unboxing, numeric conversion, `finally` control flow,
+or local-variable-vs-field identity must be confirmed with `javap -c -p` on the shipped
+`.class` or against a `docSource.jar` original — never read off the decompiled `.java` text
+alone. Concretely, in this run: a dropped `(Object)` cast or dropped `Long.valueOf`/boxing call
+silently rebinds an overload (`SpyWriter.prop(Object,Object)` → `prop(Object,Runnable)` or
+`prop(Object,double)`); `instanceof`-pattern resugaring can turn a local variable into a field
+reference with the same simple name (`BDevice.checkFatalFault`, `BProxyExt.checkFatalFault`);
+varargs calls can collapse to zero-length arrays; and a `try { throw; } finally { return; }`
+can lose the `return`. See `niagara5-block116.md` §116.5 for the full D1-D11 table (module ·
+class · method · docSource-vs-decompiled diff · effect) and §116.3 for the synthetic S1-S6
+reproductions with the exact Vineflower 1.12.0 release-note context.
+
+`niagara5-block116.md` §116.3 also already ran a library-context experiment ahead of this
+feature (re-decompiling the 7 Part-B defect classes with all 452 classpath jars as `-e`
+externals, no `--include-runtime`): it fixed only **D4/D5** (`Array.remove(Object)` →
+`remove(int)`) and left D1, D2/D3, D6/D7, and D8/D9 unchanged — library context resolves
+*type* information, not the overload-selection and control-flow-loss bugs behind most of these
+defects. See the "v2 library-context run" section below for this feature's own from-scratch
+check of D1-D11 against the actual `--variant v2` pipeline output (adds `--include-runtime`
+and the fidelity flags the §116.3 ad-hoc test did not use).
+
+## v2 library-context run
+
+T19 of `odd/tasks/decompiler-fidelity-audit.md`: v1 (`organized/<mod>/vineflower/`) runs
+Vineflower with **no library context at all** — no `--add-external` for the other N5/bin-ext
+jars, no `--include-runtime`. `tools/n5-decompile.sh --variant v2 [<module>|--all]` is a second,
+side-by-side variant, writing `organized/<mod>/vineflower2/` (+ `fallback2/` on a CFR
+whole-module or per-class fallback), that gives Vineflower the full picture: every *other* N5
+module jar (excluding the module's own), every jar under `bin/ext/` (all 109, not only the six
+`n5-classify-binext.py` calls Tridium-owned — a different question, see the header comment),
+every embedded third-party lib some modules ship inside their own jar's `LIB-INF/` (sourced from
+`organized/_v2-libcache/`, an immutable cache built once, serially, by the required
+`--prepare-libcache` step — see "T19 fix" below; **not** a live scan of any
+`organized/<mod>/extracted/` tree), and the real JDK 25 runtime via `--include-runtime`. CFR's
+whole-module/per-class fallback gets the same library set via `--extraclasspath`.
+
+**Undocumented Vineflower 1.12.0 CLI bug found while building this**: an "Additional option"
+(`--include-runtime`, `--use-lvt-names`, ...) placed *after* a "General option"
+(`-e`/`--add-external`) is silently dropped — Vineflower prints `warn: missing
+'--include-runtime=...', ignored` and treats the flag text as a bogus positional source file,
+exit code 0, no other sign anything was wrong. Verified with isolated single-flag repros
+(`--include-runtime` alone works; combined with `-e` in either order it silently drops unless
+every Additional option precedes `-e`). Every Additional option must precede
+`-e`/`--add-external` on the command line for v2 to actually apply them; `decompile_module_v2`
+enforces this order and a bats regression test asserts the log carries zero
+`warn: missing` lines. A second gotcha: Homebrew's keg-only `openjdk@25` formula symlinks
+`bin/`/`include/`/etc. under `opt/openjdk@25` itself, but the actual JDK home Vineflower needs
+(with `lib/modules`, the jrt image) is one level down at `opt/openjdk@25/libexec` — passing
+`opt/openjdk@25` itself crashes Vineflower with a `NullPointerException` in
+`JrtFinder.addRuntime`.
+
+### T19 fix: library-context race in the first v2 campaign (2026-09-28 07:20-07:32Z), and the rerun
+
+The **first** v2 campaign (documented as-run in "Campaign" below) built the `LIB-INF` part of
+each module's library set by scanning `organized/*/extracted/LIB-INF/*.jar` **live**, while
+running up to 6 modules in parallel (`xargs -P 6`). `organized/_logs/` shows 5 modules
+(`analyticsLibs`, `apachePoi`, `commonsIo`, `commonsLang`, `niagaraTest`) had their
+`organized/<mod>/extracted/` tree rm-rf'd and re-unzipped by `ensure_extracted_for_v2` during
+that exact 07:20-07:32Z window — a real filesystem race: another parallel worker's `find` over
+`organized/*/extracted/LIB-INF/*.jar` could observe one of those 5 trees mid rm-rf-then-unzip and
+silently miss its `LIB-INF` jars, weakening *that other module's* `-e` list non-deterministically
+(the affected module isn't necessarily one of the 5 — it's whichever other worker happened to be
+calling `compute_v2_library_jars` at that moment).
+
+Fix (`tools/n5-decompile.sh`, `tools/tests/n5-decompile.bats`, TDD, RED before GREEN for every
+item): the `LIB-INF` library context now comes from `organized/_v2-libcache/`, an **immutable**
+cache built once, serially, by a required `--prepare-libcache` step — extracted directly from the
+read-only source jars, never from any `organized/<mod>/extracted/` tree, so no concurrent
+worker's extraction can ever race it again. Also fixed in the same pass: an idempotency key
+covering the module jar, the full resolved library set, the JDK home, the fidelity flags, and the
+decompiler tool jars (not just the module jar's sha256 — a rerun now redoes *any* module whose
+computed library set, tools, or flags changed, not only a changed jar); `--force` no longer forces
+a blind re-extraction (only a verifiably stale/missing `extracted/` does, via a
+`extracted/.jar_sha256` provenance marker), so `--force` can no longer reopen the race either; a
+module where both Vineflower and CFR produce zero output is now recorded `status: "failed"` and
+the script exits non-zero for it, rather than being silently cached as done; `fallback2/` is
+cleared unconditionally at the start of every run; the recon-writer heredoc now passes every value
+through the environment into a quoted (`<<'PYEOF'`) heredoc instead of interpolating shell values
+into Python string literals; the fidelity flag list is built from one array that drives both the
+Vineflower command line and the recorded JSON; and library-jar self-exclusion compares `realpath`
+(not the literal string) with a hard failure on any path containing `,` or `:` (the CSV/classpath
+separators). See `tools/n5-decompile.sh`'s `--prepare-libcache` header comment and
+`odd/tasks/decompiler-fidelity-audit.md` (T19) for the full requirement list.
+
+**Rerun, 2026-09-28**, `bats`/`make test`/`shellcheck` green beforehand: `--prepare-libcache`
+(21.5s), then the same `xargs -P 6` campaign over all 246 modules — **every module redecompiled**
+(the idempotency key changed for all of them, since the key now also covers the library-set
+composition and tool/flag identity, which the very first v1→v2 migration itself changed) — **0
+failures**, wall time 18m26s (vs the first run's ~19m15s — consistent). Then
+`--variant v2 --bin-ext` for the 6 included bin/ext jars (2m46s, 0 failures). **252/252 trees:
+`status: "ok"`.** The 5 originally-raced modules (`analyticsLibs`, `apachePoi`, `commonsIo`,
+`commonsLang`, `niagaraTest`) all have `class_count: 0` at their own top level (they are pure
+`LIB-INF`-wrapper modules with no classes of their own — confirmed again in this rerun), so they
+contribute zero `.java` files to the v1-vs-v2 diff measurement below regardless of their own
+library-set completeness; the race's *possible* effect, if any, would only ever have shown up in
+some *other* module's output, and the "v1 vs v2 measurement" and "D1-D11" numbers below —
+recomputed from scratch against this race-free rerun — are unchanged from the first (raced) run's
+published numbers. The same 6 modules needed a CFR fallback for the same reason as the first run
+(`bajaui` whole-module timeout at 265s vs 269s before; `ffmpeg`/`backup`/`ccn`/`andoverAC256`/
+`opcUaClient` per-class markers), confirming library context still does not change *which* classes
+Vineflower fails on. **The numbers below reflect this rerun, not the raced first run, which is
+superseded.**
+
+### Campaign: v2 over all 246 modules + the 6 included bin/ext jars
+
+**SUPERSEDED by the T19-fix rerun above** — this subsection is kept as the historical record of
+the first (raced) run; the numbers used everywhere else in this document are the rerun's.
+
+```bash
+# per-module, resumable (sha256-cached like v1), parallel via xargs -P 6
+find "$N5_MODULES_DIR" -maxdepth 1 -name '*.jar' ! -name docSource.jar -exec basename {} .jar \; \
+  | xargs -P 6 -I{} tools/n5-decompile.sh --variant v2 {}
+tools/n5-decompile.sh --variant v2 --bin-ext
+```
+
+Run 2026-09-28, `bats`/`make test` both green beforehand. **247/247 invocations exited 0**
+(246 modules + the bin-ext batch invocation, which itself decompiled the 6 included jars).
+Wall time ~19m15s end-to-end with `-P 6` (sum of per-module wall time 6,253s, mean 25.3s).
+`bajaui.jar` is the one module that times out on the 240s primary budget under v2 too (269s
+observed before `timeout` lands the kill, exactly as it does on v1 with no library context —
+the hang is not a library-context artifact) and correctly falls back to CFR whole-module
+(`organized/bajaui/fallback2/`). 5 other modules used v2's per-class CFR fallback for a handful
+of classes flagged by Vineflower's own failure marker (`ffmpeg`, `backup`, `ccn`,
+`andoverAC256`, `opcUaClient`) — the same 5 of 6 modules v1 already needed a fallback for
+(`bajaui` is the 6th, whole-module both times), confirming library context does not change
+*which* classes Vineflower fails on, consistent with the failure-marker counts below. This run
+was later found to carry the library-context race described above (5 modules' `extracted/`
+rebuilt live mid-scan, 07:20-07:32Z) and was superseded by the rerun.
+
+### v1 vs v2 measurement (not a fidelity judgment — counts only)
+
+Method: for every module with both `vineflower/` and `vineflower2/`, diff every `.java` file
+present in both by relative path (byte-for-byte text, not normalized) and count Vineflower's own
+failure markers (`// $VF: `, `Unable to fully decompile class`, `COULD NOT DECOMPILE`,
+`<unknown>`) in each tree.
+
+**Recomputed from scratch against the T19-fix rerun** (race-free `organized/_v2-libcache/`
+campaign, 2026-09-28; see "T19 fix" above). Method unchanged from the first pass.
+
+| Metric | v1 (no library context) | v2 (library context) |
+|---|---:|---:|
+| `.java` files produced (252 module/bin-ext trees) | 14,578 | 14,578 |
+| Decompiler failure markers | 4 | 4 |
+| Classes present in both trees | 14,578 | 14,578 |
+| Classes with byte-different text | — | 8,486 / 14,578 (58.2%) |
+
+**Identical to the first (raced) run's published figures, byte-for-byte** — file count, marker
+count, diff count and diff percentage all match exactly. This is not a coincidence: the 5
+modules whose `extracted/` was rebuilt live during the race (`analyticsLibs`, `apachePoi`,
+`commonsIo`, `commonsLang`, `niagaraTest`) all have `class_count: 0` at their own top level (pure
+`LIB-INF`-wrapper modules), so they contribute zero `.java` files to this table regardless of
+their own library-set completeness — and no *other* module's diff/marker numbers moved either.
+Same file count, same 4 failure markers — library context changes *what* gets written for a
+class, not *whether* Vineflower can produce one (the `bajaui` hang and the 5 modules' per-class
+markers are unchanged, see above). 58.2% of classes differ textually; three modules alone
+(`bacnet`, `workbench`, `lonworks`) account for 1,150 of the differing classes (561 + 330 + 259),
+and `provisioningNiagara` alone is 91.7% differing internally (253/276) — full ranked table not
+committed; regenerate with the method above.
+
+**Categories of textual difference**, from targeted corpus-wide greps re-run against the T19-fix
+rerun (this is directional evidence from inspection, not T15's per-method bytecode grading — that
+recompile-and-compare oracle is the only way to know which of these differences also change
+behavior; see the B116 section above for the 11 cases that already do). The diamond-generics count
+below matches the first run's published figure exactly; the `@Override` recount below is close to
+but not pixel-identical to the first run's published 22,450 (v1) → 53,628 (v2) — v1's own count
+also shifted slightly even though `vineflower/` was never regenerated between sessions, so the
+delta is measurement-methodology noise (the exact original grep wasn't preserved/committed), not a
+corpus change:
+
+- **`@Override` annotations added — the largest, most systematic category.** Recount (module
+  trees, `grep -ro "@Override" organized/*/vineflower[2]/**/*.java | wc -l`): 22,559 (v1) →
+  53,737 (v2), **+138.2%**; files containing at least one, 5,503 → 11,148 (of 13,985 module-tree
+  files). Vineflower's `--override-annotation` can only detect an override when it can resolve
+  the ancestor class/interface method — without library context it only sees methods declared in
+  classes belonging to the *same* module, missing every override of a method declared in a
+  different module's jar (e.g. `BComponent`/`BComplex` methods in `baja.jar`, most `BWidget`
+  overrides in `bajaui.jar`, `IStyle` methods, etc.). This is a real, syntax-level annotation-
+  correctness gain from library context, not a behavior change.
+- **Generic type arguments restored on constructor calls (diamond `<>`).** `new X<>` occurrences
+  (module trees): 5,095 (v1) → 6,026 (v2), **+18.3%** — **exact match** with the first run's
+  published figure. Example (`baja/niagara/sys/BFacets.java`): `new Array(String.class)` (v1, raw
+  type) → `new Array<>(String.class)` (v2) — Vineflower can now see `Array<T>`'s own type
+  parameter from `baja.jar`'s class file instead of guessing `Array` is raw; the corresponding
+  read now resolves without a cast: `(String)noInternFacetKeys.get(i)` (v1) →
+  `noInternFacetKeys.get(i)` (v2).
+- **Redundant downcasts removed** (return type now resolvable from the real declaring class, so
+  the explicit cast Vineflower inserted defensively in v1 is no longer needed). Example
+  (`workbench/.../BComponentPreviewWidget.java`): `(BBrush)cx.select(this, IStyle.COLOR)` →
+  `cx.select(this, IStyle.COLOR)`, `(BFont)cx.select(...)` → `cx.select(...)`, with the
+  now-unused `BGap`/`BBrush` imports dropped too.
+- **Overload-disambiguating casts added on ambiguous literals** (the "overload casts" category —
+  the same defect family as B116's D1/D2/D3, but here library context actually fixes the syntax
+  even though it did not fix D1-D3's semantics). Example (`analytics/.../BOptionalSimpleFe.java`):
+  `newAction(0, null)` (v1) → `newAction(0, (BFacets)null)` (v2) — the overload can only be
+  resolved once `BFacets` is a known type from `baja.jar`.
+- **Net effect on explicit casts is a decrease** — this direction (redundant-downcast removal
+  outweighing new overload-disambiguating casts) is qualitatively confirmed by inspection, same as
+  the first run; the exact corpus-wide cast-count regex from the first run was not preserved, so
+  no new precise figure is reported here rather than publish one from a different, unverified
+  regex.
+- The 30-file random sample from the first run (not rerun; the `.java` content behind the sampled
+  files is unchanged, see the exact-match table above) tagged 22/30 files "other/formatting" (it
+  pattern-matches diff lines, not a parser, so it mostly missed that these are the
+  `@Override`/import-line additions above rather than cosmetic noise) and 8/30
+  "cast-added"/"cast-removed" (the two categories above); it never tagged "generics-restored" in
+  that particular sample even though the corpus-wide diamond-generic count clearly moved — the
+  30-file sample is illustrative, not the source of the aggregate numbers above, which come from
+  the corpus-wide greps instead.
+
+### D1-D11 (B116 semantic defects) against the actual v2 output
+
+The orchestrator's addendum asked whether `--variant v2`'s own pipeline (not B116 §116.3's
+earlier ad-hoc `-e`-only test, which lacked `--include-runtime` and the fidelity flags) still
+reproduces each of B116's 11 confirmed semantic defects. Checked directly against
+`organized/<mod>/vineflower2/...` for every affected module (`bacnet`, `nrio`, `nurio`,
+`driver`, `lonworks`, `kitControl`, `organized/_bin-ext/nre`) in this run. **Rechecked again
+after the T19-fix rerun** (none of these 7 modules is among the 5 originally-raced modules, and
+none is adjacent to them in the `xargs -P 6` scheduling order recorded in the logs) — every row
+below is identical to the first check:
+
+| # | Defect | v2 result |
+|---|---|---|
+| D1 | `BBacnetProxyExt.spy` — dropped `(Object)` cast rebinds `prop` overload | **still reproduces** — `out.prop("pollService", this.pollService);`, no cast |
+| D2 | `BNrioNetwork.spy` — dropped `Long.valueOf` boxing rebinds `prop` overload | **still reproduces** — `out.prop("Message Count", this.getUnsolicitedMsgCount());` |
+| D3 | `BNurioNetwork.spy` — same as D2 | **still reproduces** — `out.prop("Total Process Time(ms)", totalProcessTime);`, no boxing |
+| D4 | `BNrioTabularThermistorDialog$DeleteCmd.doInvoke` — `Array.remove(Object)` vs `remove(int)` | **fixed** — `map.remove(Integer.valueOf(this.index));`, boxing restored |
+| D5 | `BNurioTabularThermistorDialog$DeleteCmd.doInvoke` — same as D4 | **fixed** — same restored boxing |
+| D6 | `BDevice.checkFatalFault` — instanceof-pattern resugar turns a local into the field `network` | **still reproduces** — bare `network = null;` before the loop still binds the field; `if (network == null)` after the loop still reads the field, not the pattern-scoped local |
+| D7 | `BProxyExt.checkFatalFault` — same as D6, field `deviceExt` | **still reproduces** — identical structure |
+| D8 | `BBacnetBitString.emptyBitString(int)` — varargs/array-length loss | **still reproduces** — `return make();`, `len` still dropped |
+| D9 | `LonFacetsUtil.parseNumber` — ternary numeric promotion | **still reproduces** — `return s instanceof BDouble ? ((BDouble)s).getDouble() : ((BFloat)s).getFloat();`, still a promoting ternary |
+| D10 | `BSequenceLinear.calculate` — `(float)` precision cast lost | **still reproduces** — `range / this.numOutputs`, still no cast |
+| D11 | `Base64.encode(byte[],int)` — `(float)` precision cast lost | **still reproduces** — `(int)(buf.length * 1.33)`, still no cast |
+
+**2 of 11 fixed (D4, D5 — both the same `Array.remove(Object)`-vs-`remove(int)` overload
+family), 9 of 11 unchanged**, matching B116 §116.3's own earlier finding on this exact defect
+set. Library context resolves *type* information (which fixes overloads that differ only by
+*argument type*, like D4/D5's `Object` vs `int`), but does not fix: overloads that differ by
+*argument identity/cast intent* rather than resolvable type (D1-D3 — `prop(Object,Object)` vs
+`prop(Object,Runnable)`/`prop(Object,double)` are both perfectly type-correct with the
+un-boxed/un-cast argument, so there is no ambiguity for the library-context-aware resolver to
+catch), control-flow/scope-loss bugs (D6-D7's field-vs-pattern-variable aliasing, D8's varargs
+collapse, D9's ternary promotion), or precision-only casts Vineflower considers safe to drop
+(D10-D11). **Conclusion for corpus writers: `--variant v2` is not a substitute for the B116
+verification rule** (confirm behavior-dependent claims with `javap`/docSource) — it measurably
+improves *readable* fidelity (`@Override`, generics, redundant-cast removal) but leaves the
+semantic defect surface B116 found almost entirely intact.
+
+## `--variant cons` and `--extra-tridium` (T22, `odd/tasks/decompiler-fidelity-audit.md`)
+
+### `--variant cons`: B118 §118.1's conservative + line-mapped view
+
+`tools/n5-decompile.sh --variant cons [<module>|--all]` is a **third** decompile, alongside v1
+(`vineflower/`, no library context) and v2 (`vineflower2/`, full library context), writing
+`organized/<mod>/vineflower-cons/` (+ `fallback-cons/`). It reuses v2's entire library-context
+machinery **unchanged** — the same immutable `organized/_v2-libcache/`, the same
+`--add-external`/`--include-runtime`, the same idempotency-key and failure semantics — only the
+Vineflower flag set differs, taken verbatim from `niagara5-block118.md` §118.1's "conservative +
+line-mapped" set:
+
+```
+--pattern-matching=false --decompile-switch-expressions=false --ternary-in-if=false
+--prettify-ifs=false --inline-simple-lambdas=false --bytecode-source-mapping=true
+--__dump_original_lines__=true
+```
+
+Every documented flag name was re-verified against `vineflower-1.12.0.jar --help` this session
+(all six present, defaults as B118 recorded). `--__dump_original_lines__` is **not** in `--help`
+— it is Vineflower's `DUMP_ORIGINAL_LINES` constant
+(`org/jetbrains/java/decompiler/main/extern/IFernflowerPreferences.class`, `javap -constants`),
+confirmed present in the same jar this session. Like v2, every option is placed **before**
+`-e`/`--add-external` on the command line (`decompile_module_variant`'s shared command
+construction; the v2 bats regression test for the "silently dropped option after `-e`" CLI bug
+applies unchanged to cons, and a cons-specific bats test asserts the same zero
+`warn: missing` lines).
+
+**What cons buys, and what it costs.** Per B118 §118.1: resugaring off means an
+`instanceof`-pattern, switch-expression, or restructured-if never renders even where v1/v2 would
+resugar one — closing the exact ambiguity B90/B98 warned about, mechanically, per class, instead
+of by prose caveat. Line mapping on means every statement's `// N` trailer is the class file's own
+`LineNumberTable` entry, i.e. **Tridium's original source line**, independently of whether a
+`docSource` original exists for that class — B118 measured 669/669 (100%) agreement against the
+four docSource-covered test classes it had, with a +7-line-shift control scoring only 33.8%
+(discriminating, not coincidental agreement). Cost: a real pattern switch (e.g.
+`BNumericWritable.spy`, `niagara5-block118.md` §118.1) renders **less** readably in cons — the
+desugared `SwitchBootstraps.typeSwitch` state machine instead of the `case Action a when ... ->`
+syntax v1/v2 both recover — so cons is a second, syntax-neutral, line-citable view for
+corroboration, never a wholesale replacement for v1/v2.
+
+### `--extra-tridium`: the 10 out-of-pipeline jars + Tridium-owned nested `LIB-INF` jars
+
+`niagara5-block117.md` §117.2 and §117.4 found two Tridium-owned code populations the pipeline
+above never touches, because it only ever scans `$N5_MODULES_DIR` and `$N5_BIN_EXT_DIR`:
+
+1. **10 jars under `etc/m2/` and `lib/`** (958 Tridium classes total): `n-plugin` (722),
+   `tridium-niagara-slotomatic-library` (145), `settings` (20), `n-conv-plugin` (14), `n-templates`
+   (15), `utils` (12), `xelem` (8), `java-utils` (4), `filetypes` (3), and
+   `lib/tridium-niagara-baja-doclet` (15 of 23 classes). `--extra-tridium` derives this list
+   **mechanically**: every `*.jar` under `$N5_ETC_M2_DIR` (recursive) and `$N5_LIB_DIR`
+   (`-maxdepth 1`), classified by `tools/n5-classify-binext.py`'s existing >50%-Tridium-namespace
+   rule, unchanged — re-run against the real install this session, it produces exactly these 10
+   names and nothing else (the sibling `*-plugin-markers` Maven metadata directories under
+   `etc/m2/repository/com/tridium/tools/` carry no `.jar` at all, so they never enter the
+   candidate list in the first place). Each included jar gets **both** v2 and cons, into
+   `organized/_etc-m2/<jar-stem>/` (etc/m2 jars) or `organized/_lib/<jar-stem>/` (the doclet).
+2. **Tridium-owned nested `LIB-INF` jars** (§117.2: 98 `LIB-INF` jars exist across 24 modules;
+   only 2 are Tridium's own code by the same >50% rule — `devkit`'s `n-templates-5.0.54.9.2.jar`
+   and `tridium-niagara-slotomatic-library-5.0.2.jar`, 160 classes total, both re-verified this
+   session against every one of the 97 nested jars actually present in `organized/*/extracted/
+   LIB-INF/`). `--extra-tridium` scans every already-extracted
+   `organized/<mod>/extracted/LIB-INF/*.jar` (real per-module identity, not the
+   deduplicated-by-sha256 libcache) and decompiles (v2+cons) any that pass the rule into
+   `organized/<mod>/lib-inf/<jar-stem>/`.
+
+**Kotlin.** 4 of the 10 etc/m2 jars (`n-plugin`, `n-conv-plugin`, `settings`, `utils`) carry
+`Lkotlin/Metadata;` in their class files (§117.4); `write_recon_language` records
+`"language": "kotlin"` and the Kotlin-classes ratio directly in each jar's `recon.json` (a
+jar-level fact, not nested under `"v2"`/`"cons"` — independent of which decompiler variant read
+it). Vineflower 1.12.0 ships a bundled Kotlin plugin (`--kt-enable`, **default true**, confirmed
+via `--help` this session, `META-INF/plugins/vineflower-kotlin-0.1.0.jar` present inside the tool
+jar) — it is therefore already active by default for every Kotlin-flagged jar decompiled here; no
+extra flag was needed to opt in. Neither `n-templates` nor `tridium-niagara-slotomatic-library`
+(the two `LIB-INF` jars) carries the Kotlin marker.
+
+### Campaign run
+
+Run 2026-09-28 against the sha256-verified local mirror
+(`niagara5-research-localcache/jar-mirror-5.0.0.28/`), `/tmp/run-cons-campaign.sh`, all numbers
+re-counted by the orchestrator from `organized/` after `ALL_DONE`:
+
+| Phase | Wall clock | Result |
+|---|---|---|
+| `--variant cons` over every module jar (`xargs -P 6`) | 20m00s | 246/246 non-docSource modules have `vineflower-cons/` |
+| `--variant cons --bin-ext` | 1m55s | 6/6 included bin/ext jars |
+| `--extra-tridium` (v2 + cons) | 5m18s | 9 `_etc-m2/` + 1 `_lib/` jars + 2 `devkit/lib-inf/` jars, v2 and cons file counts identical per jar |
+
+- 262/262 `recon.json` files carry `cons.status: ok`; the conservative tree holds 14,957 `.java` +
+  329 `.kt` files.
+- The 4 Kotlin-flagged jars decompile to `.kt` (n-plugin 302 `.kt` for 305 top-level classes,
+  n-conv-plugin 4/4, settings 15/15, utils 8/8); their `fallback*/` `.java` files are CFR reference
+  copies, not a loss.
+- Line mapping (`// N` markers vs docSource original lines, token overlap in a ±1-line window):
+  BNumericWritable 137/137, ValueDocDecoder 409/409, Column 78/78 — 624/624 (100%).
+- **Resolved (T24):** `bajaui` (832 classes) used to be the only module whose primary Vineflower run
+  hit the 240 s whole-jar budget, in v1, v2 and cons alike (`primary_status: timeout`,
+  `fallback_reason: primary_timeout_whole_module`), losing all 566 of its top-level sources to CFR in
+  every tree. A thread dump showed one decompiler thread spinning in `ClassWriter.writeClass` while
+  the other 15 were idle: a single class hangs Vineflower, it is not slowness — the class is
+  `com/tridium/ui/theme/custom/nss/query/NSS2SelectionResult`, whose method-local record
+  `NSS2SelectionResult$1ValueAndAdvice` is what triggers the hang (per-class bisection isolated it to
+  exactly this one class; the rest of the package/module decompiles normally).
+  `tools/n5-decompile.sh` now isolates a hang like this automatically instead of losing the whole
+  module: it bisects the hung whole-jar run by package, then by top-level class, each attempt under
+  its own `N5_ISOLATE_TIMEOUT` (default 90 s) budget; re-runs the whole jar ONCE more with
+  Vineflower's `--excluded-classes=<regex>` excluding exactly the hung class(es) (regex semantics —
+  a FULL match against the `/`-separated internal name — verified empirically against the real
+  vineflower-1.12.0.jar with a synthetic reproduction of this exact case); and gives the hung
+  class(es) CFR output plus a best-effort `--decompile-inner=false` secondary rendering. Real
+  `bajaui` re-run on the local mirror after the fix, all three variants:
+
+  | variant | `primary_status` | `excluded_classes` | primary tree | fallback | noinner secondary view | isolate time | excluded-rerun time |
+  |---|---|---|---|---|---|---|---|
+  | v1   | `ok_with_excluded` | `NSS2SelectionResult` | 565/566 `.java` | 1 (the hung class) | 2 `.java` (class + its local record) | 319 s | 8 s |
+  | v2   | `ok_with_excluded` | `NSS2SelectionResult` | 565/566 `.java` | 1 (the hung class) | 2 `.java` | 357 s | 12 s |
+  | cons | `ok_with_excluded` | `NSS2SelectionResult` | 565/566 `.java` | 1 (the hung class) | 2 `.java` | 357 s | 14 s |
+
+  `recon.json` (or its `v2`/`cons` sub-object) records `primary_status: "ok_with_excluded"`,
+  `fallback_reason: "primary_hang_isolated"`, `excluded_classes`, `isolate_time_seconds` and
+  `primary_timeout_attempt_seconds` (the original ~265-269 s hang, kept for forensics) for every
+  module isolation resolves. Isolation found no other hung class anywhere else in this module; if a
+  future timeout can't be isolated (no single class found hung alone, or the excluded re-run itself
+  times out/errors), today's original whole-module CFR fallback is kept exactly, with a new
+  `isolation_status` field explaining why. This is why the planned `StyleUtils` line-mapping check
+  had no Vineflower file to read before this fix — it now does, for every class except the isolated
+  hang itself.
+
+## Third-party LIB-INF decompile (T26b, `odd/tasks/decompiler-fidelity-audit.md`)
+
+`tools/n5-best-source.py` (T25) found that 11,719 classes corpus-wide had **no representation
+anywhere** — no docSource, no upstream Maven source, no decompile, nothing. Almost all of them
+(`missing_by_jar`'s top 10, all in the thousands-of-classes range: `prosys-opc-ua-sdk-client-
+server-5.7.0-248` 3,117, `poi-ooxml-lite-5.5.1` 2,325, `poi-5.5.1` 1,226, `xmlbeans-5.3.0` 697,
+`kotlin-stdlib-2.3.0` 687, `poi-ooxml-5.5.1` 654, `org.eclipse.swt.win32.win32.x86_64-3.134.0` 652,
+`woodstox-core-7.2.0` 539, `hsqldb-2.7.4` 465, `testng-7.12.0` 402) are third-party libraries nested
+under a module or bin/ext jar's own `LIB-INF/` — `--extra-tridium` only ever decompiled the
+Tridium-**owned** nested `LIB-INF` jars (the same >50%-Tridium-namespace rule from
+`tools/n5-classify-binext.py`, verdict `include*`); every jar the same rule calls `skip`
+(third-party) was never decompiled by the pipeline at all.
+
+`tools/n5-decompile.sh --third-party-libinf` closes this gap: it scans every Tridium-vendor jar
+under `$N5_MODULES_DIR` (docSource.jar excluded) and every jar under `$N5_BIN_EXT_DIR` **directly
+from their zip entries** (never `organized/*/extracted/`, which this mode does not require to
+exist first), reads every `LIB-INF/*.jar` entry, and decompiles each **distinct** jar (deduplicated
+by its own sha256, independent of how many modules bundle a byte-identical copy) exactly once with
+v2 settings (`decompile_module_v2`, unchanged — same immutable libcache, same T24 hang-isolation
+path, no copy of the decompile core) into `organized/_lib-inf-3p/<jar-stem>-<sha256[:12]>/
+{extracted,vineflower2,fallback2,recon.json}`. `recon.json` gets the usual `"v2"` sub-object plus
+top-level `"population": "lib-inf-3p"`, `"jar_sha256"`, and `"found_in"` — every
+`"<module>!LIB-INF/<entry-path>"` occurrence of that exact jar, across every module/bin-ext jar
+scanned. `extracted/.jar_sha256` is written the same way every other population's is, so
+`tools/n5-best-source.py`'s sha256 identity index (rung 6, "byte-identical jar decompiled as a
+different population") links every module's own raw copy to this single decompile. A Tridium-owned
+nested `LIB-INF` jar found during the scan is classified out and never counted here — it belongs to
+`--extra-tridium`.
+
+Idempotent for free: `decompile_module_v2`'s own idempotency key is purely content-based (jar
+sha256 + resolved library set + flags + tool jar sha256s) and the output directory name is
+deterministic from the same sha256, so a rerun without `--force` naturally skips an already-`ok`
+distinct jar.
+
+### Campaign run
+
+Run 2026-09-28 against the sha256-verified local mirror
+(`niagara5-research-localcache/jar-mirror-5.0.0.28/`):
+
+```
+tools/n5-decompile.sh --third-party-libinf
+```
+
+```
+lib-inf-3p: decompiled=94 skipped-up-to-date=0 failed=0 distinct_jars=94
+```
+
+94 distinct non-Tridium nested `LIB-INF` jars, 0 failures. One (`mibble-mibs-2.10.1`) has 0
+`.class` entries — a MIB-text-only resource jar, correctly decompiled trivially (`status: ok`,
+0 classes). `tools/n5-best-source.py` rerun afterward:
+
+```
+populations: 455
+classes: 64929
+missing: 54
+by best_kind:
+  docSource: 2809
+  fallback2: 1
+  missing: 54
+  upstream: 25559
+  vineflower2: 36506
+```
+
+`missing` dropped from T25's 11,719 (28.8%) to **54** (0.08%) — the 93 non-empty
+`_lib-inf-3p/` populations contribute 24,251 classes: 12,536 already covered by an exact
+upstream Maven source match (rung 2, `organized/_upstream-sources/`), 11,688 where this
+decompile is the `best` representation (rung 3, `vineflower2`), and a residual **27** classes
+still missing (each counted twice in `missing_by_jar` — once under the raw
+`<module>/lib-inf-raw/<stem>` population these jars are also nested in, once under
+`_lib-inf-3p/<stem>-<sha12>` itself — both blocked by the identical underlying cause, so the
+same 27 physical classes surface as 54 records).
+
+**Every one of the 27 residual classes has the same, single, typed cause**: they are
+per-JDK-version override `.class` entries of a Multi-Release JAR (JEP 238), nested under
+`META-INF/versions/<N>/...` inside 16 distinct third-party jars (`jackson-core-2.22.2` 4,
+`log4j-api-2.24.3` 2, `xmlbeans-5.3.0` 1, and 13 more jars — `commons-codec`,
+`commons-collections4`, `commons-compress`, `commons-dbcp2`, `commons-io`, `commons-pool2`,
+`error_prone_annotations`, `gson`, `jackson-databind`, `kotlin-stdlib`, `poi`, `poi-ooxml`,
+`poi-ooxml-lite` — 1 class each; `jackson-core`'s 4 split across `META-INF/versions/{11,17,21}`
+for `FastDoubleSwar`/`FastIntegerMath` plus a `META-INF/versions/11` `BigSignificand`, and
+`META-INF/versions/9/module-info`). Verified by hand for `jackson-core-2.22.2`: `extracted/`
+has the real `.class` bytes at e.g. `META-INF/versions/11/com/fasterxml/jackson/core/internal/
+shaded/fdp/v2_22_2/BigSignificand.class`; Vineflower's `vineflower2/META-INF/versions/11/...`
+creates the full package directory tree but writes **no** `.java` file at the leaf — a silent
+per-class skip, not a marked failure (`scan_marker_files` finds nothing, so the whole-jar CFR
+fallback path never triggers for it either). The BASE-layer (unversioned) class at the plain
+package path (`com/fasterxml/jackson/core/internal/shaded/fdp/v2_22_2/BigSignificand`) **is**
+represented (`vineflower2`, confirmed). This is a decompiler Multi-Release-JAR-override
+limitation, not a scanning or dedup gap in `--third-party-libinf` itself. **Fixed below.**
+
+### Fix: Multi-Release JAR version overrides (`odd/tasks/decompiler-fidelity-audit.md`)
+
+`tools/n5-decompile.sh` now decompiles every `META-INF/versions/<N>/...` entry it finds under
+ANY jar's `extracted/` tree — `vf_handle_mrjar_versions`, shared by `decompile_module` (v1) and
+`decompile_module_variant` (v2/cons), called unconditionally right after each jar's whole-jar
+primary decompile settles, so every population this pipeline has (plain modules, `--bin-ext`,
+`--extra-tridium`, `--third-party-libinf`) picks it up with no separate call site. For each
+version `N` found, every `.class` entry under `META-INF/versions/N/` is copied into a temporary
+directory with the `META-INF/versions/N/` prefix stripped (re-rooted to its real package path —
+the exact path Vineflower resolves an ordinary class at), packaged into one throwaway subset jar,
+and decompiled with the SAME command/options/library context the real run used (v1: no library
+context; v2/cons: the same `--add-external`/`--include-runtime`/fidelity flags). A subset run that
+itself times out reuses `vf_isolate_hung_classes`/`vf_build_excluded_classes_regex` — the exact
+same T24 hang-isolation machinery a whole-jar hang uses (both helpers already take `extracted_dir`
+as a plain parameter, so pointing them at the temporary re-rooted directory needed no changes).
+Output lands at `<tree>/META-INF/versions/<N>/<pkg>/<Class>.java` (Vineflower) or the variant's
+fallback dir at the same path (CFR, for any class Vineflower still didn't produce). `recon.json`
+gains `mrjar_versions` (`{"N": {"classes": n, "decompiled": n, "fallback": n}}`, top-level for v1,
+inside the `"v2"`/`"cons"` sub-object for those variants) and `mrjar_unrepresented` (a list of
+`"N:<internal-name>"` entries) — silent zero is forbidden: any versioned class neither decompiler
+produced a file for is always named there, never dropped quietly the way the 27 corpus classes
+above were.
+
+Tests: `tools/tests/n5-decompile.bats`'s "MRJAR" section builds a REAL Multi-Release jar (real
+`javac`, base `com.example.Base` plus a byte-different `META-INF/versions/11/com/example/Base`
+override) and asserts, against the real Vineflower/CFR pipeline: the override `.java` exists at
+`vineflower/META-INF/versions/11/com/example/Base.java` with its own distinguishing content;
+`recon.json`'s `mrjar_versions.11` records `classes=1 decompiled=1 fallback=0` and
+`mrjar_unrepresented=[]`; a second test corrupts the override `.class` bytes so neither decompiler
+can produce anything for it, and asserts `mrjar_unrepresented=["11:com/example/Base"]` instead of
+a silent drop; a structural test asserts `vf_handle_mrjar_versions` is defined exactly once and
+called from at least 2 sites (v1 and v2/cons), matching the existing `T24d` pattern for
+`vf_handle_primary_timeout`.
+
+Real-corpus verification, re-running `--third-party-libinf --force` (no per-jar filter exists in
+this mode, so a `--force` full rerun was required — the mode's own idempotency key is unaffected
+by this fix, so a rerun WITHOUT `--force` would have skipped every already-`ok` jar and never
+reached `vf_handle_mrjar_versions` at all) against the sha256-verified local mirror, 2026-09-28
+14:01:30Z-14:25:43Z (~24 minutes):
+
+```
+lib-inf-3p: decompiled=94 skipped-up-to-date=0 failed=0 distinct_jars=94
+```
+
+All 16 previously-affected jars' `mrjar_versions` now show `decompiled` equal to `classes` for
+every version `N`, `fallback=0`, and `mrjar_unrepresented=[]` throughout — **all 27 classes now
+have a file, 0 unrepresented**:
+
+| jar | version(s) | classes | decompiled | fallback |
+|---|---|---|---|---|
+| `commons-codec-1.18.0` | 9 | 1 | 1 | 0 |
+| `commons-collections4-4.5.0` | 9 | 1 | 1 | 0 |
+| `commons-compress-1.28.0` | 9 | 1 | 1 | 0 |
+| `commons-dbcp2-2.14.0` | 9 | 1 | 1 | 0 |
+| `commons-io-2.22.0` | 9 | 1 | 1 | 0 |
+| `commons-pool2-2.13.1` | 9 | 1 | 1 | 0 |
+| `error_prone_annotations-2.48.0` | 9 | 1 | 1 | 0 |
+| `gson-2.14.0` | 9 | 1 | 1 | 0 |
+| `jackson-core-2.22.2` | 9, 11, 17, 21 | 1, 3, 2, 2 (8 total) | 1, 3, 2, 2 | 0, 0, 0, 0 |
+| `jackson-databind-2.22.2` | 9 | 1 | 1 | 0 |
+| `kotlin-stdlib-2.3.0` | 9 | 1 | 1 | 0 |
+| `log4j-api-2.24.3` | 9 | 4 | 4 | 0 |
+| `poi-5.5.1` | 9 | 1 | 1 | 0 |
+| `poi-ooxml-5.5.1` | 9 | 1 | 1 | 0 |
+| `poi-ooxml-lite-5.5.1` | 9 | 1 | 1 | 0 |
+| `xmlbeans-5.3.0` | 9 | 2 | 2 | 0 |
+
+13 jars carry only `META-INF/versions/9/module-info.class` — 1 class each, 13 total; the
+remaining 3 carry real per-JDK-version override classes: `jackson-core` 8 across versions
+9/11/17/21, `log4j-api` 4, `xmlbeans` 2 — 13+8+4+2 = 27, matching the residual count above exactly.
+Every one of the 27 is confirmed present on disk, one `.java` file per class:
+
+```
+_lib-inf-3p/jackson-core-2.22.2-ff167a6317be/vineflower2/META-INF/versions/9/module-info.java
+_lib-inf-3p/jackson-core-2.22.2-ff167a6317be/vineflower2/META-INF/versions/11/com/fasterxml/jackson/core/internal/shaded/fdp/v2_22_2/BigSignificand.java
+_lib-inf-3p/jackson-core-2.22.2-ff167a6317be/vineflower2/META-INF/versions/11/com/fasterxml/jackson/core/internal/shaded/fdp/v2_22_2/FastDoubleSwar.java
+_lib-inf-3p/jackson-core-2.22.2-ff167a6317be/vineflower2/META-INF/versions/11/com/fasterxml/jackson/core/internal/shaded/fdp/v2_22_2/FastIntegerMath.java
+_lib-inf-3p/jackson-core-2.22.2-ff167a6317be/vineflower2/META-INF/versions/17/com/fasterxml/jackson/core/internal/shaded/fdp/v2_22_2/FastDoubleSwar.java
+_lib-inf-3p/jackson-core-2.22.2-ff167a6317be/vineflower2/META-INF/versions/17/com/fasterxml/jackson/core/internal/shaded/fdp/v2_22_2/FastIntegerMath.java
+_lib-inf-3p/jackson-core-2.22.2-ff167a6317be/vineflower2/META-INF/versions/21/com/fasterxml/jackson/core/internal/shaded/fdp/v2_22_2/FastDoubleSwar.java
+_lib-inf-3p/jackson-core-2.22.2-ff167a6317be/vineflower2/META-INF/versions/21/com/fasterxml/jackson/core/internal/shaded/fdp/v2_22_2/FastIntegerMath.java
+_lib-inf-3p/log4j-api-2.24.3-5b4a0a0cd0e7/vineflower2/META-INF/versions/9/org/apache/logging/log4j/util/Base64Util.java
+_lib-inf-3p/log4j-api-2.24.3-5b4a0a0cd0e7/vineflower2/META-INF/versions/9/org/apache/logging/log4j/util/ProcessIdUtil.java
+_lib-inf-3p/log4j-api-2.24.3-5b4a0a0cd0e7/vineflower2/META-INF/versions/9/org/apache/logging/log4j/util/StackLocator.java
+_lib-inf-3p/log4j-api-2.24.3-5b4a0a0cd0e7/vineflower2/META-INF/versions/9/org/apache/logging/log4j/util/internal/DefaultObjectInputFilter.java
+_lib-inf-3p/xmlbeans-5.3.0-6cc69da3b4d3/vineflower2/META-INF/versions/9/module-info.java
+_lib-inf-3p/xmlbeans-5.3.0-6cc69da3b4d3/vineflower2/META-INF/versions/9/org/apache/xmlbeans/impl/tool/MavenPluginResolver.java
+_lib-inf-3p/{commons-codec-1.18.0-ba005f304cef,commons-collections4-4.5.0-00f93263c267,commons-compress-1.28.0-e15229452184,commons-dbcp2-2.14.0-459bebb81919,commons-io-2.22.0-2b9a7b1f726f,commons-pool2-2.13.1-f77a5060d693,error_prone_annotations-2.48.0-b49c5c958316,gson-2.14.0-2cbd119bf196,jackson-databind-2.22.2-d0da14c12b16,kotlin-stdlib-2.3.0-887587c91713,poi-5.5.1-6c52e876ca75,poi-ooxml-5.5.1-bd7be2fdfe3f,poi-ooxml-lite-5.5.1-e6e37adeb6d6}/vineflower2/META-INF/versions/9/module-info.java
+```
+
+`tools/n5-best-source.py`'s corpus-wide `missing` index was not rerun as part of this fix (owned
+by a different writer in this checkout); the orchestrator runs the final index separately.

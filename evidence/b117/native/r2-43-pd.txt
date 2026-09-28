@@ -1,0 +1,14 @@
+│           0x1800060a8      0000           add byte [rax], al
+│           0x1800060aa      ff0518440100   inc dword [0x18001a4c8]    ; [0x18001a4c8:4]=0
+│           0x1800060b0      33d2           xor edx, edx               ; int c
+│           0x1800060b2      488d8db006..   lea rcx, [rbp + 0x6b0]     ; void *s
+│           0x1800060b9      e888730000     call sub.VCRUNTIME140.dll_memset ; void *memset(void *s, int c, size_t n)
+│           0x1800060be      488d0543a0..   lea rax, str.com.tridium.nre.platform.NativePlatformProviderTridium ; 0x180010108 ; "com.tridi
+│           0x1800060c5      ba04010000     mov edx, 0x104             ; 260 ; int64_t arg2
+│           0x1800060ca      4c8d0d6fa0..   lea r9, str._Dniagara.platform.provider_s ; 0x180010140 ; "-Dniagara.platform.provider=%s" ; i
+│           0x1800060d1      4889442420     mov qword [var_20h], rax   ; int64_t arg_90h
+│           0x1800060d6      49c7c0ffff..   mov r8, 0xffffffffffffffff ; int64_t arg3
+│           0x1800060dd      488d8db006..   lea rcx, [rbp + 0x6b0]     ; int64_t arg1
+│           0x1800060e4      e8a7e7ffff     call fcn.180004890
+│           0x1800060e9      48633dd843..   movsxd rdi, dword [0x18001a4c8] ; [0x18001a4c8:4]=0
+│           0x1800060f0      488d8db006..   lea rcx, [rbp + 0x6b0]     ; const char *src

@@ -447,6 +447,8 @@ closed — same missing-Linux-install blocker as B33-G5/B40-G3, carried forward,
 
 ## 94.8 — B87-G2 CLOSED, REVERSING Block 87's own `[INFER]` naming-adjacency guess: the FIPS-mode byte at `this+0x1002c` is set by `NreLauncherWin32::initFips()` — a license-feature check, then a `-fips=true/false` CLI-argument scan, then the `bajaui-FipsOptions.options` file read — NOT by `defaultToNonFIPS()`, which has ZERO call-instruction cross-references anywhere in `nre.dll` `[CERT-hw]`
 
+> **Correction (added by [Block 117], §14 cross-block, §117.x).** "sole setter" of `this+0x1002c` holds for policy only; the constructor, copy constructor, operator= and getInstance also write the byte during initialisation.
+
 **Parent-block text, quoted verbatim** ([Block 87] §87.x): *"**B87-G2** — Disassemble `NreLauncherWin32`'s own
 setter/origin for the FIPS-mode byte at `this+0x1002c` (read but not traced to its own write site this
 session) to confirm it is set FROM `defaultToNonFIPS()`'s own `bajaui-FipsOptions.options` file read (the

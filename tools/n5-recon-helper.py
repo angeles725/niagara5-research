@@ -113,6 +113,14 @@ def main():
     ap.add_argument("--primary-time", required=True)
     ap.add_argument("--fallback-used", required=True)
     ap.add_argument("--fallback-reason", required=True)
+    # T24 (odd/tasks/decompiler-fidelity-audit.md): optional, only meaningful when a
+    # whole-jar primary run originally timed out and vf_handle_primary_timeout
+    # (tools/n5-decompile.sh) attempted to isolate the hanging class(es). Defaults keep
+    # recon.json unchanged for every module where isolation never ran.
+    ap.add_argument("--excluded-classes", default="[]")
+    ap.add_argument("--isolate-time", default="0")
+    ap.add_argument("--isolation-status", default="")
+    ap.add_argument("--timeout-attempt-time", default="")
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
 
@@ -142,7 +150,34 @@ def main():
         "fallback_used": args.fallback_used == "true",
         "fallback_reason": args.fallback_reason,
         "decompile_failure_markers": count_decompile_markers(vineflower_dir),
+        "excluded_classes": json.loads(args.excluded_classes),
+        "isolate_time_seconds": int(args.isolate_time),
     }
+    if args.isolation_status:
+        recon["isolation_status"] = args.isolation_status
+    if args.timeout_attempt_time:
+        recon["primary_timeout_attempt_seconds"] = int(args.timeout_attempt_time)
+
+    # T27: this v1 write used to replace recon.json wholesale, silently dropping
+    # the "v2"/"cons" sub-objects that --variant runs merge in. Carry each one
+    # over only while it still describes the SAME jar; a sub-object for an older
+    # jar no longer matches the tree v1 just rebuilt, so it is dropped and named.
+    dropped = []
+    try:
+        with open(args.out) as fh:
+            previous = json.load(fh)
+    except (OSError, ValueError):
+        previous = {}
+    for key in ("v2", "cons"):
+        sub = previous.get(key)
+        if not isinstance(sub, dict):
+            continue
+        if sub.get("jar_sha256") == args.sha256:
+            recon[key] = sub
+        else:
+            dropped.append(key)
+    if dropped:
+        recon["dropped_stale_variants"] = dropped
 
     with open(args.out, "w") as fh:
         json.dump(recon, fh, indent=2)

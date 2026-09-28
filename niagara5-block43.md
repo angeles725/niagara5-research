@@ -119,6 +119,8 @@ call sites.
 
 ## 43.2 — Master-key (`.km`) protection is per-platform-provider, and this install's own launcher picks the DPAPI-backed one `[CERT]`/`[INFER]`
 
+> **Correction (added by [Block 117], §14 cross-block, §117.x).** the `%s` in `-Dniagara.platform.provider=%s` IS filled with `com.tridium.nre.platform.NativePlatformProviderTridium` (vararg to the vsnprintf_s wrapper at 0x1800060be-0x1800060e4, r2 + objdump) — the [INFER — string adjacency] upgrades to [CERT-hw] for that call site; the strings appear class-name-first in the file.
+
 `PlatformKeyMaterial` (the concrete `KeyMaterial` N5 always uses unless `NIAGARA_USE_SIMPLE_KM` is set,
 `[CERT]` `KeyMaterialFactory.java:46`) delegates `.km`'s own read/write entirely to whichever
 `IPlatformProvider` is active (`PlatformKeyMaterial.java:44-58` calling

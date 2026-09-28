@@ -1,0 +1,6 @@
+classes 21752 tridium 20379
+major/minor [((69, 0), 21752)]
+preview 0 []
+top-level hits
+nested hits
+devkit!LIB-INF/kotlin-stdlib-2.3.0.jar {'kotlin-other': 934}

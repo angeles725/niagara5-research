@@ -1,0 +1,8 @@
+TYPES=376 METHODS=3842
+SITE com.tridium.history.fox.BFoxHistorySpace.navEvent:void(niagara.nav.NavEvent) line=293 -> com.tridium.history.BRootHistoryFolder.getPermissions:niagara.security.BPermissions(niagara.sys.Context)
+SITE com.tridium.history.fox.BFoxHistorySpace.navEvent:void(niagara.nav.NavEvent) line=356 -> com.tridium.history.BRootHistoryFolder.getPermissions:niagara.security.BPermissions(niagara.sys.Context)
+SITE com.tridium.history.fox.BFoxHistorySpace.navEvent:void(niagara.nav.NavEvent) line=399 -> com.tridium.history.BRootHistoryFolder.getPermissions:niagara.security.BPermissions(niagara.sys.Context)
+SITE niagara.history.BHistorySpace.getNavChildren:niagara.nav.BINavNode[]() line=194 -> com.tridium.history.BRootHistoryFolder.getPermissions:niagara.security.BPermissions(niagara.sys.Context)
+SITE niagara.history.BHistorySpace.getNavChildren:niagara.nav.BINavNode[]() line=205 -> com.tridium.history.BRootHistoryFolder.getPermissions:niagara.security.BPermissions(niagara.sys.Context)
+CALLER com.tridium.history.fox.BFoxHistorySpace.navEvent:void(niagara.nav.NavEvent)
+CALLER niagara.history.BHistorySpace.getNavChildren:niagara.nav.BINavNode[]()

@@ -1,0 +1,7 @@
+# M3 XParser differential (niagara.xml from nre.jar sha256 d563a334...f9f7)
+inputs: 1513 files (13 hand-written + 1500 seeded fuzz, seed 118) x 2 whitespace modes = 3026 cases
+orig: # XParser from: file:/mnt/c/Program%20Files/Niagara/5.0.0.28/bin/ext/nre.jar  body-sha256=9ee04f2052ce7e332fefeb4e972311a7dbdea937dc2af0270cdcca5fc9b93fce
+vf: # XParser from: file:/tmp/claude-1000/-home-cristian-niagara-research/4d9a109b-8d01-4d7d-acb1-4d2d675d1b66/scratchpad/b118/m3/xp/vf/  body-sha256=9ee04f2052ce7e332fefeb4e972311a7dbdea937dc2af0270cdcca5fc9b93fce
+ds: # XParser from: file:/tmp/claude-1000/-home-cristian-niagara-research/4d9a109b-8d01-4d7d-acb1-4d2d675d1b66/scratchpad/b118/m3/xp/ds/  body-sha256=9ee04f2052ce7e332fefeb4e972311a7dbdea937dc2af0270cdcca5fc9b93fce
+outcome classes (orig):      62 <a:       2 <a{     108 <ba     306 <r{    2548 EXC 
+vf arm note: XInputStreamReader.java (Vineflower) does not compile (duplicate local c1 in switch); the arm uses the original XInputStreamReader*.class copied into the unsealed vf dir (nre.jar seals niagara.xml)

@@ -1,0 +1,19 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+JaCoCo Coverage Report,niagara.xml,XPath.AbstractXPathMatcher,26,0,2,0,9,0,4,0,3,0
+JaCoCo Coverage Report,niagara.xml,XParserEventGenerator.EventListenerRegistration,156,0,32,0,30,0,21,0,5,0
+JaCoCo Coverage Report,niagara.xml,XParserEventElementWriter,62,0,7,0,16,0,9,0,4,0
+JaCoCo Coverage Report,niagara.xml,XParserEventGenerator.XParserEventImpl,176,0,26,0,35,0,22,0,9,0
+JaCoCo Coverage Report,niagara.xml,XElemLocation,172,0,20,0,41,0,24,0,14,0
+JaCoCo Coverage Report,niagara.xml,XPath.DynamicXPathMatcher,333,0,32,0,55,0,24,0,8,0
+JaCoCo Coverage Report,niagara.xml,XPathElem,279,0,46,0,61,0,37,0,14,0
+JaCoCo Coverage Report,niagara.xml,XInputStreamReader,203,88,29,11,44,25,25,8,6,5
+JaCoCo Coverage Report,niagara.xml,XWriter,482,113,36,26,156,31,49,16,31,3
+JaCoCo Coverage Report,niagara.xml,XNs,64,0,12,0,19,0,14,0,8,0
+JaCoCo Coverage Report,niagara.xml,XText,289,121,31,5,70,30,28,8,11,7
+JaCoCo Coverage Report,niagara.xml,XException,86,47,1,5,24,14,14,6,13,4
+JaCoCo Coverage Report,niagara.xml,XElem,1877,265,249,17,401,64,192,17,61,15
+JaCoCo Coverage Report,niagara.xml,XPath,164,0,20,0,38,0,23,0,13,0
+JaCoCo Coverage Report,niagara.xml,XParser,584,998,100,138,144,263,86,85,23,29
+JaCoCo Coverage Report,niagara.xml,XParserEventGenerator,350,0,15,0,71,0,24,0,15,0
+JaCoCo Coverage Report,niagara.xml,XPath.SimpleXPathMatcher,98,0,14,0,11,0,9,0,2,0
+JaCoCo Coverage Report,niagara.xml,XContent,0,6,0,0,0,2,0,2,0,2

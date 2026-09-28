@@ -1,0 +1,40 @@
+./bin/alarmDialog.dll	90b095755f6c5a10a5fb673de8ef159a0ff6e8463a06b92af9014a2244065186	26152	PE32+ executable (DLL) (GUI) x86-64, for MS Windows, 6 sections	go=0 net=0 rust=0 msvcrt=1
+./bin/common.dll	799c6c8dedfc69aaf18bfdab584e7080d69fd5a1e3dc3a614ea59617db4745ab	169512	PE32+ executable (DLL) (GUI) x86-64, for MS Windows, 6 sections	go=0 net=0 rust=0 msvcrt=1
+./bin/console.exe	d8601f84875d18088cf00bdcdb46c63643d7d15dcbef3ecc9d11f4f371f2ab3e	101920	PE32+ executable (console) x86-64, for MS Windows, 6 sections	go=0 net=0 rust=0 msvcrt=1
+./bin/cppunit.dll	3386491a276acdcb05f0de043fd607d11b6d3491337b02dd97c466de3d1d4eaf	215592	PE32+ executable (DLL) (GUI) x86-64, for MS Windows, 6 sections	go=0 net=0 rust=0 msvcrt=3
+./bin/lon.dll	a0f0dadc86a96d64f2ad21d3b241a8e21053bc01dcf6ec27197499fb4da21fef	36896	PE32+ executable (DLL) (GUI) x86-64, for MS Windows, 6 sections	go=0 net=0 rust=0 msvcrt=3
+./bin/msvcp140.dll	03e31b7be4a05831fb56a1930e2f461c6668928f98e26b7f9d6880f898daa86a	569528	PE32+ executable (DLL) (console) x86-64, for MS Windows, 6 sections	go=0 net=0 rust=0 msvcrt=3
+./bin/n5mig.exe	95b5deae0afc4a0b68361f82d4696398691e4b2130a285dce471ab3aa5c97e46	101408	PE32+ executable (console) x86-64, for MS Windows, 6 sections	go=0 net=0 rust=0 msvcrt=1
+./bin/niagarad.exe	64fd6403fe00bc1b8b940254682bad454806e1983f3fe54343c56c035c24944b	24616	PE32+ executable (console) x86-64, for MS Windows, 6 sections	go=0 net=0 rust=0 msvcrt=1
+./bin/njre.dll	1b8b0074c79dc148e479602bb5bb1a2245f3549db421ccb6534bca7f6a4dfd0b	75296	PE32+ executable (DLL) (GUI) x86-64, for MS Windows, 6 sections	go=0 net=0 rust=0 msvcrt=1
+./bin/nre.dll	a6317e8b024ed823ebe857113bff4378600fc2bd41890309696375dce91239c4	116264	PE32+ executable (DLL) (GUI) x86-64, for MS Windows, 6 sections	go=0 net=0 rust=0 msvcrt=1
+./bin/nre.exe	098b52fb992bd08918da8f0209148061cba74de4c1353807265a0ea6aba2aa43	24104	PE32+ executable (console) x86-64, for MS Windows, 6 sections	go=0 net=0 rust=0 msvcrt=1
+./bin/pcapBacEther.dll	d5d4e7eeddf5f9253fa7c2f667195f0e11e61e2539157b0d6b7a8abf4da3b804	29736	PE32+ executable (DLL) (GUI) x86-64, for MS Windows, 6 sections	go=0 net=0 rust=0 msvcrt=1
+./bin/plat.exe	86e6878ea2b39963964a5e1e6f96b39d42841082e4046c5abcc8dd0a95f9339f	52776	PE32+ executable (console) x86-64, for MS Windows, 6 sections	go=0 net=0 rust=0 msvcrt=1
+./bin/station.exe	b166aba5aa4beabab1ee6392600387fdd668ea59467333cc474c48fe8802467a	26152	PE32+ executable (console) x86-64, for MS Windows, 6 sections	go=0 net=0 rust=0 msvcrt=1
+./bin/test.exe	21c6020ca17b4dfbe2282fea1829566b6f84d24839dc35e997bdb68893fcf36a	54816	PE32+ executable (console) x86-64, for MS Windows, 6 sections	go=0 net=0 rust=0 msvcrt=3
+./bin/trayIcon.dll	3cff7cc74febc05114112fdcd17b17adedb031c12524c3b4ebd144fa2625b0f7	200224	PE32+ executable (DLL) (GUI) x86-64, for MS Windows, 6 sections	go=0 net=0 rust=0 msvcrt=2
+./bin/vcruntime140.dll	e629362935662499b7288ef5027afd8a266498987c0a3c4b138f3bff036e8268	136344	PE32+ executable (DLL) (console) x86-64, for MS Windows, 8 sections	go=0 net=0 rust=0 msvcrt=1
+./bin/vcruntime140_1.dll	ace3a3f7e4e0b282f8309a052daf7e84ae9c857c0382f33381f6d38cbbb7f052	61592	PE32+ executable (DLL) (console) x86-64, for MS Windows, 6 sections	go=0 net=0 rust=0 msvcrt=2
+./bin/wb.exe	026622cd7ef88426829fedd18bd5156ca86de1cc9715e33ee4559c943dd90d49	99360	PE32+ executable (console) x86-64, for MS Windows, 6 sections	go=0 net=0 rust=0 msvcrt=1
+./bin/wb_w.exe	7a99fdc0afbb596e19af3a5d4a7fe781f828b16fc6fdbe1fcdafc57d57d9659e	99368	PE32+ executable (GUI) x86-64, for MS Windows, 6 sections	go=0 net=0 rust=0 msvcrt=1
+./NCS-Agent/tridium-ncs-supervisor-amd64-windows.exe	e459956a71949d8feeb4e98eba500d790e29ace2f547c822113620a2658b8ac7	8242176	PE32+ executable (console) x86-64, for MS Windows, 8 sections	go=1 net=0 rust=0 msvcrt=0
+./JxBrowser/9.5.0/awt_toolkit32.dll	fe48da4d562bb5436977f9ab0edc762f639166550cab9dc600f45250485df2bc	903576	PE32 executable (DLL) (console) Intel 80386, for MS Windows, 7 section	go=0 net=0 rust=0 msvcrt=0
+./JxBrowser/9.5.0/awt_toolkit64.dll	4394f7f09e8816f88dbc7f6016913789ca073d4cc93b5358d9de54611d0c5cb9	1946520	PE32+ executable (DLL) (console) x86-64, for MS Windows, 9 sections	go=0 net=0 rust=0 msvcrt=0
+./JxBrowser/9.5.0/chrome.dll	c312bd6b139c18da0abc8053e675f0077578611fcad3686de3554445a89e6b54	303999896	PE32+ executable (DLL) (console) x86-64, for MS Windows, 16 sections	go=0 net=0 rust=0 msvcrt=0
+./JxBrowser/9.5.0/chrome_elf.dll	819b906f35b5cd03ae64b6b4e1698c0411067921254ed5e0ba39501306f5f0c2	2715032	PE32+ executable (DLL) (GUI) x86-64, for MS Windows, 12 sections	go=0 net=0 rust=0 msvcrt=0
+./JxBrowser/9.5.0/chromium.exe	e75ba811a1603feb20fa9d1badb5beba80be0adbaf3113601f61427d4fa4adf1	4149144	PE32+ executable (GUI) x86-64, for MS Windows, 11 sections	go=0 net=0 rust=0 msvcrt=0
+./JxBrowser/9.5.0/d3dcompiler_47.dll	3a5fd3aa3e9853405b15521a1da59b3ae6a2864671c4a0753aa20bb7a752c2f2	4741528	PE32+ executable (DLL) (console) x86-64, for MS Windows, 8 sections	go=0 net=0 rust=0 msvcrt=0
+./JxBrowser/9.5.0/dxcompiler.dll	66ed582b83fa5ab42fef4365f85b44790372b1b3ae08f0d190f4571a7deb5e3b	25765272	PE32+ executable (DLL) (console) x86-64, for MS Windows, 9 sections	go=0 net=0 rust=0 msvcrt=0
+./JxBrowser/9.5.0/dxil.dll	c284858e046e3b0a1563b3ec5691a2e8e39a7a11cfb0f2548928809c2b8e969a	1509784	PE32+ executable (DLL) (console) x86-64, for MS Windows, 6 sections	go=0 net=0 rust=0 msvcrt=0
+./JxBrowser/9.5.0/ipc32.dll	56b2bf2a8c83dc1934577caed9d696a73382d55597829644ff0b2fb27d7cf2ce	929688	PE32 executable (DLL) (console) Intel 80386, for MS Windows, 7 section	go=0 net=0 rust=0 msvcrt=0
+./JxBrowser/9.5.0/ipc64.dll	59c135aa9dfb3bdaaa125640931b13b8a4aad3f881eaf5fe5501292df3d472b4	1975192	PE32+ executable (DLL) (console) x86-64, for MS Windows, 9 sections	go=0 net=0 rust=0 msvcrt=0
+./JxBrowser/9.5.0/libEGL.dll	6340d8503ed1201690186aa31f0b19543f884629ea9875ec772a4dd864fef1e6	468376	PE32+ executable (DLL) (console) x86-64, for MS Windows, 8 sections	go=0 net=0 rust=0 msvcrt=0
+./JxBrowser/9.5.0/libGLESv2.dll	d30d501d7d04a632a874f5a5703121183590df6953a8cf87762d2ee80bb810ab	468376	PE32+ executable (DLL) (console) x86-64, for MS Windows, 8 sections	go=0 net=0 rust=0 msvcrt=0
+./JxBrowser/9.5.0/toolkit32.dll	09e99d2dab6b068872f964c8656992e13365eeed4ec442d7b07de4a09f2ec9be	1002392	PE32 executable (DLL) (console) Intel 80386, for MS Windows, 7 section	go=0 net=0 rust=0 msvcrt=0
+./JxBrowser/9.5.0/toolkit64.dll	f7ef1a06396d2367682668478377c892e0a4a6ab8bce13002ebcafc2743faf2b	2054040	PE32+ executable (DLL) (console) x86-64, for MS Windows, 9 sections	go=0 net=0 rust=0 msvcrt=0
+./JxBrowser/9.5.0/vk_swiftshader.dll	14567e08bc75a950649c093278ff71e4c5f5affdcac8a635dd2059340082364d	5445528	PE32+ executable (DLL) (console) x86-64, for MS Windows, 9 sections	go=0 net=0 rust=0 msvcrt=0
+./JxBrowser/9.5.0/vulkan-1.dll	f005f7d361fe41f6871b2845b4141bd50d832d02df409a0ca1bda3fbcf092c40	976792	PE32+ executable (DLL) (console) x86-64, for MS Windows, 9 sections	go=0 net=0 rust=0 msvcrt=0
+./bin/x86/ldvProxy.exe	2876acfa8305eadcd16f2dea80b6b62b31f7686f3e3abc5b1a1d76234a0c2f5c	31784	PE32 executable (console) Intel 80386, for MS Windows, 5 sections	go=0 net=0 rust=0 msvcrt=2
+./bin/x86/msvcp140.dll	2069edcf9132cdeea3c9f3dcf06517f680054100642e559ea1b68004d6b0c473	459416	PE32 executable (DLL) (console) Intel 80386, for MS Windows, 5 section	go=0 net=0 rust=0 msvcrt=2
+./bin/x86/vcruntime140.dll	4ec7840d46f01a69d354e00a9afe6e883f74e5cc0bb064bb27184e9aa89bc392	103024	PE32 executable (DLL) (console) Intel 80386, for MS Windows, 5 section	go=0 net=0 rust=0 msvcrt=1

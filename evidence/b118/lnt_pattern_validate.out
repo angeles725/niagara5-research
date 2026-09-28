@@ -1,0 +1,32 @@
+('classic', 'classic') 326
+('pattern', 'classic') 1
+('pattern', 'pattern-or-sameline') 92
+('unknown', 'classic') 2
+('unknown', 'pattern-or-sameline') 2
+{
+ "classic|classic": [
+  "alarm:niagara/alarm/BAlarmPriorities:168",
+  "alarm:niagara/alarm/BAlarmSchema:124",
+  "alarm:niagara/alarm/BAlarmDatabase:332",
+  "alarm:niagara/alarm/BAlarmService:1159",
+  "analytics:niagara/analytics/AnalyticContext:710"
+ ],
+ "unknown|classic": [
+  "baja:niagara/virtual/BVirtualComponentSpace:326",
+  "bajaui:niagara/ui/naming/BThemeImageScheme:253"
+ ],
+ "pattern|pattern-or-sameline": [
+  "baja:niagara/role/BRoleService:176",
+  "baja:niagara/role/BRoleService:353",
+  "baja:niagara/role/BRoleService:383",
+  "baja:niagara/io/BIVersionedEncodable:246",
+  "baja:niagara/io/BIVersionedEncodable:301"
+ ],
+ "pattern|classic": [
+  "bajaui:niagara/ui/style/StyleUtils:208"
+ ],
+ "unknown|pattern-or-sameline": [
+  "bajaui:niagara/ui/event/BMouseEvent:338",
+  "bajaui:niagara/ui/event/BMouseWheelEvent:127"
+ ]
+}

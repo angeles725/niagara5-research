@@ -1,0 +1,2049 @@
+nth  paddr      vaddr       len size section type    string
+―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+0    0x0000004d 0x0000004d  44  45           ascii   !This program cannot be run in DOS mode.\r\r\n$
+1    0x0000008f 0x0000008f  7   8            ascii   VTtOVS\f
+2    0x0000009f 0x0000009f  6   8            utf8    Vڅ!V_\f
+3    0x000000ef 0x000000ef  6   8            utf8    V΅#V\\f
+4    0x000000ff 0x000000ff  7   8            ascii   VRich]\f
+5    0x00000228 0x00000228  5   6            ascii   .text
+6    0x0000024f 0x0000024f  7   8            ascii   `.rdata
+7    0x00000277 0x00000277  6   7            ascii   @.data
+8    0x000002a0 0x000002a0  6   7            ascii   .pdata
+9    0x000002c7 0x000002c7  6   7            ascii   @.rsrc
+10   0x000002ef 0x000002ef  7   8            ascii   @.reloc
+11   0x000004a6 0x1800010a6 4   5    .text   ascii   |$0J
+12   0x000004e9 0x1800010e9 4   5    .text   ascii   |$0H
+13   0x00000596 0x180001196 4   5    .text   ascii   |$0J
+14   0x000005d9 0x1800011d9 4   5    .text   ascii   |$0H
+15   0x00000652 0x180001252 4   5    .text   ascii   \$\bH
+16   0x00000676 0x180001276 5   7    .text   utf8    ȉ\$ L
+17   0x00000693 0x180001293 4   5    .text   ascii   \$@H
+18   0x00000698 0x180001298 4   5    .text   ascii   l$HH
+19   0x0000069d 0x18000129d 4   5    .text   ascii   t$PH
+20   0x000006cf 0x1800012cf 6   7    .text   ascii   9q\b~:H
+21   0x00000703 0x180001303 5   6    .text   ascii   A;v\b|
+22   0x0000070b 0x18000130b 4   5    .text   ascii   \$0I
+23   0x00000714 0x180001314 4   5    .text   ascii   t$8H
+24   0x00000719 0x180001319 4   5    .text   ascii   |$@H
+25   0x00000732 0x180001332 5   6    .text   ascii   \$\bWH
+26   0x00000762 0x180001362 4   5    .text   ascii   \$0H
+27   0x00000772 0x180001372 5   6    .text   ascii   \$\bWH
+28   0x000007a2 0x1800013a2 4   5    .text   ascii   \$0H
+29   0x000007b2 0x1800013b2 5   6    .text   ascii   \$\bWH
+30   0x000007d8 0x1800013d8 4   5    .text   ascii   \$0H
+31   0x000008f6 0x1800014f6 4   5    .text   ascii   T$0A
+32   0x0000091a 0x18000151a 4   5    .text   ascii   L$0H
+33   0x0000091f 0x18000151f 4   5    .text   ascii   l$ L
+34   0x00000ac6 0x1800016c6 4   5    .text   ascii   \$ 3
+35   0x00000ae0 0x1800016e0 4   5    .text   ascii   \$ H
+36   0x00000af2 0x1800016f2 4   5    .text   ascii   \$\bH
+37   0x00000b01 0x180001701 10  11   .text   ascii   |$ ATAVAWH
+38   0x00000b0d 0x18000170d 6   7    .text   ascii    HcA\b3
+39   0x00000b52 0x180001752 4   5    .text   ascii   \$@H
+40   0x00000b57 0x180001757 4   5    .text   ascii   l$HH
+41   0x00000b5c 0x18000175c 4   5    .text   ascii   t$PH
+42   0x00000b61 0x180001761 4   5    .text   ascii   |$XH
+43   0x00000b67 0x180001767 7   8    .text   ascii    A_A^A\
+44   0x00000b80 0x180001780 10  11   .text   ascii   @USVWAVAWH
+45   0x00000c01 0x180001801 5   7    .text   utf8    MP3҉E
+46   0x00000c47 0x180001847 4   5    .text   ascii   T$0A
+47   0x00000c62 0x180001862 4   5    .text   ascii   \$0L
+48   0x00000c6a 0x18000186a 4   5    .text   ascii   |$ L
+49   0x00000cfa 0x1800018fa 4   5    .text   ascii   t$ L
+50   0x00000dbd 0x1800019bd 8   9    .text   ascii   A_A^_^[]
+51   0x00000dd0 0x1800019d0 7   8    .text   ascii   @SWATAV
+52   0x00000e70 0x180001a70 4   5    .text   ascii   L$ H
+53   0x00000ed6 0x180001ad6 6   7    .text   ascii   D\f <\nt
+54   0x00000edd 0x180001add 5   6    .text   ascii   <\rt\nH
+55   0x00000efa 0x180001afa 4   5    .text   ascii   d\f H
+56   0x00000eff 0x180001aff 4   7    .text   utf8    L$ 蕹
+57   0x00000f1a 0x180001b1a 4   5    .text   ascii   #w\nI
+58   0x00000f46 0x180001b46 4   5    .text   ascii    =t\f
+59   0x00000f74 0x180001b74 4   5    .text   ascii   t$ H
+60   0x00000f82 0x180001b82 5   6    .text   ascii   Hc_\bH
+61   0x00000fa2 0x180001ba2 5   6    .text   ascii   HcO\bH
+62   0x00000fbf 0x180001bbf 5   6    .text   ascii   Hc_\bH
+63   0x00000fe4 0x180001be4 5   6    .text   ascii   LcG\bM
+64   0x00000ff3 0x180001bf3 4   5    .text   ascii   \btJH
+65   0x00000ffe 0x180001bfe 5   6    .text   ascii   HcG\bH
+66   0x00001088 0x180001c88 6   7    .text   ascii   A^A\_[
+67   0x000010b7 0x180001cb7 8   9    .text   ascii   L$ SUVWH
+68   0x000010c7 0x180001cc7 4   5    .text   ascii   l$xH
+69   0x000010d7 0x180001cd7 4   5    .text   ascii   l$(L
+70   0x00001102 0x180001d02 5   6    .text   ascii   8_^][
+71   0x00001292 0x180001e92 5   6    .text   ascii   \$\bWH
+72   0x000012e9 0x180001ee9 4   5    .text   ascii   /t\eH
+73   0x000012f8 0x180001ef8 4   5    .text   ascii   \t\fH
+74   0x00001309 0x180001f09 4   5    .text   ascii   \$0H
+75   0x00001322 0x180001f22 5   6    .text   ascii   \$\bWH
+76   0x00001357 0x180001f57 4   5    .text   ascii   \$0H
+77   0x00001366 0x180001f66 4   5    .text   ascii   \$0H
+78   0x00001387 0x180001f87 5   6    .text   ascii   8.t\rH
+79   0x00001394 0x180001f94 5   6    .text   ascii   8.u\tH
+80   0x000013b2 0x180001fb2 4   5    .text   ascii   \$\bH
+81   0x000013bf 0x180001fbf 6   7    .text   ascii   WAVAWH
+82   0x000014bc 0x1800020bc 4   5    .text   ascii   \$@H
+83   0x000014c1 0x1800020c1 4   5    .text   ascii   l$HH
+84   0x000014c6 0x1800020c6 4   5    .text   ascii   t$PH
+85   0x000014cc 0x1800020cc 6   7    .text   ascii    A_A^_
+86   0x000014ec 0x1800020ec 7   8    .text   ascii   L$ SVWH
+87   0x000014fb 0x1800020fb 4   5    .text   ascii   t$`H
+88   0x0000150b 0x18000210b 4   5    .text   ascii   t$(H
+89   0x00001539 0x180002139 4   5    .text   ascii   0_^[
+90   0x00001540 0x180002140 11  12   .text   ascii   @USWATAUAWH
+91   0x00001624 0x180002224 4   5    .text   ascii   T$@A
+92   0x0000164b 0x18000224b 4   5    .text   ascii   L$@H
+93   0x00001650 0x180002250 4   5    .text   ascii   D$ L
+94   0x0000167d 0x18000227d 4   5    .text   ascii   l$0H
+95   0x000016bb 0x1800022bb 4   5    .text   ascii   T$0I
+96   0x000016c8 0x1800022c8 4   5    .text   ascii   \$0H
+97   0x000016e3 0x1800022e3 4   5    .text   ascii   L9k\b
+98   0x00001756 0x180002356 4   5    .text   ascii   L$0H
+99   0x0000176c 0x18000236c 4   5    .text   ascii   L$0H
+100  0x00001853 0x180002453 4   5    .text   ascii   \$0H
+101  0x000018c8 0x1800024c8 9   10   .text   ascii   A_A]A\_[]
+102  0x00001916 0x180002516 4   5    .text   ascii   |$0J
+103  0x00001959 0x180002559 4   5    .text   ascii   |$0H
+104  0x000019ab 0x1800025ab 4   5    .text   ascii   |$0L
+105  0x000019ec 0x1800025ec 4   5    .text   ascii   |$0H
+106  0x00001a62 0x180002662 5   6    .text   ascii   \$\bWH
+107  0x00001a8d 0x18000268d 4   5    .text   ascii   \$0H
+108  0x00001ae6 0x1800026e6 4   5    .text   ascii   D$HI
+109  0x00001b1b 0x18000271b 4   5    .text   ascii   L$ 3
+110  0x00001b32 0x180002732 4   7    .text   utf8    D$0蓗
+111  0x00001bd5 0x1800027d5 5   6    .text   ascii   L$HH3
+112  0x00001be2 0x1800027e2 4   5    .text   ascii   \$hH
+113  0x00001c06 0x180002806 4   5    .text   ascii   D$HI
+114  0x00001c33 0x180002833 4   5    .text   ascii   L$ 3
+115  0x00001c84 0x180002884 5   6    .text   ascii   L$HH3
+116  0x00001c91 0x180002891 4   5    .text   ascii   \$hH
+117  0x00001d16 0x180002916 6   7    .text   ascii   |$0HcH
+118  0x00001d4d 0x18000294d 4   5    .text   ascii   |$0H
+119  0x00001d70 0x180002970 5   6    .text   ascii   @SVWH
+120  0x00001d84 0x180002984 4   5    .text   ascii   D$HA
+121  0x00001db9 0x1800029b9 4   5    .text   ascii   L$ 3
+122  0x00001dda 0x1800029da 4   5    .text   ascii   L$ @
+123  0x00001e24 0x180002a24 4   7    .text   utf8    L$ 觔
+124  0x00001e35 0x180002a35 5   6    .text   ascii   L$HH3
+125  0x00001e43 0x180002a43 4   5    .text   ascii   P_^[
+126  0x00001e50 0x180002a50 4   5    .text   ascii   @SVH
+127  0x00001e63 0x180002a63 4   5    .text   ascii   D$8H
+128  0x00001e68 0x180002a68 4   5    .text   ascii   |$hL
+129  0x00001e6d 0x180002a6d 4   5    .text   ascii   t$pL
+130  0x00001eac 0x180002aac 5   7    .text   utf8    ؉|$0H
+131  0x00001ec5 0x180002ac5 5   7    .text   utf8    ߉|$0H
+132  0x00001ee2 0x180002ae2 4   5    .text   ascii   |$0I
+133  0x00001f20 0x180002b20 4   5    .text   ascii   T$0L
+134  0x00001f8a 0x180002b8a 6   7    .text   ascii   \b;|$0|
+135  0x00001f93 0x180002b93 4   5    .text   ascii   |$@L
+136  0x00001f98 0x180002b98 4   5    .text   ascii   t$pH
+137  0x00001f9d 0x180002b9d 4   5    .text   ascii   |$hH
+138  0x00001fc5 0x180002bc5 5   6    .text   ascii   L$8H3
+139  0x00001fe2 0x180002be2 5   6    .text   ascii   \$\bWH
+140  0x00002003 0x180002c03 4   5    .text   ascii   \$0H
+141  0x00002032 0x180002c32 4   5    .text   ascii   \$0H
+142  0x00002042 0x180002c42 5   6    .text   ascii   \$\bWH
+143  0x0000205c 0x180002c5c 4   5    .text   ascii   \$0H
+144  0x0000208b 0x180002c8b 4   5    .text   ascii   \$0H
+145  0x000020a0 0x180002ca0 7   8    .text   ascii   @VATAVH
+146  0x000020dd 0x180002cdd 6   7    .text   ascii    A^A\^
+147  0x000020f0 0x180002cf0 4   5    .text   ascii   l$HH
+148  0x000020f5 0x180002cf5 4   5    .text   ascii   |$PL
+149  0x0000219f 0x180002d9f 4   5    .text   ascii   |$XH
+150  0x000021c2 0x180002dc2 4   5    .text   ascii   l$HH
+151  0x000021e7 0x180002de7 4   5    .text   ascii   \$@H
+152  0x000021ef 0x180002def 4   5    .text   ascii   |$PH
+153  0x000021f5 0x180002df5 6   7    .text   ascii    A^A\^
+154  0x00002202 0x180002e02 5   6    .text   ascii   \$\bWH
+155  0x000022c2 0x180002ec2 5   6    .text   ascii   \$\bWH
+156  0x000022dc 0x180002edc 4   5    .text   ascii   \$0H
+157  0x0000230b 0x180002f0b 4   5    .text   ascii   \$0H
+158  0x00002362 0x180002f62 4   5    .text   ascii   \$\bH
+159  0x00002411 0x180003011 4   5    .text   ascii   \$0H
+160  0x00002416 0x180003016 4   5    .text   ascii   l$8H
+161  0x0000241b 0x18000301b 4   5    .text   ascii   t$@H
+162  0x00002430 0x180003030 4   5    .text   ascii   @UVH
+163  0x000024c8 0x1800030c8 4   5    .text   ascii   L$ 3
+164  0x000024eb 0x1800030eb 4   5    .text   ascii   L$PA
+165  0x0000250f 0x18000310f 4   5    .text   ascii   T$ L
+166  0x00002514 0x180003114 4   5    .text   ascii   D$PA
+167  0x00002536 0x180003136 4   5    .text   ascii   T$PH
+168  0x000025b2 0x1800031b2 5   6    .text   ascii   \$\bWH
+169  0x00002655 0x180003255 4   5    .text   ascii   \$0H
+170  0x00002692 0x180003292 4   5    .text   ascii   L$0A
+171  0x000026bb 0x1800032bb 4   5    .text   ascii   L$0H
+172  0x000026c0 0x1800032c0 4   5    .text   ascii   D$ I
+173  0x000026d4 0x1800032d4 4   5    .text   ascii   T$0H
+174  0x00002754 0x180003354 4   5    .text   ascii   T$ H
+175  0x00002769 0x180003369 5   6    .text   ascii   L$`H3
+176  0x000027d4 0x1800033d4 4   5    .text   ascii   T$ H
+177  0x000027e9 0x1800033e9 5   6    .text   ascii   L$`H3
+178  0x00002854 0x180003454 4   5    .text   ascii   T$ H
+179  0x00002869 0x180003469 5   6    .text   ascii   L$`H3
+180  0x000028a8 0x1800034a8 4   5    .text   ascii   L$ A
+181  0x000028db 0x1800034db 4   5    .text   ascii   T$ H
+182  0x00002964 0x180003564 4   5    .text   ascii   T$ H
+183  0x00002979 0x180003579 5   6    .text   ascii   L$`H3
+184  0x000029e4 0x1800035e4 4   5    .text   ascii   T$ H
+185  0x000029f9 0x1800035f9 5   6    .text   ascii   L$`H3
+186  0x00002a64 0x180003664 4   5    .text   ascii   T$ H
+187  0x00002a79 0x180003679 5   6    .text   ascii   L$`H3
+188  0x00002a90 0x180003690 5   6    .text   ascii   @SVWH
+189  0x00002aa4 0x1800036a4 4   5    .text   ascii   D$HA
+190  0x00002add 0x1800036dd 4   5    .text   ascii   L$ 3
+191  0x00002afe 0x1800036fe 4   5    .text   ascii   L$ @
+192  0x00002b1c 0x18000371c 4   7    .text   utf8    L$ 诇
+193  0x00002b92 0x180003792 5   6    .text   ascii   L$HH3
+194  0x00002ba0 0x1800037a0 4   5    .text   ascii   P_^[
+195  0x00002bb2 0x1800037b2 4   5    .text   ascii   \$\bH
+196  0x00002c5f 0x18000385f 4   5    .text   ascii   \$0H
+197  0x00002c67 0x180003867 4   5    .text   ascii   t$8H
+198  0x00002c86 0x180003886 4   5    .text   ascii   D$@H
+199  0x00002ca6 0x1800038a6 4   5    .text   ascii   L$0H
+200  0x00002cc5 0x1800038c5 5   6    .text   ascii   L$ E3
+201  0x00002ce3 0x1800038e3 5   6    .text   ascii   L$@H3
+202  0x00002cf0 0x1800038f0 4   5    .text   ascii   \$hH
+203  0x00002d00 0x180003900 5   6    .text   ascii   @SVWH
+204  0x00002d14 0x180003914 4   5    .text   ascii   D$HA
+205  0x00002d4d 0x18000394d 4   5    .text   ascii   L$ 3
+206  0x00002d6e 0x18000396e 4   5    .text   ascii   L$ @
+207  0x00002dda 0x1800039da 5   6    .text   ascii   L$HH3
+208  0x00002de8 0x1800039e8 4   5    .text   ascii   P_^[
+209  0x00002df2 0x1800039f2 5   6    .text   ascii   \$ WH
+210  0x00002dfc 0x1800039fc 4   5    .text   ascii   l$0L
+211  0x00002e01 0x180003a01 4   5    .text   ascii   t$@L
+212  0x00002e55 0x180003a55 4   7    .text   utf8    t$8艆
+213  0x00002f0b 0x180003b0b 4   5    .text   ascii   t$@H
+214  0x00002f10 0x180003b10 4   5    .text   ascii   t$8H
+215  0x00002f15 0x180003b15 4   5    .text   ascii   l$0H
+216  0x00002f3a 0x180003b3a 4   5    .text   ascii   \$HH
+217  0x00003022 0x180003c22 5   6    .text   ascii   \$\bWH
+218  0x000030e6 0x180003ce6 4   5    .text   ascii   D$HI
+219  0x00003117 0x180003d17 4   5    .text   ascii   L$ 3
+220  0x0000312e 0x180003d2e 4   7    .text   utf8    D$0藁
+221  0x0000318c 0x180003d8c 5   6    .text   ascii   L$HH3
+222  0x00003199 0x180003d99 4   5    .text   ascii   \$hH
+223  0x00003202 0x180003e02 5   6    .text   ascii   \$\bWH
+224  0x00003289 0x180003e89 4   5    .text   ascii   \$0H
+225  0x000032b6 0x180003eb6 4   5    .text   ascii   D$XI
+226  0x000032eb 0x180003eeb 4   5    .text   ascii   L$ 3
+227  0x0000333d 0x180003f3d 4   5    .text   ascii   L$LH
+228  0x00003345 0x180003f45 4   5    .text   ascii   D$PH
+229  0x00003358 0x180003f58 4   5    .text   ascii   \$HH
+230  0x00003370 0x180003f70 5   6    .text   ascii   L$XH3
+231  0x0000337d 0x180003f7d 4   5    .text   ascii   \$xH
+232  0x000033a6 0x180003fa6 4   5    .text   ascii   D$XI
+233  0x000033db 0x180003fdb 4   5    .text   ascii   L$ 3
+234  0x0000342d 0x18000402d 4   5    .text   ascii   L$LH
+235  0x00003435 0x180004035 4   5    .text   ascii   D$HH
+236  0x00003448 0x180004048 4   5    .text   ascii   \$HH
+237  0x00003460 0x180004060 5   6    .text   ascii   L$XH3
+238  0x0000346d 0x18000406d 4   5    .text   ascii   \$xH
+239  0x00003496 0x180004096 4   5    .text   ascii   D$XI
+240  0x000034cb 0x1800040cb 4   5    .text   ascii   L$ 3
+241  0x0000351d 0x18000411d 4   5    .text   ascii   L$HH
+242  0x00003525 0x180004125 4   5    .text   ascii   D$LH
+243  0x00003538 0x180004138 4   5    .text   ascii   \$HH
+244  0x00003550 0x180004150 5   6    .text   ascii   L$XH3
+245  0x0000355d 0x18000415d 4   5    .text   ascii   \$xH
+246  0x00003570 0x180004170 5   6    .text   ascii   @SVWH
+247  0x00003587 0x180004187 4   5    .text   ascii   D$pI
+248  0x000035e5 0x1800041e5 4   5    .text   ascii   L$H3
+249  0x00003609 0x180004209 4   5    .text   ascii   L$ 3
+250  0x0000362a 0x18000422a 4   5    .text   ascii   T$ H
+251  0x00003657 0x180004257 5   6    .text   ascii   L$pH3
+252  0x00003670 0x180004270 5   6    .text   ascii   @SVWH
+253  0x00003687 0x180004287 4   5    .text   ascii   D$pI
+254  0x000036e5 0x1800042e5 4   5    .text   ascii   L$H3
+255  0x00003709 0x180004309 4   5    .text   ascii   L$ 3
+256  0x0000372a 0x18000432a 4   5    .text   ascii   T$ H
+257  0x00003757 0x180004357 5   6    .text   ascii   L$pH3
+258  0x00003779 0x180004379 4   5    .text   ascii   SVWH
+259  0x0000378c 0x18000438c 4   5    .text   ascii   D$HH
+260  0x000037bb 0x1800043bb 4   5    .text   ascii   L$ 3
+261  0x0000386b 0x18000446b 5   6    .text   ascii   L$HH3
+262  0x00003879 0x180004479 4   5    .text   ascii   P_^[
+263  0x00003943 0x180004543 4   5    .text   ascii   D$ph
+264  0x00003978 0x180004578 4   5    .text   ascii   D$`H
+265  0x0000397d 0x18000457d 4   5    .text   ascii   D$PH
+266  0x00003982 0x180004582 4   5    .text   ascii   D$HH
+267  0x00003987 0x180004587 4   5    .text   ascii   D$pH
+268  0x0000398c 0x18000458c 4   5    .text   ascii   D$@3
+269  0x00003993 0x180004593 4   5    .text   ascii   D$8H
+270  0x0000399c 0x18000459c 4   5    .text   ascii   D$(\b
+271  0x00003a40 0x180004640 5   6    .text   ascii   @SVWH
+272  0x00003a57 0x180004657 4   5    .text   ascii   D$pI
+273  0x00003ab1 0x1800046b1 4   5    .text   ascii   L$H3
+274  0x00003ad5 0x1800046d5 4   5    .text   ascii   L$ 3
+275  0x00003b10 0x180004710 5   6    .text   ascii   L$pH3
+276  0x00003b30 0x180004730 5   6    .text   ascii   @SVWH
+277  0x00003b44 0x180004744 4   5    .text   ascii   D$HA
+278  0x00003b7c 0x18000477c 4   5    .text   ascii   L$ 3
+279  0x00003c7a 0x18000487a 5   6    .text   ascii   L$HH3
+280  0x00003c88 0x180004888 4   5    .text   ascii   P_^[
+281  0x00003c92 0x180004892 10  11   .text   ascii   L$ SUVWAVH
+282  0x00003cba 0x1800048ba 4   5    .text   ascii   t$0L
+283  0x00003cd1 0x1800048d1 4   5    .text   ascii   l$ H
+284  0x00003cea 0x1800048ea 7   8    .text   ascii   @A^_^][
+285  0x00003d07 0x180004907 4   5    .text   ascii   L$ H
+286  0x00003d13 0x180004913 4   5    .text   ascii   L$XH
+287  0x00003d37 0x180004937 4   5    .text   ascii   L$ H
+288  0x00003d43 0x180004943 4   5    .text   ascii   L$XH
+289  0x00003d70 0x180004970 4   5    .text   ascii   D$@H
+290  0x00003d7c 0x18000497c 4   5    .text   ascii   D$ H
+291  0x00003d81 0x180004981 4   5    .text   ascii   L$ H
+292  0x00003d8d 0x18000498d 4   5    .text   ascii   D$(3
+293  0x00003d94 0x180004994 4   5    .text   ascii   D$0H
+294  0x00003db0 0x1800049b0 5   6    .text   ascii   L$@H3
+295  0x00003e3d 0x180004a3d 5   6    .text   ascii   L$8H3
+296  0x00003e57 0x180004a57 4   5    .text   ascii   t$PH
+297  0x00003ecc 0x180004acc 5   6    .text   ascii   T$0E3
+298  0x00003ee1 0x180004ae1 4   5    .text   ascii   L$0H
+299  0x00003f28 0x180004b28 4   5    .text   ascii   L$0L
+300  0x00003f79 0x180004b79 4   5    .text   ascii   L$0L
+301  0x00003fb4 0x180004bb4 4   5    .text   ascii   L$0L
+302  0x00003ffe 0x180004bfe 4   5    .text   ascii   L$0L
+303  0x0000406a 0x180004c6a 4   5    .text   ascii   |$XH
+304  0x0000406f 0x180004c6f 4   5    .text   ascii   t$PH
+305  0x00004074 0x180004c74 5   6    .text   ascii   L$8H3
+306  0x000040c4 0x180004cc4 4   5    .text   ascii   \$ 3
+307  0x00004172 0x180004d72 5   6    .text   ascii   \$\bWH
+308  0x00004292 0x180004e92 4   5    .text   ascii   \$0@
+309  0x000042a0 0x180004ea0 5   6    .text   ascii   @SVWH
+310  0x000042b7 0x180004eb7 4   5    .text   ascii   D$pI
+311  0x00004319 0x180004f19 4   5    .text   ascii   L$H3
+312  0x0000433d 0x180004f3d 4   5    .text   ascii   L$ 3
+313  0x0000435e 0x180004f5e 4   5    .text   ascii   L$HH
+314  0x00004373 0x180004f73 4   5    .text   ascii   L$ H
+315  0x00004476 0x180005076 5   6    .text   ascii   L$pH3
+316  0x000044c2 0x1800050c2 5   6    .text   ascii   \$\bWH
+317  0x000044e3 0x1800050e3 4   6    .text   utf8    ىA\bH
+318  0x000047c8 0x1800053c8 4   5    .text   ascii   \$0H
+319  0x000049cd 0x1800055cd 4   5    .text   ascii   \$\bA
+320  0x00004a00 0x180005600 6   7    .text   ascii   @UVAWH
+321  0x00004a16 0x180005616 4   5    .text   ascii   \$@H
+322  0x00004a1b 0x18000561b 4   5    .text   ascii   |$HH
+323  0x00004a2b 0x18000562b 4   5    .text   ascii   t$PH
+324  0x00004a5a 0x18000565a 4   5    .text   ascii   |$HH
+325  0x00004a5f 0x18000565f 4   5    .text   ascii   \$@A
+326  0x00004a7f 0x18000567f 4   5    .text   ascii   t$PH
+327  0x00004a89 0x180005689 5   6    .text   ascii    A_^]
+328  0x00004ab7 0x1800056b7 5   6    .text   ascii    A_^]
+329  0x00004ad6 0x1800056d6 4   5    .text   ascii   \$0H
+330  0x00004adf 0x1800056df 4   5    .text   ascii   t$8L
+331  0x00004b07 0x180005707 4   5    .text   ascii   \$0@
+332  0x00004b2c 0x18000572c 4   5    .text   ascii   t$8H
+333  0x00004b31 0x180005731 4   5    .text   ascii   t$@H
+334  0x00004b54 0x180005754 4   5    .text   ascii   t$@H
+335  0x00004b67 0x180005767 4   5    .text   ascii   L$ H
+336  0x00004b73 0x180005773 4   5    .text   ascii   L$XH
+337  0x00004b90 0x180005790 8   9    .text   ascii   @USVWAUH
+338  0x00004be2 0x1800057e2 4   5    .text   ascii   T$0D
+339  0x00004cd2 0x1800058d2 6   7    .text   ascii   7A9]\bt
+340  0x00004d16 0x180005916 4   5    .text   ascii   -Hc=
+341  0x00004d93 0x180005993 5   6    .text   ascii   Hc\r.K
+342  0x00004dda 0x1800059da 6   7    .text   ascii   \bD;t$0
+343  0x00004ec0 0x180005ac0 4   5    .text   ascii   L$@A
+344  0x00004ee0 0x180005ae0 4   5    .text   ascii   t$ I
+345  0x00004efd 0x180005afd 4   5    .text   ascii   L$@H
+346  0x00004f4c 0x180005b4c 5   6    .text   ascii   Hc=uI
+347  0x00004f6a 0x180005b6a 6   8    .text   utf8    \a3ҋ=UI
+348  0x00004fc9 0x180005bc9 4   5    .text   ascii   L$(H
+349  0x0000505f 0x180005c5f 4   5    .text   ascii   D$ I
+350  0x00005075 0x180005c75 5   6    .text   ascii   Hc=LH
+351  0x000050c6 0x180005cc6 4   5    .text   ascii   D$ I
+352  0x0000528f 0x180005e8f 5   6    .text   ascii   Hc=2F
+353  0x000052c6 0x180005ec6 4   5    .text   ascii   t$Hc
+354  0x0000539e 0x180005f9e 4   5    .text   ascii   D$ I
+355  0x000053b4 0x180005fb4 5   6    .text   ascii   Hc=\rE
+356  0x00005405 0x180006005 4   5    .text   ascii   D$ I
+357  0x0000546c 0x18000606c 4   5    .text   ascii   D$ I
+358  0x00005482 0x180006082 5   6    .text   ascii   Hc=?D
+359  0x000054d3 0x1800060d3 4   5    .text   ascii   D$ I
+360  0x000055d9 0x1800061d9 6   7    .text   ascii   A9]\btx
+361  0x0000560d 0x18000620d 4   5    .text   ascii   v\b;=
+362  0x0000566f 0x18000626f 6   7    .text   ascii   A]_^[]
+363  0x00005722 0x180006322 4   5    .text   ascii   T$ H
+364  0x00005757 0x180006357 4   5    .text   ascii   L$0A
+365  0x00005767 0x180006367 4   5    .text   ascii   L$ H
+366  0x0000576c 0x18000636c 4   5    .text   ascii   T$0A
+367  0x00005794 0x180006394 4   5    .text   ascii   \$ H
+368  0x0000582a 0x18000642a 4   5    .text   ascii   D$0H
+369  0x0000583b 0x18000643b 4   5    .text   ascii   \$ H
+370  0x000058c7 0x1800064c7 5   7    .text   utf8     [Ã{\b
+371  0x00005917 0x180006517 5   6    .text   ascii   t$ WH
+372  0x00005941 0x180006541 6   7    .text   ascii   9q\btAH
+373  0x0000598b 0x18000658b 4   5    .text   ascii   L$PA
+374  0x000059ab 0x1800065ab 4   5    .text   ascii   D$ I
+375  0x00005a3d 0x18000663d 4   5    .text   ascii   T$PH
+376  0x00005a87 0x180006687 4   5    .text   ascii   D$0H
+377  0x00005a8c 0x18000668c 4   5    .text   ascii   D$8H
+378  0x00005a9e 0x18000669e 4   5    .text   ascii   L$4H
+379  0x00005af9 0x1800066f9 4   5    .text   ascii   |$ H
+380  0x00005b42 0x180006742 5   6    .text   ascii   \$ WH
+381  0x00005b66 0x180006766 4   5    .text   ascii   L$@A
+382  0x00005b8c 0x18000678c 4   5    .text   ascii   D$ I
+383  0x00005bb2 0x1800067b2 4   5    .text   ascii   T$@H
+384  0x00005bcf 0x1800067cf 4   5    .text   ascii   L$03
+385  0x00005bf5 0x1800067f5 4   5    .text   ascii   L$0H
+386  0x00005c10 0x180006810 5   6    .text   ascii   L$0E3
+387  0x00005c4b 0x18000684b 4   5    .text   ascii   L$0L
+388  0x00005c90 0x180006890 4   5    .text   ascii   L$0H
+389  0x00005d77 0x180006977 8   9    .text   ascii   l$ VWAVH
+390  0x00005e34 0x180006a34 4   5    .text   ascii   L$@A
+391  0x00005e57 0x180006a57 4   5    .text   ascii   D$ I
+392  0x00005e7d 0x180006a7d 4   5    .text   ascii   T$@H
+393  0x00005eb2 0x180006ab2 4   5    .text   ascii   L$03
+394  0x00005eeb 0x180006aeb 5   6    .text   ascii   L$0E3
+395  0x00005f1e 0x180006b1e 4   5    .text   ascii   L$0L
+396  0x00005f4f 0x180006b4f 4   5    .text   ascii   L$0H
+397  0x00005f9e 0x180006b9e 4   5    .text   ascii   A^_^
+398  0x00005fb0 0x180006bb0 4   5    .text   ascii   @UWH
+399  0x0000603c 0x180006c3c 4   5    .text   ascii   T$PH
+400  0x00006041 0x180006c41 4   5    .text   ascii   t$HH
+401  0x00006046 0x180006c46 4   5    .text   ascii   L$HH
+402  0x0000605a 0x180006c5a 4   5    .text   ascii   D$HM
+403  0x000061d3 0x180006dd3 4   5    .text   ascii   t$@H
+404  0x000061d8 0x180006dd8 4   5    .text   ascii   T$XH
+405  0x000061dd 0x180006ddd 4   5    .text   ascii   t$XH
+406  0x000061ed 0x180006ded 4   5    .text   ascii   L$@H
+407  0x00006207 0x180006e07 4   5    .text   ascii   L$@H
+408  0x00006236 0x180006e36 6   7    .text   ascii   D$@uxH
+409  0x0000623d 0x180006e3d 4   5    .text   ascii   D$0L
+410  0x00006250 0x180006e50 4   5    .text   ascii   D$(H
+411  0x0000626d 0x180006e6d 4   5    .text   ascii   D$@I
+412  0x00006279 0x180006e79 4   5    .text   ascii   D$(H
+413  0x00006287 0x180006e87 4   5    .text   ascii   D$@I
+414  0x000062b5 0x180006eb5 4   5    .text   ascii   D$(H
+415  0x00006377 0x180006f77 4   5    .text   ascii   D$(H
+416  0x000063b7 0x180006fb7 4   5    .text   ascii   D$(L
+417  0x000063e0 0x180006fe0 4   5    .text   ascii   L$`A
+418  0x00006401 0x180007001 4   5    .text   ascii   L$`I
+419  0x00006457 0x180007057 4   5    .text   ascii   D$`H
+420  0x00006476 0x180007076 4   5    .text   ascii   D$`H
+421  0x000064bc 0x1800070bc 4   5    .text   ascii   D$`3
+422  0x000066f3 0x1800072f3 4   5    .text   ascii   \$ I
+423  0x00006860 0x180007460 5   6    .text   ascii   @SUWH
+424  0x0000688c 0x18000748c 4   5    .text   ascii   |$`H
+425  0x000068d3 0x1800074d3 4   5    .text   ascii   |$`H
+426  0x000068d9 0x1800074d9 5   7    .text   utf8    0_][Ã
+427  0x00006957 0x180007557 4   5    .text   ascii   |$`H
+428  0x0000695d 0x18000755d 4   5    .text   ascii   0_][
+429  0x00006978 0x180007578 4   5    .text   ascii   |$`H
+430  0x0000697e 0x18000757e 4   5    .text   ascii   0_][
+431  0x00006ad6 0x1800076d6 4   5    .text   ascii   t$XH
+432  0x00006afc 0x1800076fc 4   5    .text   ascii   |$`H
+433  0x00006b02 0x180007702 5   7    .text   utf8    0_][Ã
+434  0x00006b2d 0x18000772d 4   5    .text   ascii   |$`3
+435  0x00006b35 0x180007735 4   5    .text   ascii   0_][
+436  0x00006b52 0x180007752 5   6    .text   ascii   \$ VH
+437  0x00006b76 0x180007776 4   5    .text   ascii   L$0A
+438  0x00006bff 0x1800077ff 4   5    .text   ascii   D$ I
+439  0x00006cf6 0x1800078f6 4   5    .text   ascii   T$0H
+440  0x00006db0 0x1800079b0 8   9    .text   ascii   @SUVWAVH
+441  0x00006de6 0x1800079e6 4   5    .text   ascii   L$D3
+442  0x00006ded 0x1800079ed 4   5    .text   ascii   t$<A
+443  0x00006e49 0x180007a49 4   5    .text   ascii   D$4\n
+444  0x00006ea1 0x180007aa1 6   7    .text   ascii   A^_^][
+445  0x00006eb1 0x180007ab1 4   5    .text   ascii   T$(H
+446  0x00006ec5 0x180007ac5 4   5    .text   ascii   L$ H
+447  0x00006eda 0x180007ada 7   8    .text   ascii   D9s\bt\fH
+448  0x00006fbc 0x180007bbc 7   8    .text   ascii   D9s\bt\fH
+449  0x00006fe3 0x180007be3 7   8    .text   ascii   D9s\bt\fH
+450  0x00007005 0x180007c05 7   8    .text   ascii   D9s\bt\fH
+451  0x0000702c 0x180007c2c 7   8    .text   ascii   D9s\bt\fH
+452  0x0000704e 0x180007c4e 7   8    .text   ascii   D9s\bt\fH
+453  0x00007070 0x180007c70 7   8    .text   ascii   D9s\bt\fH
+454  0x00007095 0x180007c95 7   8    .text   ascii   D9s\bt\fH
+455  0x0000713c 0x180007d3c 7   8    .text   ascii   L$ SVWH
+456  0x0000714b 0x180007d4b 4   5    .text   ascii   t$`H
+457  0x0000715b 0x180007d5b 4   5    .text   ascii   t$ L
+458  0x00007170 0x180007d70 4   5    .text   ascii   0_^[
+459  0x00007182 0x180007d82 4   5    .text   ascii   L$\bH
+460  0x00007191 0x180007d91 7   8    .text   ascii   L$ SVWH
+461  0x000071bb 0x180007dbb 4   5    .text   ascii   t$ L
+462  0x000071d0 0x180007dd0 4   5    .text   ascii   0_^[
+463  0x000071e2 0x180007de2 4   5    .text   ascii   L$\bH
+464  0x000071f1 0x180007df1 7   8    .text   ascii   L$ SVWH
+465  0x0000721b 0x180007e1b 4   5    .text   ascii   t$ L
+466  0x00007230 0x180007e30 4   5    .text   ascii   0_^[
+467  0x00007240 0x180007e40 5   6    .text   ascii   @SVWH
+468  0x00007254 0x180007e54 4   5    .text   ascii   D$8H
+469  0x00007259 0x180007e59 4   5    .text   ascii   l$pI
+470  0x00007283 0x180007e83 4   5    .text   ascii   t E3
+471  0x000072dd 0x180007edd 4   5    .text   ascii   t$HL
+472  0x00007318 0x180007f18 5   6    .text   ascii   |$ Hc
+473  0x00007332 0x180007f32 4   5    .text   ascii   D$0H
+474  0x00007360 0x180007f60 4   5    .text   ascii   Hc;H
+475  0x00007399 0x180007f99 4   5    .text   ascii   t$HL
+476  0x000073b0 0x180007fb0 6   7    .text   ascii   tKHc;H
+477  0x000073d2 0x180007fd2 4   5    .text   ascii   Hc;H
+478  0x000073eb 0x180007feb 4   5    .text   ascii   Hc;H
+479  0x000073fd 0x180007ffd 4   5    .text   ascii   Hc;H
+480  0x0000741d 0x18000801d 4   5    .text   ascii   Hc;H
+481  0x00007438 0x180008038 4   5    .text   ascii   Hc;H
+482  0x0000745e 0x18000805e 4   5    .text   ascii   Hc;H
+483  0x0000747e 0x18000807e 4   5    .text   ascii   Hc;H
+484  0x00007497 0x180008097 4   5    .text   ascii   Hc;H
+485  0x000074b0 0x1800080b0 4   5    .text   ascii   Hc;H
+486  0x000074c9 0x1800080c9 4   5    .text   ascii   Hc;H
+487  0x000074e2 0x1800080e2 4   5    .text   ascii   Hc;H
+488  0x000074fb 0x1800080fb 4   5    .text   ascii   Hc;H
+489  0x00007514 0x180008114 4   5    .text   ascii   Hc;H
+490  0x0000752d 0x18000812d 4   5    .text   ascii   Hc;H
+491  0x00007546 0x180008146 4   5    .text   ascii   Hc;H
+492  0x0000755f 0x18000815f 4   5    .text   ascii   Hc;H
+493  0x00007578 0x180008178 4   5    .text   ascii   Hc;H
+494  0x00007591 0x180008191 4   5    .text   ascii   Hc;H
+495  0x000075aa 0x1800081aa 4   5    .text   ascii   Hc;H
+496  0x000075bc 0x1800081bc 4   5    .text   ascii   Hc;H
+497  0x000075fb 0x1800081fb 4   5    .text   ascii   Hc;H
+498  0x00007614 0x180008214 4   5    .text   ascii   Hc;H
+499  0x0000762d 0x18000822d 4   5    .text   ascii   Hc;H
+500  0x00007648 0x180008248 9   10   .text   ascii   l$pt2Hc;H
+501  0x0000766d 0x18000826d 4   5    .text   ascii   Hc;H
+502  0x00007683 0x180008283 5   6    .text   ascii   L$8H3
+503  0x00007691 0x180008291 4   5    .text   ascii   P_^[
+504  0x000076b2 0x1800082b2 4   5    .text   ascii   D$0H
+505  0x000076cb 0x1800082cb 4   5    .text   ascii   L$ H
+506  0x000076df 0x1800082df 4   5    .text   ascii   L$ H
+507  0x0000775a 0x18000835a 5   6    .text   ascii   L$0H3
+508  0x000077d2 0x1800083d2 7   8    .text   ascii   \$ UVWH
+509  0x000077f9 0x1800083f9 4   5    .text   ascii   L$@H
+510  0x00007807 0x180008407 4   5    .text   ascii   T$@H
+511  0x000078db 0x1800084db 4   5    .text   ascii   T$pH
+512  0x00007934 0x180008534 4   5    .text   ascii   D$0H
+513  0x0000794a 0x18000854a 4   5    .text   ascii   D$pH
+514  0x00007952 0x180008552 4   5    .text   ascii   D$(H
+515  0x00007982 0x180008582 15  16   .text   ascii   \$ UVWATAUAVAWH
+516  0x00007a85 0x180008685 4   5    .text   ascii   D$ L
+517  0x00007aac 0x1800086ac 4   5    .text   ascii   D$ L
+518  0x00007b24 0x180008724 4   5    .text   ascii   |$(L
+519  0x00007b33 0x180008733 4   5    .text   ascii   D$ H
+520  0x00007b82 0x180008782 4   5    .text   ascii   |$(H
+521  0x00007c98 0x180008898 4   5    .text   ascii   |$hH
+522  0x00007ca0 0x1800088a0 4   5    .text   ascii   t$`H
+523  0x00007ca8 0x1800088a8 4   5    .text   ascii   t$XH
+524  0x00007cb4 0x1800088b4 4   5    .text   ascii   |$PD
+525  0x00007cb9 0x1800088b9 4   5    .text   ascii   d$HD
+526  0x00007cd2 0x1800088d2 4   5    .text   ascii   D$(H
+527  0x00007cd7 0x1800088d7 4   7    .text   utf8    t$ 豿
+528  0x00007e0b 0x180008a0b 11  12   .text   ascii   A_A^A]A\_^]
+529  0x00007e82 0x180008a82 5   6    .text   ascii   \$\bWH
+530  0x00007ef8 0x180008af8 4   5    .text   ascii   \$03
+531  0x00007f90 0x180008b90 7   8    .text   ascii   @SUWAVH
+532  0x00007fa9 0x180008ba9 4   5    .text   ascii   D$xH
+533  0x0000801d 0x180008c1d 4   5    .text   ascii   D$PL
+534  0x00008025 0x180008c25 4   5    .text   ascii   D$ H
+535  0x00008062 0x180008c62 4   5    .text   ascii   D$PL
+536  0x0000806a 0x180008c6a 4   5    .text   ascii   D$ H
+537  0x000080d2 0x180008cd2 5   6    .text   ascii   ?{t\af
+538  0x000080d8 0x180008cd8 4   5    .text   ascii   <G}u
+539  0x000080fd 0x180008cfd 4   5    .text   ascii   L$XD
+540  0x0000811b 0x180008d1b 4   5    .text   ascii   D$HD
+541  0x00008120 0x180008d20 4   5    .text   ascii   D$@I
+542  0x0000812c 0x180008d2c 4   5    .text   ascii   T$8D
+543  0x00008154 0x180008d54 4   5    .text   ascii   D$XI
+544  0x0000819e 0x180008d9e 5   6    .text   ascii   L$xH3
+545  0x000081b0 0x180008db0 5   6    .text   ascii   A^_][
+546  0x000081c2 0x180008dc2 8   9    .text   ascii   \$ UWAVH
+547  0x0000822e 0x180008e2e 4   5    .text   ascii   T$`L
+548  0x00008233 0x180008e33 4   5    .text   ascii   t$PH
+549  0x00008238 0x180008e38 4   5    .text   ascii   L$PL
+550  0x00008248 0x180008e48 4   5    .text   ascii   L$PH
+551  0x0000825f 0x180008e5f 4   5    .text   ascii   L$PH
+552  0x00008277 0x180008e77 4   5    .text   ascii   D$PI
+553  0x000082b3 0x180008eb3 4   5    .text   ascii   L$pH
+554  0x000082e8 0x180008ee8 4   5    .text   ascii   L$pL
+555  0x000082fd 0x180008efd 5   6    .text   ascii   L$XE3
+556  0x0000835a 0x180008f5a 4   5    .text   ascii   L$XH
+557  0x00008394 0x180008f94 4   5    .text   ascii   D$pL
+558  0x00008399 0x180008f99 4   5    .text   ascii   t$@L
+559  0x000083a5 0x180008fa5 4   5    .text   ascii   t$8I
+560  0x000083bc 0x180008fbc 4   5    .text   ascii   D$(H
+561  0x000083cc 0x180008fcc 4   7    .text   utf8    D$ 輸
+562  0x00008410 0x180009010 4   5    .text   ascii   A^_]
+563  0x00008422 0x180009022 4   5    .text   ascii   \$\bH
+564  0x00008427 0x180009027 5   6    .text   ascii   t$ WH
+565  0x00008449 0x180009049 4   5    .text   ascii   L$PH
+566  0x0000845a 0x18000905a 4   5    .text   ascii   T$`H
+567  0x0000845f 0x18000905f 4   5    .text   ascii   t$PH
+568  0x0000846f 0x18000906f 4   5    .text   ascii   T$PA
+569  0x0000849d 0x18000909d 5   6    .text   ascii   L$XE3
+570  0x000084df 0x1800090df 4   5    .text   ascii   L$pA
+571  0x000084ef 0x1800090ef 4   5    .text   ascii   L$XH
+572  0x000084f4 0x1800090f4 4   5    .text   ascii   T$pA
+573  0x00008526 0x180009126 4   5    .text   ascii   D$pH
+574  0x0000852b 0x18000912b 4   5    .text   ascii   t$@L
+575  0x00008550 0x180009150 4   5    .text   ascii   |$(H
+576  0x00008592 0x180009192 4   5    .text   ascii   \$\bH
+577  0x00008597 0x180009197 5   6    .text   ascii   t$ WH
+578  0x000085ff 0x1800091ff 4   5    .text   ascii   T$(H
+579  0x00008604 0x180009204 4   5    .text   ascii   D$ H
+580  0x00008609 0x180009209 4   5    .text   ascii   L$ H
+581  0x00008619 0x180009219 4   5    .text   ascii   L$ H
+582  0x00008630 0x180009230 4   5    .text   ascii   L$ H
+583  0x00008654 0x180009254 4   5    .text   ascii   L$0A
+584  0x0000866a 0x18000926a 4   5    .text   ascii   T$03
+585  0x000086b1 0x1800092b1 6   7    .text   ascii   |\f0\t\f
+586  0x000086f1 0x1800092f1 6   7    .text   ascii   |\f0\td
+587  0x00008703 0x180009303 4   5    .text   ascii   D$0I
+588  0x00008780 0x180009380 8   9    .text   ascii   @USVWAWH
+589  0x000087f3 0x1800093f3 4   5    .text   ascii   T$`L
+590  0x000087f8 0x1800093f8 4   5    .text   ascii   |$@H
+591  0x000087fd 0x1800093fd 4   5    .text   ascii   L$@L
+592  0x0000880d 0x18000940d 4   5    .text   ascii   L$@H
+593  0x00008824 0x180009424 4   5    .text   ascii   L$@H
+594  0x0000883c 0x18000943c 4   5    .text   ascii   D$@I
+595  0x00008858 0x180009458 5   6    .text   ascii   L$HE3
+596  0x00008898 0x180009498 5   6    .text   ascii   L$PE3
+597  0x00008905 0x180009505 4   5    .text   ascii   L$HH
+598  0x00008928 0x180009528 4   5    .text   ascii   L$PH
+599  0x000089e5 0x1800095e5 5   6    .text   ascii   L$XE3
+600  0x00008a39 0x180009639 4   5    .text   ascii   L$XH
+601  0x00008a82 0x180009682 4   5    .text   ascii   D$(H
+602  0x00008a90 0x180009690 4   5    .text   ascii   |$8H
+603  0x00008aa8 0x1800096a8 4   5    .text   ascii   D$(H
+604  0x00008ab8 0x1800096b8 4   5    .text   ascii   D$ H
+605  0x00008af9 0x1800096f9 6   7    .text   ascii   A__^[]
+606  0x00008b02 0x180009702 4   5    .text   ascii   \$\bH
+607  0x00008bf7 0x1800097f7 4   5    .text   ascii   \$0H
+608  0x00008bfc 0x1800097fc 4   5    .text   ascii   t$8H
+609  0x00008c12 0x180009812 4   5    .text   ascii   \$\bH
+610  0x00008c2f 0x18000982f 4   5    .text   ascii   \$ L
+611  0x00008c50 0x180009850 4   5    .text   ascii   \$ L
+612  0x00008c74 0x180009874 4   5    .text   ascii   \$@H
+613  0x00008c79 0x180009879 4   5    .text   ascii   l$HH
+614  0x00008c7e 0x18000987e 4   5    .text   ascii   t$PH
+615  0x00008c92 0x180009892 7   8    .text   ascii   \$\bUVWH
+616  0x00008cbb 0x1800098bb 4   5    .text   ascii   L$@I
+617  0x00008ce7 0x1800098e7 4   5    .text   ascii   L$@I
+618  0x00008d0f 0x18000990f 4   5    .text   ascii   D$@H
+619  0x00008d23 0x180009923 4   5    .text   ascii   D$0A
+620  0x00008d31 0x180009931 4   5    .text   ascii   D$ H
+621  0x00008d36 0x180009936 4   5    .text   ascii   T$@H
+622  0x00008d53 0x180009953 5   6    .text   ascii   L$0E3
+623  0x00008d5b 0x18000995b 5   6    .text   ascii   l$(E3
+624  0x00008d71 0x180009971 5   7    .text   utf8    L$03ۅ
+625  0x00008dd0 0x1800099d0 5   6    .text   ascii   @SVWH
+626  0x00008df7 0x1800099f7 6   7    .text   ascii   D$Pc:\
+627  0x00008e02 0x180009a02 4   5    .text   ascii   L$TA
+628  0x00008e2f 0x180009a2f 6   8    .text   utf8    3҉D$@A
+629  0x00008e56 0x180009a56 4   5    .text   ascii   D$0L
+630  0x00008e5b 0x180009a5b 4   5    .text   ascii   L$@H
+631  0x00008e60 0x180009a60 4   5    .text   ascii   D$HA
+632  0x00008e6b 0x180009a6b 4   5    .text   ascii   D$(H
+633  0x00008e78 0x180009a78 4   5    .text   ascii   D$DH
+634  0x00008e7d 0x180009a7d 4   5    .text   ascii   L$PH
+635  0x00008e90 0x180009a90 4   5    .text   ascii   D$@L
+636  0x00008e9c 0x180009a9c 5   7    .text   utf8    ։D$ I
+637  0x00008f19 0x180009b19 4   5    .text   ascii   D$H3
+638  0x00008f22 0x180009b22 4   5    .text   ascii   D$0D
+639  0x00008f29 0x180009b29 4   5    .text   ascii   D$(A
+640  0x00008f34 0x180009b34 4   5    .text   ascii   D$@3
+641  0x00008f67 0x180009b67 4   5    .text   ascii   L$@H
+642  0x00008f89 0x180009b89 5   6    .text   ascii   L$HH3
+643  0x00008fb9 0x180009bb9 5   6    .text   ascii   L$HH3
+644  0x00008fd2 0x180009bd2 7   8    .text   ascii   \$\bUVWH
+645  0x00008ff6 0x180009bf6 4   5    .text   ascii   D$@H
+646  0x00008ffe 0x180009bfe 4   5    .text   ascii   D$ H
+647  0x00009060 0x180009c60 4   5    .text   ascii   L$@H
+648  0x00009065 0x180009c65 4   5    .text   ascii   D$HH
+649  0x0000906a 0x180009c6a 4   5    .text   ascii   D$(H
+650  0x00009120 0x180009d20 4   5    .text   ascii   D$PH
+651  0x00009161 0x180009d61 5   6    .text   ascii   L$HE3
+652  0x00009169 0x180009d69 4   5    .text   ascii   L$(H
+653  0x00009175 0x180009d75 5   6    .text   ascii   L$@E3
+654  0x000091f0 0x180009df0 4   5    .text   ascii   D$xL
+655  0x00009204 0x180009e04 4   5    .text   ascii   D$p3
+656  0x0000920a 0x180009e0a 5   6    .text   ascii   (D$pH
+657  0x00009210 0x180009e10 4   5    .text   ascii   D$XH
+658  0x0000926a 0x180009e6a 4   5    .text   ascii   \$XH
+659  0x00009287 0x180009e87 4   5    .text   ascii   T$`H
+660  0x00009361 0x180009f61 4   5    .text   ascii   D$(?
+661  0x000093c3 0x180009fc3 4   5    .text   ascii   t$pH
+662  0x000093f5 0x180009ff5 4   5    .text   ascii   D$hL
+663  0x00009402 0x18000a002 5   6    .text   ascii   D$XE3
+664  0x0000940a 0x18000a00a 4   5    .text   ascii   D$0H
+665  0x00009470 0x18000a070 4   5    .text   ascii   D$XH
+666  0x0000947c 0x18000a07c 4   5    .text   ascii   L$PA
+667  0x00009486 0x18000a086 5   6    .text   ascii   D$(E3
+668  0x0000948e 0x18000a08e 4   5    .text   ascii   D$`H
+669  0x00009542 0x18000a142 4   5    .text   ascii   \$\bH
+670  0x000095d8 0x18000a1d8 4   5    .text   ascii   \$0H
+671  0x000095e0 0x18000a1e0 4   5    .text   ascii   t$8H
+672  0x000095f2 0x18000a1f2 5   6    .text   ascii   \$\bWH
+673  0x00009635 0x18000a235 4   5    .text   ascii   \$0H
+674  0x00009662 0x18000a262 5   6    .text   ascii   \$\bWH
+675  0x000096ab 0x18000a2ab 4   5    .text   ascii   \$0H
+676  0x000096c2 0x18000a2c2 4   5    .text   ascii   \$\bH
+677  0x00009797 0x18000a397 4   5    .text   ascii   \$0H
+678  0x0000979c 0x18000a39c 4   5    .text   ascii   t$8H
+679  0x000097c0 0x18000a3c0 4   5    .text   ascii   D$PE
+680  0x000097ef 0x18000a3ef 4   5    .text   ascii   D$@L
+681  0x000097f8 0x18000a3f8 5   6    .text   ascii   (D$@3
+682  0x00009800 0x18000a400 10  12   .text   utf8    T$0E3ɉD$(3
+683  0x0000980e 0x18000a40e 4   5    .text   ascii   D$ f
+684  0x0000981e 0x18000a41e 5   6    .text   ascii   L$PH3
+685  0x00009840 0x18000a440 4   5    .text   ascii   D$PL
+686  0x00009883 0x18000a483 4   5    .text   ascii   T$0L
+687  0x0000988c 0x18000a48c 5   6    .text   ascii   D$@E3
+688  0x00009893 0x18000a493 10  12   .text   utf8    (D$@3҉L$(I
+689  0x000098a3 0x18000a4a3 4   5    .text   ascii   D$@H
+690  0x000098b6 0x18000a4b6 5   6    .text   ascii   L$PH3
+691  0x00009913 0x18000a513 4   5    .text   ascii   SUWH
+692  0x000099c7 0x18000a5c7 5   7    .text   utf8    ǉ|$@H
+693  0x000099ce 0x18000a5ce 4   5    .text   ascii   T$0H
+694  0x000099d3 0x18000a5d3 4   5    .text   ascii   D$HH
+695  0x000099f2 0x18000a5f2 5   7    .text   utf8    ˋT$0H
+696  0x00009a17 0x18000a617 5   6    .text   ascii   L$8E3
+697  0x00009a25 0x18000a625 4   5    .text   ascii   L$0H
+698  0x00009a2a 0x18000a62a 4   5    .text   ascii   L$ H
+699  0x00009aee 0x18000a6ee 4   5    .text   ascii   D$PH
+700  0x00009b33 0x18000a733 4   5    .text   ascii   SUWH
+701  0x00009b6a 0x18000a76a 4   5    .text   ascii   L$PA
+702  0x00009bf7 0x18000a7f7 5   7    .text   utf8    ̉|$@E
+703  0x00009c02 0x18000a802 4   5    .text   ascii   D$HH
+704  0x00009c07 0x18000a807 4   5    .text   ascii   T$0H
+705  0x00009c26 0x18000a826 5   7    .text   utf8    ˋT$0H
+706  0x00009c4b 0x18000a84b 5   6    .text   ascii   L$8E3
+707  0x00009c59 0x18000a859 4   5    .text   ascii   L$0H
+708  0x00009c5e 0x18000a85e 4   5    .text   ascii   L$ H
+709  0x00009d2a 0x18000a92a 4   5    .text   ascii   D$PH
+710  0x00009dd2 0x18000a9d2 4   5    .text   ascii   \$\bH
+711  0x00009e3a 0x18000aa3a 4   5    .text   ascii   \$0H
+712  0x00009e3f 0x18000aa3f 4   5    .text   ascii   l$8H
+713  0x00009e44 0x18000aa44 4   5    .text   ascii   t$@H
+714  0x00009e5a 0x18000aa5a 5   6    .text   ascii   VWAVH
+715  0x00009ee3 0x18000aae3 4   5    .text   ascii   T$ H
+716  0x00009f66 0x18000ab66 4   5    .text   ascii   A^_^
+717  0x00009f80 0x18000ab80 10  11   .text   ascii   @UVATAUAWH
+718  0x0000a000 0x18000ac00 4   5    .text   ascii   D$`L
+719  0x0000a010 0x18000ac10 4   5    .text   ascii   L$pH
+720  0x0000a044 0x18000ac44 4   5    .text   ascii   D$PH
+721  0x0000a05e 0x18000ac5e 4   5    .text   ascii   D$@H
+722  0x0000a06a 0x18000ac6a 5   6    .text   ascii   D$XE3
+723  0x0000a072 0x18000ac72 4   5    .text   ascii   D$8H
+724  0x0000a0a0 0x18000aca0 4   5    .text   ascii   D$ L
+725  0x0000a0c0 0x18000acc0 4   5    .text   ascii   L$XH
+726  0x0000a0c5 0x18000acc5 4   5    .text   ascii   D$`H
+727  0x0000a0ca 0x18000acca 5   6    .text   ascii   D$(E3
+728  0x0000a0d5 0x18000acd5 4   5    .text   ascii   |$ I
+729  0x0000a0f8 0x18000acf8 4   5    .text   ascii   D$ L
+730  0x0000a11d 0x18000ad1d 4   5    .text   ascii   L$XH
+731  0x0000a12d 0x18000ad2d 4   5    .text   ascii   |$XH
+732  0x0000a139 0x18000ad39 4   5    .text   ascii   D$@H
+733  0x0000a145 0x18000ad45 5   6    .text   ascii   D$XE3
+734  0x0000a14d 0x18000ad4d 4   5    .text   ascii   D$8H
+735  0x0000a179 0x18000ad79 4   5    .text   ascii   L$XH
+736  0x0000a17e 0x18000ad7e 4   5    .text   ascii   D$`H
+737  0x0000a183 0x18000ad83 5   6    .text   ascii   D$(E3
+738  0x0000a18e 0x18000ad8e 4   5    .text   ascii   |$ I
+739  0x0000a1c8 0x18000adc8 4   5    .text   ascii   D$hH
+740  0x0000a1d1 0x18000add1 4   5    .text   ascii   |$ L
+741  0x0000a1e2 0x18000ade2 5   6    .text   ascii   L$`E3
+742  0x0000a1ea 0x18000adea 5   6    .text   ascii   L$(E3
+743  0x0000a1f2 0x18000adf2 4   5    .text   ascii   L$XI
+744  0x0000a216 0x18000ae16 4   5    .text   ascii   D$PH
+745  0x0000a21b 0x18000ae1b 4   5    .text   ascii   T$pH
+746  0x0000a24d 0x18000ae4d 4   5    .text   ascii   T$pH
+747  0x0000a270 0x18000ae70 5   6    .text   ascii   L$xE3
+748  0x0000a27e 0x18000ae7e 4   5    .text   ascii   L$pH
+749  0x0000a283 0x18000ae83 4   5    .text   ascii   L$ H
+750  0x0000a2d9 0x18000aed9 4   5    .text   ascii   L$XL
+751  0x0000a397 0x18000af97 8   9    .text   ascii   A_A]A\^]
+752  0x0000a3b0 0x18000afb0 9   10   .text   ascii   @USWAUAWH
+753  0x0000a3e0 0x18000afe0 4   5    .text   ascii   l$PM
+754  0x0000a3e8 0x18000afe8 4   5    .text   ascii   l$xH
+755  0x0000a44e 0x18000b04e 4   5    .text   ascii   D$hL
+756  0x0000a45e 0x18000b05e 4   5    .text   ascii   L$XH
+757  0x0000a49c 0x18000b09c 5   6    .text   ascii   D$xE3
+758  0x0000a4a4 0x18000b0a4 4   5    .text   ascii   D$@H
+759  0x0000a4b0 0x18000b0b0 5   6    .text   ascii   D$PE3
+760  0x0000a4b8 0x18000b0b8 4   5    .text   ascii   D$8H
+761  0x0000a4c8 0x18000b0c8 4   5    .text   ascii   D$(?
+762  0x0000a4e6 0x18000b0e6 4   5    .text   ascii   D$ L
+763  0x0000a50c 0x18000b10c 4   5    .text   ascii   L$PI
+764  0x0000a567 0x18000b167 4   5    .text   ascii   L$PL
+765  0x0000a57f 0x18000b17f 9   10   .text   ascii   l$PL9l$`t
+766  0x0000a5fb 0x18000b1fb 7   8    .text   ascii   A_A]_[]
+767  0x0000a63e 0x18000b23e 4   5    .text   ascii   T$XA
+768  0x0000a646 0x18000b246 4   5    .text   ascii   d$pA
+769  0x0000a64e 0x18000b24e 4   5    .text   ascii   D$hH
+770  0x0000a67d 0x18000b27d 4   5    .text   ascii   D$XA
+771  0x0000a688 0x18000b288 5   6    .text   ascii   L$PE3
+772  0x0000a68f 0x18000b28f 4   5    .text   ascii   D$(I
+773  0x0000a697 0x18000b297 4   5    .text   ascii   D$`H
+774  0x0000a6b5 0x18000b2b5 4   5    .text   ascii   D$ L
+775  0x0000a6e2 0x18000b2e2 11  12   .text   ascii   \$ UVWATAUH
+776  0x0000a717 0x18000b317 4   5    .text   ascii   \$`3
+777  0x0000a72b 0x18000b32b 4   5    .text   ascii   \$@H
+778  0x0000a730 0x18000b330 4   5    .text   ascii   \$hH
+779  0x0000a735 0x18000b335 4   5    .text   ascii   \$HH
+780  0x0000a768 0x18000b368 4   5    .text   ascii   D$@H
+781  0x0000a792 0x18000b392 4   5    .text   ascii   t$@L
+782  0x0000a877 0x18000b477 4   5    .text   ascii   D$pH
+783  0x0000a888 0x18000b488 4   5    .text   ascii   \$0H
+784  0x0000a897 0x18000b497 4   6    .text   utf8    \bE3ɺ
+785  0x0000a8bb 0x18000b4bb 6   7    .text   ascii   uTD8-,
+786  0x0000a8ec 0x18000b4ec 4   5    .text   ascii   |$ H
+787  0x0000a8f4 0x18000b4f4 4   5    .text   ascii   D$pH
+788  0x0000a930 0x18000b530 4   5    .text   ascii   L$`H
+789  0x0000a935 0x18000b535 4   5    .text   ascii   \$ A
+790  0x0000a985 0x18000b585 4   5    .text   ascii   D$`H
+791  0x0000a9a4 0x18000b5a4 4   5    .text   ascii   \$ht
+792  0x0000a9c5 0x18000b5c5 4   5    .text   ascii   D$hA
+793  0x0000a9d0 0x18000b5d0 4   5    .text   ascii   D$8L
+794  0x0000aa34 0x18000b634 4   5    .text   ascii   T$PH
+795  0x0000aa39 0x18000b639 5   6    .text   ascii   D$HE3
+796  0x0000aa41 0x18000b641 5   6    .text   ascii   D$ E3
+797  0x0000aac4 0x18000b6c4 4   5    .text   ascii   L$@H
+798  0x0000aad0 0x18000b6d0 4   5    .text   ascii   L$HH
+799  0x0000aad5 0x18000b6d5 4   5    .text   ascii   T$XH
+800  0x0000aada 0x18000b6da 4   5    .text   ascii   D$XM
+801  0x0000aadf 0x18000b6df 4   6    .text   utf8    ċD$`
+802  0x0000aaed 0x18000b6ed 4   5    .text   ascii   D$(L
+803  0x0000ab42 0x18000b742 4   5    .text   ascii   \$ H
+804  0x0000aba8 0x18000b7a8 4   5    .text   ascii   D$`H
+805  0x0000abe5 0x18000b7e5 4   5    .text   ascii   L$HH
+806  0x0000ac3a 0x18000b83a 7   8    .text   ascii   A]A\_^]
+807  0x0000ac52 0x18000b852 7   8    .text   ascii   \$ UVWH
+808  0x0000ac68 0x18000b868 4   5    .text   ascii   D$H3
+809  0x0000ac72 0x18000b872 4   5    .text   ascii   D$0H
+810  0x0000ac79 0x18000b879 4   5    .text   ascii   D$(3
+811  0x0000ac8a 0x18000b88a 4   5    .text   ascii   D$@A
+812  0x0000ac95 0x18000b895 4   5    .text   ascii   D$ A
+813  0x0000acb3 0x18000b8b3 4   5    .text   ascii   \$(H
+814  0x0000acbf 0x18000b8bf 5   7    .text   utf8    ȉl$ L
+815  0x0000acda 0x18000b8da 5   6    .text   ascii   L$HH3
+816  0x0000acf0 0x18000b8f0 4   5    .text   ascii   P_^]
+817  0x0000ad02 0x18000b902 4   5    .text   ascii   \$\bH
+818  0x0000ad35 0x18000b935 4   5    .text   ascii   \$(H
+819  0x0000ad41 0x18000b941 5   7    .text   utf8    ȉ|$ L
+820  0x0000ad56 0x18000b956 4   5    .text   ascii   \$@H
+821  0x0000ad5b 0x18000b95b 4   5    .text   ascii   l$HH
+822  0x0000ad60 0x18000b960 4   5    .text   ascii   t$PH
+823  0x0000ad70 0x18000b970 13  14   .text   ascii   @SUVATAUAVAWH
+824  0x0000ad8c 0x18000b98c 5   6    .text   ascii   D$`E3
+825  0x0000ad9a 0x18000b99a 7   8    .text   ascii   l$X@85L
+826  0x0000adac 0x18000b9ac 4   5    .text   ascii   l$HL
+827  0x0000adb1 0x18000b9b1 4   5    .text   ascii   l$PE
+828  0x0000adb9 0x18000b9b9 4   5    .text   ascii   l$@D
+829  0x0000adbe 0x18000b9be 4   5    .text   ascii   l$\t
+830  0x0000ade2 0x18000b9e2 5   6    .text   ascii   l$0E3
+831  0x0000ae1b 0x18000ba1b 5   6    .text   ascii   uR@85
+832  0x0000ae4c 0x18000ba4c 4   5    .text   ascii   |$ H
+833  0x0000ae8a 0x18000ba8a 6   7    .text   ascii   yV@85]
+834  0x0000aeb0 0x18000bab0 4   5    .text   ascii   \$(L
+835  0x0000aebc 0x18000babc 5   7    .text   utf8    ȉ|$ L
+836  0x0000aee4 0x18000bae4 4   5    .text   ascii   L$HH
+837  0x0000aee9 0x18000bae9 4   5    .text   ascii   T$PD
+838  0x0000aeee 0x18000baee 5   6    .text   ascii   l$0E3
+839  0x0000aef6 0x18000baf6 5   6    .text   ascii   l$(E3
+840  0x0000af08 0x18000bb08 5   6    .text   ascii   y(@85
+841  0x0000af34 0x18000bb34 4   5    .text   ascii   L$HH
+842  0x0000af39 0x18000bb39 4   5    .text   ascii   D$\D
+843  0x0000af3e 0x18000bb3e 4   5    .text   ascii   l$(L
+844  0x0000af43 0x18000bb43 4   5    .text   ascii   D$@A
+845  0x0000af4e 0x18000bb4e 4   5    .text   ascii   D$ H
+846  0x0000af5f 0x18000bb5f 5   6    .text   ascii   y(@85
+847  0x0000af98 0x18000bb98 6   7    .text   ascii   u,@85O
+848  0x0000afd6 0x18000bbd6 5   6    .text   ascii   u,D8-
+849  0x0000b042 0x18000bc42 4   5    .text   ascii   L$XL
+850  0x0000b047 0x18000bc47 4   5    .text   ascii   l$ A
+851  0x0000b066 0x18000bc66 5   6    .text   ascii   D$XE3
+852  0x0000b06e 0x18000bc6e 4   5    .text   ascii   L$PH
+853  0x0000b091 0x18000bc91 6   7    .text   ascii   D9l$Xw
+854  0x0000b0a3 0x18000bca3 5   6    .text   ascii   D$@E3
+855  0x0000b0ab 0x18000bcab 4   5    .text   ascii   L$PI
+856  0x0000b0bf 0x18000bcbf 6   7    .text   ascii   y%D8-(
+857  0x0000b0f2 0x18000bcf2 4   5    .text   ascii   L$H3
+858  0x0000b105 0x18000bd05 4   5    .text   ascii   D$@L
+859  0x0000b136 0x18000bd36 4   5    .text   ascii   %D8-
+860  0x0000b15e 0x18000bd5e 4   5    .text   ascii   L$HH
+861  0x0000b16f 0x18000bd6f 4   5    .text   ascii   L$PH
+862  0x0000b1b4 0x18000bdb4 5   6    .text   ascii   L$`H3
+863  0x0000b1c2 0x18000bdc2 12  13   .text   ascii   pA_A^A]A\^][
+864  0x0000b1e0 0x18000bde0 4   5    .text   ascii   D$H3
+865  0x0000b1ea 0x18000bdea 4   5    .text   ascii   D$0A
+866  0x0000b1f4 0x18000bdf4 4   5    .text   ascii   D$(3
+867  0x0000b205 0x18000be05 4   5    .text   ascii   D$@H
+868  0x0000b215 0x18000be15 4   5    .text   ascii   D$@H
+869  0x0000b21a 0x18000be1a 5   6    .text   ascii   L$HH3
+870  0x0000b27d 0x18000be7d 4   5    .text   ascii   D$@H
+871  0x0000b2a6 0x18000bea6 4   5    .text   ascii   D$@H
+872  0x0000b2ab 0x18000beab 5   6    .text   ascii   L$HH3
+873  0x0000b2b8 0x18000beb8 4   5    .text   ascii   \$hH
+874  0x0000b6e2 0x18000c2e2 4   5    .text   ascii   L$\bH
+875  0x0000b70d 0x18000c30d 4   5    .text   ascii   D$8H
+876  0x0000b719 0x18000c319 4   5    .text   ascii   D$8H
+877  0x0000b737 0x18000c337 4   5    .text   ascii   D$@H
+878  0x0000b7c6 0x18000c3c6 6   8    .text   utf8    (ÉL$\bH
+879  0x0000b7f5 0x18000c3f5 4   5    .text   ascii   D$(H
+880  0x0000b801 0x18000c401 4   5    .text   ascii   D$(H
+881  0x0000b84c 0x18000c44c 4   5    .text   ascii   T$0H
+882  0x0000b86a 0x18000c46a 5   6    .text   ascii   \$ WH
+883  0x0000b884 0x18000c484 4   5    .text   ascii   T$PH
+884  0x0000b89a 0x18000c49a 4   5    .text   ascii   T$PH
+885  0x0000b89f 0x18000c49f 4   5    .text   ascii   L$XH
+886  0x0000b8b0 0x18000c4b0 4   5    .text   ascii   L$0L
+887  0x0000b8b8 0x18000c4b8 4   5    .text   ascii   L$`H
+888  0x0000b8bd 0x18000c4bd 4   5    .text   ascii   L$(3
+889  0x0000b8cf 0x18000c4cf 4   5    .text   ascii   \$hH
+890  0x0000b8d8 0x18000c4d8 5   6    .text   ascii   @SVWH
+891  0x0000b8f7 0x18000c4f7 4   5    .text   ascii   T$`H
+892  0x0000b90a 0x18000c50a 4   5    .text   ascii   T$`H
+893  0x0000b90f 0x18000c50f 4   5    .text   ascii   L$hH
+894  0x0000b920 0x18000c520 4   5    .text   ascii   L$0L
+895  0x0000b928 0x18000c528 4   5    .text   ascii   L$pH
+896  0x0000b92d 0x18000c52d 4   5    .text   ascii   L$(3
+897  0x0000b947 0x18000c547 4   5    .text   ascii   @_^[
+898  0x0000b986 0x18000c586 5   6    .text   ascii   @\bMcP
+899  0x0000b9ea 0x18000c5ea 5   6    .text   ascii   \$\bM3
+900  0x0000ba26 0x18000c626 4   5    .text   ascii   \$\bH
+901  0x0000ba40 0x18000c640 4   5    .text   ascii   H;\ry
+902  0x0000bab2 0x18000c6b2 4   5    .text   ascii   \$\bH
+903  0x0000babc 0x18000c6bc 6   7    .text   ascii   |$ AVH
+904  0x0000bae0 0x18000c6e0 5   7    .text   utf8    ؈D$@@
+905  0x0000bba6 0x18000c7a6 4   5    .text   ascii   \$0H
+906  0x0000bbab 0x18000c7ab 4   5    .text   ascii   t$8H
+907  0x0000bbb0 0x18000c7b0 4   5    .text   ascii   |$HH
+908  0x0000bbb6 0x18000c7b6 5   7    .text   utf8     A^ù\a
+909  0x0000bbca 0x18000c7ca 5   6    .text   ascii   \$\bWH
+910  0x0000bbe3 0x18000c7e3 4   5    .text   ascii   \$@H
+911  0x0000bbfa 0x18000c7fa 3   6    .text   utf8    ؈D$
+912  0x0000bc5c 0x18000c85c 7   8    .text   ascii   H\bVWAVH
+913  0x0000bca1 0x18000c8a1 4   6    .text   utf8    ؉\$0
+914  0x0000bcbc 0x18000c8bc 4   6    .text   utf8    ؉D$0
+915  0x0000bcd7 0x18000c8d7 4   6    .text   utf8    ؉D$0
+916  0x0000bd2e 0x18000c92e 4   6    .text   utf8    ؉D$0
+917  0x0000bd57 0x18000c957 4   6    .text   utf8    ؉\$0
+918  0x0000bd5e 0x18000c95e 5   7    .text   utf8    3ۉ\$0
+919  0x0000bd68 0x18000c968 4   5    .text   ascii   \$xH
+920  0x0000bd6e 0x18000c96e 5   6    .text   ascii   @A^_^
+921  0x0000bd82 0x18000c982 4   5    .text   ascii   \$\bH
+922  0x0000bdab 0x18000c9ab 4   5    .text   ascii   \$0H
+923  0x0000bdb0 0x18000c9b0 4   5    .text   ascii   t$8H
+924  0x0000bee2 0x18000cae2 5   6    .text   ascii   \$\bWH
+925  0x0000bf16 0x18000cb16 4   5    .text   ascii   \$0H
+926  0x0000bfed 0x18000cbed 4   5    .text   ascii    H3E
+927  0x0000c020 0x18000cc20 4   5    .text   ascii   \$PH
+928  0x0000c0a3 0x18000cca3 4   5    .text   ascii   t!eH
+929  0x0000c162 0x18000cd62 4   5    .text   ascii   \$\bH
+930  0x0000c1a4 0x18000cda4 4   5    .text   ascii   L$PH
+931  0x0000c1a9 0x18000cda9 4   5    .text   ascii   \$0H
+932  0x0000c1ae 0x18000cdae 4   5    .text   ascii   l$8H
+933  0x0000c1b3 0x18000cdb3 4   5    .text   ascii   t$@H
+934  0x0000c2df 0x18000cedf 7   8    .text   ascii   uxHc\rT1
+935  0x0000c2f1 0x18000cef1 4   6    .text   utf8    ʁ9PE
+936  0x0000c303 0x18000cf03 4   5    .text   ascii   uTL+
+937  0x0000c329 0x18000cf29 4   5    .text   ascii   J\fL;
+938  0x0000c3ca 0x18000cfca 5   6    .text   ascii   \$\bUH
+939  0x0000c452 0x18000d052 4   5    .text   ascii   L$0L
+940  0x0000c461 0x18000d061 4   5    .text   ascii   L$(H
+941  0x0000c46a 0x18000d06a 4   5    .text   ascii   L$ 3
+942  0x0000c47e 0x18000d07e 4   5    .text   ascii   L$PH
+943  0x0000c4cf 0x18000d0cf 4   5    .text   ascii   D$PH
+944  0x0000c4d4 0x18000d0d4 4   5    .text   ascii   D$@H
+945  0x0000c516 0x18000d116 5   6    .text   ascii   \$\bWH
+946  0x0000c547 0x18000d147 4   5    .text   ascii   \$0H
+947  0x0000c552 0x18000d152 5   6    .text   ascii   \$\bWH
+948  0x0000c583 0x18000d183 4   5    .text   ascii   \$0H
+949  0x0000c598 0x18000d198 5   6    .text   ascii   t$ WH
+950  0x0000c5a8 0x18000d1a8 4   5    .text   ascii   ntel
+951  0x0000c5ae 0x18000d1ae 6   8    .text   utf8    ineI\vы
+952  0x0000c5bd 0x18000d1bd 7   9    .text   utf8    Genu\vӍH
+953  0x0000c5ec 0x18000d1ec 4   5    .text   ascii   t(=`
+954  0x0000c5f3 0x18000d1f3 4   5    .text   ascii   t!=p
+955  0x0000c603 0x18000d203 4   5    .text   ascii    w$H
+956  0x0000c63f 0x18000d23f 4   5    .text   ascii   \a|@A
+957  0x0000c652 0x18000d252 4   5    .text   ascii   \ts\vA
+958  0x0000c6f4 0x18000d2f4 4   5    .text   ascii   D$ $
+959  0x0000c756 0x18000d356 4   5    .text   ascii   D$ "
+960  0x0000c7a6 0x18000d3a6 4   5    .text   ascii   D$ "
+961  0x0000c7d1 0x18000d3d1 4   5    .text   ascii   H#\r@
+962  0x0000c7f7 0x18000d3f7 4   5    .text   ascii   D$ H
+963  0x0000c80c 0x18000d40c 4   5    .text   ascii   \$(3
+964  0x0000c813 0x18000d413 4   5    .text   ascii   l$0H
+965  0x0000c818 0x18000d418 4   5    .text   ascii   t$8H
+966  0x0000c96e 0x18000d56e 4   5    .text   ascii   T$ L
+967  0x0000d670 0x18000ec70 24  25   .rdata  ascii   \defaults\nre.properties
+968  0x0000d690 0x18000ec90 19  20   .rdata  ascii   \etc\nre.properties
+969  0x0000d6a8 0x18000eca8 21  22   .rdata  ascii   \etc\brand.properties
+970  0x0000d6c0 0x18000ecc0 4   5    .rdata  ascii   %s%s
+971  0x0000d6c8 0x18000ecc8 7   8    .rdata  ascii   tridium
+972  0x0000d6d0 0x18000ecd0 8   9    .rdata  ascii   brand.id
+973  0x0000d6e8 0x18000ece8 5   6    .rdata  ascii   error
+974  0x0000d6f0 0x18000ecf0 79  80   .rdata  ascii   abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890;/-_.!~*'():@&=+$
+975  0x0000d740 0x18000ed40 8   9    .rdata  ascii   file:///
+976  0x0000d74c 0x18000ed4c 6   7    .rdata  ascii   %%%02X
+977  0x0000d758 0x18000ed58 20  21   .rdata  ascii   <license vendor="%s"
+978  0x0000d770 0x18000ed70 18  19   .rdata  ascii   <feature name="%s"
+979  0x0000d788 0x18000ed88 18  19   .rdata  ascii   \security\licenses
+980  0x0000d7a0 0x18000eda0 8   9    .rdata  ascii   .license
+981  0x0000d8e8 0x18000eee8 16  17   .rdata  ascii   java/lang/String
+982  0x0000d900 0x18000ef00 16  17   .rdata  ascii   <tcpIpSettings/>
+983  0x0000d918 0x18000ef18 10  11   .rdata  ascii   SystemRoot
+984  0x0000d928 0x18000ef28 29  30   .rdata  ascii   %s\system32\drivers\etc\hosts
+985  0x0000d948 0x18000ef48 5   6    .rdata  ascii   \bin\
+986  0x0000d950 0x18000ef50 22  23   .rdata  ascii   plat.exe restartdaemon
+987  0x0000d968 0x18000ef68 12  13   .rdata  ascii   basic/native
+988  0x0000d978 0x18000ef78 7   8    .rdata  ascii   niagara
+989  0x0000d980 0x18000ef80 7   8    .rdata  ascii   Niagara
+990  0x0000d988 0x18000ef88 18  19   .rdata  ascii   Win32ServiceThread
+991  0x0000d9a0 0x18000efa0 72  73   .rdata  ascii   niagarad: Niagara service successfully daemonized, startup can continue.
+992  0x0000d9f0 0x18000eff0 46  47   .rdata  ascii   niagarad: Niagara service failed to daemonize.
+993  0x0000da20 0x18000f020 8   9    .rdata  ascii   niagarad
+994  0x0000da30 0x18000f030 74  75   .rdata  ascii   niagarad: Niagara service startup complete, set service status to running.
+995  0x0000da80 0x18000f080 73  74   .rdata  ascii   niagarad: Niagara service failed to start, set service status to stopped.
+996  0x0000dad0 0x18000f0d0 44  45   .rdata  ascii   niagarad: Niagara service startup initiated.
+997  0x0000db00 0x18000f100 45  46   .rdata  ascii   niagarad: Niagara service shutdown initiated.
+998  0x0000db30 0x18000f130 34  35   .rdata  ascii   com/tridium/niagarad/NiagaraDaemon
+999  0x0000db60 0x18000f160 81  82   .rdata  ascii   niagarad: Niagara service shutdown failed, failed to locate Niagara Daemon class.
+1000 0x0000dbb8 0x18000f1b8 38  39   .rdata  ascii   ()Lcom/tridium/niagarad/NiagaraDaemon;
+1001 0x0000dbe0 0x18000f1e0 11  12   .rdata  ascii   getInstance
+1002 0x0000dbf0 0x18000f1f0 93  94   .rdata  ascii   niagarad: Niagara service shutdown failed, failed to locate Niagara Daemon 'instance' method.
+1003 0x0000dc50 0x18000f250 84  85   .rdata  ascii   niagarad: Niagara service shutdown failed, failed to locate Niagara Daemon instance.
+1004 0x0000dcb0 0x18000f2b0 9   10   .rdata  ascii   queueStop
+1005 0x0000dcc0 0x18000f2c0 89  90   .rdata  ascii   niagarad: Niagara service shutdown failed, failed to locate Niagara Daemon 'stop' method.
+1006 0x0000dd20 0x18000f320 75  76   .rdata  ascii   niagarad: Niagara service shutdown complete, set service status to stopped.
+1007 0x0000de30 0x18000f430 76  154  .rdata  utf16le SEVERE [nre] Invalid parameter detected in function %ls. File: %ls Line: %u\n
+1008 0x0000ded0 0x18000f4d0 29  60   .rdata  utf16le              Expression: %ls\n
+1009 0x0000df10 0x18000f510 113 114  .rdata  ascii   SEVERE [nre] Invalid parameter handler invoked, rerun with DEBUG CRT for more information. Continuing execution.\n
+1010 0x0000df90 0x18000f590 120 121  .rdata  ascii   FATAL: This version of Windows is not supported by Niagara. Please refer to your documentation for supported platforms.\n
+1011 0x0000e010 0x18000f610 9   10   .rdata  ascii   nre_debug
+1012 0x0000e020 0x18000f620 18  19   .rdata  ascii   nre> debug = true\n
+1013 0x0000e038 0x18000f638 56  57   .rdata  ascii   *******************************************************\n
+1014 0x0000e078 0x18000f678 56  57   .rdata  ascii   **** DEVELOPER BUILD FOR INTERNAL TRIDIUM USE ONLY ****\n
+1015 0x0000e0b8 0x18000f6b8 16  17   .rdata  ascii   nre> initFips()\n
+1016 0x0000e0d0 0x18000f6d0 17  18   .rdata  ascii   nre> initPaths()\n
+1017 0x0000e0e8 0x18000f6e8 17  18   .rdata  ascii   nre> buildArgs()\n
+1018 0x0000e100 0x18000f700 15  16   .rdata  ascii   nre> loadDLL()\n
+1019 0x0000e110 0x18000f710 16  17   .rdata  ascii   nre> createVM()\n
+1020 0x0000e128 0x18000f728 17  18   .rdata  ascii   nre> invokeNRE()\n
+1021 0x0000e140 0x18000f740 15  16   .rdata  ascii   nre> cleanup()\n
+1022 0x0000e150 0x18000f750 7   8    .rdata  ascii   fips140
+1023 0x0000e158 0x18000f758 7   8    .rdata  ascii   Tridium
+1024 0x0000e160 0x18000f760 5   6    .rdata  ascii   -fips
+1025 0x0000e168 0x18000f768 10  11   .rdata  ascii   -fips=true
+1026 0x0000e178 0x18000f778 11  12   .rdata  ascii   -fips=false
+1027 0x0000e188 0x18000f788 41  42   .rdata  ascii   %s\etc\options\bajaui-FipsOptions.options
+1028 0x0000e1b8 0x18000f7b8 43  44   .rdata  ascii   <p n="startWorkbenchInFipsMode" v="false"/>
+1029 0x0000e1f0 0x18000f7f0 33  34   .rdata  ascii   FATAL: %s failed signature check\n
+1030 0x0000e220 0x18000f820 67  68   .rdata  ascii   FATAL: Failed to append %s to modulePath, insufficient buffer size\n
+1031 0x0000e268 0x18000f868 16  17   .rdata  ascii   NIAGARA_JRE_HOME
+1032 0x0000e27c 0x18000f87c 4   5    .rdata  ascii   \jre
+1033 0x0000e288 0x18000f888 19  20   .rdata  ascii   \bin\server\jvm.dll
+1034 0x0000e2a0 0x18000f8a0 19  20   .rdata  ascii   \bin\client\jvm.dll
+1035 0x0000e2b4 0x18000f8b4 6   7    .rdata  ascii   %s\bin
+1036 0x0000e2bc 0x18000f8bc 4   5    .rdata  ascii   PATH
+1037 0x0000e2c8 0x18000f8c8 8   9    .rdata  ascii   %s;%s;%s
+1038 0x0000e2d4 0x18000f8d4 5   6    .rdata  ascii   %s;%s
+1039 0x0000e2e0 0x18000f8e0 10  11   .rdata  ascii   %s\bin\ext
+1040 0x0000e2ec 0x18000f8ec 6   7    .rdata  ascii   bcfips
+1041 0x0000e2f4 0x18000f8f4 5   6    .rdata  ascii   bcstd
+1042 0x0000e300 0x18000f900 13  14   .rdata  ascii   %s\bin\ext\%s
+1043 0x0000e310 0x18000f910 20  21   .rdata  ascii   %s\bin\ext\jxbrowser
+1044 0x0000e328 0x18000f928 17  18   .rdata  ascii   %s\bin\ext\system
+1045 0x0000e340 0x18000f940 45  46   .rdata  ascii   FATAL: Module signature verification failure\n
+1046 0x0000e370 0x18000f970 45  46   .rdata  ascii   FATAL: No JAR files found in module path: %s\n
+1047 0x0000e3a0 0x18000f9a0 25  26   .rdata  ascii   %s\bin\ext\securityBridge
+1048 0x0000e3c0 0x18000f9c0 61  62   .rdata  ascii   FATAL: Security bridge module signature verification failure\n
+1049 0x0000e400 0x18000fa00 54  55   .rdata  ascii   FATAL: No JAR files found in security bridge path: %s\n
+1050 0x0000e438 0x18000fa38 7   8    .rdata  ascii   path=%s
+1051 0x0000e440 0x18000fa40 52  53   .rdata  ascii   WARNING: Failed to update path environment variable\n
+1052 0x0000e478 0x18000fa78 37  38   .rdata  ascii   nre>   niagaraHome              = %s\n
+1053 0x0000e4a0 0x18000faa0 37  38   .rdata  ascii   nre>   niagaraUserHome          = %s\n
+1054 0x0000e4c8 0x18000fac8 37  38   .rdata  ascii   nre>   niagaraConfigHome        = %s\n
+1055 0x0000e4f0 0x18000faf0 37  38   .rdata  ascii   nre>   jreHome                  = %s\n
+1056 0x0000e518 0x18000fb18 37  38   .rdata  ascii   nre>   jvmDll_0                 = %s\n
+1057 0x0000e540 0x18000fb40 37  38   .rdata  ascii   nre>   jvmDll_1                 = %s\n
+1058 0x0000e568 0x18000fb68 37  38   .rdata  ascii   nre>   libPath                  = %s\n
+1059 0x0000e590 0x18000fb90 4   5    .rdata  ascii   true
+1060 0x0000e598 0x18000fb98 5   6    .rdata  ascii   false
+1061 0x0000e5a0 0x18000fba0 37  38   .rdata  ascii   nre>   fips                     = %s\n
+1062 0x0000e5c8 0x18000fbc8 37  38   .rdata  ascii   nre>   modulePath               = %s\n
+1063 0x0000e5f0 0x18000fbf0 37  38   .rdata  ascii   nre>   applicationType          = %d\n
+1064 0x0000e618 0x18000fc18 23  24   .rdata  ascii   nre>   argv[%d] = "%s"\n
+1065 0x0000e630 0x18000fc30 11  12   .rdata  ascii   -Dcmdline::
+1066 0x0000e640 0x18000fc40 42  43   .rdata  ascii   --add-opens=java.base/java.net=niagara.nre
+1067 0x0000e670 0x18000fc70 34  35   .rdata  ascii   --enable-native-access=niagara.nre
+1068 0x0000e698 0x18000fc98 37  38   .rdata  ascii   --sun-misc-unsafe-memory-access=allow
+1069 0x0000e6c0 0x18000fcc0 28  29   .rdata  ascii   -XX:+UseCompactObjectHeaders
+1070 0x0000e6e0 0x18000fce0 29  30   .rdata  ascii   -javaagent:%s\bin\ext\nre.jar
+1071 0x0000e700 0x18000fd00 62  63   .rdata  ascii   -Xbootclasspath/a:%s\bin\ext\securityBridge\securityBridge.jar
+1072 0x0000e740 0x18000fd40 39  40   .rdata  ascii   -Dprotected.station.home=%s\stations\%s
+1073 0x0000e768 0x18000fd68 53  54   .rdata  ascii   -Djava.protocol.handler.pkgs=com.tridium.nre.protocol
+1074 0x0000e7a0 0x18000fda0 22  23   .rdata  ascii   -Djava.library.path=%s
+1075 0x0000e7b8 0x18000fdb8 16  17   .rdata  ascii   --module-path=%s
+1076 0x0000e7d0 0x18000fdd0 47  48   .rdata  ascii   --add-opens=java.base/java.security=niagara.nre
+1077 0x0000e800 0x18000fe00 130 131  .rdata  ascii   --add-reads=niagara.nre=org.bouncycastle.fips.pkix,org.bouncycastle.fips.core,org.bouncycastle.fips.tls,org.bouncycastle.fips.util
+1078 0x0000e890 0x18000fe90 72  73   .rdata  ascii   --add-opens=org.bouncycastle.fips.core/org.bouncycastle.asn1=niagara.nre
+1079 0x0000e8e0 0x18000fee0 45  46   .rdata  ascii   --add-reads=okhttp3=org.bouncycastle.fips.tls
+1080 0x0000e910 0x18000ff10 114 115  .rdata  ascii   --add-reads=niagara.nre=org.bouncycastle.pkix,org.bouncycastle.provider,org.bouncycastle.tls,org.bouncycastle.util
+1081 0x0000e990 0x18000ff90 71  72   .rdata  ascii   --add-opens=org.bouncycastle.provider/org.bouncycastle.asn1=niagara.nre
+1082 0x0000e9d8 0x18000ffd8 40  41   .rdata  ascii   --add-reads=okhttp3=org.bouncycastle.tls
+1083 0x0000ea08 0x180010008 41  42   .rdata  ascii   --add-modules=ALL-MODULE-PATH,ALL-DEFAULT
+1084 0x0000ea38 0x180010038 55  56   .rdata  ascii   -Djava.security.properties==%s\bin\policy\java.security
+1085 0x0000ea70 0x180010070 42  43   .rdata  ascii   -Dorg.bouncycastle.fips.approved_only=true
+1086 0x0000eaa0 0x1800100a0 17  18   .rdata  ascii   -Dniagara.home=%s
+1087 0x0000eab8 0x1800100b8 21  22   .rdata  ascii   -Dniagara.home.url=%s
+1088 0x0000ead0 0x1800100d0 22  23   .rdata  ascii   -Dniagara.user.home=%s
+1089 0x0000eae8 0x1800100e8 24  25   .rdata  ascii   -Dniagara.config.home=%s
+1090 0x0000eb08 0x180010108 54  55   .rdata  ascii   com.tridium.nre.platform.NativePlatformProviderTridium
+1091 0x0000eb40 0x180010140 30  31   .rdata  ascii   -Dniagara.platform.provider=%s
+1092 0x0000eb60 0x180010160 4   5    .rdata  ascii   exit
+1093 0x0000eb70 0x180010170 64  65   .rdata  ascii   FATAL: javaOptionCount (%d) is greater than maxOptionCount (%d)\n
+1094 0x0000ebb8 0x1800101b8 61  62   .rdata  ascii   FATAL: javaArgCount (%d) is greater than maxOptionCount (%d)\n
+1095 0x0000ebf8 0x1800101f8 27  28   .rdata  ascii   nre>   javaArgs[%d] = "%s"\n
+1096 0x0000ec18 0x180010218 30  31   .rdata  ascii   nre>   javaOptions[%d] = "%s"\n
+1097 0x0000ec38 0x180010238 53  54   .rdata  ascii   Error: Cannot get current directory, function failed.
+1098 0x0000ec70 0x180010270 54  55   .rdata  ascii   Error: Cannot get current directory, buffer too short.
+1099 0x0000eca8 0x1800102a8 42  43   .rdata  ascii   Error: Cannot set current directory to %s\n
+1100 0x0000ecd8 0x1800102d8 29  30   .rdata  ascii   Error: Cannot load: %s or %s\n
+1101 0x0000ecf8 0x1800102f8 46  47   .rdata  ascii   Error: Cannot set current directory back to %s
+1102 0x0000ed28 0x180010328 22  23   .rdata  ascii   nre>   Using dll = %s\n
+1103 0x0000ed40 0x180010340 16  17   .rdata  ascii   JNI_CreateJavaVM
+1104 0x0000ed58 0x180010358 39  40   .rdata  ascii   Error: Cannot find JNI functions in %s\n
+1105 0x0000ed80 0x180010380 19  20   .rdata  ascii   nre>   VM options:\n
+1106 0x0000ed98 0x180010398 31  32   .rdata  ascii   nre>     javaOption[%d] = "%s"\n
+1107 0x0000edb8 0x1800103b8 18  19   .rdata  ascii   %s\bin\ext\nre.jar
+1108 0x0000edd0 0x1800103d0 9   10   .rdata  ascii   javaagent
+1109 0x0000ede0 0x1800103e0 9   10   .rdata  ascii   agentpath
+1110 0x0000edf0 0x1800103f0 8   9    .rdata  ascii   agentlib
+1111 0x0000ee00 0x180010400 9   10   .rdata  ascii   developer
+1112 0x0000ee10 0x180010410 84  85   .rdata  ascii   FATAL: Can not use Java agent argument '%s' without a '%s' feature in '%s' license.\n
+1113 0x0000ee68 0x180010468 30  31   .rdata  ascii   Error: CreateJavaVM failed %d\n
+1114 0x0000ee88 0x180010488 28  29   .rdata  ascii   nre>   Find main class...%s\n
+1115 0x0000eea8 0x1800104a8 34  35   .rdata  ascii   Error: Can't find main class "%s"\n
+1116 0x0000eed0 0x1800104d0 27  28   .rdata  ascii   nre>   Find main method...\n
+1117 0x0000eef0 0x1800104f0 22  23   .rdata  ascii   ([Ljava/lang/String;)V
+1118 0x0000ef08 0x180010508 4   5    .rdata  ascii   Main
+1119 0x0000ef10 0x180010510 44  45   .rdata  ascii   Error: Can't find main method in class "%s"\n
+1120 0x0000ef40 0x180010540 31  32   .rdata  ascii   nre>   Build java arguments...\n
+1121 0x0000ef60 0x180010560 25  26   .rdata  ascii   nre>     java arguments:\n
+1122 0x0000ef80 0x180010580 33  34   .rdata  ascii   nre>     javaArgument[%d] = "%s"\n
+1123 0x0000efa8 0x1800105a8 32  33   .rdata  ascii   nre>   Launching main method...\n
+1124 0x0000efd0 0x1800105d0 40  41   .rdata  ascii   nre>   Setting consume logoff events...\n
+1125 0x0000f000 0x180010600 32  33   .rdata  ascii   nre>   Detach current thread...\n
+1126 0x0000f028 0x180010628 37  38   .rdata  ascii   Error:  Could not detach main thread\n
+1127 0x0000f050 0x180010650 21  22   .rdata  ascii   nre>   Destroy VM...\n
+1128 0x0000f068 0x180010668 23  24   .rdata  ascii   nre>   VM Destroyed...\n
+1129 0x0000f080 0x180010680 20  21   .rdata  ascii   station.java.options
+1130 0x0000f098 0x180010698 15  16   .rdata  ascii   wb.java.options
+1131 0x0000f0a8 0x1800106a8 17  18   .rdata  ascii   test.java.options
+1132 0x0000f0c0 0x1800106c0 16  17   .rdata  ascii   nre.java.options
+1133 0x0000f0d8 0x1800106d8 38  39   .rdata  ascii   --enable-native-access=javafx.graphics
+1134 0x0000f100 0x180010700 33  34   .rdata  ascii   --enable-native-access=javafx.web
+1135 0x0000f128 0x180010728 32  33   .rdata  ascii   --enable-native-access=jxbrowser
+1136 0x0000f150 0x180010750 35  36   .rdata  ascii   --enable-native-access=org.lz4.java
+1137 0x0000f178 0x180010778 42  43   .rdata  ascii   --enable-native-access=org.jnrproject.jffi
+1138 0x0000f1a8 0x1800107a8 49  50   .rdata  ascii   --enable-native-access=org.bouncycastle.fips.core
+1139 0x0000f1e0 0x1800107e0 41  42   .rdata  ascii   --add-opens=java.base/java.io=niagara.nre
+1140 0x0000f210 0x180010810 43  44   .rdata  ascii   --add-opens=java.base/java.lang=niagara.nre
+1141 0x0000f240 0x180010840 43  44   .rdata  ascii   --add-opens=java.base/java.util=niagara.nre
+1142 0x0000f270 0x180010870 55  56   .rdata  ascii   --add-opens=java.base/sun.security.provider=niagara.nre
+1143 0x0000f2b0 0x1800108b0 69  70   .rdata  ascii   --add-opens=java.xml.crypto/org.jcp.xml.dsig.internal.dom=niagara.nre
+1144 0x0000f300 0x180010900 87  88   .rdata  ascii   --add-opens=org.eclipse.jetty.websocket.api/org.eclipse.jetty.websocket.api=niagara.nre
+1145 0x0000f360 0x180010960 109 110  .rdata  ascii   --add-opens=org.eclipse.jetty.ee11.websocket.jetty.server/org.eclipse.jetty.ee11.websocket.server=niagara.nre
+1146 0x0000f3d0 0x1800109d0 85  86   .rdata  ascii   --add-opens=org.eclipse.jetty.ee11.servlet/org.eclipse.jetty.ee11.servlet=niagara.nre
+1147 0x0000f430 0x180010a30 92  93   .rdata  ascii   --add-opens=org.eclipse.jetty.security/org.eclipse.jetty.security.authentication=niagara.nre
+1148 0x0000f490 0x180010a90 73  74   .rdata  ascii   --add-opens=org.eclipse.jetty.server/org.eclipse.jetty.server=niagara.nre
+1149 0x0000f4e0 0x180010ae0 81  82   .rdata  ascii   --add-opens=org.eclipse.jetty.server/org.eclipse.jetty.server.handler=niagara.nre
+1150 0x0000f540 0x180010b40 73  74   .rdata  ascii   --add-opens=org.eclipse.jetty.util/org.eclipse.jetty.util.ssl=niagara.nre
+1151 0x0000f590 0x180010b90 75  76   .rdata  ascii   --add-opens=org.eclipse.jetty.session/org.eclipse.jetty.session=niagara.nre
+1152 0x0000f5e0 0x180010be0 73  74   .rdata  ascii   --add-opens=org.eclipse.jetty.client/org.eclipse.jetty.client=niagara.nre
+1153 0x0000f630 0x180010c30 89  90   .rdata  ascii   --add-opens=org.bouncycastle.fips.tls/org.bouncycastle.tls.crypto.impl.jcajce=niagara.nre
+1154 0x0000f690 0x180010c90 83  84   .rdata  ascii   --add-opens=org.bouncycastle.fips.core/org.bouncycastle.jcajce.provider=niagara.nre
+1155 0x0000f6f0 0x180010cf0 84  85   .rdata  ascii   --add-opens=org.bouncycastle.tls/org.bouncycastle.tls.crypto.impl.jcajce=niagara.nre
+1156 0x0000f750 0x180010d50 79  80   .rdata  ascii   --add-opens=org.bouncycastle.provider/org.bouncycastle.jce.provider=niagara.nre
+1157 0x0000f7a0 0x180010da0 80  81   .rdata  ascii   --add-opens=org.bouncycastle.provider/org.bouncycastle.crypto.params=niagara.nre
+1158 0x0000f7f8 0x180010df8 45  46   .rdata  ascii   --add-opens=java.desktop/java.awt=niagara.nre
+1159 0x0000f828 0x180010e28 51  52   .rdata  ascii   --add-opens=javafx.web/javafx.scene.web=niagara.nre
+1160 0x0000f860 0x180010e60 59  60   .rdata  ascii   --add-opens=javafx.web/com.sun.javafx.scene.web=niagara.nre
+1161 0x0000f8a0 0x180010ea0 16  17   .rdata  ascii   nre_hostid_debug
+1162 0x0000f8b8 0x180010eb8 12  13   .rdata  ascii   iphlpapi.dll
+1163 0x0000f8c8 0x180010ec8 40  42   .rdata  ascii   ERROR: Could not load IP Helper Library:
+1164 0x0000f8f8 0x180010ef8 20  21   .rdata  ascii   GetAdaptersAddresses
+1165 0x0000f910 0x180010f10 21  22   .rdata  ascii   >>> hostid.debug >>>\n
+1166 0x0000f928 0x180010f28 5   6    .rdata  ascii   owner
+1167 0x0000f930 0x180010f30 6   7    .rdata  ascii   volume
+1168 0x0000f938 0x180010f38 15  16   .rdata  ascii   RegisteredOwner
+1169 0x0000f948 0x180010f48 6   14   .rdata  utf16le SHA256
+1170 0x0000f958 0x180010f58 12  26   .rdata  utf16le ObjectLength
+1171 0x0000f974 0x180010f74 5   6    .rdata  ascii   WINN5
+1172 0x0000f980 0x180010f80 74  75   .rdata  ascii   %s-%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X
+1173 0x0000f9d0 0x180010fd0 17  18   .rdata  ascii     prefix  = '%s'\n
+1174 0x0000f9e8 0x180010fe8 17  18   .rdata  ascii     hidden  = '%s'\n
+1175 0x0000fa00 0x180011000 17  18   .rdata  ascii     owner   = '%s'\n
+1176 0x0000fa18 0x180011018 17  18   .rdata  ascii     volume  = '%s'\n
+1177 0x0000fa30 0x180011030 17  18   .rdata  ascii     result  = '%s'\n
+1178 0x0000fa48 0x180011048 21  22   .rdata  ascii   <<< hostid.debug <<<\n
+1179 0x0000fa60 0x180011060 13  14   .rdata  ascii   brand.product
+1180 0x0000fa70 0x180011070 8   9    .rdata  ascii   <parts/>
+1181 0x0000fa80 0x180011080 12  13   .rdata  ascii   000000000000
+1182 0x0000fa90 0x180011090 69  70   .rdata  ascii   ERROR: IP Helper Library unavailable, can not determine MAC address.\n
+1183 0x0000fad8 0x1800110d8 62  63   .rdata  ascii   ERROR: No suitable adapters found for retrieving MAC address.\n
+1184 0x0000fb18 0x180011118 24  25   .rdata  ascii   %02X%02X%02X%02X%02X%02X
+1185 0x0000fb38 0x180011138 17  18   .rdata  ascii   SOFTWARE\Niagara5
+1186 0x0000fb50 0x180011150 25  27   .rdata  ascii   ERROR: NreWin32.RHK.ROKE:
+1187 0x0000fb6c 0x18001116c 4   5    .rdata  ascii   hid5
+1188 0x0000fb78 0x180011178 25  27   .rdata  ascii   ERROR: NreWin32.RHK.RQVE:
+1189 0x0000fb98 0x180011198 34  35   .rdata  ascii   ERROR: NreWin32.RHK.RQVE.DATA = 0\n
+1190 0x0000fbc0 0x1800111c0 32  33   .rdata  ascii   ERROR: NreWin32.RHK.RQVE.LA = 0\n
+1191 0x0000fbe8 0x1800111e8 27  29   .rdata  ascii   ERROR: NreWin32.RHK.RQVE.2:
+1192 0x0000fc08 0x180011208 24  26   .rdata  ascii   ERROR: NreWin32.RHK.CUD:
+1193 0x0000fc28 0x180011228 25  27   .rdata  ascii   ERROR: NreWin32.SHK.RCKE:
+1194 0x0000fc48 0x180011248 24  26   .rdata  ascii   ERROR: NreWin32.SHK.CPD:
+1195 0x0000fc68 0x180011268 25  27   .rdata  ascii   ERROR: NreWin32.SHK.RSVE:
+1196 0x0000fc88 0x180011288 35  37   .rdata  ascii   ERROR: Can not retrieve local time:
+1197 0x0000fcb0 0x1800112b0 33  35   .rdata  ascii   ERROR: Can not format local time:
+1198 0x0000fcd8 0x1800112d8 36  37   .rdata  ascii   ERROR: Error obtaining MAC address.\n
+1199 0x0000fd00 0x180011300 10  11   .rdata  ascii   %s-%s-%llu
+1200 0x0000fd10 0x180011310 23  24   .rdata  ascii   disableHostIdGeneration
+1201 0x0000fd28 0x180011328 42  43   .rdata  ascii   ERROR: Host Id cannot be found/generated.\n
+1202 0x0000fd58 0x180011358 28  29   .rdata  ascii   ERROR: Can not generate lk.\n
+1203 0x0000fd78 0x180011378 24  25   .rdata  ascii   ERROR: Can not save lk.\n
+1204 0x0000fd98 0x180011398 36  37   .rdata  ascii   SOFTWARE\Microsoft\%s\CurrentVersion
+1205 0x0000fdc0 0x1800113c0 28  29   .rdata  ascii     getRegWinCurVerImpl(%s\%s)
+1206 0x0000fde0 0x1800113e0 7   8    .rdata  ascii    -> %d\n
+1207 0x0000fde8 0x1800113e8 10  11   .rdata  ascii   Windows NT
+1208 0x0000fdf8 0x1800113f8 7   8    .rdata  ascii   Windows
+1209 0x0000fe08 0x180011408 43  45   .rdata  ascii   ERROR: Can not retrieve volume information:
+1210 0x0000fe38 0x180011438 12  13   .rdata  ascii   niagara_home
+1211 0x0000fe50 0x180011450 67  68   .rdata  ascii   FATAL: Unable to initialize NIAGARA_HOME, GetModuleFileName failed!
+1212 0x0000fe98 0x180011498 17  18   .rdata  ascii   niagara_user_home
+1213 0x0000feb0 0x1800114b0 45  46   .rdata  ascii   FATAL: Unable to find a valid user directory!
+1214 0x0000fee0 0x1800114e0 52  53   .rdata  ascii   FATAL: Unable to find a valid system home directory!
+1215 0x0000ff18 0x180011518 53  54   .rdata  ascii   FATAL: Unable to find a valid program data directory!
+1216 0x0000ff50 0x180011550 26  27   .rdata  ascii   %s\Niagara\%s\daemon\%d.%d
+1217 0x0000ff70 0x180011570 19  20   .rdata  ascii   %s\Niagara\%s\%d.%d
+1218 0x0000ff88 0x180011588 19  20   .rdata  ascii   niagara_config_home
+1219 0x0000ffa0 0x1800115a0 32  33   .rdata  ascii   %s\Niagara\%s\config\%d.%d.%d.%d
+1220 0x0000ffc8 0x1800115c8 34  35   .rdata  ascii   ERROR: [%lu] Unknown system error\n
+1221 0x0000fff0 0x1800115f0 16  17   .rdata  ascii   ERROR: [%lu] %s\n
+1222 0x00010008 0x180011608 20  21   .rdata  ascii   Null encrypted value
+1223 0x00010020 0x180011620 25  26   .rdata  ascii   Too large encrypted value
+1224 0x00010040 0x180011640 22  23   .rdata  ascii   Error decrypting value
+1225 0x00010058 0x180011658 32  33   .rdata  ascii   Error allocating Java byte array
+1226 0x00010080 0x180011680 47  48   .rdata  ascii   Error copying the data into the Java byte array
+1227 0x000100b0 0x1800116b0 27  28   .rdata  ascii   java/lang/SecurityException
+1228 0x000100d0 0x1800116d0 15  16   .rdata  ascii   Null data value
+1229 0x000100e0 0x1800116e0 20  21   .rdata  ascii   Too large data value
+1230 0x000100f8 0x1800116f8 22  23   .rdata  ascii   Error encrypting value
+1231 0x00010110 0x180011710 41  42   .rdata  ascii   Error creating registry key (error = %ld)
+1232 0x00010140 0x180011740 40  41   .rdata  ascii   Error opening registry key (error = %ld)
+1233 0x00010170 0x180011770 17  18   .rdata  ascii   SOFTWARE\Niagara4
+1234 0x00010188 0x180011788 59  60   .rdata  ascii   Error allocating space for the registry value (error = %ld)
+1235 0x000101c8 0x1800117c8 45  46   .rdata  ascii   Error reading registry key data (error = %ld)
+1236 0x000101f8 0x1800117f8 31  32   .rdata  ascii   Error decrypting registry value
+1237 0x00010218 0x180011818 31  32   .rdata  ascii   Error encrypting registry value
+1238 0x00010238 0x180011838 46  47   .rdata  ascii   Error setting the registry value (error = %ld)
+1239 0x00010268 0x180011868 17  18   .rdata  ascii   niagara_sig_debug
+1240 0x00010280 0x180011880 75  76   .rdata  ascii   SEVERE [SignatureUtilWin32::checkFileSignature] Invalid filePath provided\r\n
+1241 0x000102cc 0x1800118cc 4   5    .rdata  ascii   %02x
+1242 0x000102e0 0x1800118e0 77  78   .rdata  ascii   FINE [SignatureUtilWin32::checkFileSignature] Calculated file signature: %s\r\n
+1243 0x00010330 0x180011930 6   7    .rdata  ascii   %s.sig
+1244 0x00010340 0x180011940 74  75   .rdata  ascii   FINE [SignatureUtilWin32::checkFileSignature] Opening signature file: %s\r\n
+1245 0x00010390 0x180011990 88  89   .rdata  ascii   SEVERE [SignatureUtilWin32::checkFileSignature] Could not open sig file %s (0x%x: %ws)\r\n
+1246 0x000103f0 0x1800119f0 28  29   .rdata  ascii   Error reading signature file
+1247 0x00010410 0x180011a10 6   7    .rdata  ascii   SEVERE
+1248 0x00010420 0x180011a20 81  82   .rdata  ascii   SEVERE [SignatureUtilWin32::checkFileSignature] Invalid signature file size %lu\r\n
+1249 0x00010480 0x180011a80 72  73   .rdata  ascii   FINE [SignatureUtilWin32::checkFileSignature] Verifying file signature\r\n
+1250 0x000104d0 0x180011ad0 96  97   .rdata  ascii   SEVERE [SignatureUtilWin32::checkFileSignature] Signature validation failed for %s (0x%x: %ws)\r\n
+1251 0x00010540 0x180011b40 86  87   .rdata  ascii   FINE [SignatureUtilWin32::checkFileSignature] Signature validation successful for %s\r\n
+1252 0x000105a0 0x180011ba0 91  92   .rdata  ascii   FINE [SignatureUtilWin32::checkFileSignature] Converting Tridium Public Key to RSA object\r\n
+1253 0x00010600 0x180011c00 35  36   .rdata  ascii   Could not decode Tridium Public Key
+1254 0x00010628 0x180011c28 35  36   .rdata  ascii   Could not import Tridium Public Key
+1255 0x00010650 0x180011c50 70  71   .rdata  ascii   FINE [SignatureUtilWin32::checkFileSignature] Opening source file %s\r\n
+1256 0x000106a0 0x180011ca0 90  91   .rdata  ascii   SEVERE [SignatureUtilWin32::checkFileSignature] Error opening source file %s (0x%x: %ws)\r\n
+1257 0x00010700 0x180011d00 26  27   .rdata  ascii   Could not acquire provider
+1258 0x00010720 0x180011d20 22  23   .rdata  ascii   Could not acquire hash
+1259 0x00010738 0x180011d38 16  34   .rdata  utf16le HashDigestLength
+1260 0x00010760 0x180011d60 31  32   .rdata  ascii   Could not determine hash length
+1261 0x00010780 0x180011d80 82  83   .rdata  ascii   SEVERE [SignatureUtilWin32::checkFileSignature] Could not create buffer for hash\r\n
+1262 0x000107e0 0x180011de0 85  86   .rdata  ascii   SEVERE [SignatureUtilWin32::checkFileSignature] Could not create buffer for reading\r\n
+1263 0x00010840 0x180011e40 67  68   .rdata  ascii   FINE [SignatureUtilWin32::checkFileSignature] Reading source file\r\n
+1264 0x00010888 0x180011e88 27  28   .rdata  ascii   Error reading file contents
+1265 0x000108a8 0x180011ea8 19  20   .rdata  ascii   Could not hash data
+1266 0x000108c0 0x180011ec0 23  24   .rdata  ascii   Could not calcuate hash
+1267 0x000108d8 0x180011ed8 9   10   .rdata  ascii   ntdll.dll
+1268 0x000108e8 0x180011ee8 60  61   .rdata  ascii   %s [SignatureUtilWin32::checkFileSignature] %s: 0x%x (%ws)\r\n
+1269 0x00010998 0x180011f98 17  18   .rdata  ascii   Unknown exception
+1270 0x000109c8 0x180011fc8 14  15   .rdata  ascii   bad allocation
+1271 0x000109f0 0x180011ff0 20  21   .rdata  ascii   bad array new length
+1272 0x00011248 0x180012848 8   9    .rdata  ascii   .text$di
+1273 0x0001125c 0x18001285c 8   9    .rdata  ascii   .text$mn
+1274 0x00011270 0x180012870 11  12   .rdata  ascii   .text$mn$00
+1275 0x00011284 0x180012884 7   8    .rdata  ascii   .text$x
+1276 0x00011294 0x180012894 8   9    .rdata  ascii   .idata$5
+1277 0x000112a8 0x1800128a8 6   7    .rdata  ascii   .00cfg
+1278 0x000112b8 0x1800128b8 8   9    .rdata  ascii   .CRT$XCA
+1279 0x000112cc 0x1800128cc 8   9    .rdata  ascii   .CRT$XCU
+1280 0x000112e0 0x1800128e0 8   9    .rdata  ascii   .CRT$XCZ
+1281 0x000112f4 0x1800128f4 8   9    .rdata  ascii   .CRT$XIA
+1282 0x00011308 0x180012908 8   9    .rdata  ascii   .CRT$XIZ
+1283 0x0001131c 0x18001291c 8   9    .rdata  ascii   .CRT$XPA
+1284 0x00011330 0x180012930 8   9    .rdata  ascii   .CRT$XPZ
+1285 0x00011344 0x180012944 8   9    .rdata  ascii   .CRT$XTA
+1286 0x00011358 0x180012958 8   9    .rdata  ascii   .CRT$XTZ
+1287 0x0001136c 0x18001296c 6   7    .rdata  ascii   .gfids
+1288 0x0001137c 0x18001297c 6   7    .rdata  ascii   .rdata
+1289 0x0001138c 0x18001298c 8   9    .rdata  ascii   .rdata$r
+1290 0x000113a0 0x1800129a0 13  14   .rdata  ascii   .rdata$voltmd
+1291 0x000113b8 0x1800129b8 13  14   .rdata  ascii   .rdata$zzzdbg
+1292 0x000113d0 0x1800129d0 8   9    .rdata  ascii   .rtc$IAA
+1293 0x000113e4 0x1800129e4 8   9    .rdata  ascii   .rtc$IZZ
+1294 0x000113f8 0x1800129f8 8   9    .rdata  ascii   .rtc$TAA
+1295 0x0001140c 0x180012a0c 8   9    .rdata  ascii   .rtc$TZZ
+1296 0x00011420 0x180012a20 6   7    .rdata  ascii   .xdata
+1297 0x00011430 0x180012a30 8   9    .rdata  ascii   .xdata$x
+1298 0x00011444 0x180012a44 6   7    .rdata  ascii   .edata
+1299 0x00011454 0x180012a54 8   9    .rdata  ascii   .idata$2
+1300 0x00011468 0x180012a68 8   9    .rdata  ascii   .idata$3
+1301 0x0001147c 0x180012a7c 8   9    .rdata  ascii   .idata$4
+1302 0x00011490 0x180012a90 8   9    .rdata  ascii   .idata$6
+1303 0x000114a4 0x180012aa4 5   6    .rdata  ascii   .data
+1304 0x000114b4 0x180012ab4 7   8    .rdata  ascii   .data$r
+1305 0x000114c4 0x180012ac4 8   9    .rdata  ascii   .data$rs
+1306 0x000114d8 0x180012ad8 4   5    .rdata  ascii   .bss
+1307 0x000114e8 0x180012ae8 6   7    .rdata  ascii   .pdata
+1308 0x000114f8 0x180012af8 8   9    .rdata  ascii   .rsrc$01
+1309 0x0001150c 0x180012b0c 8   9    .rdata  ascii   .rsrc$02
+1310 0x000115ab 0x180012bab 7   8    .rdata  ascii   p\r`\fP\v0
+1311 0x00011798 0x180012d98 6   7    .rdata  ascii   \tp\b`\aP
+1312 0x00011926 0x180012f26 7   8    .rdata  ascii   \fp\v`\n0L
+1313 0x00011ada 0x1800130da 4   5    .rdata  ascii   \fp\v`
+1314 0x00011b71 0x180013171 6   8    .rdata  ascii   dD \b4C
+1315 0x00011dbc 0x1800133bc 4   5    .rdata  ascii   \bp\a`
+1316 0x00011edc 0x1800134dc 4   5    .rdata  ascii   \bp\a`
+1317 0x00011ef8 0x1800134f8 4   5    .rdata  ascii   \bp\a`
+1318 0x00011f30 0x180013530 4   5    .rdata  ascii   \bp\a`
+1319 0x00012056 0x180013656 4   5    .rdata  ascii   \fp\v`
+1320 0x00012198 0x180013798 4   5    .rdata  ascii   \bp\a`
+1321 0x0001220a 0x18001380a 4   5    .rdata  ascii   \bp\a`
+1322 0x00012b26 0x180014126 7   16   .rdata  utf16le \a\b\t\n\v\f\r
+1323 0x00012b58 0x180014158 95  192  .rdata  utf16le  !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
+1324 0x00012cb4 0x1800142b4 7   8    .rdata  ascii   nre.dll
+1325 0x00012cbc 0x1800142bc 39  40   .rdata  ascii   ??0DirectoryListing@NreLib@@IEAA@PEBD@Z
+1326 0x00012ce4 0x1800142e4 40  41   .rdata  ascii   ??0DirectoryListingEntry@NreLib@@QEAA@XZ
+1327 0x00012d0d 0x18001430d 21  22   .rdata  ascii   ??0Nre@@QEAA@AEBV0@@Z
+1328 0x00012d23 0x180014323 15  16   .rdata  ascii   ??0Nre@@QEAA@XZ
+1329 0x00012d33 0x180014333 29  30   .rdata  ascii   ??0NreLauncher@@QEAA@AEBV0@@Z
+1330 0x00012d51 0x180014351 23  24   .rdata  ascii   ??0NreLauncher@@QEAA@XZ
+1331 0x00012d69 0x180014369 28  29   .rdata  ascii   ??0NreLauncherWin32@@IEAA@XZ
+1332 0x00012d86 0x180014386 34  35   .rdata  ascii   ??0NreLauncherWin32@@QEAA@AEBV0@@Z
+1333 0x00012da9 0x1800143a9 20  21   .rdata  ascii   ??0NreWin32@@IEAA@XZ
+1334 0x00012dbe 0x1800143be 26  27   .rdata  ascii   ??0NreWin32@@QEAA@AEBV0@@Z
+1335 0x00012dd9 0x1800143d9 22  23   .rdata  ascii   ??1CharWriter@@UEAA@XZ
+1336 0x00012df0 0x1800143f0 35  36   .rdata  ascii   ??1DirectoryListing@NreLib@@QEAA@XZ
+1337 0x00012e14 0x180014414 40  41   .rdata  ascii   ??1DirectoryListingEntry@NreLib@@QEAA@XZ
+1338 0x00012e3d 0x18001443d 15  16   .rdata  ascii   ??1Nre@@UEAA@XZ
+1339 0x00012e4d 0x18001444d 23  24   .rdata  ascii   ??1NreLauncher@@UEAA@XZ
+1340 0x00012e65 0x180014465 28  29   .rdata  ascii   ??1NreLauncherWin32@@UEAA@XZ
+1341 0x00012e82 0x180014482 20  21   .rdata  ascii   ??1NreWin32@@UEAA@XZ
+1342 0x00012e97 0x180014497 32  33   .rdata  ascii   ??1TcpIpAdapterSettings@@UEAA@XZ
+1343 0x00012eb8 0x1800144b8 48  49   .rdata  ascii   ??4DirectoryListing@NreLib@@QEAAAEAV01@AEBV01@@Z
+1344 0x00012ee9 0x1800144e9 53  54   .rdata  ascii   ??4DirectoryListingEntry@NreLib@@QEAAAEAV01@AEBV01@@Z
+1345 0x00012f1f 0x18001451f 36  37   .rdata  ascii   ??4DpapiHelper@@QEAAAEAV0@$$QEAV0@@Z
+1346 0x00012f44 0x180014544 34  35   .rdata  ascii   ??4DpapiHelper@@QEAAAEAV0@AEBV0@@Z
+1347 0x00012f67 0x180014567 36  37   .rdata  ascii   ??4LicenseUtil@@QEAAAEAV0@$$QEAV0@@Z
+1348 0x00012f8c 0x18001458c 34  35   .rdata  ascii   ??4LicenseUtil@@QEAAAEAV0@AEBV0@@Z
+1349 0x00012faf 0x1800145af 26  27   .rdata  ascii   ??4Nre@@QEAAAEAV0@AEBV0@@Z
+1350 0x00012fca 0x1800145ca 34  35   .rdata  ascii   ??4NreLauncher@@QEAAAEAV0@AEBV0@@Z
+1351 0x00012fed 0x1800145ed 39  40   .rdata  ascii   ??4NreLauncherWin32@@QEAAAEAV0@AEBV0@@Z
+1352 0x00013015 0x180014615 31  32   .rdata  ascii   ??4NreWin32@@QEAAAEAV0@AEBV0@@Z
+1353 0x00013035 0x180014635 38  39   .rdata  ascii   ??4SignatureUtil@@QEAAAEAV0@$$QEAV0@@Z
+1354 0x0001305c 0x18001465c 36  37   .rdata  ascii   ??4SignatureUtil@@QEAAAEAV0@AEBV0@@Z
+1355 0x00013081 0x180014681 12  13   .rdata  ascii   ??_7Nre@@6B@
+1356 0x0001308e 0x18001468e 20  21   .rdata  ascii   ??_7NreLauncher@@6B@
+1357 0x000130a3 0x1800146a3 25  26   .rdata  ascii   ??_7NreLauncherWin32@@6B@
+1358 0x000130bd 0x1800146bd 17  18   .rdata  ascii   ??_7NreWin32@@6B@
+1359 0x000130cf 0x1800146cf 52  53   .rdata  ascii   ?__autoclassinit2@DirectoryListing@NreLib@@QEAAX_K@Z
+1360 0x00013104 0x180014704 57  58   .rdata  ascii   ?__autoclassinit2@DirectoryListingEntry@NreLib@@QEAAX_K@Z
+1361 0x0001313e 0x18001473e 37  38   .rdata  ascii   ?__autoclassinit2@NreWin32@@QEAAX_K@Z
+1362 0x00013164 0x180014764 44  45   .rdata  ascii   ?buildArgs@NreLauncherWin32@@AEAAHHPEAPEAD@Z
+1363 0x00013191 0x180014791 64  65   .rdata  ascii   ?buildVMOptions@NreLauncherWin32@@AEAAHPEAUJavaVMOption@@PEAHH@Z
+1364 0x000131d2 0x1800147d2 44  45   .rdata  ascii   ?checkFileSignature@SignatureUtil@@SAHPEBD@Z
+1365 0x000131ff 0x1800147ff 34  35   .rdata  ascii   ?cleanup@NreLauncherWin32@@AEAAHXZ
+1366 0x00013222 0x180014822 26  27   .rdata  ascii   ?close@CharWriter@@UEAAXXZ
+1367 0x0001323d 0x18001483d 37  38   .rdata  ascii   ?createDirectory@FileUtil@@SA_NPEBD@Z
+1368 0x00013263 0x180014863 35  36   .rdata  ascii   ?createVM@NreLauncherWin32@@AEAAHXZ
+1369 0x00013287 0x180014887 50  51   .rdata  ascii   ?decrypt@DpapiHelper@@SAHPEAU_CRYPTOAPI_BLOB@@0E@Z
+1370 0x000132ba 0x1800148ba 44  45   .rdata  ascii   ?defaultToNonFIPS@NreLauncherWin32@@AEAA_NXZ
+1371 0x000132e7 0x1800148e7 30  31   .rdata  ascii   ?dumpThreads@NreWin32@@UEAAXXZ
+1372 0x00013306 0x180014906 51  52   .rdata  ascii   ?encrypt@DpapiHelper@@SAHPEAU_CRYPTOAPI_BLOB@@0EE@Z
+1373 0x0001333a 0x18001493a 28  29   .rdata  ascii   ?exists@FileUtil@@SA_NPEBD@Z
+1374 0x00013357 0x180014957 40  41   .rdata  ascii   ?fixFilePath@FileUtil@@SAPEADPEBDPEADH@Z
+1375 0x00013380 0x180014980 38  39   .rdata  ascii   ?generateNewKey@NreWin32@@AEAAHPEADH@Z
+1376 0x000133a7 0x1800149a7 42  43   .rdata  ascii   ?getCodeCacheSizes@NreWin32@@UEAAXPEAH00@Z
+1377 0x000133d2 0x1800149d2 50  51   .rdata  ascii   ?getEntropy@DpapiHelper@@CA?AU_CRYPTOAPI_BLOB@@E@Z
+1378 0x00013405 0x180014a05 36  37   .rdata  ascii   ?getExtension@FileUtil@@SAPEBDPEBD@Z
+1379 0x0001342a 0x180014a2a 42  43   .rdata  ascii   ?getHeapSpaceSizes@NreWin32@@UEAAXPEAH00@Z
+1380 0x00013455 0x180014a55 33  34   .rdata  ascii   ?getHostId@NreWin32@@UEAAHPEADI@Z
+1381 0x00013477 0x180014a77 36  37   .rdata  ascii   ?getHostModel@NreWin32@@UEAAHPEADI@Z
+1382 0x0001349c 0x180014a9c 43  44   .rdata  ascii   ?getHostModelVersion@NreWin32@@UEAAHPEADI@Z
+1383 0x000134c8 0x180014ac8 36  37   .rdata  ascii   ?getHostParts@NreWin32@@UEAAHPEADI@Z
+1384 0x000134ed 0x180014aed 38  39   .rdata  ascii   ?getHostProduct@NreWin32@@UEAAHPEADI@Z
+1385 0x00013514 0x180014b14 43  44   .rdata  ascii   ?getHostSerialNumber@NreWin32@@UEAAHPEADI@Z
+1386 0x00013540 0x180014b40 37  38   .rdata  ascii   ?getHostVendor@NreWin32@@UEAAHPEADI@Z
+1387 0x00013566 0x180014b66 28  29   .rdata  ascii   ?getInstance@Nre@@SAPEAV1@XZ
+1388 0x00013583 0x180014b83 36  37   .rdata  ascii   ?getInstance@NreLauncher@@SAPEAV1@XZ
+1389 0x000135a8 0x180014ba8 37  38   .rdata  ascii   ?getMacAddress@NreWin32@@AEAAXPEADI@Z
+1390 0x000135ce 0x180014bce 42  43   .rdata  ascii   ?getMetaSpaceSizes@NreWin32@@UEAAXPEAH00@Z
+1391 0x000135f9 0x180014bf9 44  45   .rdata  ascii   ?getNiagaraConfigHome@NreWin32@@UEAAXPEADI@Z
+1392 0x00013626 0x180014c26 48  49   .rdata  ascii   ?getNiagaraConfigHomePath@NreWin32@@UEAAXPEAD0@Z
+1393 0x00013657 0x180014c57 38  39   .rdata  ascii   ?getNiagaraHome@NreWin32@@UEAAXPEADI@Z
+1394 0x0001367e 0x180014c7e 42  43   .rdata  ascii   ?getNiagaraUserHome@NreWin32@@UEAAXPEADI@Z
+1395 0x000136a9 0x180014ca9 44  45   .rdata  ascii   ?getOrCreateHiddenKey@NreWin32@@AEAAXPEADH@Z
+1396 0x000136d6 0x180014cd6 46  47   .rdata  ascii   ?getRegWinCurVer@NreWin32@@AEAAHPEBDPEAEPEAK@Z
+1397 0x00013705 0x180014d05 51  52   .rdata  ascii   ?getRegWinCurVerImpl@NreWin32@@AEAAHPEBD0PEAEPEAK@Z
+1398 0x00013739 0x180014d39 46  47   .rdata  ascii   ?getSystemReserveSizes@NreWin32@@UEAAXPEAH00@Z
+1399 0x00013768 0x180014d68 33  34   .rdata  ascii   ?getVolume@NreWin32@@AEAAXPEADH@Z
+1400 0x0001378a 0x180014d8a 42  43   .rdata  ascii   ?hasNext@DirectoryListing@NreLib@@QEAA_NXZ
+1401 0x000137b5 0x180014db5 42  43   .rdata  ascii   ?init@DirectoryListing@NreLib@@IEAAXPEBD@Z
+1402 0x000137e0 0x180014de0 43  44   .rdata  ascii   ?initFips@NreLauncherWin32@@AEAAHHPEAPEAD@Z
+1403 0x0001380c 0x180014e0c 36  37   .rdata  ascii   ?initPaths@NreLauncherWin32@@AEAAHXZ
+1404 0x00013831 0x180014e31 24  25   .rdata  ascii   ?instance@Nre@@0PEAV1@EA
+1405 0x0001384a 0x180014e4a 32  33   .rdata  ascii   ?instance@NreLauncher@@0PEAV1@EA
+1406 0x0001386b 0x180014e6b 40  41   .rdata  ascii   ?invokeNRE@NreLauncherWin32@@AEAAHPEBD@Z
+1407 0x00013894 0x180014e94 48  49   .rdata  ascii   ?isDirectory@DirectoryListing@NreLib@@SA_NPEBD@Z
+1408 0x000138c5 0x180014ec5 33  34   .rdata  ascii   ?isDirectory@FileUtil@@SA_NPEBD@Z
+1409 0x000138e7 0x180014ee7 42  43   .rdata  ascii   ?isFeaturePresent@LicenseUtil@@SA_NPEBD0@Z
+1410 0x00013912 0x180014f12 40  41   .rdata  ascii   ?isProductionBuild@SignatureUtil@@SA_NXZ
+1411 0x0001393b 0x180014f3b 34  35   .rdata  ascii   ?loadDLL@NreLauncherWin32@@AEAAHXZ
+1412 0x0001395e 0x180014f5e 46  47   .rdata  ascii   ?make@DirectoryListing@NreLib@@SAPEAV12@PEBD@Z
+1413 0x0001398d 0x180014f8d 69  70   .rdata  ascii   ?next@DirectoryListing@NreLib@@QEAAXPEAPEAVDirectoryListingEntry@2@@Z
+1414 0x000139d3 0x180014fd3 43  44   .rdata  ascii   ?nre@NreLauncherWin32@@UEAAHPEBDHPEAPEADH@Z
+1415 0x000139ff 0x180014fff 39  40   .rdata  ascii   ?osDescription@PlatformInfo@@QEAAPEBDXZ
+1416 0x00013a27 0x180015027 32  33   .rdata  ascii   ?osName@PlatformInfo@@QEAAPEBDXZ
+1417 0x00013a48 0x180015048 35  36   .rdata  ascii   ?osVersion@PlatformInfo@@QEAAPEBDXZ
+1418 0x00013a6c 0x18001506c 36  37   .rdata  ascii   ?pathToUrl@FileUtil@@SAHPEBDPEAD_K@Z
+1419 0x00013a91 0x180015091 30  31   .rdata  ascii   ?printError@NreWin32@@AEAAXK@Z
+1420 0x00013ab0 0x1800150b0 33  34   .rdata  ascii   ?printLastError@NreWin32@@UEAAXXZ
+1421 0x00013ad2 0x1800150d2 37  38   .rdata  ascii   ?readHiddenKey@NreWin32@@AEAAHPEADH@Z
+1422 0x00013af8 0x1800150f8 36  37   .rdata  ascii   ?saveHiddenKey@NreWin32@@AEAAHPEAD@Z
+1423 0x00013b1d 0x18001511d 41  42   .rdata  ascii   ?setInfo@DirectoryListing@NreLib@@IEAAXXZ
+1424 0x00013b47 0x180015147 44  45   .rdata  ascii   ?supportsNREConfiguration@NreWin32@@UEAA_NXZ
+1425 0x00013b74 0x180015174 18  19   .rdata  ascii   ?unload@Nre@@SAXXZ
+1426 0x00013b87 0x180015187 26  27   .rdata  ascii   ?unload@NreLauncher@@SAXXZ
+1427 0x00013ba2 0x1800151a2 32  33   .rdata  ascii   ?verifyPath@FileUtil@@SA_NPEBD@Z
+1428 0x00013bc3 0x1800151c3 36  37   .rdata  ascii   ?writeString@CharWriter@@UEAAHPEBD@Z
+1429 0x00013be8 0x1800151e8 48  49   .rdata  ascii   Java_com_tridium_nre_platform_DpapiUtil_decrypt0
+1430 0x00013c19 0x180015219 48  49   .rdata  ascii   Java_com_tridium_nre_platform_DpapiUtil_encrypt0
+1431 0x00013c4a 0x18001524a 70  71   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProviderTridium_daemonize0
+1432 0x00013c91 0x180015291 68  69   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_addUserAccount0
+1433 0x00013cd6 0x1800152d6 68  69   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_addUserToGroup0
+1434 0x00013d1b 0x18001531b 80  81   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_allowPlatformDaemonRestart0
+1435 0x00013d6c 0x18001536c 78  79   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_canReadSystemLogMessages0
+1436 0x00013dbb 0x1800153bb 79  80   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_canWriteSystemLogMessages0
+1437 0x00013e0b 0x18001540b 72  73   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_changeUserPassword0
+1438 0x00013e54 0x180015454 80  81   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_checkForKeyMaterialUpgrade0
+1439 0x00013ea5 0x1800154a5 68  69   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_createWatchdog0
+1440 0x00013eea 0x1800154ea 69  70   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_destroyWatchdog0
+1441 0x00013f30 0x180015530 65  66   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_dumpThreads0
+1442 0x00013f72 0x180015572 73  74   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_enableSystemLogging0
+1443 0x00013fbc 0x1800155bc 85  86   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_executeNativeDiagnosticsCommand0
+1444 0x00014012 0x180015612 67  68   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getAccountXml0
+1445 0x00014056 0x180015656 75  76   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getAllFileSystemNames0
+1446 0x000140a2 0x1800156a2 80  81   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getAllowBrandChangeDefault0
+1447 0x000140f3 0x1800156f3 83  84   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getAllowStationRestartDefault0
+1448 0x00014147 0x180015747 71  72   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getComputerDomain0
+1449 0x0001418f 0x18001578f 69  70   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getComputerName0
+1450 0x000141d5 0x1800157d5 64  65   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getCpuTime0
+1451 0x00014216 0x180015816 78  79   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getCurrentCPUUtilization0
+1452 0x00014265 0x180015865 73  74   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getCurrentFileCount0
+1453 0x000142af 0x1800158af 87  88   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getCurrentOpenFileDescriptorCount0
+1454 0x00014307 0x180015907 78  79   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getDefaultAdminGroupName0
+1455 0x00014356 0x180015956 72  73   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getDefaultPassword0
+1456 0x0001439f 0x18001599f 72  73   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getDefaultUsername0
+1457 0x000143e8 0x1800159e8 72  73   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getDomainGroupsXml0
+1458 0x00014431 0x180015a31 78  79   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getFileSystemDisplayName0
+1459 0x00014480 0x180015a80 80  81   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getFreePhysicalMemoryBytes0
+1460 0x000144d1 0x180015ad1 69  70   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getHostFileName0
+1461 0x00014517 0x180015b17 63  64   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getHostId0
+1462 0x00014557 0x180015b57 66  67   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getHostModel0
+1463 0x0001459a 0x180015b9a 73  74   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getHostModelVersion0
+1464 0x000145e4 0x180015be4 66  67   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getHostParts0
+1465 0x00014627 0x180015c27 68  69   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getHostProduct0
+1466 0x0001466c 0x180015c6c 73  74   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getHostSerialNumber0
+1467 0x000146b6 0x180015cb6 67  68   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getHostVendor0
+1468 0x000146fa 0x180015cfa 67  68   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getIdFromName0
+1469 0x0001473e 0x180015d3e 65  66   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getIdleTime0
+1470 0x00014780 0x180015d80 68  69   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getKeyMaterial0
+1471 0x000147c5 0x180015dc5 80  81   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getKeyMaterialLastModified0
+1472 0x00014816 0x180015e16 69  70   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getMaxFileCount0
+1473 0x0001485c 0x180015e5c 83  84   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getMaxOpenFileDescriptorCount0
+1474 0x000148b0 0x180015eb0 79  80   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getNRECodeCacheMemoryPool0
+1475 0x00014900 0x180015f00 74  75   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getNREHeapMemoryPool0
+1476 0x0001494b 0x180015f4b 79  80   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getNREMetaSpaceMemoryPool0
+1477 0x0001499b 0x180015f9b 83  84   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getNRESystemReserveMemoryPool0
+1478 0x000149ef 0x180015fef 67  68   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getNameFromId0
+1479 0x00014a33 0x180016033 82  83   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getNativeDiagnosticsCommands0
+1480 0x00014a86 0x180016086 75  76   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getNetworkSettingsXML0
+1481 0x00014ad2 0x1800160d2 71  72   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getOsArchitecture0
+1482 0x00014b1a 0x18001611a 70  71   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getOsDescription0
+1483 0x00014b61 0x180016161 63  64   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getOsName0
+1484 0x00014ba1 0x1800161a1 66  67   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getOsVersion0
+1485 0x00014be4 0x1800161e4 78  79   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getOverallCPUUtilization0
+1486 0x00014c33 0x180016233 69  70   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getPasswordHash0
+1487 0x00014c79 0x180016279 66  67   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getProcessId0
+1488 0x00014cbc 0x1800162bc 64  65   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getSSHPort0
+1489 0x00014cfd 0x1800162fd 85  86   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getSupportedAuthenticationTypes0
+1490 0x00014d53 0x180016353 71  72   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getSystemPassword0
+1491 0x00014d9b 0x18001639b 81  82   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getTotalPhysicalMemoryBytes0
+1492 0x00014ded 0x1800163ed 71  72   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getWatchdogCycles0
+1493 0x00014e35 0x180016435 71  72   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getWatchdogPolicy0
+1494 0x00014e7d 0x18001647d 72  73   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_getWatchdogTimeout0
+1495 0x00014ec6 0x1800164c6 78  79   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_isAuthenticationReadonly0
+1496 0x00014f15 0x180016515 76  77   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_isDaemonDebugSupported0
+1497 0x00014f62 0x180016562 64  65   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_isEmbedded0
+1498 0x00014fa3 0x1800165a3 67  68   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_isGroupMember0
+1499 0x00014fe7 0x1800165e7 71  72   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_isLicenseReadonly0
+1500 0x0001502f 0x18001662f 69  70   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_isOsInstallable0
+1501 0x00015075 0x180016675 69  70   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_isPasswordValid0
+1502 0x000150bb 0x1800166bb 68  69   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_isSSHSupported0
+1503 0x00015100 0x180016700 72  73   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_isSoftwareReadonly0
+1504 0x00015149 0x180016749 79  80   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_isStationPlatformReadonly0
+1505 0x00015199 0x180016799 78  79   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_isSystemPasswordReadonly0
+1506 0x000151e8 0x1800167e8 74  75   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_isSystemTimeReadonly0
+1507 0x00015233 0x180016833 57  58   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_log0
+1508 0x0001526d 0x18001686d 77  78   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_notifyApplicationStatus0
+1509 0x000152bb 0x1800168bb 85  86   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_platformDaemonShutdownRequested0
+1510 0x00015311 0x180016911 79  80   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_providesAccountManagement0
+1511 0x00015361 0x180016961 67  68   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_readSystemLog0
+1512 0x000153a5 0x1800169a5 60  61   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_reboot0
+1513 0x000153e2 0x1800169e2 71  72   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_removeUserAccount0
+1514 0x0001542a 0x180016a2a 73  74   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_removeUserFromGroup0
+1515 0x00015474 0x180016a74 75  76   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_restartPlatformDaemon0
+1516 0x000154c0 0x180016ac0 68  69   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_setKeyMaterial0
+1517 0x00015505 0x180016b05 71  72   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_setNativeTimeZone0
+1518 0x0001554d 0x180016b4d 75  76   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_setNetworkSettingsXML0
+1519 0x00015599 0x180016b99 64  65   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_setSSHPort0
+1520 0x000155da 0x180016bda 71  72   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_setSystemPassword0
+1521 0x00015622 0x180016c22 67  68   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_setSystemTime0
+1522 0x00015666 0x180016c66 81  82   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_supportsKeyMaterialRecovery0
+1523 0x000156b8 0x180016cb8 78  79   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_supportsNREConfiguration0
+1524 0x00015707 0x180016d07 79  80   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_supportsNativeDiagnostics0
+1525 0x00015757 0x180016d57 70  71   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_synchronizeUsers0
+1526 0x0001579e 0x180016d9e 68  69   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_updateWatchdog0
+1527 0x000157e3 0x180016de3 70  71   .rdata  ascii   Java_com_tridium_nre_platform_NativePlatformProvider_usesPosixSockets0
+1528 0x0001582a 0x180016e2a 70  71   .rdata  ascii   Java_com_tridium_nre_platform_RegistryUtil_getEncryptedRegistryString0
+1529 0x00015871 0x180016e71 70  71   .rdata  ascii   Java_com_tridium_nre_platform_RegistryUtil_setEncryptedRegistryString0
+1530 0x000158b8 0x180016eb8 9   10   .rdata  ascii   launchNre
+1531 0x00016102 0x180017702 72  73   .rdata  ascii   ?getAllFileSystemNames@FileSystemInfo@@SAPEAPEADPEAVErrorHandler@@PEAH@Z
+1532 0x0001614e 0x18001774e 74  75   .rdata  ascii   ?getFileSystemDisplayName@FileSystemInfo@@SAHPEAVErrorHandler@@PEBDPEADI@Z
+1533 0x0001619c 0x18001779c 48  49   .rdata  ascii   ??0JNIString@@QEAA@PEAUJNIEnv_@@PEAV_jstring@@@Z
+1534 0x000161d0 0x1800177d0 21  22   .rdata  ascii   ??1JNIString@@QEAA@XZ
+1535 0x000161e8 0x1800177e8 45  46   .rdata  ascii   ??0JavaExceptionHandler@@QEAA@PEAUJNIEnv_@@@Z
+1536 0x00016218 0x180017818 32  33   .rdata  ascii   ?getInstance@NullLog@@SAPEAV1@XZ
+1537 0x0001623c 0x18001783c 28  29   .rdata  ascii   ?log@SystemLog@@QEAAXHPEBD@Z
+1538 0x0001625c 0x18001785c 52  53   .rdata  ascii   ?getInstance@SystemLog@@SAPEAV1@PEAVErrorHandler@@@Z
+1539 0x00016294 0x180017894 59  60   .rdata  ascii   ?isEnabled@TcpIpAdapterSettings@@UEAA_NPEAVErrorHandler@@@Z
+1540 0x000162d2 0x1800178d2 60  61   .rdata  ascii   ?canDisable@TcpIpAdapterSettings@@UEAA_NPEAVErrorHandler@@@Z
+1541 0x00016312 0x180017912 60  61   .rdata  ascii   ?isReadonly@TcpIpAdapterSettings@@UEAA_NPEAVErrorHandler@@@Z
+1542 0x00016352 0x180017952 59  60   .rdata  ascii   ?getId@TcpIpAdapterSettings@@UEAAXPEAVErrorHandler@@PEADH@Z
+1543 0x00016390 0x180017990 68  69   .rdata  ascii   ?getDescription@TcpIpAdapterSettings@@UEAAXPEAVErrorHandler@@PEADH@Z
+1544 0x000163d8 0x1800179d8 67  68   .rdata  ascii   ?getMACAddress@TcpIpAdapterSettings@@UEAAXPEAVErrorHandler@@PEADH@Z
+1545 0x0001641e 0x180017a1e 63  64   .rdata  ascii   ?isDhcpEnabled@TcpIpAdapterSettings@@UEAA_NPEAVErrorHandler@@@Z
+1546 0x00016460 0x180017a60 60  61   .rdata  ascii   ?canUseDhcp@TcpIpAdapterSettings@@UEAA_NPEAVErrorHandler@@@Z
+1547 0x000164a0 0x180017aa0 71  72   .rdata  ascii   ?getDefaultGateway@TcpIpAdapterSettings@@UEAAXPEAVErrorHandler@@PEADH@Z
+1548 0x000164ea 0x180017aea 64  65   .rdata  ascii   ?getDnsHostCount@TcpIpAdapterSettings@@UEAAHPEAVErrorHandler@@@Z
+1549 0x0001652e 0x180017b2e 64  65   .rdata  ascii   ?getDnsHostLimit@TcpIpAdapterSettings@@UEAAHPEAVErrorHandler@@@Z
+1550 0x00016572 0x180017b72 69  70   .rdata  ascii   ?getDnsHosts@TcpIpAdapterSettings@@UEAAXPEAVErrorHandler@@HPEAPEADH@Z
+1551 0x000165ba 0x180017bba 63  64   .rdata  ascii   ?getDomain@TcpIpAdapterSettings@@UEAAXPEAVErrorHandler@@PEADH@Z
+1552 0x000165fc 0x180017bfc 66  67   .rdata  ascii   ?getIpAddress@TcpIpAdapterSettings@@UEAAXPEAVErrorHandler@@PEADH@Z
+1553 0x00016642 0x180017c42 67  68   .rdata  ascii   ?getSubnetMask@TcpIpAdapterSettings@@UEAAXPEAVErrorHandler@@PEADH@Z
+1554 0x00016688 0x180017c88 65  66   .rdata  ascii   ?getDhcpHost@TcpIpAdapterSettings@@UEAAXPEAVErrorHandler@@PEADH@Z
+1555 0x000166cc 0x180017ccc 73  74   .rdata  ascii   ?getDhcpLeaseGranted@TcpIpAdapterSettings@@UEAAXPEAVErrorHandler@@PEADH@Z
+1556 0x00016718 0x180017d18 73  74   .rdata  ascii   ?getDhcpLeaseExpires@TcpIpAdapterSettings@@UEAAXPEAVErrorHandler@@PEADH@Z
+1557 0x00016764 0x180017d64 65  66   .rdata  ascii   ?isIpv6Supported@TcpIpAdapterSettings@@UEAA_NPEAVErrorHandler@@@Z
+1558 0x000167a8 0x180017da8 64  65   .rdata  ascii   ?canDisableIpv6@TcpIpAdapterSettings@@UEAA_NPEAVErrorHandler@@@Z
+1559 0x000167ec 0x180017dec 63  64   .rdata  ascii   ?isIpv6Enabled@TcpIpAdapterSettings@@UEAA_NPEAVErrorHandler@@@Z
+1560 0x0001682e 0x180017e2e 67  68   .rdata  ascii   ?isIpv6DhcpEnabled@TcpIpAdapterSettings@@UEAA_NPEAVErrorHandler@@@Z
+1561 0x00016874 0x180017e74 64  65   .rdata  ascii   ?canUseIpv6Dhcp@TcpIpAdapterSettings@@UEAA_NPEAVErrorHandler@@@Z
+1562 0x000168b8 0x180017eb8 68  69   .rdata  ascii   ?getIpv6Address@TcpIpAdapterSettings@@UEAAXPEAVErrorHandler@@PEADH@Z
+1563 0x00016900 0x180017f00 74  75   .rdata  ascii   ?getIpv6SubnetPrefixLength@TcpIpAdapterSettings@@UEAAHPEAVErrorHandler@@@Z
+1564 0x0001694e 0x180017f4e 75  76   .rdata  ascii   ?getIpv6DefaultGateway@TcpIpAdapterSettings@@UEAAXPEAVErrorHandler@@PEADH@Z
+1565 0x0001699c 0x180017f9c 73  74   .rdata  ascii   ?getIpv6DnsHosts@TcpIpAdapterSettings@@UEAAXPEAVErrorHandler@@HPEAPEADH@Z
+1566 0x000169e8 0x180017fe8 68  69   .rdata  ascii   ?getIpv6DnsHostCount@TcpIpAdapterSettings@@UEAAHPEAVErrorHandler@@@Z
+1567 0x00016a30 0x180018030 69  70   .rdata  ascii   ?getIpv6DhcpHost@TcpIpAdapterSettings@@UEAAXPEAVErrorHandler@@PEADH@Z
+1568 0x00016a78 0x180018078 77  78   .rdata  ascii   ?getIpv6DhcpLeaseGranted@TcpIpAdapterSettings@@UEAAXPEAVErrorHandler@@PEADH@Z
+1569 0x00016ac8 0x1800180c8 77  78   .rdata  ascii   ?getIpv6DhcpLeaseExpires@TcpIpAdapterSettings@@UEAAXPEAVErrorHandler@@PEADH@Z
+1570 0x00016b18 0x180018118 60  61   .rdata  ascii   ?getInstance@TcpIpHostSettings@@SAPEAV1@PEAVErrorHandler@@@Z
+1571 0x00016b58 0x180018158 90  91   .rdata  ascii   ?getHostSettingsXml@TcpIpUtil@@SAXPEAVTcpIpHostSettings@@PEAVXWriter@@PEAVErrorHandler@@@Z
+1572 0x00016bb6 0x1800181b6 37  38   .rdata  ascii   ?getInstance@PlatformInfo@@SAPEAV1@XZ
+1573 0x00016bde 0x1800181de 34  35   .rdata  ascii   ?archName@PlatformInfo@@QEAAPEBDXZ
+1574 0x00016c04 0x180018204 24  25   .rdata  ascii   ??1WinNtAccount@@QEAA@XZ
+1575 0x00016c20 0x180018220 55  56   .rdata  ascii   ?getIdString@WinNtAccount@@QEAAPEBDPEAVErrorHandler@@@Z
+1576 0x00016c5a 0x18001825a 45  46   .rdata  ascii   ?getComputerName@AuthenticationUtil@@SAPEADXZ
+1577 0x00016c8a 0x18001828a 49  50   .rdata  ascii   ?getComputerDomain@AuthenticationUtil@@SAPEAD_N@Z
+1578 0x00016cbe 0x1800182be 46  47   .rdata  ascii   ?isGroupMember@AuthenticationUtil@@SA_NPEBD0@Z
+1579 0x00016cf0 0x1800182f0 54  55   .rdata  ascii   ?getDefaultAdminGroupName@AuthenticationUtil@@SAPEADXZ
+1580 0x00016d2a 0x18001832a 48  49   .rdata  ascii   ?isPasswordValid@AuthenticationUtil@@SA_NPEBD0@Z
+1581 0x00016d5e 0x18001835e 49  50   .rdata  ascii   ?getPasswordHash@AuthenticationUtil@@SAPEADPEBD@Z
+1582 0x00016d92 0x180018392 52  53   .rdata  ascii   ?getDomainGroupsXml@AuthenticationUtil@@SAPEADPEBD@Z
+1583 0x00016dca 0x1800183ca 49  50   .rdata  ascii   ?getAccountXml@AuthenticationUtil@@SAPEADPEBD_N@Z
+1584 0x00016dfe 0x1800183fe 66  67   .rdata  ascii   ?getAccountFromId@AuthenticationUtil@@SAPEAVWinNtAccount@@PEBD_N@Z
+1585 0x00016e44 0x180018444 69  70   .rdata  ascii   ?getAccountFromName@AuthenticationUtil@@SAPEAVWinNtAccount@@PEBD0_N@Z
+1586 0x00016e8c 0x18001848c 51  52   .rdata  ascii   ?getInstance@PerfUtil@@SAPEAV1@PEAVErrorHandler@@@Z
+1587 0x00016ec2 0x1800184c2 61  62   .rdata  ascii   ?getCurrentCpuUtilization@PerfUtil@@QEAAHPEAVErrorHandler@@@Z
+1588 0x00016f02 0x180018502 61  62   .rdata  ascii   ?getOverallCpuUtilization@PerfUtil@@QEAAHPEAVErrorHandler@@@Z
+1589 0x00016f42 0x180018542 64  65   .rdata  ascii   ?getFreePhysicalMemoryBytes@PerfUtil@@QEAA_KPEAVErrorHandler@@@Z
+1590 0x00016f86 0x180018586 50  51   .rdata  ascii   ?getIdleTime@PerfUtil@@QEAA_KHPEAVErrorHandler@@@Z
+1591 0x00016fbc 0x1800185bc 54  55   .rdata  ascii   ?getCpuTime@PerfUtil@@QEAA_KPEBD_NPEAVErrorHandler@@@Z
+1592 0x00016ff6 0x1800185f6 30  31   .rdata  ascii   ??0EngineWatchdog@@QEAA@PEBD@Z
+1593 0x00017018 0x180018618 26  27   .rdata  ascii   ??1EngineWatchdog@@QEAA@XZ
+1594 0x00017036 0x180018636 29  30   .rdata  ascii   ?init@EngineWatchdog@@QEAAHXZ
+1595 0x00017056 0x180018656 29  30   .rdata  ascii   ?open@EngineWatchdog@@QEAAHXZ
+1596 0x00017076 0x180018676 36  37   .rdata  ascii   ?check@EngineWatchdog@@QEAAHPEAH00@Z
+1597 0x0001709e 0x18001869e 34  35   .rdata  ascii   ?update@EngineWatchdog@@QEAAHHHH@Z
+1598 0x000170c4 0x1800186c4 31  32   .rdata  ascii   ?initList@EngineWatchdog@@SAXXZ
+1599 0x000170e6 0x1800186e6 31  32   .rdata  ascii   ?lockList@EngineWatchdog@@SAXXZ
+1600 0x00017108 0x180018708 33  34   .rdata  ascii   ?unlockList@EngineWatchdog@@SAXXZ
+1601 0x0001712c 0x18001872c 40  41   .rdata  ascii   ?addWatchdog@EngineWatchdog@@SAXPEAV1@@Z
+1602 0x00017158 0x180018758 43  44   .rdata  ascii   ?getWatchdog@EngineWatchdog@@SAPEAV1@PEBD@Z
+1603 0x00017186 0x180018786 42  43   .rdata  ascii   ?removeWatchdog@EngineWatchdog@@SA_NPEBD@Z
+1604 0x000171b4 0x1800187b4 27  28   .rdata  ascii   ??0BufferedXWriter@@QEAA@XZ
+1605 0x000171d2 0x1800187d2 38  39   .rdata  ascii   ?getString@BufferedXWriter@@QEAAPEBDXZ
+1606 0x000171fc 0x1800187fc 36  37   .rdata  ascii   ?setLogFilterLevel@SystemLog@@SAXH@Z
+1607 0x00017224 0x180018824 27  28   .rdata  ascii   ?sleep@PlatformUtil@@SAXH@Z
+1608 0x00017242 0x180018842 51  52   .rdata  ascii   ?createThread@PlatformUtil@@SAPEAXP6AIPEAX@Z0PEBD@Z
+1609 0x00017276 0x180018876 10  11   .rdata  ascii   common.dll
+1610 0x00017284 0x180018884 27  28   .rdata  ascii   RegisterServiceCtrlHandlerA
+1611 0x000172a2 0x1800188a2 16  17   .rdata  ascii   SetServiceStatus
+1612 0x000172b6 0x1800188b6 27  28   .rdata  ascii   StartServiceCtrlDispatcherA
+1613 0x000172d4 0x1800188d4 11  12   .rdata  ascii   RegCloseKey
+1614 0x000172e2 0x1800188e2 15  16   .rdata  ascii   RegCreateKeyExA
+1615 0x000172f4 0x1800188f4 11  12   .rdata  ascii   RegFlushKey
+1616 0x00017302 0x180018902 13  14   .rdata  ascii   RegOpenKeyExA
+1617 0x00017312 0x180018912 16  17   .rdata  ascii   RegQueryValueExA
+1618 0x00017326 0x180018926 14  15   .rdata  ascii   RegSetValueExA
+1619 0x00017338 0x180018938 15  16   .rdata  ascii   RegDeleteValueA
+1620 0x00017348 0x180018948 12  13   .rdata  ascii   ADVAPI32.dll
+1621 0x00017358 0x180018958 16  17   .rdata  ascii   CryptProtectData
+1622 0x0001736c 0x18001896c 18  19   .rdata  ascii   CryptUnprotectData
+1623 0x00017382 0x180018982 19  20   .rdata  ascii   CryptDecodeObjectEx
+1624 0x00017398 0x180018998 27  28   .rdata  ascii   CryptImportPublicKeyInfoEx2
+1625 0x000173b4 0x1800189b4 11  12   .rdata  ascii   CRYPT32.dll
+1626 0x000173c2 0x1800189c2 20  21   .rdata  ascii   SHGetKnownFolderPath
+1627 0x000173d8 0x1800189d8 11  12   .rdata  ascii   SHELL32.dll
+1628 0x000173e6 0x1800189e6 13  14   .rdata  ascii   CoTaskMemFree
+1629 0x000173f4 0x1800189f4 9   10   .rdata  ascii   ole32.dll
+1630 0x00017400 0x180018a00 27  28   .rdata  ascii   BCryptOpenAlgorithmProvider
+1631 0x0001741e 0x180018a1e 17  18   .rdata  ascii   BCryptGetProperty
+1632 0x00017432 0x180018a32 28  29   .rdata  ascii   BCryptCloseAlgorithmProvider
+1633 0x00017452 0x180018a52 16  17   .rdata  ascii   BCryptCreateHash
+1634 0x00017466 0x180018a66 14  15   .rdata  ascii   BCryptHashData
+1635 0x00017478 0x180018a78 16  17   .rdata  ascii   BCryptFinishHash
+1636 0x0001748c 0x180018a8c 17  18   .rdata  ascii   BCryptDestroyHash
+1637 0x000174a0 0x180018aa0 21  22   .rdata  ascii   BCryptVerifySignature
+1638 0x000174b6 0x180018ab6 10  11   .rdata  ascii   bcrypt.dll
+1639 0x000174c4 0x180018ac4 11  12   .rdata  ascii   CloseHandle
+1640 0x000174d2 0x180018ad2 19  20   .rdata  ascii   GetCurrentProcessId
+1641 0x000174e8 0x180018ae8 14  15   .rdata  ascii   CreateProcessA
+1642 0x000174fa 0x180018afa 21  22   .rdata  ascii   SetConsoleCtrlHandler
+1643 0x00017512 0x180018b12 19  20   .rdata  ascii   VerSetConditionMask
+1644 0x00017528 0x180018b28 20  21   .rdata  ascii   SetCurrentDirectoryA
+1645 0x00017540 0x180018b40 20  21   .rdata  ascii   GetCurrentDirectoryA
+1646 0x00017558 0x180018b58 12  13   .rdata  ascii   GetLastError
+1647 0x00017568 0x180018b68 11  12   .rdata  ascii   FreeLibrary
+1648 0x00017576 0x180018b76 14  15   .rdata  ascii   GetProcAddress
+1649 0x00017588 0x180018b88 12  13   .rdata  ascii   LoadLibraryA
+1650 0x00017598 0x180018b98 18  19   .rdata  ascii   VerifyVersionInfoW
+1651 0x000175ae 0x180018bae 21  22   .rdata  ascii   GetVolumeInformationA
+1652 0x000175c6 0x180018bc6 9   10   .rdata  ascii   HeapAlloc
+1653 0x000175d2 0x180018bd2 8   9    .rdata  ascii   HeapFree
+1654 0x000175de 0x180018bde 14  15   .rdata  ascii   GetProcessHeap
+1655 0x000175f0 0x180018bf0 14  15   .rdata  ascii   GetTickCount64
+1656 0x00017602 0x180018c02 18  19   .rdata  ascii   GetModuleFileNameA
+1657 0x00017618 0x180018c18 10  11   .rdata  ascii   LocalAlloc
+1658 0x00017626 0x180018c26 9   10   .rdata  ascii   LocalFree
+1659 0x00017632 0x180018c32 14  15   .rdata  ascii   FormatMessageA
+1660 0x00017644 0x180018c44 24  25   .rdata  ascii   GenerateConsoleCtrlEvent
+1661 0x00017660 0x180018c60 9   10   .rdata  ascii   FindClose
+1662 0x0001766c 0x180018c6c 14  15   .rdata  ascii   FindFirstFileA
+1663 0x0001767e 0x180018c7e 13  14   .rdata  ascii   FindNextFileA
+1664 0x0001768e 0x180018c8e 18  19   .rdata  ascii   GetFileAttributesA
+1665 0x000176a4 0x180018ca4 16  17   .rdata  ascii   CreateDirectoryA
+1666 0x000176b8 0x180018cb8 11  12   .rdata  ascii   CreateFileA
+1667 0x000176c6 0x180018cc6 8   9    .rdata  ascii   ReadFile
+1668 0x000176d2 0x180018cd2 14  15   .rdata  ascii   FormatMessageW
+1669 0x000176e4 0x180018ce4 17  18   .rdata  ascii   RtlCaptureContext
+1670 0x000176f8 0x180018cf8 22  23   .rdata  ascii   RtlLookupFunctionEntry
+1671 0x00017712 0x180018d12 16  17   .rdata  ascii   RtlVirtualUnwind
+1672 0x00017726 0x180018d26 24  25   .rdata  ascii   UnhandledExceptionFilter
+1673 0x00017742 0x180018d42 27  28   .rdata  ascii   SetUnhandledExceptionFilter
+1674 0x00017760 0x180018d60 17  18   .rdata  ascii   GetCurrentProcess
+1675 0x00017774 0x180018d74 16  17   .rdata  ascii   TerminateProcess
+1676 0x00017788 0x180018d88 25  26   .rdata  ascii   IsProcessorFeaturePresent
+1677 0x000177a4 0x180018da4 23  24   .rdata  ascii   QueryPerformanceCounter
+1678 0x000177be 0x180018dbe 18  19   .rdata  ascii   GetCurrentThreadId
+1679 0x000177d4 0x180018dd4 23  24   .rdata  ascii   GetSystemTimeAsFileTime
+1680 0x000177ee 0x180018dee 25  26   .rdata  ascii   DisableThreadLibraryCalls
+1681 0x0001780a 0x180018e0a 19  20   .rdata  ascii   InitializeSListHead
+1682 0x00017820 0x180018e20 17  18   .rdata  ascii   IsDebuggerPresent
+1683 0x00017832 0x180018e32 12  13   .rdata  ascii   KERNEL32.dll
+1684 0x00017842 0x180018e42 9   10   .rdata  ascii   _purecall
+1685 0x0001784e 0x180018e4e 6   7    .rdata  ascii   memset
+1686 0x00017858 0x180018e58 6   7    .rdata  ascii   strchr
+1687 0x00017862 0x180018e62 7   8    .rdata  ascii   strrchr
+1688 0x0001786c 0x180018e6c 6   7    .rdata  ascii   strstr
+1689 0x00017876 0x180018e76 6   7    .rdata  ascii   memcpy
+1690 0x00017880 0x180018e80 20  21   .rdata  ascii   __C_specific_handler
+1691 0x00017898 0x180018e98 20  21   .rdata  ascii   __std_exception_copy
+1692 0x000178b0 0x180018eb0 23  24   .rdata  ascii   __std_exception_destroy
+1693 0x000178ca 0x180018eca 18  19   .rdata  ascii   _CxxThrowException
+1694 0x000178e0 0x180018ee0 28  29   .rdata  ascii   __std_type_info_destroy_list
+1695 0x000178fe 0x180018efe 16  17   .rdata  ascii   VCRUNTIME140.dll
+1696 0x00017912 0x180018f12 4   5    .rdata  ascii   free
+1697 0x0001791a 0x180018f1a 6   7    .rdata  ascii   malloc
+1698 0x00017924 0x180018f24 6   7    .rdata  ascii   fclose
+1699 0x0001792e 0x180018f2e 5   6    .rdata  ascii   fgetc
+1700 0x00017936 0x180018f36 5   6    .rdata  ascii   fgets
+1701 0x0001793e 0x180018f3e 5   6    .rdata  ascii   fopen
+1702 0x00017946 0x180018f46 5   6    .rdata  ascii   fputc
+1703 0x0001794e 0x180018f4e 25  26   .rdata  ascii   __stdio_common_vsprintf_s
+1704 0x0001796a 0x180018f6a 6   7    .rdata  ascii   strcmp
+1705 0x00017974 0x180018f74 6   7    .rdata  ascii   strcpy
+1706 0x0001797e 0x180018f7e 6   7    .rdata  ascii   strlen
+1707 0x00017988 0x180018f88 23  24   .rdata  ascii   __stdio_common_vsprintf
+1708 0x000179a2 0x180018fa2 8   9    .rdata  ascii   _stricmp
+1709 0x000179ae 0x180018fae 5   6    .rdata  ascii   fread
+1710 0x000179b6 0x180018fb6 5   6    .rdata  ascii   fseek
+1711 0x000179be 0x180018fbe 5   6    .rdata  ascii   ftell
+1712 0x000179c6 0x180018fc6 6   7    .rdata  ascii   getenv
+1713 0x000179d0 0x180018fd0 26  27   .rdata  ascii   __stdio_common_vsnprintf_s
+1714 0x000179ee 0x180018fee 9   10   .rdata  ascii   strncat_s
+1715 0x000179fa 0x180018ffa 9   10   .rdata  ascii   strncpy_s
+1716 0x00017a06 0x180019006 7   8    .rdata  ascii   strncat
+1717 0x00017a10 0x180019010 7   8    .rdata  ascii   strncmp
+1718 0x00017a1a 0x18001901a 6   7    .rdata  ascii   strtok
+1719 0x00017a24 0x180019024 4   5    .rdata  ascii   exit
+1720 0x00017a2c 0x18001902c 30  31   .rdata  ascii   _set_invalid_parameter_handler
+1721 0x00017a4e 0x18001904e 9   10   .rdata  ascii   _dupenv_s
+1722 0x00017a5a 0x18001905a 15  16   .rdata  ascii   __acrt_iob_func
+1723 0x00017a6c 0x18001906c 24  25   .rdata  ascii   __stdio_common_vfwprintf
+1724 0x00017a88 0x180019088 7   8    .rdata  ascii   fopen_s
+1725 0x00017a92 0x180019092 23  24   .rdata  ascii   __stdio_common_vfprintf
+1726 0x00017aac 0x1800190ac 8   9    .rdata  ascii   strtok_s
+1727 0x00017ab8 0x1800190b8 25  26   .rdata  ascii   _invalid_parameter_noinfo
+1728 0x00017ad4 0x1800190d4 6   7    .rdata  ascii   _errno
+1729 0x00017ade 0x1800190de 7   8    .rdata  ascii   strncpy
+1730 0x00017ae8 0x1800190e8 7   8    .rdata  ascii   strnlen
+1731 0x00017af2 0x1800190f2 10  11   .rdata  ascii   wcstombs_s
+1732 0x00017b00 0x180019100 9   10   .rdata  ascii   asctime_s
+1733 0x00017b0c 0x18001910c 14  15   .rdata  ascii   _localtime64_s
+1734 0x00017b1e 0x18001911e 7   8    .rdata  ascii   _time64
+1735 0x00017b28 0x180019128 6   7    .rdata  ascii   wcslen
+1736 0x00017b32 0x180019132 9   10   .rdata  ascii   _callnewh
+1737 0x00017b3e 0x18001913e 9   10   .rdata  ascii   _initterm
+1738 0x00017b4a 0x18001914a 11  12   .rdata  ascii   _initterm_e
+1739 0x00017b58 0x180019158 15  16   .rdata  ascii   _seh_filter_dll
+1740 0x00017b6a 0x18001916a 22  23   .rdata  ascii   _configure_narrow_argv
+1741 0x00017b84 0x180019184 30  31   .rdata  ascii   _initialize_narrow_environment
+1742 0x00017ba6 0x1800191a6 24  25   .rdata  ascii   _initialize_onexit_table
+1743 0x00017bc2 0x1800191c2 21  22   .rdata  ascii   _execute_onexit_table
+1744 0x00017bda 0x1800191da 6   7    .rdata  ascii   _cexit
+1745 0x00017be4 0x1800191e4 7   8    .rdata  ascii   _strdup
+1746 0x00017bee 0x1800191ee 7   8    .rdata  ascii   _putenv
+1747 0x00017bf6 0x1800191f6 30  31   .rdata  ascii   api-ms-win-crt-heap-l1-1-0.dll
+1748 0x00017c16 0x180019216 31  32   .rdata  ascii   api-ms-win-crt-stdio-l1-1-0.dll
+1749 0x00017c36 0x180019236 32  33   .rdata  ascii   api-ms-win-crt-string-l1-1-0.dll
+1750 0x00017c58 0x180019258 37  38   .rdata  ascii   api-ms-win-crt-environment-l1-1-0.dll
+1751 0x00017c7e 0x18001927e 33  34   .rdata  ascii   api-ms-win-crt-runtime-l1-1-0.dll
+1752 0x00017ca0 0x1800192a0 33  34   .rdata  ascii   api-ms-win-crt-convert-l1-1-0.dll
+1753 0x00017cc2 0x1800192c2 30  31   .rdata  ascii   api-ms-win-crt-time-l1-1-0.dll
+1754 0x00017f07 0x18001a107 4   7    .data   utf8    e܃ߔ{
+1755 0x00017f25 0x18001a125 5   6    .data   ascii   \v>*!m
+1756 0x00017f7c 0x18001a17c 4   5    .data   ascii   -r$"
+1757 0x00018050 0x18001a250 19  20   .data   ascii   .?AVbad_alloc@std@@
+1758 0x00018078 0x18001a278 19  20   .data   ascii   .?AVexception@std@@
+1759 0x000180a0 0x18001a2a0 30  31   .data   ascii   .?AVbad_array_new_length@std@@
+1760 0x000180d0 0x18001a2d0 9   10   .data   ascii   .?AVNre@@
+1761 0x000180f0 0x18001a2f0 17  18   .data   ascii   .?AVNreLauncher@@
+1762 0x00018118 0x18001a318 16  17   .data   ascii   .?AVProperties@@
+1763 0x00018140 0x18001a340 19  20   .data   ascii   .?AVNreProperties@@
+1764 0x00018168 0x18001a368 21  22   .data   ascii   .?AVBrandProperties@@
+1765 0x00018190 0x18001a390 16  17   .data   ascii   .?AVCharWriter@@
+1766 0x000181b8 0x18001a3b8 26  27   .data   ascii   .?AVTcpIpAdapterSettings@@
+1767 0x000181e8 0x18001a3e8 14  15   .data   ascii   .?AVNreWin32@@
+1768 0x00018208 0x18001a408 22  23   .data   ascii   .?AVNreLauncherWin32@@
+1769 0x00018230 0x18001a430 15  16   .data   ascii   .?AVtype_info@@
+1770 0x000192a6 0x18001c0a6 15  32   .rsrc   utf16le VS_VERSION_INFO
+1771 0x00019302 0x18001c102 14  30   .rsrc   utf16le StringFileInfo
+1772 0x00019326 0x18001c126 8   18   .rsrc   utf16le 040904b0
+1773 0x0001933e 0x18001c13e 15  32   .rsrc   utf16le FileDescription
+1774 0x00019360 0x18001c160 22  46   .rsrc   utf16le Niagara Runtime Kernel
+1775 0x00019396 0x18001c196 11  24   .rsrc   utf16le FileVersion
+1776 0x000193be 0x18001c1be 11  24   .rsrc   utf16le CompanyName
+1777 0x000193d8 0x18001c1d8 13  28   .rsrc   utf16le Tridium, Inc.
+1778 0x000193fa 0x18001c1fa 14  30   .rsrc   utf16le LegalCopyright
+1779 0x00019418 0x18001c218 32  66   .rsrc   utf16le Copyright (C) Tridium, Inc. 2012
+1780 0x00019464 0x18001c264 10  22   .rsrc   utf16le arFileInfo
+1781 0x00019482 0x18001c282 11  24   .rsrc   utf16le Translation
+1782 0x000194a0 0x18001c2a0 352 353  .rsrc   ascii   <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0" xmlns:asmv3="urn:schemas-microsoft-com:asm.v3">\n <assemblyIdentity version="5.0.0.96" processorArchitecture="amd64" name="Tridium.Niagara.NreLib" type="win32"></assemblyIdentity>\n <description>Niagara Core Runtime Library</description>\n</assembly>PADDINGXXPADDINGPADDINGXXPADDING
+1783 0x00019842 0x18001c642 4   5            ascii   ^0\0
+1784 0x0001985e 0x18001c65e 4   5            ascii   0A0\r
+1785 0x00019870 0x18001c670 8   9            ascii   0$pxB8ht
+1786 0x00019884 0x18001c684 6   7            ascii   h#yEkl
+1787 0x0001988c 0x18001c68c 4   5            ascii   X{\a"
+1788 0x0001989d 0x18001c69d 4   7            utf8    (\v.ꠂ
+1789 0x000198c1 0x18001c6c1 5   6            ascii   wu\0\r
+1790 0x000198d3 0x18001c6d3 6   7            ascii   0b1\v0\t
+1791 0x000198ec 0x18001c6ec 14  15           ascii   \fDigiCert Inc1
+1792 0x00019904 0x18001c704 19  20           ascii   www.digicert.com1!0
+1793 0x0001991f 0x18001c71f 25  26           ascii   DigiCert Trusted Root G40
+1794 0x0001993a 0x18001c73a 14  15           ascii   \r130801120000Z
+1795 0x00019949 0x18001c749 20  21           ascii   \r380115120000Z0b1\v0\t
+1796 0x00019970 0x18001c770 14  15           ascii   \fDigiCert Inc1
+1797 0x00019988 0x18001c788 19  20           ascii   www.digicert.com1!0
+1798 0x000199a3 0x18001c7a3 25  26           ascii   DigiCert Trusted Root G40
+1799 0x000199e4 0x18001c7e4 8   9            ascii   ]J<0"0i3
+1800 0x00019a4a 0x18001c84a 4   5            ascii   t;mq
+1801 0x00019a71 0x18001c871 4   6            utf8    ͬ4@_
+1802 0x00019ad1 0x18001c8d1 4   6            utf8    |!LԼ
+1803 0x00019ad9 0x18001c8d9 4   5            ascii   u]xf
+1804 0x00019aeb 0x18001c8eb 4   8            utf8    橠gݤ'
+1805 0x00019b06 0x18001c906 6   7            ascii   v=Y]Bv
+1806 0x00019b53 0x18001c953 5   7            utf8    Ռp,A`
+1807 0x00019b6a 0x18001c96a 4   8            utf8    3щ\aί
+1808 0x00019b87 0x18001c987 4   5            ascii   RQGt
+1809 0x00019baa 0x18001c9aa 5   6            ascii   |Lu?c
+1810 0x00019bb3 0x18001c9b3 4   5            ascii    Qko
+1811 0x00019be2 0x18001c9e2 4   5            ascii   B0@0
+1812 0x00019c16 0x18001ca16 4   5            ascii   q]dL
+1813 0x00019c1b 0x18001ca1b 4   7            utf8    .g?纘
+1814 0x00019c59 0x18001ca59 5   6            ascii   x\\f\f_
+1815 0x00019c61 0x18001ca61 9   12           utf8    )V\v6I]Dcଡ଼
+1816 0x00019c6e 0x18001ca6e 6   7            ascii   f\e#\r=y
+1817 0x00019c9c 0x18001ca9c 4   5            ascii   gM:>
+1818 0x00019ca1 0x18001caa1 5   6            ascii   Y9"SD
+1819 0x00019cac 0x18001caac 6   7            ascii   Pz}b!\n
+1820 0x00019d07 0x18001cb07 4   5            ascii   #aB)
+1821 0x00019d1f 0x18001cb1f 8   9            ascii   PAq=?Mp#
+1822 0x00019d39 0x18001cb39 4   5            ascii   k t0
+1823 0x00019d63 0x18001cb63 4   5            ascii   DO,6
+1824 0x00019d77 0x18001cb77 8   10           utf8    L?n(Zy&Ҥ
+1825 0x00019dec 0x18001cbec 4   6            utf8    2Ҡ+T
+1826 0x00019e03 0x18001cc03 4   7            utf8    S趉m[
+1827 0x00019e67 0x18001cc67 6   7            ascii   0b1\v0\t
+1828 0x00019e80 0x18001cc80 14  15           ascii   \fDigiCert Inc1
+1829 0x00019e98 0x18001cc98 19  20           ascii   www.digicert.com1!0
+1830 0x00019eb3 0x18001ccb3 25  26           ascii   DigiCert Trusted Root G40
+1831 0x00019ece 0x18001ccce 14  15           ascii   \r210429000000Z
+1832 0x00019edd 0x18001ccdd 20  21           ascii   \r360428235959Z0i1\v0\t
+1833 0x00019f05 0x18001cd05 18  19           ascii   DigiCert, Inc.1A0?
+1834 0x00019f1d 0x18001cd1d 58  59           ascii   8DigiCert Trusted G4 Code Signing RSA4096 SHA384 2021 CA10
+1835 0x00019f8f 0x18001cd8f 5   8            utf8    pŻą&0
+1836 0x00019fbe 0x18001cdbe 5   6            ascii   >Mp$d
+1837 0x00019fc6 0x18001cdc6 5   6            ascii   \b}4}L
+1838 0x00019ffc 0x18001cdfc 4   5            ascii   !xE.
+1839 0x0001a00b 0x18001ce0b 4   5            ascii   IpB2
+1840 0x0001a075 0x18001ce75 5   7            utf8    jg-ҽD
+1841 0x0001a0b2 0x18001ceb2 5   6            ascii   6*f(_
+1842 0x0001a10e 0x18001cf0e 7   8            ascii   [K]taM?
+1843 0x0001a123 0x18001cf23 4   5            ascii   m&vh
+1844 0x0001a135 0x18001cf35 10  13           utf8    xρJ>@G_ɁPs
+1845 0x0001a143 0x18001cf43 4   5            ascii   #!Y`
+1846 0x0001a155 0x18001cf55 4   5            ascii   x8E0
+1847 0x0001a161 0x18001cf61 8   9            ascii   \r\bSA|X=G
+1848 0x0001a172 0x18001cf72 4   5            ascii   l<\fV
+1849 0x0001a1c9 0x18001cfc9 4   5            ascii   q]dL
+1850 0x0001a1ce 0x18001cfce 4   7            utf8    .g?纘
+1851 0x0001a20a 0x18001d00a 5   6            ascii   k0i0$
+1852 0x0001a21b 0x18001d01b 26  27           ascii   http://ocsp.digicert.com0A
+1853 0x0001a240 0x18001d040 56  57           ascii   5http://cacerts.digicert.com/DigiCertTrustedRootG4.crt0C
+1854 0x0001a27e 0x18001d07e 5   6            ascii   <0:08
+1855 0x0001a288 0x18001d088 52  53           ascii   2http://crl3.digicert.com/DigiCertTrustedRootG4.crl0
+1856 0x0001a2ed 0x18001d0ed 4   5            ascii   :#D=
+1857 0x0001a2f2 0x18001d0f2 4   7            utf8    \bv:
+1858 0x0001a30d 0x18001d10d 4   6            utf8    ʯl0'
+1859 0x0001a321 0x18001d121 4   5            ascii   :]Hm
+1860 0x0001a336 0x18001d136 4   5            ascii   v~7q
+1861 0x0001a3ca 0x18001d1ca 4   5            ascii   !usR
+1862 0x0001a3d9 0x18001d1d9 4   5            ascii   ov7,
+1863 0x0001a409 0x18001d209 4   7            utf8    \9qᾜ
+1864 0x0001a42c 0x18001d22c 4   5            ascii   V\e+#
+1865 0x0001a435 0x18001d235 4   7            utf8    {pk栺
+1866 0x0001a459 0x18001d259 4   5            ascii   V\a*/
+1867 0x0001a45f 0x18001d25f 5   6            ascii   \f\bd<3
+1868 0x0001a485 0x18001d285 4   5            ascii   /"lA
+1869 0x0001a496 0x18001d296 5   6            ascii   &3\f\aK
+1870 0x0001a49f 0x18001d29f 7   8            ascii   jj@0HK4
+1871 0x0001a4ea 0x18001d2ea 4   5            ascii   VxN0
+1872 0x0001a51b 0x18001d31b 6   7            ascii   0i1\v0\t
+1873 0x0001a535 0x18001d335 18  19           ascii   DigiCert, Inc.1A0?
+1874 0x0001a54d 0x18001d34d 58  59           ascii   8DigiCert Trusted G4 Code Signing RSA4096 SHA384 2021 CA10
+1875 0x0001a589 0x18001d389 14  15           ascii   \r260505000000Z
+1876 0x0001a598 0x18001d398 20  21           ascii   \r270806235959Z0c1\v0\t
+1877 0x0001a5bf 0x18001d3bf 10  11           ascii   \bVirginia1
+1878 0x0001a5d2 0x18001d3d2 10  11           ascii   \bRichmond1
+1879 0x0001a5e5 0x18001d3e5 15  16           ascii   \rTridium, Inc.1
+1880 0x0001a5fd 0x18001d3fd 15  16           ascii   \rTridium, Inc.0
+1881 0x0001a633 0x18001d433 4   7            utf8    ؓ˰?K
+1882 0x0001a657 0x18001d457 5   6            ascii   K8=M"
+1883 0x0001a683 0x18001d483 5   6            ascii   Fbo\n!
+1884 0x0001a6b7 0x18001d4b7 4   5            ascii   ~NCz
+1885 0x0001a6c7 0x18001d4c7 4   5            ascii   Jp4q
+1886 0x0001a6cd 0x18001d4cd 4   6            utf8    [(ڠK
+1887 0x0001a6d3 0x18001d4d3 5   6            ascii    &*[|
+1888 0x0001a70e 0x18001d50e 4   6            utf8    ц6n.
+1889 0x0001a717 0x18001d517 5   7            utf8    \fՃOU]
+1890 0x0001a725 0x18001d525 6   8            utf8    wQ5̮Qp
+1891 0x0001a72d 0x18001d52d 5   6            ascii   Ge_4.
+1892 0x0001a767 0x18001d567 4   6            utf8    Ì*=@
+1893 0x0001a801 0x18001d601 5   6            ascii   70503
+1894 0x0001a80e 0x18001d60e 4   5            ascii   0)0'
+1895 0x0001a81d 0x18001d61d 29  30           ascii   \ehttp://www.digicert.com/CPS0
+1896 0x0001a873 0x18001d673 80  81           ascii   Mhttp://crl3.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crl0S
+1897 0x0001a8c8 0x18001d6c8 79  80           ascii   Mhttp://crl4.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crl0
+1898 0x0001a937 0x18001d737 26  27           ascii   http://ocsp.digicert.com0\
+1899 0x0001a95c 0x18001d75c 83  84           ascii   Phttp://cacerts.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crt0\t
+1900 0x0001a9ce 0x18001d7ce 4   7            utf8    ^\aᴃx
+1901 0x0001a9dc 0x18001d7dc 6   8            utf8    -.5قrC
+1902 0x0001a9ec 0x18001d7ec 4   5            ascii   &<@y
+1903 0x0001aa3a 0x18001d83a 5   6            ascii   S8+wN
+1904 0x0001aa79 0x18001d879 4   5            ascii   D>\f$
+1905 0x0001aaa8 0x18001d8a8 5   7            utf8    ~ŭ\tW0
+1906 0x0001aae0 0x18001d8e0 4   5            ascii   o\tR0
+1907 0x0001ab35 0x18001d935 6   8            utf8    KҨ'&\c
+1908 0x0001ab5f 0x18001d95f 4   5            ascii   $\f^k
+1909 0x0001ab97 0x18001d997 4   5            ascii   QQD6
+1910 0x0001abb5 0x18001d9b5 6   8            utf8    Bvrيe|
+1911 0x0001abd7 0x18001d9d7 8   9            ascii   0}0i1\v0\t
+1912 0x0001abf3 0x18001d9f3 18  19           ascii   DigiCert, Inc.1A0?
+1913 0x0001ac0b 0x18001da0b 57  58           ascii   8DigiCert Trusted G4 Code Signing RSA4096 SHA384 2021 CA1
+1914 0x0001acbe 0x18001dabe 5   6            ascii   \t41 0
+1915 0x0001ad0b 0x18001db0b 6   7            ascii   Zesu\eR
+1916 0x0001ad3e 0x18001db3e 4   6            utf8    WډVI
+1917 0x0001ad75 0x18001db75 4   8            utf8    PԦⒻJ
+1918 0x0001adaf 0x18001dbaf 6   7            ascii   &Zqx1z
+1919 0x0001adb8 0x18001dbb8 4   5            ascii   5/\aa
+1920 0x0001adcf 0x18001dbcf 4   6            utf8    ֺGDg
+1921 0x0001aded 0x18001dbed 4   5            ascii   Xq\aY
+1922 0x0001ae7f 0x18001dc7f 4   6            utf8    p2g̣
+1923 0x0001ae96 0x18001dc96 4   5            ascii   }kp\v
+1924 0x0001af0c 0x18001dd0c 4   5            ascii   010\r
+1925 0x0001af54 0x18001dd54 15  16           ascii   20260911201258Z
+1926 0x0001af79 0x18001dd79 5   6            ascii   3O~EN
+1927 0x0001af95 0x18001dd95 6   7            ascii   0i1\v0\t
+1928 0x0001afaf 0x18001ddaf 18  19           ascii   DigiCert, Inc.1A0?
+1929 0x0001afc7 0x18001ddc7 58  59           ascii   8DigiCert Trusted G4 TimeStamping RSA4096 SHA256 2025 CA10
+1930 0x0001b003 0x18001de03 14  15           ascii   \r260805000000Z
+1931 0x0001b012 0x18001de12 20  21           ascii   \r371104235959Z0c1\v0\t
+1932 0x0001b03a 0x18001de3a 18  19           ascii   DigiCert, Inc.1;09
+1933 0x0001b052 0x18001de52 52  53           ascii   2DigiCert SHA256 RSA4096 Timestamp Responder 2026 10
+1934 0x0001b0e8 0x18001dee8 5   6            ascii   nh\bnY
+1935 0x0001b13e 0x18001df3e 4   5            ascii   W3E)
+1936 0x0001b16b 0x18001df6b 4   5            ascii   et~H
+1937 0x0001b177 0x18001df77 5   6            ascii   ?eq"\a
+1938 0x0001b183 0x18001df83 4   5            ascii   wq}V
+1939 0x0001b1ce 0x18001dfce 4   5            ascii   lTl"
+1940 0x0001b249 0x18001e049 4   6            utf8    Xq#ݙ
+1941 0x0001b277 0x18001e077 5   6            ascii   , P|\e
+1942 0x0001b27e 0x18001e07e 5   7            utf8    ߦIde\v
+1943 0x0001b298 0x18001e098 4   5            ascii   ms8B
+1944 0x0001b29f 0x18001e09f 7   8            ascii   @!z\0%=
+1945 0x0001b34a 0x18001e14a 26  27           ascii   http://ocsp.digicert.com0]
+1946 0x0001b36f 0x18001e16f 84  85           ascii   Qhttp://cacerts.digicert.com/DigiCertTrustedG4TimeStampingRSA4096SHA2562025CA1.crt0_
+1947 0x0001b3c9 0x18001e1c9 5   6            ascii   X0V0T
+1948 0x0001b3d3 0x18001e1d3 80  82           ascii   Nhttp://crl3.digicert.com/DigiCertTrustedG4TimeStampingRSA4096SHA2562025CA1.crl0
+1949 0x0001b465 0x18001e265 4   5            ascii   ~}(@
+1950 0x0001b493 0x18001e293 4   5            ascii   *C\v-
+1951 0x0001b4a8 0x18001e2a8 6   7            ascii   kxXgMt
+1952 0x0001b4d1 0x18001e2d1 4   6            utf8    fGǄ{
+1953 0x0001b534 0x18001e334 5   6            ascii   W!yi\f
+1954 0x0001b556 0x18001e356 4   5            ascii   rDN6
+1955 0x0001b562 0x18001e362 4   5            ascii   8m)Y
+1956 0x0001b568 0x18001e368 6   8            utf8    =+luĻn
+1957 0x0001b591 0x18001e391 6   8            utf8    Zkʫ:@y
+1958 0x0001b5eb 0x18001e3eb 4   5            ascii   :"A#
+1959 0x0001b621 0x18001e421 4   6            utf8    j\t\t6
+1960 0x0001b66f 0x18001e46f 7   8            ascii   .@C"\f:I
+1961 0x0001b686 0x18001e486 6   7            ascii   0b1\v0\t
+1962 0x0001b69f 0x18001e49f 14  15           ascii   \fDigiCert Inc1
+1963 0x0001b6b7 0x18001e4b7 19  20           ascii   www.digicert.com1!0
+1964 0x0001b6d2 0x18001e4d2 25  26           ascii   DigiCert Trusted Root G40
+1965 0x0001b6ed 0x18001e4ed 14  15           ascii   \r250507000000Z
+1966 0x0001b6fc 0x18001e4fc 20  21           ascii   \r380114235959Z0i1\v0\t
+1967 0x0001b724 0x18001e524 18  19           ascii   DigiCert, Inc.1A0?
+1968 0x0001b73c 0x18001e53c 58  59           ascii   8DigiCert Trusted G4 TimeStamping RSA4096 SHA256 2025 CA10
+1969 0x0001b7a4 0x18001e5a4 5   7            utf8    uۣFht
+1970 0x0001b80a 0x18001e60a 4   5            ascii   P]&G
+1971 0x0001b820 0x18001e620 6   8            utf8    AvÄ\t-T
+1972 0x0001b832 0x18001e632 5   7            utf8    "9<x:
+1973 0x0001b84b 0x18001e64b 4   5            ascii   |4^o
+1974 0x0001b86f 0x18001e66f 4   5            ascii   q)5U
+1975 0x0001b89a 0x18001e69a 4   5            ascii   h`i<
+1976 0x0001b928 0x18001e728 4   6            utf8    ;bOޅ
+1977 0x0001b94a 0x18001e74a 4   5            ascii   \ef]J
+1978 0x0001b94f 0x18001e74f 4   6            utf8    \eSj̒
+1979 0x0001b974 0x18001e774 5   7            utf8    J3fڠ>
+1980 0x0001b97c 0x18001e77c 4   5            ascii   TxF4
+1981 0x0001b992 0x18001e792 4   5            ascii   k cS
+1982 0x0001b9e8 0x18001e7e8 4   5            ascii   q]dL
+1983 0x0001b9ed 0x18001e7ed 4   7            utf8    .g?纘
+1984 0x0001ba29 0x18001e829 5   6            ascii   k0i0$
+1985 0x0001ba3a 0x18001e83a 26  27           ascii   http://ocsp.digicert.com0A
+1986 0x0001ba5f 0x18001e85f 56  57           ascii   5http://cacerts.digicert.com/DigiCertTrustedRootG4.crt0C
+1987 0x0001ba9d 0x18001e89d 5   6            ascii   <0:08
+1988 0x0001baa7 0x18001e8a7 52  54           ascii   2http://crl3.digicert.com/DigiCertTrustedRootG4.crl0
+1989 0x0001bb87 0x18001e987 4   7            utf8    ¿\fɿk
+1990 0x0001bbec 0x18001e9ec 4   5            ascii   1tI\f
+1991 0x0001bc24 0x18001ea24 4   5            ascii   Dwj|
+1992 0x0001bc3b 0x18001ea3b 6   7            ascii   :U|r*C
+1993 0x0001bc6a 0x18001ea6a 5   6            ascii   o84s[
+1994 0x0001bc7d 0x18001ea7d 5   6            ascii   a:m1&
+1995 0x0001bd3e 0x18001eb3e 6   7            ascii   0e1\v0\t
+1996 0x0001bd57 0x18001eb57 14  15           ascii   \fDigiCert Inc1
+1997 0x0001bd6f 0x18001eb6f 20  21           ascii   www.digicert.com1$0"
+1998 0x0001bd89 0x18001eb89 29  30           ascii   \eDigiCert Assured ID Root CA0
+1999 0x0001bda8 0x18001eba8 14  15           ascii   \r220801000000Z
+2000 0x0001bdb7 0x18001ebb7 20  21           ascii   \r311109235959Z0b1\v0\t
+2001 0x0001bdde 0x18001ebde 14  15           ascii   \fDigiCert Inc1
+2002 0x0001bdf6 0x18001ebf6 19  20           ascii   www.digicert.com1!0
+2003 0x0001be11 0x18001ec11 25  26           ascii   DigiCert Trusted Root G40
+2004 0x0001be52 0x18001ec52 8   9            ascii   ]J<0"0i3
+2005 0x0001beb8 0x18001ecb8 4   5            ascii   t;mq
+2006 0x0001bedf 0x18001ecdf 4   6            utf8    ͬ4@_
+2007 0x0001bf3f 0x18001ed3f 4   6            utf8    |!LԼ
+2008 0x0001bf47 0x18001ed47 4   5            ascii   u]xf
+2009 0x0001bf59 0x18001ed59 4   8            utf8    橠gݤ'
+2010 0x0001bf74 0x18001ed74 6   7            ascii   v=Y]Bv
+2011 0x0001bfc1 0x18001edc1 5   7            utf8    Ռp,A`
+2012 0x0001bfd8 0x18001edd8 4   8            utf8    3щ\aί
+2013 0x0001bff5 0x18001edf5 4   5            ascii   RQGt
+2014 0x0001c018 0x18001ee18 5   6            ascii   |Lu?c
+2015 0x0001c021 0x18001ee21 4   5            ascii    Qko
+2016 0x0001c078 0x18001ee78 4   5            ascii   q]dL
+2017 0x0001c07d 0x18001ee7d 4   7            utf8    .g?纘
+2018 0x0001c09a 0x18001ee9a 4   6            utf8    ˂1-Q
+2019 0x0001c0c5 0x18001eec5 5   6            ascii   m0k0$
+2020 0x0001c0d6 0x18001eed6 26  27           ascii   http://ocsp.digicert.com0C
+2021 0x0001c0fb 0x18001eefb 58  59           ascii   7http://cacerts.digicert.com/DigiCertAssuredIDRootCA.crt0E
+2022 0x0001c13b 0x18001ef3b 5   6            ascii   >0<0:
+2023 0x0001c145 0x18001ef45 54  55           ascii   4http://crl3.digicert.com/DigiCertAssuredIDRootCA.crl0
+2024 0x0001c182 0x18001ef82 4   5            ascii   \n0\b0
+2025 0x0001c1d3 0x18001efd3 4   5            ascii   Jz/-
+2026 0x0001c22d 0x18001f02d 5   6            ascii   5FjiT
+2027 0x0001c242 0x18001f042 4   5            ascii   wZ\T
+2028 0x0001c263 0x18001f063 4   6            utf8    @cŘ"
+2029 0x0001c278 0x18001f078 6   7            ascii   ~qj#k"
+2030 0x0001c281 0x18001f081 4   5            ascii   T-'~
+2031 0x0001c2ac 0x18001f0ac 8   9            ascii   0}0i1\v0\t
+2032 0x0001c2c8 0x18001f0c8 18  19           ascii   DigiCert, Inc.1A0?
+2033 0x0001c2e0 0x18001f0e0 57  58           ascii   8DigiCert Trusted G4 TimeStamping RSA4096 SHA256 2025 CA1
+2034 0x0001c31e 0x18001f11e 5   6            ascii   3O~EN
+2035 0x0001c369 0x18001f169 16  17           ascii   \r260911201258Z0+
+2036 0x0001c3e3 0x18001f1e3 9   10           ascii   /1(0&0$0"
+2037 0x0001c485 0x18001f285 4   5            ascii   ~>+H
+2038 0x0001c4a2 0x18001f2a2 4   6            utf8    '\eܨ(
+2039 0x0001c4d4 0x18001f2d4 4   5            ascii   zoB5
+2040 0x0001c4db 0x18001f2db 5   6            ascii   &\t|^K
+2041 0x0001c551 0x18001f351 4   5            ascii   WHIF
+2042 0x0001c57c 0x18001f37c 6   7            ascii   5c5\a~q
+2043 0x0001c583 0x18001f383 4   6            utf8    L̠!)
+2044 0x0001c5dc 0x18001f3dc 4   5            ascii   $QEX
+2045 0x0001c5f8 0x18001f3f8 6   8            utf8    \f)ŇQjJ
+2046 0x0001c611 0x18001f411 4   6            utf8    ͵yH:

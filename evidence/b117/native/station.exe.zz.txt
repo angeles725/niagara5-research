@@ -1,0 +1,460 @@
+nth paddr      vaddr       len size section type    string
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+0   0x0000004d 0x0000004d  44  45           ascii   !This program cannot be run in DOS mode.\r\r\n$
+1   0x000000f0 0x000000f0  4   5            ascii   Rich
+2   0x00000208 0x00000208  5   6            ascii   .text
+3   0x0000022f 0x0000022f  7   8            ascii   `.rdata
+4   0x00000257 0x00000257  6   7            ascii   @.data
+5   0x00000280 0x00000280  6   7            ascii   .pdata
+6   0x000002a7 0x000002a7  6   7            ascii   @.rsrc
+7   0x000002cf 0x000002cf  7   8            ascii   @.reloc
+8   0x00000436 0x140001036 4   5    .text   ascii   \$0H
+9   0x0000043f 0x14000103f 4   5    .text   ascii   t$8H
+10  0x00000464 0x140001064 4   5    .text   ascii   \$0@
+11  0x00000485 0x140001085 4   5    .text   ascii   t$8H
+12  0x0000048a 0x14000108a 4   5    .text   ascii   l$@H
+13  0x000004ad 0x1400010ad 4   5    .text   ascii   l$@H
+14  0x000004c2 0x1400010c2 4   5    .text   ascii   \$\bH
+15  0x000004cf 0x1400010cf 6   7    .text   ascii   WAVAWH
+16  0x0000051f 0x14000111f 4   5    .text   ascii   ~5D;
+17  0x00000538 0x140001138 4   5    .text   ascii   W\bI;
+18  0x0000055f 0x14000115f 4   5    .text   ascii   }!I+
+19  0x000005c2 0x1400011c2 4   5    .text   ascii   \$PH
+20  0x000005c7 0x1400011c7 4   5    .text   ascii   t$`H
+21  0x000005cd 0x1400011cd 6   7    .text   ascii   0A_A^_
+22  0x000006e8 0x1400012e8 4   6    .text   utf8     [ù\a
+23  0x0000072e 0x14000132e 4   5    .text   ascii   \$\bH
+24  0x00000875 0x140001475 4   5    .text   ascii   \$@H
+25  0x0000087a 0x14000147a 4   5    .text   ascii   t$HH
+26  0x00000880 0x140001480 4   6    .text   utf8    0_ù\a
+27  0x0000091b 0x14000151b 4   5    .text   ascii   t!eH
+28  0x00000a27 0x140001627 6   7    .text   ascii   uxHc\r\f
+29  0x00000a39 0x140001639 4   6    .text   utf8    ʁ9PE
+30  0x00000a4b 0x14000164b 4   5    .text   ascii   uTL+
+31  0x00000a71 0x140001671 4   5    .text   ascii   J\fL;
+32  0x00000bb9 0x1400017b9 4   5    .text   ascii    H3E
+33  0x00000bec 0x1400017ec 4   5    .text   ascii   \$PH
+34  0x00000c7e 0x14000187e 5   6    .text   ascii   \$\bUH
+35  0x00000d06 0x140001906 4   5    .text   ascii   L$0L
+36  0x00000d15 0x140001915 4   5    .text   ascii   L$(H
+37  0x00000d1e 0x14000191e 4   5    .text   ascii   L$ 3
+38  0x00000d32 0x140001932 4   5    .text   ascii   L$PH
+39  0x00000d83 0x140001983 4   5    .text   ascii   D$PH
+40  0x00000d88 0x140001988 4   5    .text   ascii   D$@H
+41  0x00000de6 0x1400019e6 9   10   .text   ascii   f9\bu0HcH<
+42  0x00000e42 0x140001a42 5   6    .text   ascii   \$\bWH
+43  0x00000e51 0x140001a51 4   5    .text   ascii   ;csm
+44  0x00000e7e 0x140001a7e 4   5    .text   ascii   \$03
+45  0x00000ea6 0x140001aa6 5   6    .text   ascii   \$\bWH
+46  0x00000ed7 0x140001ad7 4   5    .text   ascii   \$0H
+47  0x00000ee2 0x140001ae2 5   6    .text   ascii   \$\bWH
+48  0x00000f13 0x140001b13 4   5    .text   ascii   \$0H
+49  0x00001032 0x140001c32 5   6    .text   ascii   \$\bWH
+50  0x00001066 0x140001c66 4   5    .text   ascii   \$0H
+51  0x000010e0 0x140001ce0 5   6    .text   ascii   t$ WH
+52  0x000010f0 0x140001cf0 4   5    .text   ascii   ntel
+53  0x000010f6 0x140001cf6 6   8    .text   utf8    ineI\vы
+54  0x00001105 0x140001d05 7   9    .text   utf8    Genu\vӍH
+55  0x00001134 0x140001d34 4   5    .text   ascii   t(=`
+56  0x0000113b 0x140001d3b 4   5    .text   ascii   t!=p
+57  0x0000114b 0x140001d4b 4   5    .text   ascii    w$H
+58  0x00001187 0x140001d87 4   5    .text   ascii   \a|@A
+59  0x0000119a 0x140001d9a 4   5    .text   ascii   \ts\vA
+60  0x0000123c 0x140001e3c 4   5    .text   ascii   D$ $
+61  0x0000129e 0x140001e9e 4   5    .text   ascii   D$ "
+62  0x000012ee 0x140001eee 4   5    .text   ascii   D$ "
+63  0x0000133f 0x140001f3f 4   5    .text   ascii   D$ H
+64  0x00001354 0x140001f54 4   5    .text   ascii   \$(3
+65  0x0000135b 0x140001f5b 4   5    .text   ascii   l$0H
+66  0x00001360 0x140001f60 4   5    .text   ascii   t$8H
+67  0x000018b0 0x1400032b0 31  32   .rdata  ascii   com.tridium.sys.station.Station
+68  0x000018e8 0x1400032e8 35  36   .rdata  ascii   com/tridium/nre/bootstrap/Bootstrap
+69  0x00001948 0x140003348 17  18   .rdata  ascii   Unknown exception
+70  0x00001978 0x140003378 14  15   .rdata  ascii   bad allocation
+71  0x000019a0 0x1400033a0 20  21   .rdata  ascii   bad array new length
+72  0x00001e50 0x140003850 8   9    .rdata  ascii   .text$mn
+73  0x00001e64 0x140003864 11  12   .rdata  ascii   .text$mn$00
+74  0x00001e78 0x140003878 7   8    .rdata  ascii   .text$x
+75  0x00001e88 0x140003888 8   9    .rdata  ascii   .idata$5
+76  0x00001e9c 0x14000389c 6   7    .rdata  ascii   .00cfg
+77  0x00001eac 0x1400038ac 8   9    .rdata  ascii   .CRT$XCA
+78  0x00001ec0 0x1400038c0 9   10   .rdata  ascii   .CRT$XCAA
+79  0x00001ed4 0x1400038d4 8   9    .rdata  ascii   .CRT$XCZ
+80  0x00001ee8 0x1400038e8 8   9    .rdata  ascii   .CRT$XIA
+81  0x00001efc 0x1400038fc 9   10   .rdata  ascii   .CRT$XIAA
+82  0x00001f10 0x140003910 9   10   .rdata  ascii   .CRT$XIAC
+83  0x00001f24 0x140003924 8   9    .rdata  ascii   .CRT$XIZ
+84  0x00001f38 0x140003938 8   9    .rdata  ascii   .CRT$XPA
+85  0x00001f4c 0x14000394c 8   9    .rdata  ascii   .CRT$XPZ
+86  0x00001f60 0x140003960 8   9    .rdata  ascii   .CRT$XTA
+87  0x00001f74 0x140003974 8   9    .rdata  ascii   .CRT$XTZ
+88  0x00001f88 0x140003988 6   7    .rdata  ascii   .gfids
+89  0x00001f98 0x140003998 6   7    .rdata  ascii   .rdata
+90  0x00001fa8 0x1400039a8 8   9    .rdata  ascii   .rdata$r
+91  0x00001fbc 0x1400039bc 13  14   .rdata  ascii   .rdata$voltmd
+92  0x00001fd4 0x1400039d4 13  14   .rdata  ascii   .rdata$zzzdbg
+93  0x00001fec 0x1400039ec 8   9    .rdata  ascii   .rtc$IAA
+94  0x00002000 0x140003a00 8   9    .rdata  ascii   .rtc$IZZ
+95  0x00002014 0x140003a14 8   9    .rdata  ascii   .rtc$TAA
+96  0x00002028 0x140003a28 8   9    .rdata  ascii   .rtc$TZZ
+97  0x0000203c 0x140003a3c 6   7    .rdata  ascii   .xdata
+98  0x0000204c 0x140003a4c 8   9    .rdata  ascii   .xdata$x
+99  0x00002060 0x140003a60 6   7    .rdata  ascii   .edata
+100 0x00002070 0x140003a70 8   9    .rdata  ascii   .idata$2
+101 0x00002084 0x140003a84 8   9    .rdata  ascii   .idata$3
+102 0x00002098 0x140003a98 8   9    .rdata  ascii   .idata$4
+103 0x000020ac 0x140003aac 8   9    .rdata  ascii   .idata$6
+104 0x000020c0 0x140003ac0 5   6    .rdata  ascii   .data
+105 0x000020d0 0x140003ad0 7   8    .rdata  ascii   .data$r
+106 0x000020e0 0x140003ae0 8   9    .rdata  ascii   .data$rs
+107 0x000020f4 0x140003af4 4   5    .rdata  ascii   .bss
+108 0x00002104 0x140003b04 6   7    .rdata  ascii   .pdata
+109 0x00002114 0x140003b14 8   9    .rdata  ascii   .rsrc$01
+110 0x00002128 0x140003b28 8   9    .rdata  ascii   .rsrc$02
+111 0x000023c0 0x140003dc0 11  12   .rdata  ascii   station.exe
+112 0x000023cc 0x140003dcc 29  30   .rdata  ascii   ??0NreLauncher@@QEAA@AEBV0@@Z
+113 0x000023ea 0x140003dea 23  24   .rdata  ascii   ??0NreLauncher@@QEAA@XZ
+114 0x00002402 0x140003e02 34  35   .rdata  ascii   ??4NreLauncher@@QEAAAEAV0@AEBV0@@Z
+115 0x00002425 0x140003e25 20  21   .rdata  ascii   ??_7NreLauncher@@6B@
+116 0x000026c2 0x1400040c2 36  37   .rdata  ascii   ?getInstance@NreLauncher@@SAPEAV1@XZ
+117 0x000026ea 0x1400040ea 23  24   .rdata  ascii   ??1NreLauncher@@UEAA@XZ
+118 0x00002702 0x140004102 7   8    .rdata  ascii   nre.dll
+119 0x0000270c 0x14000410c 23  24   .rdata  ascii   QueryPerformanceCounter
+120 0x00002726 0x140004126 19  20   .rdata  ascii   GetCurrentProcessId
+121 0x0000273c 0x14000413c 18  19   .rdata  ascii   GetCurrentThreadId
+122 0x00002752 0x140004152 23  24   .rdata  ascii   GetSystemTimeAsFileTime
+123 0x0000276c 0x14000416c 19  20   .rdata  ascii   InitializeSListHead
+124 0x00002782 0x140004182 17  18   .rdata  ascii   RtlCaptureContext
+125 0x00002796 0x140004196 22  23   .rdata  ascii   RtlLookupFunctionEntry
+126 0x000027b0 0x1400041b0 16  17   .rdata  ascii   RtlVirtualUnwind
+127 0x000027c4 0x1400041c4 17  18   .rdata  ascii   IsDebuggerPresent
+128 0x000027d8 0x1400041d8 24  25   .rdata  ascii   UnhandledExceptionFilter
+129 0x000027f4 0x1400041f4 27  28   .rdata  ascii   SetUnhandledExceptionFilter
+130 0x00002812 0x140004212 25  26   .rdata  ascii   IsProcessorFeaturePresent
+131 0x0000282e 0x14000422e 16  17   .rdata  ascii   GetModuleHandleW
+132 0x00002840 0x140004240 12  13   .rdata  ascii   KERNEL32.dll
+133 0x00002850 0x140004250 9   10   .rdata  ascii   _purecall
+134 0x0000285c 0x14000425c 6   7    .rdata  ascii   memcpy
+135 0x00002866 0x140004266 20  21   .rdata  ascii   __C_specific_handler
+136 0x0000287e 0x14000427e 19  20   .rdata  ascii   __current_exception
+137 0x00002894 0x140004294 27  28   .rdata  ascii   __current_exception_context
+138 0x000028b2 0x1400042b2 6   7    .rdata  ascii   memset
+139 0x000028bc 0x1400042bc 20  21   .rdata  ascii   __std_exception_copy
+140 0x000028d4 0x1400042d4 23  24   .rdata  ascii   __std_exception_destroy
+141 0x000028ee 0x1400042ee 18  19   .rdata  ascii   _CxxThrowException
+142 0x00002902 0x140004302 16  17   .rdata  ascii   VCRUNTIME140.dll
+143 0x00002916 0x140004316 15  16   .rdata  ascii   _seh_filter_exe
+144 0x00002928 0x140004328 13  14   .rdata  ascii   _set_app_type
+145 0x00002938 0x140004338 16  17   .rdata  ascii   __setusermatherr
+146 0x0000294c 0x14000434c 22  23   .rdata  ascii   _configure_narrow_argv
+147 0x00002966 0x140004366 30  31   .rdata  ascii   _initialize_narrow_environment
+148 0x00002988 0x140004388 31  32   .rdata  ascii   _get_initial_narrow_environment
+149 0x000029aa 0x1400043aa 9   10   .rdata  ascii   _initterm
+150 0x000029b6 0x1400043b6 11  12   .rdata  ascii   _initterm_e
+151 0x000029c4 0x1400043c4 4   5    .rdata  ascii   exit
+152 0x000029cc 0x1400043cc 5   6    .rdata  ascii   _exit
+153 0x000029d4 0x1400043d4 10  11   .rdata  ascii   _set_fmode
+154 0x000029e2 0x1400043e2 10  11   .rdata  ascii   __p___argc
+155 0x000029f0 0x1400043f0 10  11   .rdata  ascii   __p___argv
+156 0x000029fe 0x1400043fe 6   7    .rdata  ascii   _cexit
+157 0x00002a08 0x140004408 7   8    .rdata  ascii   _c_exit
+158 0x00002a12 0x140004412 42  43   .rdata  ascii   _register_thread_local_exe_atexit_callback
+159 0x00002a40 0x140004440 19  20   .rdata  ascii   _configthreadlocale
+160 0x00002a56 0x140004456 13  14   .rdata  ascii   _set_new_mode
+161 0x00002a66 0x140004466 12  13   .rdata  ascii   __p__commode
+162 0x00002a76 0x140004476 4   5    .rdata  ascii   free
+163 0x00002a7e 0x14000447e 9   10   .rdata  ascii   _callnewh
+164 0x00002a8a 0x14000448a 6   7    .rdata  ascii   malloc
+165 0x00002a94 0x140004494 24  25   .rdata  ascii   _initialize_onexit_table
+166 0x00002ab0 0x1400044b0 25  26   .rdata  ascii   _register_onexit_function
+167 0x00002acc 0x1400044cc 11  12   .rdata  ascii   _crt_atexit
+168 0x00002ada 0x1400044da 9   10   .rdata  ascii   terminate
+169 0x00002ae4 0x1400044e4 33  34   .rdata  ascii   api-ms-win-crt-runtime-l1-1-0.dll
+170 0x00002b06 0x140004506 30  31   .rdata  ascii   api-ms-win-crt-math-l1-1-0.dll
+171 0x00002b26 0x140004526 31  32   .rdata  ascii   api-ms-win-crt-stdio-l1-1-0.dll
+172 0x00002b46 0x140004546 32  33   .rdata  ascii   api-ms-win-crt-locale-l1-1-0.dll
+173 0x00002b68 0x140004568 30  31   .rdata  ascii   api-ms-win-crt-heap-l1-1-0.dll
+174 0x00002ca0 0x1400050a0 19  20   .data   ascii   .?AVbad_alloc@std@@
+175 0x00002cc8 0x1400050c8 19  20   .data   ascii   .?AVexception@std@@
+176 0x00002cf0 0x1400050f0 30  31   .data   ascii   .?AVbad_array_new_length@std@@
+177 0x00002d20 0x140005120 17  18   .data   ascii   .?AVNreLauncher@@
+178 0x00002d48 0x140005148 15  16   .data   ascii   .?AVtype_info@@
+179 0x000030a6 0x1400070a6 15  32   .rsrc   utf16le VS_VERSION_INFO
+180 0x00003102 0x140007102 14  30   .rsrc   utf16le StringFileInfo
+181 0x00003126 0x140007126 8   18   .rsrc   utf16le 040904b0
+182 0x0000313e 0x14000713e 15  32   .rsrc   utf16le FileDescription
+183 0x00003160 0x140007160 24  50   .rsrc   utf16le Niagara Station Launcher
+184 0x0000319a 0x14000719a 11  24   .rsrc   utf16le FileVersion
+185 0x000031c2 0x1400071c2 11  24   .rsrc   utf16le CompanyName
+186 0x000031dc 0x1400071dc 13  28   .rsrc   utf16le Tridium, Inc.
+187 0x000031fe 0x1400071fe 14  30   .rsrc   utf16le LegalCopyright
+188 0x0000321c 0x14000721c 32  66   .rsrc   utf16le Copyright (C) Tridium, Inc. 2012
+189 0x00003268 0x140007268 10  22   .rsrc   utf16le arFileInfo
+190 0x00003286 0x140007286 11  24   .rsrc   utf16le Translation
+191 0x000032a4 0x1400072a4 860 861  .rsrc   ascii   <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0" xmlns:asmv3="urn:schemas-microsoft-com:asm.v3">\n <assemblyIdentity version="5.0.0.96" processorArchitecture="amd64" name="Tridium.Niagara.Station" type="win32"></assemblyIdentity>\n <description>Niagara Station</description>\n <asmv3:trustInfo>\n  <asmv3:security>\n   <asmv3:requestedPrivileges>\n    <asmv3:requestedExecutionLevel level="asInvoker" uiAccess="false"></asmv3:requestedExecutionLevel>\n   </asmv3:requestedPrivileges>\n  </asmv3:security>\n </asmv3:trustInfo>\n <compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1">\n  <application>\n   <supportedOS Id="{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}"></supportedOS>\n  </application>\n </compatibility>\n</assembly>PAPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDING
+192 0x00003842 0x140007842 4   5            ascii   ^0\0
+193 0x0000385e 0x14000785e 4   5            ascii   0A0\r
+194 0x0000389b 0x14000789b 5   6            ascii   QZNIs
+195 0x000038c1 0x1400078c1 5   6            ascii   wu\0\r
+196 0x000038d3 0x1400078d3 6   7            ascii   0b1\v0\t
+197 0x000038ec 0x1400078ec 14  15           ascii   \fDigiCert Inc1
+198 0x00003904 0x140007904 19  20           ascii   www.digicert.com1!0
+199 0x0000391f 0x14000791f 25  26           ascii   DigiCert Trusted Root G40
+200 0x0000393a 0x14000793a 14  15           ascii   \r130801120000Z
+201 0x00003949 0x140007949 20  21           ascii   \r380115120000Z0b1\v0\t
+202 0x00003970 0x140007970 14  15           ascii   \fDigiCert Inc1
+203 0x00003988 0x140007988 19  20           ascii   www.digicert.com1!0
+204 0x000039a3 0x1400079a3 25  26           ascii   DigiCert Trusted Root G40
+205 0x000039e4 0x1400079e4 8   9            ascii   ]J<0"0i3
+206 0x00003a4a 0x140007a4a 4   5            ascii   t;mq
+207 0x00003a71 0x140007a71 4   6            utf8    ͬ4@_
+208 0x00003ad1 0x140007ad1 4   6            utf8    |!LԼ
+209 0x00003ad9 0x140007ad9 4   5            ascii   u]xf
+210 0x00003aeb 0x140007aeb 4   8            utf8    橠gݤ'
+211 0x00003b06 0x140007b06 6   7            ascii   v=Y]Bv
+212 0x00003b53 0x140007b53 5   7            utf8    Ռp,A`
+213 0x00003b6a 0x140007b6a 4   8            utf8    3щ\aί
+214 0x00003b87 0x140007b87 4   5            ascii   RQGt
+215 0x00003baa 0x140007baa 5   6            ascii   |Lu?c
+216 0x00003bb3 0x140007bb3 4   5            ascii    Qko
+217 0x00003be2 0x140007be2 4   5            ascii   B0@0
+218 0x00003c16 0x140007c16 4   5            ascii   q]dL
+219 0x00003c1b 0x140007c1b 4   7            utf8    .g?纘
+220 0x00003c59 0x140007c59 5   6            ascii   x\\f\f_
+221 0x00003c61 0x140007c61 9   12           utf8    )V\v6I]Dcଡ଼
+222 0x00003c6e 0x140007c6e 6   7            ascii   f\e#\r=y
+223 0x00003c9c 0x140007c9c 4   5            ascii   gM:>
+224 0x00003ca1 0x140007ca1 5   6            ascii   Y9"SD
+225 0x00003cac 0x140007cac 6   7            ascii   Pz}b!\n
+226 0x00003d07 0x140007d07 4   5            ascii   #aB)
+227 0x00003d1f 0x140007d1f 8   9            ascii   PAq=?Mp#
+228 0x00003d39 0x140007d39 4   5            ascii   k t0
+229 0x00003d63 0x140007d63 4   5            ascii   DO,6
+230 0x00003d77 0x140007d77 8   10           utf8    L?n(Zy&Ҥ
+231 0x00003dec 0x140007dec 4   6            utf8    2Ҡ+T
+232 0x00003e03 0x140007e03 4   7            utf8    S趉m[
+233 0x00003e67 0x140007e67 6   7            ascii   0b1\v0\t
+234 0x00003e80 0x140007e80 14  15           ascii   \fDigiCert Inc1
+235 0x00003e98 0x140007e98 19  20           ascii   www.digicert.com1!0
+236 0x00003eb3 0x140007eb3 25  26           ascii   DigiCert Trusted Root G40
+237 0x00003ece 0x140007ece 14  15           ascii   \r210429000000Z
+238 0x00003edd 0x140007edd 20  21           ascii   \r360428235959Z0i1\v0\t
+239 0x00003f05 0x140007f05 18  19           ascii   DigiCert, Inc.1A0?
+240 0x00003f1d 0x140007f1d 58  59           ascii   8DigiCert Trusted G4 Code Signing RSA4096 SHA384 2021 CA10
+241 0x00003f8f 0x140007f8f 5   8            utf8    pŻą&0
+242 0x00003fbe 0x140007fbe 5   6            ascii   >Mp$d
+243 0x00003fc6 0x140007fc6 5   6            ascii   \b}4}L
+244 0x00003ffc 0x140007ffc 4   5            ascii   !xE.
+245 0x0000400b 0x14000800b 4   5            ascii   IpB2
+246 0x00004075 0x140008075 5   7            utf8    jg-ҽD
+247 0x000040b2 0x1400080b2 5   6            ascii   6*f(_
+248 0x0000410e 0x14000810e 7   8            ascii   [K]taM?
+249 0x00004123 0x140008123 4   5            ascii   m&vh
+250 0x00004135 0x140008135 10  13           utf8    xρJ>@G_ɁPs
+251 0x00004143 0x140008143 4   5            ascii   #!Y`
+252 0x00004155 0x140008155 4   5            ascii   x8E0
+253 0x00004161 0x140008161 8   9            ascii   \r\bSA|X=G
+254 0x00004172 0x140008172 4   5            ascii   l<\fV
+255 0x000041c9 0x1400081c9 4   5            ascii   q]dL
+256 0x000041ce 0x1400081ce 4   7            utf8    .g?纘
+257 0x0000420a 0x14000820a 5   6            ascii   k0i0$
+258 0x0000421b 0x14000821b 26  27           ascii   http://ocsp.digicert.com0A
+259 0x00004240 0x140008240 56  57           ascii   5http://cacerts.digicert.com/DigiCertTrustedRootG4.crt0C
+260 0x0000427e 0x14000827e 5   6            ascii   <0:08
+261 0x00004288 0x140008288 52  53           ascii   2http://crl3.digicert.com/DigiCertTrustedRootG4.crl0
+262 0x000042ed 0x1400082ed 4   5            ascii   :#D=
+263 0x000042f2 0x1400082f2 4   7            utf8    \bv:
+264 0x0000430d 0x14000830d 4   6            utf8    ʯl0'
+265 0x00004321 0x140008321 4   5            ascii   :]Hm
+266 0x00004336 0x140008336 4   5            ascii   v~7q
+267 0x000043ca 0x1400083ca 4   5            ascii   !usR
+268 0x000043d9 0x1400083d9 4   5            ascii   ov7,
+269 0x00004409 0x140008409 4   7            utf8    \9qᾜ
+270 0x0000442c 0x14000842c 4   5            ascii   V\e+#
+271 0x00004435 0x140008435 4   7            utf8    {pk栺
+272 0x00004459 0x140008459 4   5            ascii   V\a*/
+273 0x0000445f 0x14000845f 5   6            ascii   \f\bd<3
+274 0x00004485 0x140008485 4   5            ascii   /"lA
+275 0x00004496 0x140008496 5   6            ascii   &3\f\aK
+276 0x0000449f 0x14000849f 7   8            ascii   jj@0HK4
+277 0x000044ea 0x1400084ea 4   5            ascii   VxN0
+278 0x0000451b 0x14000851b 6   7            ascii   0i1\v0\t
+279 0x00004535 0x140008535 18  19           ascii   DigiCert, Inc.1A0?
+280 0x0000454d 0x14000854d 58  59           ascii   8DigiCert Trusted G4 Code Signing RSA4096 SHA384 2021 CA10
+281 0x00004589 0x140008589 14  15           ascii   \r260505000000Z
+282 0x00004598 0x140008598 20  21           ascii   \r270806235959Z0c1\v0\t
+283 0x000045bf 0x1400085bf 10  11           ascii   \bVirginia1
+284 0x000045d2 0x1400085d2 10  11           ascii   \bRichmond1
+285 0x000045e5 0x1400085e5 15  16           ascii   \rTridium, Inc.1
+286 0x000045fd 0x1400085fd 15  16           ascii   \rTridium, Inc.0
+287 0x00004633 0x140008633 4   7            utf8    ؓ˰?K
+288 0x00004657 0x140008657 5   6            ascii   K8=M"
+289 0x00004683 0x140008683 5   6            ascii   Fbo\n!
+290 0x000046b7 0x1400086b7 4   5            ascii   ~NCz
+291 0x000046c7 0x1400086c7 4   5            ascii   Jp4q
+292 0x000046cd 0x1400086cd 4   6            utf8    [(ڠK
+293 0x000046d3 0x1400086d3 5   6            ascii    &*[|
+294 0x0000470e 0x14000870e 4   6            utf8    ц6n.
+295 0x00004717 0x140008717 5   7            utf8    \fՃOU]
+296 0x00004725 0x140008725 6   8            utf8    wQ5̮Qp
+297 0x0000472d 0x14000872d 5   6            ascii   Ge_4.
+298 0x00004767 0x140008767 4   6            utf8    Ì*=@
+299 0x00004801 0x140008801 5   6            ascii   70503
+300 0x0000480e 0x14000880e 4   5            ascii   0)0'
+301 0x0000481d 0x14000881d 29  30           ascii   \ehttp://www.digicert.com/CPS0
+302 0x00004873 0x140008873 80  81           ascii   Mhttp://crl3.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crl0S
+303 0x000048c8 0x1400088c8 79  80           ascii   Mhttp://crl4.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crl0
+304 0x00004937 0x140008937 26  27           ascii   http://ocsp.digicert.com0\
+305 0x0000495c 0x14000895c 83  84           ascii   Phttp://cacerts.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crt0\t
+306 0x000049ce 0x1400089ce 4   7            utf8    ^\aᴃx
+307 0x000049dc 0x1400089dc 6   8            utf8    -.5قrC
+308 0x000049ec 0x1400089ec 4   5            ascii   &<@y
+309 0x00004a3a 0x140008a3a 5   6            ascii   S8+wN
+310 0x00004a79 0x140008a79 4   5            ascii   D>\f$
+311 0x00004aa8 0x140008aa8 5   7            utf8    ~ŭ\tW0
+312 0x00004ae0 0x140008ae0 4   5            ascii   o\tR0
+313 0x00004b35 0x140008b35 6   8            utf8    KҨ'&\c
+314 0x00004b5f 0x140008b5f 4   5            ascii   $\f^k
+315 0x00004b97 0x140008b97 4   5            ascii   QQD6
+316 0x00004bb5 0x140008bb5 6   8            utf8    Bvrيe|
+317 0x00004bd7 0x140008bd7 8   9            ascii   0}0i1\v0\t
+318 0x00004bf3 0x140008bf3 18  19           ascii   DigiCert, Inc.1A0?
+319 0x00004c0b 0x140008c0b 57  58           ascii   8DigiCert Trusted G4 Code Signing RSA4096 SHA384 2021 CA1
+320 0x00004cbe 0x140008cbe 5   6            ascii   \t41 0
+321 0x00004cf2 0x140008cf2 4   6            utf8     Z-ڇ
+322 0x00004d2c 0x140008d2c 5   6            ascii   BNR&W
+323 0x00004d4b 0x140008d4b 5   6            ascii   `GcC@
+324 0x00004da0 0x140008da0 5   6            ascii   +K/$?
+325 0x00004db5 0x140008db5 4   5            ascii   /\vTL
+326 0x00004dd3 0x140008dd3 4   5            ascii   H!?W
+327 0x00004de5 0x140008de5 4   6            utf8    $۬]w
+328 0x00004e0b 0x140008e0b 5   8            utf8    ʫеzaR
+329 0x00004e13 0x140008e13 4   6            utf8    Ґo0H
+330 0x00004e3c 0x140008e3c 5   6            ascii   X,L\aG
+331 0x00004e8c 0x140008e8c 4   5            ascii   4LZ~
+332 0x00004f0c 0x140008f0c 4   5            ascii   010\r
+333 0x00004f46 0x140008f46 4   5            ascii   \t6-8
+334 0x00004f54 0x140008f54 15  16           ascii   20260911201411Z
+335 0x00004f79 0x140008f79 5   6            ascii   3O~EN
+336 0x00004f95 0x140008f95 6   7            ascii   0i1\v0\t
+337 0x00004faf 0x140008faf 18  19           ascii   DigiCert, Inc.1A0?
+338 0x00004fc7 0x140008fc7 58  59           ascii   8DigiCert Trusted G4 TimeStamping RSA4096 SHA256 2025 CA10
+339 0x00005003 0x140009003 14  15           ascii   \r260805000000Z
+340 0x00005012 0x140009012 20  21           ascii   \r371104235959Z0c1\v0\t
+341 0x0000503a 0x14000903a 18  19           ascii   DigiCert, Inc.1;09
+342 0x00005052 0x140009052 52  53           ascii   2DigiCert SHA256 RSA4096 Timestamp Responder 2026 10
+343 0x000050e8 0x1400090e8 5   6            ascii   nh\bnY
+344 0x0000513e 0x14000913e 4   5            ascii   W3E)
+345 0x0000516b 0x14000916b 4   5            ascii   et~H
+346 0x00005177 0x140009177 5   6            ascii   ?eq"\a
+347 0x00005183 0x140009183 4   5            ascii   wq}V
+348 0x000051ce 0x1400091ce 4   5            ascii   lTl"
+349 0x00005249 0x140009249 4   6            utf8    Xq#ݙ
+350 0x00005277 0x140009277 5   6            ascii   , P|\e
+351 0x0000527e 0x14000927e 5   7            utf8    ߦIde\v
+352 0x00005298 0x140009298 4   5            ascii   ms8B
+353 0x0000529f 0x14000929f 7   8            ascii   @!z\0%=
+354 0x0000534a 0x14000934a 26  27           ascii   http://ocsp.digicert.com0]
+355 0x0000536f 0x14000936f 84  85           ascii   Qhttp://cacerts.digicert.com/DigiCertTrustedG4TimeStampingRSA4096SHA2562025CA1.crt0_
+356 0x000053c9 0x1400093c9 5   6            ascii   X0V0T
+357 0x000053d3 0x1400093d3 80  82           ascii   Nhttp://crl3.digicert.com/DigiCertTrustedG4TimeStampingRSA4096SHA2562025CA1.crl0
+358 0x00005465 0x140009465 4   5            ascii   ~}(@
+359 0x00005493 0x140009493 4   5            ascii   *C\v-
+360 0x000054a8 0x1400094a8 6   7            ascii   kxXgMt
+361 0x000054d1 0x1400094d1 4   6            utf8    fGǄ{
+362 0x00005534 0x140009534 5   6            ascii   W!yi\f
+363 0x00005556 0x140009556 4   5            ascii   rDN6
+364 0x00005562 0x140009562 4   5            ascii   8m)Y
+365 0x00005568 0x140009568 6   8            utf8    =+luĻn
+366 0x00005591 0x140009591 6   8            utf8    Zkʫ:@y
+367 0x000055eb 0x1400095eb 4   5            ascii   :"A#
+368 0x00005621 0x140009621 4   6            utf8    j\t\t6
+369 0x0000566f 0x14000966f 7   8            ascii   .@C"\f:I
+370 0x00005686 0x140009686 6   7            ascii   0b1\v0\t
+371 0x0000569f 0x14000969f 14  15           ascii   \fDigiCert Inc1
+372 0x000056b7 0x1400096b7 19  20           ascii   www.digicert.com1!0
+373 0x000056d2 0x1400096d2 25  26           ascii   DigiCert Trusted Root G40
+374 0x000056ed 0x1400096ed 14  15           ascii   \r250507000000Z
+375 0x000056fc 0x1400096fc 20  21           ascii   \r380114235959Z0i1\v0\t
+376 0x00005724 0x140009724 18  19           ascii   DigiCert, Inc.1A0?
+377 0x0000573c 0x14000973c 58  59           ascii   8DigiCert Trusted G4 TimeStamping RSA4096 SHA256 2025 CA10
+378 0x000057a4 0x1400097a4 5   7            utf8    uۣFht
+379 0x0000580a 0x14000980a 4   5            ascii   P]&G
+380 0x00005820 0x140009820 6   8            utf8    AvÄ\t-T
+381 0x00005832 0x140009832 5   7            utf8    "9<x:
+382 0x0000584b 0x14000984b 4   5            ascii   |4^o
+383 0x0000586f 0x14000986f 4   5            ascii   q)5U
+384 0x0000589a 0x14000989a 4   5            ascii   h`i<
+385 0x00005928 0x140009928 4   6            utf8    ;bOޅ
+386 0x0000594a 0x14000994a 4   5            ascii   \ef]J
+387 0x0000594f 0x14000994f 4   6            utf8    \eSj̒
+388 0x00005974 0x140009974 5   7            utf8    J3fڠ>
+389 0x0000597c 0x14000997c 4   5            ascii   TxF4
+390 0x00005992 0x140009992 4   5            ascii   k cS
+391 0x000059e8 0x1400099e8 4   5            ascii   q]dL
+392 0x000059ed 0x1400099ed 4   7            utf8    .g?纘
+393 0x00005a29 0x140009a29 5   6            ascii   k0i0$
+394 0x00005a3a 0x140009a3a 26  27           ascii   http://ocsp.digicert.com0A
+395 0x00005a5f 0x140009a5f 56  57           ascii   5http://cacerts.digicert.com/DigiCertTrustedRootG4.crt0C
+396 0x00005a9d 0x140009a9d 5   6            ascii   <0:08
+397 0x00005aa7 0x140009aa7 52  54           ascii   2http://crl3.digicert.com/DigiCertTrustedRootG4.crl0
+398 0x00005b87 0x140009b87 4   7            utf8    ¿\fɿk
+399 0x00005bec 0x140009bec 4   5            ascii   1tI\f
+400 0x00005c24 0x140009c24 4   5            ascii   Dwj|
+401 0x00005c3b 0x140009c3b 6   7            ascii   :U|r*C
+402 0x00005c6a 0x140009c6a 5   6            ascii   o84s[
+403 0x00005c7d 0x140009c7d 5   6            ascii   a:m1&
+404 0x00005d3e 0x140009d3e 6   7            ascii   0e1\v0\t
+405 0x00005d57 0x140009d57 14  15           ascii   \fDigiCert Inc1
+406 0x00005d6f 0x140009d6f 20  21           ascii   www.digicert.com1$0"
+407 0x00005d89 0x140009d89 29  30           ascii   \eDigiCert Assured ID Root CA0
+408 0x00005da8 0x140009da8 14  15           ascii   \r220801000000Z
+409 0x00005db7 0x140009db7 20  21           ascii   \r311109235959Z0b1\v0\t
+410 0x00005dde 0x140009dde 14  15           ascii   \fDigiCert Inc1
+411 0x00005df6 0x140009df6 19  20           ascii   www.digicert.com1!0
+412 0x00005e11 0x140009e11 25  26           ascii   DigiCert Trusted Root G40
+413 0x00005e52 0x140009e52 8   9            ascii   ]J<0"0i3
+414 0x00005eb8 0x140009eb8 4   5            ascii   t;mq
+415 0x00005edf 0x140009edf 4   6            utf8    ͬ4@_
+416 0x00005f3f 0x140009f3f 4   6            utf8    |!LԼ
+417 0x00005f47 0x140009f47 4   5            ascii   u]xf
+418 0x00005f59 0x140009f59 4   8            utf8    橠gݤ'
+419 0x00005f74 0x140009f74 6   7            ascii   v=Y]Bv
+420 0x00005fc1 0x140009fc1 5   7            utf8    Ռp,A`
+421 0x00005fd8 0x140009fd8 4   8            utf8    3щ\aί
+422 0x00005ff5 0x140009ff5 4   5            ascii   RQGt
+423 0x00006018 0x14000a018 5   6            ascii   |Lu?c
+424 0x00006021 0x14000a021 4   5            ascii    Qko
+425 0x00006078 0x14000a078 4   5            ascii   q]dL
+426 0x0000607d 0x14000a07d 4   7            utf8    .g?纘
+427 0x0000609a 0x14000a09a 4   6            utf8    ˂1-Q
+428 0x000060c5 0x14000a0c5 5   6            ascii   m0k0$
+429 0x000060d6 0x14000a0d6 26  27           ascii   http://ocsp.digicert.com0C
+430 0x000060fb 0x14000a0fb 58  59           ascii   7http://cacerts.digicert.com/DigiCertAssuredIDRootCA.crt0E
+431 0x0000613b 0x14000a13b 5   6            ascii   >0<0:
+432 0x00006145 0x14000a145 54  55           ascii   4http://crl3.digicert.com/DigiCertAssuredIDRootCA.crl0
+433 0x00006182 0x14000a182 4   5            ascii   \n0\b0
+434 0x000061d3 0x14000a1d3 4   5            ascii   Jz/-
+435 0x0000622d 0x14000a22d 5   6            ascii   5FjiT
+436 0x00006242 0x14000a242 4   5            ascii   wZ\T
+437 0x00006263 0x14000a263 4   6            utf8    @cŘ"
+438 0x00006278 0x14000a278 6   7            ascii   ~qj#k"
+439 0x00006281 0x14000a281 4   5            ascii   T-'~
+440 0x000062ac 0x14000a2ac 8   9            ascii   0}0i1\v0\t
+441 0x000062c8 0x14000a2c8 18  19           ascii   DigiCert, Inc.1A0?
+442 0x000062e0 0x14000a2e0 57  58           ascii   8DigiCert Trusted G4 TimeStamping RSA4096 SHA256 2025 CA1
+443 0x0000631e 0x14000a31e 5   6            ascii   3O~EN
+444 0x00006369 0x14000a369 16  17           ascii   \r260911201411Z0+
+445 0x000063c7 0x14000a3c7 5   6            ascii   :/H\e4
+446 0x000063e3 0x14000a3e3 9   10           ascii   /1(0&0$0"
+447 0x00006448 0x14000a448 4   5            ascii   "S\bB
+448 0x00006457 0x14000a457 4   5            ascii   o1y+
+449 0x00006487 0x14000a487 7   8            ascii   jEVa%#q
+450 0x000064b0 0x14000a4b0 6   8            utf8    !-\bɴX\a
+451 0x000064c2 0x14000a4c2 5   7            utf8    Y}Ɉ39
+452 0x000064cd 0x14000a4cd 7   8            ascii   Dm8Hn92
+453 0x000064d5 0x14000a4d5 5   6            ascii   Cu1s2
+454 0x00006562 0x14000a562 4   5            ascii   IM[F
+455 0x0000659c 0x14000a59c 4   6            utf8    =Bƥ/
+456 0x000065ab 0x14000a5ab 4   5            ascii   \tE/\r
+457 0x000065e1 0x14000a5e1 4   5            ascii   ]1"N

@@ -1,0 +1,3248 @@
+[
+ {
+  "kind": "LIB-INF",
+  "name": "abstractMqttDriver.jar!LIB-INF/org.eclipse.paho.client.mqttv3-1.2.5.jar",
+  "sha1": "7c81f3ee82ef00499415fa5de85735ecc4e0facf",
+  "gav_candidates": [
+   [
+    "org.eclipse.paho",
+    "org.eclipse.paho.client.mqttv3",
+    "1.2.5"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5",
+  "content": "differs:110",
+  "content_diff_sample": [
+   "org/eclipse/paho/client/mqttv3/BufferedMessage.class",
+   "org/eclipse/paho/client/mqttv3/DisconnectedBufferOptions.class",
+   "org/eclipse/paho/client/mqttv3/IMqttActionListener.class",
+   "org/eclipse/paho/client/mqttv3/IMqttAsyncClient.class",
+   "org/eclipse/paho/client/mqttv3/IMqttClient.class"
+  ],
+  "entries": 132,
+  "meta_inf_local": []
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "abstractMqttDriver.jar!LIB-INF/jjwt-jackson-0.13.0.jar",
+  "sha1": "cfe37531887657716ec20b5ef22f22b32e8bf4a8",
+  "gav_candidates": [
+   [
+    "io.jsonwebtoken",
+    "jjwt-jackson",
+    "0.13.0"
+   ]
+  ],
+  "result": "exact",
+  "match": "io.jsonwebtoken:jjwt-jackson:0.13.0"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "abstractMqttDriver.jar!LIB-INF/jackson-databind-2.22.2.jar",
+  "sha1": "921bd2092b0c539b2876de7063d55c72edcd05d3",
+  "gav_candidates": [
+   [
+    "com.fasterxml.jackson.core",
+    "jackson-databind",
+    "2.22.2"
+   ]
+  ],
+  "result": "exact",
+  "match": "com.fasterxml.jackson.core:jackson-databind:2.22.2"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "abstractMqttDriver.jar!LIB-INF/jackson-core-2.22.2.jar",
+  "sha1": "13a748ea3e329fa220076e021b45c8391b32420c",
+  "gav_candidates": [
+   [
+    "com.fasterxml.jackson.core",
+    "jackson-core",
+    "2.22.2"
+   ]
+  ],
+  "result": "exact",
+  "match": "com.fasterxml.jackson.core:jackson-core:2.22.2"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "abstractMqttDriver.jar!LIB-INF/jackson-annotations-2.22.jar",
+  "sha1": "15c67f9498d6934cff9510fc70c5a12e52290457",
+  "gav_candidates": [
+   [
+    "com.fasterxml.jackson.core",
+    "jackson-annotations",
+    "2.22"
+   ]
+  ],
+  "result": "exact",
+  "match": "com.fasterxml.jackson.core:jackson-annotations:2.22"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "abstractMqttDriver.jar!LIB-INF/jjwt-impl-0.13.0.jar",
+  "sha1": "9e7c70dd7014909556755fb01c465dd184b4b1d9",
+  "gav_candidates": [
+   [
+    "io.jsonwebtoken",
+    "jjwt-impl",
+    "0.13.0"
+   ]
+  ],
+  "result": "exact",
+  "match": "io.jsonwebtoken:jjwt-impl:0.13.0"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "abstractMqttDriver.jar!LIB-INF/jjwt-api-0.13.0.jar",
+  "sha1": "ce631a0342b08953355f333b488d2b03445b9f3e",
+  "gav_candidates": [
+   [
+    "io.jsonwebtoken",
+    "jjwt-api",
+    "0.13.0"
+   ]
+  ],
+  "result": "exact",
+  "match": "io.jsonwebtoken:jjwt-api:0.13.0"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "apachePoi.jar!LIB-INF/poi-ooxml-5.5.1.jar",
+  "sha1": "ff561a9cab46bfe95667d5085580fefb2353fdaf",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "apachePoi.jar!LIB-INF/poi-5.5.1.jar",
+  "sha1": "613d253b6f5f0849dd68fed043a7fb4b005e63a0",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "apachePoi.jar!LIB-INF/poi-ooxml-lite-5.5.1.jar",
+  "sha1": "2e8c1fbeb661a8c15b033c4b03b2907e9bd0857b",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "apachePoi.jar!LIB-INF/xmlbeans-5.3.0.jar",
+  "sha1": "f93c3ba820d7240b7fec4ec5bc35e7223cc6fc1f",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "apachePoi.jar!LIB-INF/curvesapi-1.08.jar",
+  "sha1": "3d3d36568154059825089b289dcfca481fe44e2c",
+  "gav_candidates": [
+   [
+    "com.github.virtuald",
+    "curvesapi",
+    "1.08"
+   ]
+  ],
+  "result": "exact",
+  "match": "com.github.virtuald:curvesapi:1.08"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "apachePoi.jar!LIB-INF/log4j-api-2.24.3.jar",
+  "sha1": "b02c125db8b6d295adf72ae6e71af5d83bce2370",
+  "gav_candidates": [
+   [
+    "org.apache.logging.log4j",
+    "log4j-api",
+    "2.24.3"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.apache.logging.log4j:log4j-api:2.24.3"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "apachePoi.jar!LIB-INF/commons-collections4-4.5.0.jar",
+  "sha1": "e5cf89f0c6e132fc970bd9a465fdcb8dbe94f75a",
+  "gav_candidates": [
+   [
+    "org.apache.commons",
+    "commons-collections4",
+    "4.5.0"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.apache.commons:commons-collections4:4.5.0"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "apachePoi.jar!LIB-INF/commons-math3-3.6.1.jar",
+  "sha1": "e4ba98f1d4b3c80ec46392f25e094a6a2e58fcbf",
+  "gav_candidates": [
+   [
+    "org.apache.commons",
+    "commons-math3",
+    "3.6.1"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.apache.commons:commons-math3:3.6.1"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "apachePoi.jar!LIB-INF/SparseBitSet-1.3.jar",
+  "sha1": "533eac055afe3d5f614ea95e333afd6c2bde8f26",
+  "gav_candidates": [
+   [
+    "com.zaxxer",
+    "SparseBitSet",
+    "1.3"
+   ]
+  ],
+  "result": "exact",
+  "match": "com.zaxxer:SparseBitSet:1.3"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "axvelocity.jar!LIB-INF/velocity-engine-core-2.4.1.jar",
+  "sha1": "0b662837e8006d5c383bd128503ea86ef5b4d361",
+  "gav_candidates": [
+   [
+    "org.apache.velocity",
+    "velocity-engine-core",
+    "2.4.1"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.apache.velocity:velocity-engine-core:2.4.1"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "axvelocity.jar!LIB-INF/slf4j-api-1.7.36.jar",
+  "sha1": "6c62681a2f655b49963a5983b8b0950a6120ae14",
+  "gav_candidates": [
+   [
+    "org.slf4j",
+    "slf4j-api",
+    "1.7.36"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.slf4j:slf4j-api:1.7.36"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "cloudLink.jar!LIB-INF/qpid-proton-j-extensions-1.2.7.jar",
+  "sha1": "fe9e9e062fca87fc5f69fd2860816c6d069c93db",
+  "gav_candidates": [
+   [
+    "com.microsoft.azure",
+    "qpid-proton-j-extensions",
+    "1.2.7"
+   ]
+  ],
+  "result": "exact",
+  "match": "com.microsoft.azure:qpid-proton-j-extensions:1.2.7"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "cloudLink.jar!LIB-INF/proton-j-0.34.1.jar",
+  "sha1": "e0d6c62cef4929db66dd6df55bee699b2274a9cc",
+  "gav_candidates": [
+   [
+    "org.apache.qpid",
+    "proton-j",
+    "0.34.1"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.apache.qpid:proton-j:0.34.1"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "cloudLink.jar!LIB-INF/biweekly-0.6.8.jar",
+  "sha1": "4342433be8faaffc8aa52a3feb5674e9d26d0e02",
+  "gav_candidates": [
+   [
+    "net.sf.biweekly",
+    "biweekly",
+    "0.6.8"
+   ]
+  ],
+  "result": "exact",
+  "match": "net.sf.biweekly:biweekly:0.6.8"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "cloudLink.jar!LIB-INF/vinnie-2.0.2.jar",
+  "sha1": "c5ac6b631bd5d0fb0a34a14cb51e83283aaff63e",
+  "gav_candidates": [
+   [
+    "com.github.mangstadt",
+    "vinnie",
+    "2.0.2"
+   ]
+  ],
+  "result": "exact",
+  "match": "com.github.mangstadt:vinnie:2.0.2"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "commonsCompress.jar!LIB-INF/commons-compress-1.28.0.jar",
+  "sha1": "e482f2c7a88dac3c497e96aa420b6a769f59c8d7",
+  "gav_candidates": [
+   [
+    "org.apache.commons",
+    "commons-compress",
+    "1.28.0"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.apache.commons:commons-compress:1.28.0"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "commonsIo.jar!LIB-INF/commons-io-2.22.0.jar",
+  "sha1": "5b1e18bc0ad651ed878029d83f88d9c8189fd51e",
+  "gav_candidates": [
+   [
+    "commons-io",
+    "commons-io",
+    "2.22.0"
+   ]
+  ],
+  "result": "exact",
+  "match": "commons-io:commons-io:2.22.0"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "devkit.jar!LIB-INF/javaparser-core-3.28.0.jar",
+  "sha1": "59829d055a8327d017e83316fc01b182335da9d6",
+  "gav_candidates": [
+   [
+    "com.github.javaparser",
+    "javaparser-core",
+    "3.28.0"
+   ]
+  ],
+  "result": "exact",
+  "match": "com.github.javaparser:javaparser-core:3.28.0"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "devkit.jar!LIB-INF/kotlin-stdlib-2.3.0.jar",
+  "sha1": "ebc4eb2b6e6c91b6c844c1e3183920d86f2ef656",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "devkit.jar!LIB-INF/annotations-13.0.jar",
+  "sha1": "919f0dfe192fb4e063e7dacadee7f8bb9a2672a9",
+  "gav_candidates": [
+   [
+    "org.jetbrains",
+    "annotations",
+    "13.0"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.jetbrains:annotations:13.0"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "email.jar!LIB-INF/jakarta.mail-2.0.5.jar",
+  "sha1": "68ce3f8ddb70d375e2ae4d820ba64da0ed56a940",
+  "gav_candidates": [
+   [
+    "jakarta.mail",
+    "jakarta.mail-api",
+    "2.1.5"
+   ],
+   [
+    "org.eclipse.angus",
+    "angus-core",
+    "2.0.5"
+   ],
+   [
+    "org.eclipse.angus",
+    "angus-mail",
+    "2.0.5"
+   ],
+   [
+    "org.eclipse.angus",
+    "imap",
+    "2.0.5"
+   ],
+   [
+    "org.eclipse.angus",
+    "logging-mailhandler",
+    "2.0.5"
+   ],
+   [
+    "org.eclipse.angus",
+    "pop3",
+    "2.0.5"
+   ],
+   [
+    "org.eclipse.angus",
+    "smtp",
+    "2.0.5"
+   ],
+   [
+    "org.eclipse.angus",
+    "jakarta.mail",
+    "2.0.5"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.eclipse.angus:jakarta.mail:2.0.5"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "gx.jar!LIB-INF/batik-anim-1.19.jar",
+  "sha1": "bb8f0cdbe47ff94afeab7b6e569d7dab11928ddb",
+  "gav_candidates": [
+   [
+    "org.apache.xmlgraphics",
+    "batik-anim",
+    "1.19"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.apache.xmlgraphics:batik-anim:1.19"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "gx.jar!LIB-INF/batik-awt-util-1.19.jar",
+  "sha1": "858ea4772e2299af37cb2753202307a5c089602c",
+  "gav_candidates": [
+   [
+    "org.apache.xmlgraphics",
+    "batik-awt-util",
+    "1.19"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.apache.xmlgraphics:batik-awt-util:1.19"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "gx.jar!LIB-INF/batik-constants-1.19.jar",
+  "sha1": "00aef5a746a204f8597a3f7c0c5e28a0192c1f3e",
+  "gav_candidates": [
+   [
+    "org.apache.xmlgraphics",
+    "batik-constants",
+    "1.19"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.apache.xmlgraphics:batik-constants:1.19"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "gx.jar!LIB-INF/batik-css-1.19.jar",
+  "sha1": "5fd19312a31e1b61c5d9595d65a085b81af30e6b",
+  "gav_candidates": [
+   [
+    "org.apache.xmlgraphics",
+    "batik-css",
+    "1.19"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.apache.xmlgraphics:batik-css:1.19"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "gx.jar!LIB-INF/batik-dom-1.19.jar",
+  "sha1": "46dae3cde886b023d92b18e7237d7bb37360b206",
+  "gav_candidates": [
+   [
+    "org.apache.xmlgraphics",
+    "batik-dom",
+    "1.19"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.apache.xmlgraphics:batik-dom:1.19"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "gx.jar!LIB-INF/batik-ext-1.19.jar",
+  "sha1": "7e73d5c6378a53b53fa9421ae9fd75916a6c2979",
+  "gav_candidates": [
+   [
+    "org.apache.xmlgraphics",
+    "batik-ext",
+    "1.19"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.apache.xmlgraphics:batik-ext:1.19"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "gx.jar!LIB-INF/batik-i18n-1.19.jar",
+  "sha1": "9df77dbefde9120a1c0c4edaa287fa7fe2263cd6",
+  "gav_candidates": [
+   [
+    "org.apache.xmlgraphics",
+    "batik-i18n",
+    "1.19"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.apache.xmlgraphics:batik-i18n:1.19"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "gx.jar!LIB-INF/batik-parser-1.19.jar",
+  "sha1": "4f5f83767ab48fb5aa92c794f7eb3531cc946715",
+  "gav_candidates": [
+   [
+    "org.apache.xmlgraphics",
+    "batik-parser",
+    "1.19"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.apache.xmlgraphics:batik-parser:1.19"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "gx.jar!LIB-INF/batik-svg-dom-1.19.jar",
+  "sha1": "7958ef79eecf535061c48caabc49b0425945d7e7",
+  "gav_candidates": [
+   [
+    "org.apache.xmlgraphics",
+    "batik-svg-dom",
+    "1.19"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.apache.xmlgraphics:batik-svg-dom:1.19"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "gx.jar!LIB-INF/batik-transcoder-1.19.jar",
+  "sha1": "5af06d38710d1ec1b8da3e0e76e3a45fcdb083da",
+  "gav_candidates": [
+   [
+    "org.apache.xmlgraphics",
+    "batik-transcoder",
+    "1.19"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.apache.xmlgraphics:batik-transcoder:1.19"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "gx.jar!LIB-INF/batik-util-1.19.jar",
+  "sha1": "0f246bb0e8b645a552697a7a507e24536af764fc",
+  "gav_candidates": [
+   [
+    "org.apache.xmlgraphics",
+    "batik-util",
+    "1.19"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.apache.xmlgraphics:batik-util:1.19"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "gx.jar!LIB-INF/batik-xml-1.19.jar",
+  "sha1": "bf37203619e48844d4d25e336b745501b50cbd76",
+  "gav_candidates": [
+   [
+    "org.apache.xmlgraphics",
+    "batik-xml",
+    "1.19"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.apache.xmlgraphics:batik-xml:1.19"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "gx.jar!LIB-INF/xml-apis-ext-1.3.05.jar",
+  "sha1": "66b89e5f3794f915db2ccd524347fa6ac22b59d4",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "gx.jar!LIB-INF/org.eclipse.swt.win32.win32.x86_64-3.134.0.jar",
+  "sha1": "0978f1c41438ebab37caf2e8d8446b420bf61c2a",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "jodaTime.jar!LIB-INF/joda-time-2.14.3.jar",
+  "sha1": "53007bae8c9dd68d85656103a74f1bf86bdafbad",
+  "gav_candidates": [
+   [
+    "joda-time",
+    "joda-time",
+    "2.14.3"
+   ]
+  ],
+  "result": "exact",
+  "match": "joda-time:joda-time:2.14.3"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "jsonSmart.jar!LIB-INF/json-smart-2.6.0.jar",
+  "sha1": "5f858a43a325a8673da6869ab2bc787a1bcb2244",
+  "gav_candidates": [
+   [
+    "net.minidev",
+    "json-smart",
+    "2.6.0"
+   ]
+  ],
+  "result": "exact",
+  "match": "net.minidev:json-smart:2.6.0"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "jsonSmart.jar!LIB-INF/accessors-smart-2.6.0.jar",
+  "sha1": "2d96f1d9b6ab7f13261aa81b15703574185747a0",
+  "gav_candidates": [
+   [
+    "net.minidev",
+    "accessors-smart",
+    "2.6.0"
+   ]
+  ],
+  "result": "exact",
+  "match": "net.minidev:accessors-smart:2.6.0"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "jsonToolkit.jar!LIB-INF/gson-2.14.0.jar",
+  "sha1": "efc0e34ede4e3204eaefb84a00e55e8c86634382",
+  "gav_candidates": [
+   [
+    "com.google.code.gson",
+    "gson",
+    "2.14.0"
+   ]
+  ],
+  "result": "exact",
+  "match": "com.google.code.gson:gson:2.14.0"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "jsonToolkit.jar!LIB-INF/json-path-2.10.0.jar",
+  "sha1": "e1a0b2e6db75401181c9c1c64c6d155ca5c6d608",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "jsonToolkit.jar!LIB-INF/error_prone_annotations-2.48.0.jar",
+  "sha1": "bbe30942a31d1778c74cb272321267eca82dc708",
+  "gav_candidates": [
+   [
+    "com.google.errorprone",
+    "error_prone_annotations",
+    "2.48.0"
+   ]
+  ],
+  "result": "exact",
+  "match": "com.google.errorprone:error_prone_annotations:2.48.0"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "oauth2.jar!LIB-INF/oauth2-oidc-sdk-11.26-jdk11.jar",
+  "sha1": "63a44083ffeba366694bff8c77628d0c6c9109a5",
+  "gav_candidates": [
+   [
+    "com.nimbusds",
+    "oauth2-oidc-sdk",
+    "11.26"
+   ]
+  ],
+  "result": "differs",
+  "match": "com.nimbusds:oauth2-oidc-sdk:11.26",
+  "content": "differs:539",
+  "content_diff_sample": [
+   "com/nimbusds/oauth2/sdk/AbstractAuthenticatedRequest.class",
+   "com/nimbusds/oauth2/sdk/AbstractConfigurationRequest.class",
+   "com/nimbusds/oauth2/sdk/AbstractOptionallyAuthenticatedRequest.class",
+   "com/nimbusds/oauth2/sdk/AbstractOptionallyIdentifiedRequest.class",
+   "com/nimbusds/oauth2/sdk/AbstractRequest.class"
+  ],
+  "entries": 533,
+  "meta_inf_local": []
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "oauth2.jar!LIB-INF/jcip-annotations-1.0-1.jar",
+  "sha1": "ef31541dd28ae2cefdd17c7ebf352d93e9058c63",
+  "gav_candidates": [
+   [
+    "com.github.stephenc.jcip",
+    "jcip-annotations",
+    "1.0-1"
+   ]
+  ],
+  "result": "exact",
+  "match": "com.github.stephenc.jcip:jcip-annotations:1.0-1"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "oauth2.jar!LIB-INF/content-type-2.3.jar",
+  "sha1": "e3aa0be212d7a42839a8f3f506f5b990bcce0222",
+  "gav_candidates": [
+   [
+    "com.nimbusds",
+    "content-type",
+    "2.3"
+   ]
+  ],
+  "result": "exact",
+  "match": "com.nimbusds:content-type:2.3"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "oauth2.jar!LIB-INF/lang-tag-1.7.jar",
+  "sha1": "97c73ecd70bc7e8eefb26c5eea84f251a63f1031",
+  "gav_candidates": [
+   [
+    "com.nimbusds",
+    "lang-tag",
+    "1.7"
+   ]
+  ],
+  "result": "exact",
+  "match": "com.nimbusds:lang-tag:1.7"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "oauth2.jar!LIB-INF/nimbus-jose-jwt-10.0.2.jar",
+  "sha1": "93347ea9247ae09e095575e10f9cae79c195fbb8",
+  "gav_candidates": [
+   [
+    "com.nimbusds",
+    "nimbus-jose-jwt",
+    "10.0.2"
+   ],
+   [
+    "com.github.stephenc.jcip",
+    "jcip-annotations",
+    "1.0-1"
+   ],
+   [
+    "com.google.code.gson",
+    "gson",
+    "2.12.1"
+   ]
+  ],
+  "result": "exact",
+  "match": "com.nimbusds:nimbus-jose-jwt:10.0.2"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "opcUaCore.jar!LIB-INF/prosys-opc-ua-sdk-client-server-5.7.0-248.jar",
+  "sha1": "b5e0d0455cfb5037c9180fcce9e6143203fa3597",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "rdb.jar!LIB-INF/commons-dbcp2-2.14.0.jar",
+  "sha1": "e96ee267d160a94c7fef991ee75de48534f8b0f2",
+  "gav_candidates": [
+   [
+    "org.apache.commons",
+    "commons-dbcp2",
+    "2.14.0"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.apache.commons:commons-dbcp2:2.14.0"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "rdb.jar!LIB-INF/commons-pool2-2.13.1.jar",
+  "sha1": "cf7e8c0242d4c483c42c083b8188ab360ab60f9a",
+  "gav_candidates": [
+   [
+    "org.apache.commons",
+    "commons-pool2",
+    "2.13.1"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.apache.commons:commons-pool2:2.13.1"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "rdb.jar!LIB-INF/jakarta.transaction-api-1.3.3.jar",
+  "sha1": "c4179d48720a1e87202115fbed6089bdc4195405",
+  "gav_candidates": [
+   [
+    "jakarta.transaction",
+    "jakarta.transaction-api",
+    "1.3.3"
+   ]
+  ],
+  "result": "exact",
+  "match": "jakarta.transaction:jakarta.transaction-api:1.3.3"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "rdbHsqlDb.jar!LIB-INF/hsqldb-2.7.4.jar",
+  "sha1": "4aad3c109b5b04927d3bc663bf13535f830401ce",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "rdbSqlServer.jar!LIB-INF/mssql-jdbc-13.4.0.jre11.jar",
+  "sha1": "061d769c8a7dd4870fd85099ab55fbc6040b1997",
+  "gav_candidates": [
+   [
+    "com.microsoft.sqlserver",
+    "mssql-jdbc",
+    "13.4.0"
+   ]
+  ],
+  "result": "not-on-central:HTTPError",
+  "match": "com.microsoft.sqlserver:mssql-jdbc:13.4.0"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "saml.jar!LIB-INF/xmlsec-4.0.4.jar",
+  "sha1": "b07e7b1a2fa3cb828b0d0112d3ea37829373bce3",
+  "gav_candidates": [
+   [
+    "org.apache.santuario",
+    "xmlsec",
+    "4.0.4"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.apache.santuario:xmlsec:4.0.4"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "saml.jar!LIB-INF/java-saml-core-2.9.0.jar",
+  "sha1": "843b0064044bbd68162fcd57373c98e1a4dd64a5",
+  "gav_candidates": [
+   [
+    "com.onelogin",
+    "java-saml-core",
+    "2.9.0"
+   ]
+  ],
+  "result": "exact",
+  "match": "com.onelogin:java-saml-core:2.9.0"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "snmpLibs.jar!LIB-INF/mibble-mibs-2.10.1.jar",
+  "sha1": "1729b1d660e50dd48631b60dd29471387e122b08",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "svgBatik.jar!LIB-INF/batik-bridge-1.19.jar",
+  "sha1": "9b32c6c36a6c104e6b8611b09df07ed875e58eb8",
+  "gav_candidates": [
+   [
+    "org.apache.xmlgraphics",
+    "batik-bridge",
+    "1.19"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.apache.xmlgraphics:batik-bridge:1.19"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "svgBatik.jar!LIB-INF/batik-gvt-1.19.jar",
+  "sha1": "19b27455ef1e23c79fce748be07a84c70dc5db8a",
+  "gav_candidates": [
+   [
+    "org.apache.xmlgraphics",
+    "batik-gvt",
+    "1.19"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.apache.xmlgraphics:batik-gvt:1.19"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "svgBatik.jar!LIB-INF/batik-script-1.19.jar",
+  "sha1": "ef523f9c7399b75cf94dcb3828d60124a8f09a85",
+  "gav_candidates": [
+   [
+    "org.apache.xmlgraphics",
+    "batik-script",
+    "1.19"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.apache.xmlgraphics:batik-script:1.19"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "svgBatik.jar!LIB-INF/xmlgraphics-commons-2.11.jar",
+  "sha1": "4adc636cc7051d40f859f53287ae268684ab6a80",
+  "gav_candidates": [
+   [
+    "org.apache.xmlgraphics",
+    "xmlgraphics-commons",
+    "2.11"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.apache.xmlgraphics:xmlgraphics-commons:2.11"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "test.jar!LIB-INF/testng-7.12.0.jar",
+  "sha1": "55b39526598d8eb2e0e75bffbbd4b683adb85dcc",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "test.jar!LIB-INF/jcommander-1.83.jar",
+  "sha1": "c342a2ad17ec08db105146e27c7ba9c535c9bb46",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "totpAuth.jar!LIB-INF/core-3.5.4.jar",
+  "sha1": "955fcd6bcd0723ddfb8ee6ed502d5fdf0e9676a9",
+  "gav_candidates": [
+   [
+    "com.google.zxing",
+    "core",
+    "3.5.4"
+   ]
+  ],
+  "result": "exact",
+  "match": "com.google.zxing:core:3.5.4"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "xprotect.jar!LIB-INF/wsit-impl-4.0.7.jar",
+  "sha1": "250192b1b66f07223826a828251163f9d95a1a85",
+  "gav_candidates": [
+   [
+    "org.glassfish.metro",
+    "metro-cm-impl",
+    "4.0.7"
+   ],
+   [
+    "org.glassfish.metro",
+    "metro-config-impl",
+    "4.0.7"
+   ],
+   [
+    "org.glassfish.metro",
+    "metro-runtime-api",
+    "4.0.7"
+   ],
+   [
+    "org.glassfish.metro",
+    "metro-runtime-impl",
+    "4.0.7"
+   ],
+   [
+    "org.glassfish.metro",
+    "soaptcp-impl",
+    "4.0.7"
+   ],
+   [
+    "org.glassfish.metro",
+    "ws-mex",
+    "4.0.7"
+   ],
+   [
+    "org.glassfish.metro",
+    "wsmc-impl",
+    "4.0.7"
+   ],
+   [
+    "org.glassfish.metro",
+    "wsrm-impl",
+    "4.0.7"
+   ],
+   [
+    "org.glassfish.metro",
+    "wsrx-commons",
+    "4.0.7"
+   ],
+   [
+    "org.glassfish.metro",
+    "wsrx-testing",
+    "4.0.7"
+   ],
+   [
+    "org.glassfish.metro",
+    "wssx-api",
+    "4.0.7"
+   ],
+   [
+    "org.glassfish.metro",
+    "wssx-impl",
+    "4.0.7"
+   ],
+   [
+    "org.glassfish.metro",
+    "wstx-impl",
+    "4.0.7"
+   ],
+   [
+    "org.glassfish.metro",
+    "xmlfilter",
+    "4.0.7"
+   ],
+   [
+    "org.glassfish.metro",
+    "wsit-impl",
+    "4.0.7"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.glassfish.metro:wsit-impl:4.0.7"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "xprotect.jar!LIB-INF/wsit-api-4.0.7.jar",
+  "sha1": "da9e8a0e152791decaa2a08a72a2b17015587e9f",
+  "gav_candidates": [
+   [
+    "org.glassfish.metro",
+    "metro-cm-api",
+    "4.0.7"
+   ],
+   [
+    "org.glassfish.metro",
+    "metro-commons",
+    "4.0.7"
+   ],
+   [
+    "org.glassfish.metro",
+    "metro-config-api",
+    "4.0.7"
+   ],
+   [
+    "org.glassfish.metro",
+    "soaptcp-api",
+    "4.0.7"
+   ],
+   [
+    "org.glassfish.metro",
+    "wsmc-api",
+    "4.0.7"
+   ],
+   [
+    "org.glassfish.metro",
+    "wsrm-api",
+    "4.0.7"
+   ],
+   [
+    "org.glassfish.metro",
+    "wstx-api",
+    "4.0.7"
+   ],
+   [
+    "org.glassfish.metro",
+    "wsit-api",
+    "4.0.7"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.glassfish.metro:wsit-api:4.0.7"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "xprotect.jar!LIB-INF/rt-fi-4.0.5.jar",
+  "sha1": "4e1957301a6295a0e7a4a512ebcc8eeedf7fe8dc",
+  "gav_candidates": [
+   [
+    "com.sun.xml.ws",
+    "rt-fi",
+    "4.0.5"
+   ]
+  ],
+  "result": "exact",
+  "match": "com.sun.xml.ws:rt-fi:4.0.5"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "xprotect.jar!LIB-INF/rt-4.0.5.jar",
+  "sha1": "b82dab1f880e4cf2534b07084f0f68aebf6833f5",
+  "gav_candidates": [
+   [
+    "com.sun.xml.ws",
+    "rt",
+    "4.0.5"
+   ]
+  ],
+  "result": "exact",
+  "match": "com.sun.xml.ws:rt:4.0.5"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "xprotect.jar!LIB-INF/policy-4.0.5.jar",
+  "sha1": "d3a3813dae0a4202b035fe03a0b8c0e9571dac12",
+  "gav_candidates": [
+   [
+    "com.sun.xml.ws",
+    "policy",
+    "4.0.5"
+   ]
+  ],
+  "result": "exact",
+  "match": "com.sun.xml.ws:policy:4.0.5"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "xprotect.jar!LIB-INF/jakarta.xml.ws-api-4.0.3.jar",
+  "sha1": "30b8a7abd7b3958461d8256db31816dd2ae6eb85",
+  "gav_candidates": [
+   [
+    "jakarta.xml.ws",
+    "jakarta.xml.ws-api",
+    "4.0.3"
+   ]
+  ],
+  "result": "exact",
+  "match": "jakarta.xml.ws:jakarta.xml.ws-api:4.0.3"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "xprotect.jar!LIB-INF/jakarta.xml.bind-api-4.0.5.jar",
+  "sha1": "161811f36cad3c65991502e80317f2f6703361df",
+  "gav_candidates": [
+   [
+    "jakarta.xml.bind",
+    "jakarta.xml.bind-api",
+    "4.0.5"
+   ]
+  ],
+  "result": "exact",
+  "match": "jakarta.xml.bind:jakarta.xml.bind-api:4.0.5"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "xprotect.jar!LIB-INF/saaj-impl-3.0.6.jar",
+  "sha1": "ddd1a8aa28b97ead2f73ae9aeec3c3ccd361d6c1",
+  "gav_candidates": [
+   [
+    "com.sun.xml.messaging.saaj",
+    "saaj-impl",
+    "3.0.6"
+   ]
+  ],
+  "result": "exact",
+  "match": "com.sun.xml.messaging.saaj:saaj-impl:3.0.6"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "xprotect.jar!LIB-INF/jakarta.xml.soap-api-3.0.2.jar",
+  "sha1": "0445830286faf84fe40a3f47ccd7537d69cd58c4",
+  "gav_candidates": [
+   [
+    "jakarta.xml.soap",
+    "jakarta.xml.soap-api",
+    "3.0.2"
+   ]
+  ],
+  "result": "exact",
+  "match": "jakarta.xml.soap:jakarta.xml.soap-api:3.0.2"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "xprotect.jar!LIB-INF/streambuffer-2.1.0.jar",
+  "sha1": "6a348e35de90520a38332a88aa9ca27e8180db63",
+  "gav_candidates": [
+   [
+    "com.sun.xml.stream.buffer",
+    "streambuffer",
+    "2.1.0"
+   ]
+  ],
+  "result": "exact",
+  "match": "com.sun.xml.stream.buffer:streambuffer:2.1.0"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "xprotect.jar!LIB-INF/stax-ex-2.1.0.jar",
+  "sha1": "33160568d70c01da407f8ba982bacf283d00ad4a",
+  "gav_candidates": [
+   [
+    "org.jvnet.staxex",
+    "stax-ex",
+    "2.1.0"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.jvnet.staxex:stax-ex:2.1.0"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "xprotect.jar!LIB-INF/jakarta.activation-api-2.1.4.jar",
+  "sha1": "9e5c2a0d75dde71a0bedc4dbdbe47b78a5dc50f8",
+  "gav_candidates": [
+   [
+    "jakarta.activation",
+    "jakarta.activation-api",
+    "2.1.4"
+   ]
+  ],
+  "result": "exact",
+  "match": "jakarta.activation:jakarta.activation-api:2.1.4"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "xprotect.jar!LIB-INF/jakarta.authentication-api-3.1.0.jar",
+  "sha1": "d06859cab1228a7524bf620a0daf120dc979ecae",
+  "gav_candidates": [
+   [
+    "jakarta.authentication",
+    "jakarta.authentication-api",
+    "3.1.0"
+   ]
+  ],
+  "result": "exact",
+  "match": "jakarta.authentication:jakarta.authentication-api:3.1.0"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "xprotect.jar!LIB-INF/gmbal-4.1.2.jar",
+  "sha1": "8c64c74606bca84f809495f8454a9b616e0d0787",
+  "gav_candidates": [
+   [
+    "org.glassfish.gmbal",
+    "gmbal",
+    "4.1.2"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.glassfish.gmbal:gmbal:4.1.2"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "xprotect.jar!LIB-INF/ha-api-3.1.13.jar",
+  "sha1": "1f7d0981a35d00097ed3faead8fceb2e4e5220e2",
+  "gav_candidates": [
+   [
+    "org.glassfish.ha",
+    "ha-api",
+    "3.1.13"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.glassfish.ha:ha-api:3.1.13"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "xprotect.jar!LIB-INF/FastInfoset-2.1.1.jar",
+  "sha1": "650c84348bbcf4461bd24d38e67f7a7ce687de24",
+  "gav_candidates": [
+   [
+    "com.sun.xml.fastinfoset",
+    "FastInfoset",
+    "2.1.1"
+   ]
+  ],
+  "result": "exact",
+  "match": "com.sun.xml.fastinfoset:FastInfoset:2.1.1"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "xprotect.jar!LIB-INF/xmlsec-4.0.4.jar",
+  "sha1": "b07e7b1a2fa3cb828b0d0112d3ea37829373bce3",
+  "gav_candidates": [
+   [
+    "org.apache.santuario",
+    "xmlsec",
+    "4.0.4"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.apache.santuario:xmlsec:4.0.4"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "xprotect.jar!LIB-INF/gmbal-api-only-4.1.2.jar",
+  "sha1": "79aadd9a756dd9482a9c76b7f0f036f5a1107ab3",
+  "gav_candidates": [
+   [
+    "org.glassfish.gmbal",
+    "gmbal-api-only",
+    "4.1.2"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.glassfish.gmbal:gmbal-api-only:4.1.2"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "xprotect.jar!LIB-INF/management-api-3.3.0.jar",
+  "sha1": "0652b04018060287336c2a2808fd9e635a800ed9",
+  "gav_candidates": [
+   [
+    "org.glassfish.external",
+    "management-api",
+    "3.3.0"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.glassfish.external:management-api:3.3.0"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "xprotect.jar!LIB-INF/mimepull-1.11.0.jar",
+  "sha1": "42dd827cb8fcb27d47bef306ee7132e90a5ad44f",
+  "gav_candidates": [
+   [
+    "org.jvnet.mimepull",
+    "mimepull",
+    "1.11.0"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.jvnet.mimepull:mimepull:1.11.0"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "xprotect.jar!LIB-INF/woodstox-core-7.2.0.jar",
+  "sha1": "ec9c97f566f812e249a7aba6c76815369ac00864",
+  "gav_candidates": [
+   [
+    "com.fasterxml.woodstox",
+    "woodstox-core",
+    "7.2.0"
+   ],
+   [
+    "net.java.dev.msv",
+    "xsdlib",
+    "2022.7"
+   ],
+   [
+    "com.sun.xml.bind.jaxb",
+    "isorelax",
+    "20090621"
+   ]
+  ],
+  "result": "exact",
+  "match": "com.fasterxml.woodstox:woodstox-core:7.2.0"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "xprotect.jar!LIB-INF/stax2-api-4.3.0.jar",
+  "sha1": "59251773c44122e8d1366f68884e29dd784e141b",
+  "gav_candidates": [
+   [
+    "org.codehaus.woodstox",
+    "stax2-api",
+    "4.3.0"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.codehaus.woodstox:stax2-api:4.3.0"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "xprotect.jar!LIB-INF/pfl-tf-5.1.1.jar",
+  "sha1": "c2abf9f20794dbe859b89a8bb5bafed5ac5c0ccf",
+  "gav_candidates": [
+   [
+    "org.glassfish.pfl",
+    "pfl-tf",
+    "5.1.1"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.glassfish.pfl:pfl-tf:5.1.1"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "xprotect.jar!LIB-INF/pfl-dynamic-5.1.1.jar",
+  "sha1": "786a3aca7705af599677590c5e68c2e9e399169b",
+  "gav_candidates": [
+   [
+    "org.glassfish.pfl",
+    "pfl-dynamic",
+    "5.1.1"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.glassfish.pfl:pfl-dynamic:5.1.1"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "xprotect.jar!LIB-INF/pfl-basic-5.1.1.jar",
+  "sha1": "4e2cdceb03a4e7020c6bb7558f114ec8cdf15f78",
+  "gav_candidates": [
+   [
+    "org.glassfish.pfl",
+    "pfl-basic",
+    "5.1.1"
+   ]
+  ],
+  "result": "exact",
+  "match": "org.glassfish.pfl:pfl-basic:5.1.1"
+ },
+ {
+  "kind": "LIB-INF",
+  "name": "xprotect.jar!LIB-INF/commons-codec-1.18.0.jar",
+  "sha1": "ee45d1cf6ec2cc2b809ff04b4dc7aec858e0df8f",
+  "gav_candidates": [
+   [
+    "commons-codec",
+    "commons-codec",
+    "1.18.0"
+   ]
+  ],
+  "result": "exact",
+  "match": "commons-codec:commons-codec:1.18.0"
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/angus-activation-2.0.3.jar",
+  "sha1": "b3d86e09056178aea2b65c035b3fa563fe24589a",
+  "gav_candidates": [
+   [
+    "org.eclipse.angus",
+    "angus-activation",
+    "2.0.3"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.eclipse.angus:angus-activation:2.0.3",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 10,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/annotations-13.0.jar",
+  "sha1": "c5668563b563dbda309570ae59cab914fd2143a9",
+  "gav_candidates": [
+   [
+    "org.jetbrains",
+    "annotations",
+    "13.0"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.jetbrains:annotations:13.0",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 32,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/asm-9.10.1.jar",
+  "sha1": "360d8f9fc733d7003c152487e9b55bbe3a5ac32f",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/asm-commons-9.10.1.jar",
+  "sha1": "9ede26538ee8acb66daa6687cb548373bdfccf35",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/asm-tree-9.10.1.jar",
+  "sha1": "3380a0e926483b24eb26c9b103f61cf9905de055",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/bcfips/bc-bcfkswrapprov-1.0.0.jar",
+  "sha1": "105b3d91473f1a882d70020d5a85462d4fd6d507",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/bcfips/bc-fips-2.1.2.jar",
+  "sha1": "a7a8809caa1d6cbd142220d7376231c3850bd7ec",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/bcfips/bcpkix-fips-2.1.12.jar",
+  "sha1": "ba73035c3108c65f3f561b344f4a1c8bc1214f2b",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/bcfips/bctls-fips-2.1.24.jar",
+  "sha1": "aa4e3d10a5a0b8cc02ace1ee442c3c853a1d695a",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/bcfips/bcutil-fips-2.1.7.jar",
+  "sha1": "51a1c70b39499cbf4951b4a3be6270ba239f3536",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/bcstd/bcpkix-jdk18on-1.85.jar",
+  "sha1": "9b0d47e9aaaded918f919bf1d47f57bac8963685",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/bcstd/bcprov-jdk18on-1.85.2.jar",
+  "sha1": "993ca5d60997653b2959b47a57d783daf09c1e21",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/bcstd/bctls-jdk18on-1.85.jar",
+  "sha1": "672141926083ed3e9e98cff99f24e677759c149b",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/bcstd/bcutil-jdk18on-1.85.jar",
+  "sha1": "59159d3677ae413928903e0a34fc6d4786cb7193",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/byte-buddy-1.18.12.jar",
+  "sha1": "c50f8d8298f0d5bc0dd1737fa2db86669de6c60b",
+  "gav_candidates": [
+   [
+    "net.bytebuddy",
+    "byte-buddy",
+    "1.18.12"
+   ]
+  ],
+  "result": "differs",
+  "match": "net.bytebuddy:byte-buddy:1.18.12",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 3048,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/commons-codec-1.22.1.jar",
+  "sha1": "cc68fc2790188fab7302a9a10ec241b7de87b3b9",
+  "gav_candidates": [
+   [
+    "commons-codec",
+    "commons-codec",
+    "1.22.1"
+   ]
+  ],
+  "result": "differs",
+  "match": "commons-codec:commons-codec:1.22.1",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 278,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/commons-lang3-3.20.0.jar",
+  "sha1": "655819d59cea587520d101b0896f98da0490cf41",
+  "gav_candidates": [
+   [
+    "org.apache.commons",
+    "commons-lang3",
+    "3.20.0"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.apache.commons:commons-lang3:3.20.0",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 421,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/commons-logging-1.4.0.jar",
+  "sha1": "810e660f0f18faaeb66d5b19a8b43b55dd3065f8",
+  "gav_candidates": [
+   [
+    "commons-logging",
+    "commons-logging",
+    "1.4.0"
+   ]
+  ],
+  "result": "differs",
+  "match": "commons-logging:commons-logging:1.4.0",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 28,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/encoder-1.4.0.jar",
+  "sha1": "5abbbdb29d5655d611163054301ee8332c07c652",
+  "gav_candidates": [
+   [
+    "org.owasp.encoder",
+    "encoder",
+    "1.4.0"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.owasp.encoder:encoder:1.4.0",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 22,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/httpclient5-5.6.4.jar",
+  "sha1": "823f251245862a634bfb93593fe2afc0836fab6e",
+  "gav_candidates": [
+   [
+    "org.apache.httpcomponents.client5",
+    "httpclient5",
+    "5.6.4"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.apache.httpcomponents.client5:httpclient5:5.6.4",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 597,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/httpcore5-5.4.3.jar",
+  "sha1": "11c519f9c8ecc32366fe73bd0d0be825f4ed9aef",
+  "gav_candidates": [
+   [
+    "org.apache.httpcomponents.core5",
+    "httpcore5",
+    "5.4.3"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.apache.httpcomponents.core5:httpcore5:5.4.3",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 679,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/httpcore5-h2-5.4.3.jar",
+  "sha1": "79bbfa57e83f1885317ba5a4c30a3ac4fc40e235",
+  "gav_candidates": [
+   [
+    "org.apache.httpcomponents.core5",
+    "httpcore5-h2",
+    "5.4.3"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.apache.httpcomponents.core5:httpcore5-h2:5.4.3",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 160,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jakarta.activation-api-2.1.4.jar",
+  "sha1": "cf779897fa0d3a4a94fe0baa9a506b4f56d43e4b",
+  "gav_candidates": [
+   [
+    "jakarta.activation",
+    "jakarta.activation-api",
+    "2.1.4"
+   ]
+  ],
+  "result": "differs",
+  "match": "jakarta.activation:jakarta.activation-api:2.1.4",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 46,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jakarta.annotation-api-3.0.0.jar",
+  "sha1": "49b40fecdb7fea91a32bbabedb46e9524aff1e57",
+  "gav_candidates": [
+   [
+    "jakarta.annotation",
+    "jakarta.annotation-api",
+    "3.0.0"
+   ]
+  ],
+  "result": "differs",
+  "match": "jakarta.annotation:jakarta.annotation-api:3.0.0",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 19,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jakarta.el-api-6.0.1.jar",
+  "sha1": "42b5465c0a32fd24816b01e6d28159aac2a1202a",
+  "gav_candidates": [
+   [
+    "jakarta.el",
+    "jakarta.el-api",
+    "6.0.1"
+   ]
+  ],
+  "result": "differs",
+  "match": "jakarta.el:jakarta.el-api:6.0.1",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 59,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jakarta.enterprise.cdi-api-4.1.0.jar",
+  "sha1": "0b21acd7223577569d486aacd8615626ac754498",
+  "gav_candidates": [
+   [
+    "jakarta.enterprise",
+    "jakarta.enterprise.cdi-api",
+    "4.1.0"
+   ]
+  ],
+  "result": "differs",
+  "match": "jakarta.enterprise:jakarta.enterprise.cdi-api:4.1.0",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 201,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jakarta.enterprise.lang-model-4.1.0.jar",
+  "sha1": "cd00b68c0ec80bc3e3241f303a27cd1978fd192e",
+  "gav_candidates": [
+   [
+    "jakarta.enterprise",
+    "jakarta.enterprise.lang-model",
+    "4.1.0"
+   ]
+  ],
+  "result": "differs",
+  "match": "jakarta.enterprise:jakarta.enterprise.lang-model:4.1.0",
+  "content": "download-failed"
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jakarta.inject-api-2.0.1.jar",
+  "sha1": "bdfc281bbfccad7f7bd0d14943918b34a3ed97d5",
+  "gav_candidates": [
+   [
+    "jakarta.inject",
+    "jakarta.inject-api",
+    "2.0.1"
+   ]
+  ],
+  "result": "differs",
+  "match": "jakarta.inject:jakarta.inject-api:2.0.1",
+  "content": "download-failed"
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jakarta.interceptor-api-2.2.0.jar",
+  "sha1": "7d65f5328ad7997897c4d43c38beae37afbb066e",
+  "gav_candidates": [
+   [
+    "jakarta.interceptor",
+    "jakarta.interceptor-api",
+    "2.2.0"
+   ]
+  ],
+  "result": "differs",
+  "match": "jakarta.interceptor:jakarta.interceptor-api:2.2.0",
+  "content": "download-failed"
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jakarta.servlet-api-6.1.0.jar",
+  "sha1": "a5aaf3aff116f91cb6c938583b270d7f91e832e1",
+  "gav_candidates": [
+   [
+    "jakarta.servlet",
+    "jakarta.servlet-api",
+    "6.1.0"
+   ]
+  ],
+  "result": "differs",
+  "match": "jakarta.servlet:jakarta.servlet-api:6.1.0",
+  "content": "download-failed"
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jakarta.transaction-api-2.0.1.jar",
+  "sha1": "da577d2d9f433e68c37030270486397044178c22",
+  "gav_candidates": [
+   [
+    "jakarta.transaction",
+    "jakarta.transaction-api",
+    "2.0.1"
+   ]
+  ],
+  "result": "differs",
+  "match": "jakarta.transaction:jakarta.transaction-api:2.0.1",
+  "content": "download-failed"
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jakarta.xml.bind-api-4.0.5.jar",
+  "sha1": "ea84f11d0d2c05e6e415dfa69a370bf9f576c7d7",
+  "gav_candidates": [
+   [
+    "jakarta.xml.bind",
+    "jakarta.xml.bind-api",
+    "4.0.5"
+   ]
+  ],
+  "result": "differs",
+  "match": "jakarta.xml.bind:jakarta.xml.bind-api:4.0.5",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 121,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jetty-alpn-client-12.1.13.jar",
+  "sha1": "1d0a4d1d52944ad32fc83863f61e3e402379c413",
+  "gav_candidates": [
+   [
+    "org.eclipse.jetty",
+    "jetty-alpn-client",
+    "12.1.13"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.eclipse.jetty:jetty-alpn-client:12.1.13",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 3,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jetty-annotations-12.1.13.jar",
+  "sha1": "a8418710b2c82f4b9c637d0a098f5354dce12188",
+  "gav_candidates": [
+   [
+    "org.eclipse.jetty",
+    "jetty-annotations",
+    "12.1.13"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.eclipse.jetty:jetty-annotations:12.1.13",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 11,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jetty-client-12.1.13.jar",
+  "sha1": "e0d95aaa2530d3132aeab739c8759e4150168514",
+  "gav_candidates": [
+   [
+    "org.eclipse.jetty",
+    "jetty-client",
+    "12.1.13"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.eclipse.jetty:jetty-client:12.1.13",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 208,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jetty-compression-common-12.1.13.jar",
+  "sha1": "b50e8ab1f6aab951af3b389fa606e6fe19660efd",
+  "gav_candidates": [
+   [
+    "org.eclipse.jetty.compression",
+    "jetty-compression-common",
+    "12.1.13"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.eclipse.jetty.compression:jetty-compression-common:12.1.13",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 9,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jetty-compression-gzip-12.1.13.jar",
+  "sha1": "b874a2684515698af26f37d4f2b5cf5b3c601b24",
+  "gav_candidates": [
+   [
+    "org.eclipse.jetty.compression",
+    "jetty-compression-gzip",
+    "12.1.13"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.eclipse.jetty.compression:jetty-compression-gzip:12.1.13",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 10,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jetty-compression-server-12.1.13.jar",
+  "sha1": "c93996714e31533dd183b516d14612dd908f0c22",
+  "gav_candidates": [
+   [
+    "org.eclipse.jetty.compression",
+    "jetty-compression-server",
+    "12.1.13"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.eclipse.jetty.compression:jetty-compression-server:12.1.13",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 11,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jetty-deploy-12.1.13.jar",
+  "sha1": "1d0a56a504a20486c23764ee1f18a091668985fb",
+  "gav_candidates": [
+   [
+    "org.eclipse.jetty",
+    "jetty-deploy",
+    "12.1.13"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.eclipse.jetty:jetty-deploy:12.1.13",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 17,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jetty-ee-webapp-12.1.13.jar",
+  "sha1": "90289dfe38ea1c65783164b15268d7459ef94698",
+  "gav_candidates": [
+   [
+    "org.eclipse.jetty.ee",
+    "jetty-ee-webapp",
+    "12.1.13"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.eclipse.jetty.ee:jetty-ee-webapp:12.1.13",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 5,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jetty-ee11-annotations-12.1.13.jar",
+  "sha1": "b06697e2bdaad58824ea2c8511d1918c6ffe1490",
+  "gav_candidates": [
+   [
+    "org.eclipse.jetty.ee11",
+    "jetty-ee11-annotations",
+    "12.1.13"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.eclipse.jetty.ee11:jetty-ee11-annotations:12.1.13",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 30,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jetty-ee11-plus-12.1.13.jar",
+  "sha1": "46565749c5624cb1eda1a4c16eae4bffe1565d62",
+  "gav_candidates": [
+   [
+    "org.eclipse.jetty.ee11",
+    "jetty-ee11-plus",
+    "12.1.13"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.eclipse.jetty.ee11:jetty-ee11-plus:12.1.13",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 8,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jetty-ee11-servlet-12.1.13.jar",
+  "sha1": "15f731c98328053d96bdc1a90de76f9320f0979a",
+  "gav_candidates": [
+   [
+    "org.eclipse.jetty.ee11",
+    "jetty-ee11-servlet",
+    "12.1.13"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.eclipse.jetty.ee11:jetty-ee11-servlet:12.1.13",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 194,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jetty-ee11-servlets-12.1.13.jar",
+  "sha1": "173c35bd7893979294896716ff5b5162e2505c76",
+  "gav_candidates": [
+   [
+    "org.eclipse.jetty.ee11",
+    "jetty-ee11-servlets",
+    "12.1.13"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.eclipse.jetty.ee11:jetty-ee11-servlets:12.1.13",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 22,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jetty-ee11-webapp-12.1.13.jar",
+  "sha1": "ce8460bc4a883b80a8597a64732a9ac34d80129c",
+  "gav_candidates": [
+   [
+    "org.eclipse.jetty.ee11",
+    "jetty-ee11-webapp",
+    "12.1.13"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.eclipse.jetty.ee11:jetty-ee11-webapp:12.1.13",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 42,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jetty-ee11-websocket-jetty-server-12.1.13.jar",
+  "sha1": "226bf8a84255b88003660f9b27149830057a1812",
+  "gav_candidates": [
+   [
+    "org.eclipse.jetty.ee11.websocket",
+    "jetty-ee11-websocket-jetty-server",
+    "12.1.13"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.eclipse.jetty.ee11.websocket:jetty-ee11-websocket-jetty-server:12.1.13",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 16,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jetty-ee11-websocket-servlet-12.1.13.jar",
+  "sha1": "eafe1c4675b15626a237b594ce359d5fbe75978f",
+  "gav_candidates": [
+   [
+    "org.eclipse.jetty.ee11.websocket",
+    "jetty-ee11-websocket-servlet",
+    "12.1.13"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.eclipse.jetty.ee11.websocket:jetty-ee11-websocket-servlet:12.1.13",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 3,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jetty-http-12.1.13.jar",
+  "sha1": "807741826bf26184157412c5169de8007143645e",
+  "gav_candidates": [
+   [
+    "org.eclipse.jetty",
+    "jetty-http",
+    "12.1.13"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.eclipse.jetty:jetty-http:12.1.13",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 243,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jetty-io-12.1.13.jar",
+  "sha1": "3dc87c94e268598b2ae765c52e28e54e3d518ee1",
+  "gav_candidates": [
+   [
+    "org.eclipse.jetty",
+    "jetty-io",
+    "12.1.13"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.eclipse.jetty:jetty-io:12.1.13",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 236,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jetty-jmx-12.1.13.jar",
+  "sha1": "66302e8faff367e5cec3f55366c38678224a3b94",
+  "gav_candidates": [
+   [
+    "org.eclipse.jetty",
+    "jetty-jmx",
+    "12.1.13"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.eclipse.jetty:jetty-jmx:12.1.13",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 8,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jetty-jndi-12.1.13.jar",
+  "sha1": "3a97d7d1ba9b6ea178e614c7319e3db83b40f5a6",
+  "gav_candidates": [
+   [
+    "org.eclipse.jetty",
+    "jetty-jndi",
+    "12.1.13"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.eclipse.jetty:jetty-jndi:12.1.13",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 16,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jetty-plus-12.1.13.jar",
+  "sha1": "770dce4bb472cadf29018924462a57d287d7f28b",
+  "gav_candidates": [
+   [
+    "org.eclipse.jetty",
+    "jetty-plus",
+    "12.1.13"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.eclipse.jetty:jetty-plus:12.1.13",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 16,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jetty-security-12.1.13.jar",
+  "sha1": "04176d7d3040f34bf30766679b42b1407bae21bf",
+  "gav_candidates": [
+   [
+    "org.eclipse.jetty",
+    "jetty-security",
+    "12.1.13"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.eclipse.jetty:jetty-security:12.1.13",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 99,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jetty-server-12.1.13.jar",
+  "sha1": "47d8a953eb93f9a4c832e670f31a627e8aa297b4",
+  "gav_candidates": [
+   [
+    "org.eclipse.jetty",
+    "jetty-server",
+    "12.1.13"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.eclipse.jetty:jetty-server:12.1.13",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 343,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jetty-session-12.1.13.jar",
+  "sha1": "35692a8e9e0ca589c9fb84191d1fa03a3eddbdfc",
+  "gav_candidates": [
+   [
+    "org.eclipse.jetty",
+    "jetty-session",
+    "12.1.13"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.eclipse.jetty:jetty-session:12.1.13",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 47,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jetty-util-12.1.13.jar",
+  "sha1": "b70893f9ca4d0eca4fffa6969c70988c01a7b863",
+  "gav_candidates": [
+   [
+    "org.eclipse.jetty",
+    "jetty-util",
+    "12.1.13"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.eclipse.jetty:jetty-util:12.1.13",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 407,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jetty-websocket-core-client-12.1.13.jar",
+  "sha1": "ecc1026c6849552cfa6b31adb9bdc190777467ad",
+  "gav_candidates": [
+   [
+    "org.eclipse.jetty.websocket",
+    "jetty-websocket-core-client",
+    "12.1.13"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.eclipse.jetty.websocket:jetty-websocket-core-client:12.1.13",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 9,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jetty-websocket-core-common-12.1.13.jar",
+  "sha1": "d1fd21ada587f3484d013d690c922723e99fdd5e",
+  "gav_candidates": [
+   [
+    "org.eclipse.jetty.websocket",
+    "jetty-websocket-core-common",
+    "12.1.13"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.eclipse.jetty.websocket:jetty-websocket-core-common:12.1.13",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 110,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jetty-websocket-core-server-12.1.13.jar",
+  "sha1": "e2a125432b6e8a3335dbd99ddf5727679e88642b",
+  "gav_candidates": [
+   [
+    "org.eclipse.jetty.websocket",
+    "jetty-websocket-core-server",
+    "12.1.13"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.eclipse.jetty.websocket:jetty-websocket-core-server:12.1.13",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 29,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jetty-websocket-jetty-api-12.1.13.jar",
+  "sha1": "21b214abd5288ba0f37c663430579887cda0798c",
+  "gav_candidates": [
+   [
+    "org.eclipse.jetty.websocket",
+    "jetty-websocket-jetty-api",
+    "12.1.13"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.eclipse.jetty.websocket:jetty-websocket-jetty-api:12.1.13",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 41,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jetty-websocket-jetty-client-12.1.13.jar",
+  "sha1": "ec3a72fdbd32f934cd5ac1e85eb09bc18bdf986b",
+  "gav_candidates": [
+   [
+    "org.eclipse.jetty.websocket",
+    "jetty-websocket-jetty-client",
+    "12.1.13"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.eclipse.jetty.websocket:jetty-websocket-jetty-client:12.1.13",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 8,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jetty-websocket-jetty-common-12.1.13.jar",
+  "sha1": "0982aa993f56321c820de4194cc4155f0f568bb8",
+  "gav_candidates": [
+   [
+    "org.eclipse.jetty.websocket",
+    "jetty-websocket-jetty-common",
+    "12.1.13"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.eclipse.jetty.websocket:jetty-websocket-jetty-common:12.1.13",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 13,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jetty-websocket-jetty-server-12.1.13.jar",
+  "sha1": "eba5fbad6709ae5ab3ea0fb4131947c572333824",
+  "gav_candidates": [
+   [
+    "org.eclipse.jetty.websocket",
+    "jetty-websocket-jetty-server",
+    "12.1.13"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.eclipse.jetty.websocket:jetty-websocket-jetty-server:12.1.13",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 12,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jetty-xml-12.1.13.jar",
+  "sha1": "492f99a4919778a24c811f340e577ca0e701a042",
+  "gav_candidates": [
+   [
+    "org.eclipse.jetty",
+    "jetty-xml",
+    "12.1.13"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.eclipse.jetty:jetty-xml:12.1.13",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 30,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jose4j-0.9.6.jar",
+  "sha1": "da6a1f076bb28b1e5b24c02d60171fe98eda2225",
+  "gav_candidates": [
+   [
+    "org.bitbucket.b_c",
+    "jose4j",
+    "0.9.6"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.bitbucket.b_c:jose4j:0.9.6",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 210,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/json-20260814.jar",
+  "sha1": "356cb8440f0b433a9289c5de8aa611ea6dafed0e",
+  "gav_candidates": [
+   [
+    "org.json",
+    "json",
+    "20260814"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.json:json:20260814",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 31,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jxbrowser/jxbrowser-9.5.0.jar",
+  "sha1": "900dd4de13cbd85841b55c6f3272547258765b51",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jxbrowser/jxbrowser-javafx-9.5.0.jar",
+  "sha1": "8fead12f81d6add0cafb03dcd775d25186dad29b",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jxbrowser/jxbrowser-swing-9.5.0.jar",
+  "sha1": "11e1ebd4c38f4caec6543e8d3cab936027ad85ac",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jxbrowser/jxbrowser-swt-9.5.0.jar",
+  "sha1": "408b94556bfde9dbfa5dde536af35738770884cb",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/jxbrowser/jxbrowser-win64-9.5.0.jar",
+  "sha1": "ce9567634505720b47683f5679e94e2f171eb316",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/kotlin-stdlib-2.4.10.jar",
+  "sha1": "e2dc611c57737994c1aeb11d8c3103072096b69c",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/kotlin-stdlib-jdk7-2.4.10.jar",
+  "sha1": "3d4eb23a79f57a389bbc62d2bb9c0f97b71aa879",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/kotlin-stdlib-jdk8-2.4.10.jar",
+  "sha1": "7b6198198531361812c836c3f954e3bdeb9c7591",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/libthrift-0.24.0.jar",
+  "sha1": "d96a013d425cc45db95072fdf409cc3ee42663e6",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/okhttp-5.5.0.jar",
+  "sha1": "6392147b3cf7d7e1778bdb9b64b547ca474c83c9",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/okhttp-jvm-5.5.0.jar",
+  "sha1": "b5d5e1a1ceec6b9e2cc1d9873d69fd74aa9ad342",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/okio-jvm-3.18.1.jar",
+  "sha1": "c1cbd747acb1a6a6afe98c3a8d69f417975f7203",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/resilience4j-core-2.4.0.jar",
+  "sha1": "95c0dba5f15ce7990c47c2d45df8698f630935e3",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/resilience4j-retry-2.4.0.jar",
+  "sha1": "e56d7de3ba710ecec5d7cf7db6b7f40e04fbb645",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/slf4j-api-2.0.18.jar",
+  "sha1": "d6680642063ca247265133650f5a6162a0f6e87c",
+  "gav_candidates": [
+   [
+    "org.slf4j",
+    "slf4j-api",
+    "2.0.18"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.slf4j:slf4j-api:2.0.18",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 55,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/slf4j-jdk14-2.0.18.jar",
+  "sha1": "889c0262a14834d16caf9d161e0e938c6662bd80",
+  "gav_candidates": [
+   [
+    "org.slf4j",
+    "slf4j-jdk14",
+    "2.0.18"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.slf4j:slf4j-jdk14:2.0.18",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 4,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/system/asm-analysis-9.10.1.jar",
+  "sha1": "f1d33ba6147ac7fa72c11288546423a26f301654",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/system/asm-util-9.10.1.jar",
+  "sha1": "1da8b65e70ce5a1d44db6d01bfa330686e392806",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/system/concurrentlinkedhashmap-lru-1.4.2.jar",
+  "sha1": "d276a4317da4400e5166ee8d725f8128da2fc2a5",
+  "gav_candidates": [
+   [
+    "com.googlecode.concurrentlinkedhashmap",
+    "concurrentlinkedhashmap-lru",
+    "1.4.2"
+   ]
+  ],
+  "result": "differs",
+  "match": "com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru:1.4.2",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 78,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/system/istack-commons-runtime-4.2.0.jar",
+  "sha1": "219446271d4d29667a4e598e5f1f1009ab0a22c1",
+  "gav_candidates": [
+   [
+    "com.sun.istack",
+    "istack-commons-runtime",
+    "4.2.0"
+   ]
+  ],
+  "result": "differs",
+  "match": "com.sun.istack:istack-commons-runtime:4.2.0",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 23,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/system/jaxb-core-4.0.9.jar",
+  "sha1": "ef79807e3c4df486768fb41c884f42b228b2e6cb",
+  "gav_candidates": [
+   [
+    "org.glassfish.jaxb",
+    "jaxb-core",
+    "4.0.9"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.glassfish.jaxb:jaxb-core:4.0.9",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 126,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/system/jaxb-runtime-4.0.9.jar",
+  "sha1": "e11e3063b25d547d529adc450f485a2a0e3bcbcb",
+  "gav_candidates": [
+   [
+    "org.glassfish.jaxb",
+    "jaxb-runtime",
+    "4.0.9"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.glassfish.jaxb:jaxb-runtime:4.0.9",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 661,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/system/jffi-1.4.0-native.jar",
+  "sha1": "f5c22a3b6b67930d151524f08ee3dbd990b1f67f",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/system/jffi-1.4.0.jar",
+  "sha1": "a11d8dc3be83a16506b250f468019768447af807",
+  "gav_candidates": [
+   [
+    "com.github.jnr",
+    "jffi",
+    "1.4.0"
+   ]
+  ],
+  "result": "differs",
+  "match": "com.github.jnr:jffi:1.4.0",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 134,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/system/jna-5.19.1.jar",
+  "sha1": "44b9f6b6bd8a935bdc09dca094bba4d26afd5ec4",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/system/jna-platform-5.19.1.jar",
+  "sha1": "39effdb4dec249ade65a223302f3b63527fb994a",
+  "gav_candidates": [],
+  "result": "no-pom-properties",
+  "match": null
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/system/jnr-a64asm-1.0.0.jar",
+  "sha1": "f46b6d337cc5164808252168a9bf37a9c5325be5",
+  "gav_candidates": [
+   [
+    "com.github.jnr",
+    "jnr-a64asm",
+    "1.0.0"
+   ]
+  ],
+  "result": "differs",
+  "match": "com.github.jnr:jnr-a64asm:1.0.0",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 48,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/system/jnr-constants-0.11.0.jar",
+  "sha1": "b056ecc468dd9f9b601835c197deb6bc613bdf9d",
+  "gav_candidates": [
+   [
+    "com.github.jnr",
+    "jnr-constants",
+    "0.11.0"
+   ]
+  ],
+  "result": "differs",
+  "match": "com.github.jnr:jnr-constants:0.11.0",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 1038,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/system/jnr-ffi-2.3.1.jar",
+  "sha1": "4de0a34dc0d4f914fe7a9327c70bfa8e20f567cf",
+  "gav_candidates": [
+   [
+    "com.github.jnr",
+    "jnr-ffi",
+    "2.3.1"
+   ]
+  ],
+  "result": "differs",
+  "match": "com.github.jnr:jnr-ffi:2.3.1",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 671,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/system/jnr-posix-3.2.2.jar",
+  "sha1": "2df14286483b5f8be103d399074ea97f6ef5e6d0",
+  "gav_candidates": [
+   [
+    "com.github.jnr",
+    "jnr-posix",
+    "3.2.2"
+   ]
+  ],
+  "result": "differs",
+  "match": "com.github.jnr:jnr-posix:3.2.2",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 245,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/system/jnr-x86asm-1.0.2.jar",
+  "sha1": "09093f141b055683cc3fe6cca49940b63a036399",
+  "gav_candidates": [
+   [
+    "com.github.jnr",
+    "jnr-x86asm",
+    "1.0.2"
+   ]
+  ],
+  "result": "differs",
+  "match": "com.github.jnr:jnr-x86asm:1.0.2",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 84,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/system/lz4-java-1.11.2.jar",
+  "sha1": "b763219b37b48fab8a98ea5c6e501390d35c5785",
+  "gav_candidates": [
+   [
+    "at.yawk.lz4",
+    "lz4-java",
+    "1.11.2"
+   ]
+  ],
+  "result": "differs",
+  "match": "at.yawk.lz4:lz4-java:1.11.2",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 94,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/system/orientdb-client-3.2.55.jar",
+  "sha1": "dbaee09124b36b2ceb69a2be0e3f423ba9ca535f",
+  "gav_candidates": [
+   [
+    "com.orientechnologies",
+    "orientdb-client",
+    "3.2.55"
+   ]
+  ],
+  "result": "differs",
+  "match": "com.orientechnologies:orientdb-client:3.2.55",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 222,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/system/orientdb-core-3.2.55.jar",
+  "sha1": "bde2325cd30f6238b814c0efa250d3d9b0d84a54",
+  "gav_candidates": [
+   [
+    "com.orientechnologies",
+    "orientdb-core",
+    "3.2.55"
+   ]
+  ],
+  "result": "differs",
+  "match": "com.orientechnologies:orientdb-core:3.2.55",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 2343,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/system/orientdb-server-3.2.55.jar",
+  "sha1": "6fec08303c4a058b4d02734effe75a95b66547a1",
+  "gav_candidates": [
+   [
+    "com.orientechnologies",
+    "orientdb-server",
+    "3.2.55"
+   ]
+  ],
+  "result": "differs",
+  "match": "com.orientechnologies:orientdb-server:3.2.55",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 239,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/system/orientdb-tools-3.2.55.jar",
+  "sha1": "60d4aa6f58daa604db683b77dcbb90bc48639128",
+  "gav_candidates": [
+   [
+    "com.orientechnologies",
+    "orientdb-tools",
+    "3.2.55"
+   ]
+  ],
+  "result": "differs",
+  "match": "com.orientechnologies:orientdb-tools:3.2.55",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 57,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "bin/ext",
+  "name": "bin/ext/system/txw2-4.0.9.jar",
+  "sha1": "156f063d245c32204e1e58b527d58c3ec4e5ce53",
+  "gav_candidates": [
+   [
+    "org.glassfish.jaxb",
+    "txw2",
+    "4.0.9"
+   ]
+  ],
+  "result": "differs",
+  "match": "org.glassfish.jaxb:txw2:4.0.9",
+  "content": "identical-non-META-INF",
+  "content_diff_sample": [],
+  "entries": 57,
+  "meta_inf_local": [
+   "META-INF/NIAGARA4.RSA",
+   "META-INF/NIAGARA4.SF"
+  ]
+ },
+ {
+  "kind": "etc/m2",
+  "name": "etc/m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.22/jackson-annotations-2.22.jar",
+  "sha1": "15c67f9498d6934cff9510fc70c5a12e52290457",
+  "gav_candidates": [
+   [
+    "com.fasterxml.jackson.core",
+    "jackson-annotations",
+    "2.22"
+   ]
+  ],
+  "result": "exact",
+  "match": "com.fasterxml.jackson.core:jackson-annotations:2.22"
+ },
+ {
+  "kind": "etc/m2",
+  "name": "etc/m2/repository/com/fasterxml/jackson/core/jackson-core/2.22.0/jackson-core-2.22.0.jar",
+  "sha1": "f25b20bdff54546bcaf9d1ac4701447f2d3968f7",
+  "gav_candidates": [
+   [
+    "com.fasterxml.jackson.core",
+    "jackson-core",
+    "2.22.0"
+   ]
+  ],
+  "result": "exact",
+  "match": "com.fasterxml.jackson.core:jackson-core:2.22.0"
+ },
+ {
+  "kind": "etc/m2",
+  "name": "etc/m2/repository/com/fasterxml/jackson/core/jackson-databind/2.22.0/jackson-databind-2.22.0.jar",
+  "sha1": "7aa54fc3755a9285eec2e73053bde1b9b845a9b2",
+  "gav_candidates": [
+   [
+    "com.fasterxml.jackson.core",
+    "jackson-databind",
+    "2.22.0"
+   ]
+  ],
+  "result": "exact",
+  "match": "com.fasterxml.jackson.core:jackson-databind:2.22.0"
+ },
+ {
+  "kind": "etc/m2",
+  "name": "etc/m2/repository/com/fasterxml/jackson/module/jackson-module-kotlin/2.22.0/jackson-module-kotlin-2.22.0.jar",
+  "sha1": "6611d4fa8346dbdc18ef851f8849fdbea3e73fa1",
+  "gav_candidates": [
+   [
+    "com.fasterxml.jackson.module",
+    "jackson-module-kotlin",
+    "2.22.0"
+   ]
+  ],
+  "result": "exact",
+  "match": "com.fasterxml.jackson.module:jackson-module-kotlin:2.22.0"
+ },
+ {
+  "kind": "etc/m2",
+  "name": "etc/m2/repository/commons-codec/commons-codec/1.18.0/commons-codec-1.18.0.jar",
+  "sha1": "ee45d1cf6ec2cc2b809ff04b4dc7aec858e0df8f",
+  "gav_candidates": [
+   [
+    "commons-codec",
+    "commons-codec",
+    "1.18.0"
+   ]
+  ],
+  "result": "exact",
+  "match": "commons-codec:commons-codec:1.18.0"
+ },
+ {
+  "kind": "etc/m2",
+  "name": "etc/m2/repository/org/jetbrains/kotlin/kotlin-reflect/2.1.21/kotlin-reflect-2.1.21.jar",
+  "sha1": "4929da533b3f04a101e4bb9ae0ee51a1d8107614",
+  "gav_candidates": [
+   [
+    "repository.org.jetbrains.kotlin",
+    "kotlin-reflect",
+    "2.1.21"
+   ]
+  ],
+  "result": "not-on-central:HTTPError",
+  "match": "repository.org.jetbrains.kotlin:kotlin-reflect:2.1.21"
+ }
+]

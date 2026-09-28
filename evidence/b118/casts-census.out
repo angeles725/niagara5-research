@@ -1,0 +1,6 @@
+classes 21504 parse_errors 0 majors {69: 21504}
+('docSource-covered', 'classic-separate-line') 354
+('docSource-covered', 'pattern-or-same-line') 100
+('no-docSource', 'classic-separate-line') 1564
+('no-docSource', 'pattern-or-same-line') 314
+top modules by pattern-or-same-line: [('bajaui', {'pattern-or-same-line': 133, 'classic-separate-line': 45}), ('workbench', {'classic-separate-line': 94, 'pattern-or-same-line': 46}), ('baja', {'classic-separate-line': 120, 'pattern-or-same-line': 45}), ('platform', {'pattern-or-same-line': 26, 'classic-separate-line': 42}), ('platDaemon', {'pattern-or-same-line': 24, 'classic-separate-line': 8}), ('platCrypto', {'pattern-or-same-line': 16, 'classic-separate-line': 5}), ('gx', {'classic-separate-line': 32, 'pattern-or-same-line': 15}), ('_bin-ext/nre', {'classic-separate-line': 36, 'pattern-or-same-line': 13}), ('template', {'classic-separate-line': 56, 'pattern-or-same-line': 11}), ('opcUaClient', {'classic-separate-line': 14, 'pattern-or-same-line': 7})]

@@ -1,0 +1,10 @@
+static-edges.txt CHA static edges 309 | dynamic 146 covered 144 missing 2
+   MISS niagara.xml.XWriter.safe(Ljava/io/Writer;IZ)V -> niagara.xml.XWriter.write(I)V
+   MISS niagara.xml.XWriter.safe(Ljava/io/Writer;IZ)V -> niagara.xml.XWriter.write(Ljava/lang/String;)V
+static-edges.txt RTA static edges 308 | dynamic 146 covered 143 missing 3
+   MISS niagara.xml.XParser.parseCurrent(Z)Lniagara/xml/XElem; -> niagara.xml.XContent.parent()Lniagara/xml/XElem;
+   MISS niagara.xml.XWriter.safe(Ljava/io/Writer;IZ)V -> niagara.xml.XWriter.write(I)V
+   MISS niagara.xml.XWriter.safe(Ljava/io/Writer;IZ)V -> niagara.xml.XWriter.write(Ljava/lang/String;)V
+static-edges-jrt.txt CHA static edges 2479 | dynamic 146 covered 146 missing 0
+static-edges-jrt.txt RTA static edges 379 | dynamic 146 covered 145 missing 1
+   MISS niagara.xml.XParser.parseCurrent(Z)Lniagara/xml/XElem; -> niagara.xml.XContent.parent()Lniagara/xml/XElem;

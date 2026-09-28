@@ -1,0 +1,3 @@
+classes shipped=39 upstream=39 common=39 identical=39 only-shipped=0 only-upstream=0
+non-class entries only in shipped: ['META-INF/NIAGARA4.RSA', 'META-INF/NIAGARA4.SF']
+non-class entries differing: ['META-INF/MANIFEST.MF']

@@ -1,0 +1,20 @@
+alarmDialog.dll	sha256=90b095755f6c5a10	digest_match=yes	sig_ok_lines=2			Subject: CN=Tridium\, Inc.,O=Tridium\, Inc.,L=Richmond,ST=Virginia,C=US
+common.dll	sha256=799c6c8dedfc69aa	digest_match=yes	sig_ok_lines=2			Subject: CN=Tridium\, Inc.,O=Tridium\, Inc.,L=Richmond,ST=Virginia,C=US
+cppunit.dll	sha256=3386491a276acdcb	digest_match=yes	sig_ok_lines=2			Subject: CN=Tridium\, Inc.,O=Tridium\, Inc.,L=Richmond,ST=Virginia,C=US
+lon.dll	sha256=a0f0dadc86a96d64	digest_match=yes	sig_ok_lines=2			Subject: CN=Tridium\, Inc.,O=Tridium\, Inc.,L=Richmond,ST=Virginia,C=US
+msvcp140.dll	sha256=03e31b7be4a05831	digest_match=yes	sig_ok_lines=2			Subject: CN=Microsoft Windows Software Compatibility Publisher,O=Microsoft Corporation,L
+njre.dll	sha256=1b8b0074c79dc148	digest_match=yes	sig_ok_lines=2			Subject: CN=Tridium\, Inc.,O=Tridium\, Inc.,L=Richmond,ST=Virginia,C=US
+nre.dll	sha256=a6317e8b024ed823	digest_match=yes	sig_ok_lines=2			Subject: CN=Tridium\, Inc.,O=Tridium\, Inc.,L=Richmond,ST=Virginia,C=US
+pcapBacEther.dll	sha256=d5d4e7eeddf5f925	digest_match=yes	sig_ok_lines=2			Subject: CN=Tridium\, Inc.,O=Tridium\, Inc.,L=Richmond,ST=Virginia,C=US
+trayIcon.dll	sha256=3cff7cc74febc051	digest_match=yes	sig_ok_lines=2			Subject: CN=Tridium\, Inc.,O=Tridium\, Inc.,L=Richmond,ST=Virginia,C=US
+vcruntime140.dll	sha256=e629362935662499	digest_match=yes	sig_ok_lines=2			Subject: CN=Microsoft Windows Software Compatibility Publisher,O=Microsoft Corporation,L
+vcruntime140_1.dll	sha256=ace3a3f7e4e0b282	digest_match=yes	sig_ok_lines=2			Subject: CN=Microsoft Windows Software Compatibility Publisher,O=Microsoft Corporation,L
+console.exe	sha256=d8601f84875d1808	digest_match=yes	sig_ok_lines=2			Subject: CN=Tridium\, Inc.,O=Tridium\, Inc.,L=Richmond,ST=Virginia,C=US
+n5mig.exe	sha256=95b5deae0afc4a0b	digest_match=yes	sig_ok_lines=2			Subject: CN=Tridium\, Inc.,O=Tridium\, Inc.,L=Richmond,ST=Virginia,C=US
+niagarad.exe	sha256=64fd6403fe00bc1b	digest_match=yes	sig_ok_lines=2			Subject: CN=Tridium\, Inc.,O=Tridium\, Inc.,L=Richmond,ST=Virginia,C=US
+nre.exe	sha256=098b52fb992bd089	digest_match=yes	sig_ok_lines=2			Subject: CN=Tridium\, Inc.,O=Tridium\, Inc.,L=Richmond,ST=Virginia,C=US
+plat.exe	sha256=86e6878ea2b39963	digest_match=yes	sig_ok_lines=2			Subject: CN=Tridium\, Inc.,O=Tridium\, Inc.,L=Richmond,ST=Virginia,C=US
+station.exe	sha256=b166aba5aa4beaba	digest_match=yes	sig_ok_lines=2			Subject: CN=Tridium\, Inc.,O=Tridium\, Inc.,L=Richmond,ST=Virginia,C=US
+test.exe	sha256=21c6020ca17b4dfb	digest_match=yes	sig_ok_lines=2			Subject: CN=Tridium\, Inc.,O=Tridium\, Inc.,L=Richmond,ST=Virginia,C=US
+wb.exe	sha256=026622cd7ef88426	digest_match=yes	sig_ok_lines=2			Subject: CN=Tridium\, Inc.,O=Tridium\, Inc.,L=Richmond,ST=Virginia,C=US
+wb_w.exe	sha256=7a99fdc0afbb596e	digest_match=yes	sig_ok_lines=2			Subject: CN=Tridium\, Inc.,O=Tridium\, Inc.,L=Richmond,ST=Virginia,C=US

@@ -1,0 +1,212 @@
+        ┌─> 0x1403373a0      4c8d6424a8     lea r12, [rsp - 0x58]
+        ╎   0x1403373a5      4d3b6610       cmp r12, qword [r14 + 0x10]
+       ┌──< 0x1403373a9      0f86ab030000   jbe 0x14033775a
+       │╎   0x1403373af      55             push rbp
+       │╎   0x1403373b0      4889e5         mov rbp, rsp
+       │╎   0x1403373b3      4881ecd000..   sub rsp, 0xd0
+       │╎   0x1403373ba      4883781005     cmp qword [rax + 0x10], 5
+       │╎   0x1403373bf      90             nop
+      ┌───< 0x1403373c0      0f8557030000   jne 0x14033771d
+      ││╎   0x1403373c6      488b0db37e..   mov rcx, qword [0x1407ff280] ; [0x1407ff280:8]=0
+      ││╎   0x1403373cd      4885c9         test rcx, rcx
+     ┌────< 0x1403373d0      0f84b4020000   je 0x14033768a
+     │││╎   0x1403373d6      660f1f8400..   nop word [rax + rax]
+     │││╎   0x1403373df      90             nop
+     │││╎   0x1403373e0      4883f901       cmp rcx, 1                 ; 1
+    ┌─────< 0x1403373e4      0f8495010000   je 0x14033757f
+    ││││╎   0x1403373ea      4883f903       cmp rcx, 3                 ; 3
+   ┌──────< 0x1403373ee      0f8501010000   jne 0x1403374f5
+   │││││╎   0x1403373f4      488b08         mov rcx, qword [rax]
+   │││││╎   0x1403373f7      4883f901       cmp rcx, 1                 ; 1
+  ┌───────< 0x1403373fb      7f2a           jg 0x140337427
+  ││││││╎   0x1403373fd      0f1f00         nop dword [rax]
+  ││││││╎   0x140337400      4885c9         test rcx, rcx
+  ────────< 0x140337403      750e           jne 0x140337413
+  ││││││╎   0x140337405      b80d000000     mov eax, 0xd               ; 13
+  ││││││╎   0x14033740a      488d0dd448..   lea rcx, [0x14045bce5]     ; "stateValidatestateTransmitDebug settinghttp_responsecookieInstallcloud-versionpendingActionERROR: req - write to fileDevice OSI"
+  ────────< 0x140337411      eb4d           jmp 0x140337460
+  ────────> 0x140337413      4883f901       cmp rcx, 1                 ; 1
+  ────────< 0x140337417      753b           jne 0x140337454
+  ││││││╎   0x140337419      b809000000     mov eax, 9
+  ││││││╎   0x14033741e      488d0dfa2a..   lea rcx, [0x140459f1f]     ; "stateIdlesnapParts of type omitemptyLogValuer!ERROR:%vimage/bmpimage/gifimage/pngvideo/avifont/woffHTTP/1.1 ParseUint[%v = %d]:"
+  ────────< 0x140337425      eb39           jmp 0x140337460
+  └───────> 0x140337427      4883f902       cmp rcx, 2                 ; 2
+  ┌───────< 0x14033742b      7513           jne 0x140337440
+  ││││││╎   0x14033742d      b80d000000     mov eax, 0xd               ; 13
+  ││││││╎   0x140337432      488d0db948..   lea rcx, [0x14045bcf2]     ; "stateTransmitDebug settinghttp_responsecookieInstallcloud-versionpendingActionERROR: req - write to fileDevice OSInfoWINDOW_UPD"
+  ────────< 0x140337439      eb25           jmp 0x140337460
+  ││││││╎   0x14033743b      0f1f440000     nop dword [rax + rax]
+  └───────> 0x140337440      4883f903       cmp rcx, 3                 ; 3
+  ┌───────< 0x140337444      750e           jne 0x140337454
+  ││││││╎   0x140337446      b814000000     mov eax, 0x14              ; 20
+  ││││││╎   0x14033744b      488d0d508c..   lea rcx, [0x1404600a2]     ; "stateInstallSoftwareheader ContentLengthadd snaps to []partsjson: Unmarshal(nil)json: Unmarshal(nil json: error calling LogValu"
+  ────────< 0x140337452      eb0c           jmp 0x140337460
+  └───────> 0x140337454      b80f000000     mov eax, 0xf               ; 15
+   │││││╎   0x140337459      488d0d5859..   lea rcx, [0x14045cdb8]     ; "*UNKNOWN_STATE*installSoftwarecookieSendAgentwindows-versionGroup: bad kindapplication/pdfapplication/oggfont/collectionapplica"
+  ────────> 0x140337460      4889442448     mov qword [rsp + 0x48], rax
+   │││││╎   0x140337465      48894c2450     mov qword [rsp + 0x50], rcx
+   │││││╎   0x14033746a      488d05ef4b..   lea rax, [0x14040c060]
+   │││││╎   0x140337471      e8caf3cdff     call 0x140016840
+   │││││╎   0x140337476      4889442468     mov qword [rsp + 0x68], rax
+   │││││╎   0x14033747b      48c7000200..   mov qword [rax], 2
+   │││││╎   0x140337482      31c0           xor eax, eax
+   │││││╎   0x140337484      488d1dc8e8..   lea rbx, [0x140475d53]     ; "unable to deregister at this moment while the agent is in json: cannot set embedded pointer to unexported struct: %vcalled Comp"
+   │││││╎   0x14033748b      b93a000000     mov ecx, 0x3a              ; ':' ; 58
+   │││││╎   0x140337490      488b7c2450     mov rdi, qword [rsp + 0x50]
+   │││││╎   0x140337495      488b742448     mov rsi, qword [rsp + 0x48]
+   │││││╎   0x14033749a      e8e12bd2ff     call 0x14005a080
+   │││││╎   0x14033749f      488b4c2468     mov rcx, qword [rsp + 0x68]
+   │││││╎   0x1403374a4      48895910       mov qword [rcx + 0x10], rbx
+   │││││╎   0x1403374a8      833d31824c..   cmp dword [0x1407ff6e0], 0 ; [0x1407ff6e0:4]=0
+  ┌───────< 0x1403374af      7410           je 0x1403374c1
+  ││││││╎   0x1403374b1      488b5108       mov rdx, qword [rcx + 8]
+  ││││││╎   0x1403374b5      e80636d4ff     call 0x14007aac0
+  ││││││╎   0x1403374ba      498903         mov qword [r11], rax
+  ││││││╎   0x1403374bd      49895308       mov qword [r11 + 8], rdx
+  └───────> 0x1403374c1      48894108       mov qword [rcx + 8], rax
+   │││││╎   0x1403374c5      488d15d406..   lea rdx, [0x1403f7ba0]
+   │││││╎   0x1403374cc      48899424b0..   mov qword [rsp + 0xb0], rdx
+   │││││╎   0x1403374d4      48898c24b8..   mov qword [rsp + 0xb8], rcx
+   │││││╎   0x1403374dc      488b0555f7..   mov rax, qword [0x1407b6c38] ; [0x1407b6c38:8]=0
+   │││││╎   0x1403374e3      488d9c24b0..   lea rbx, [rsp + 0xb0]
+   │││││╎   0x1403374eb      e89060cdff     call 0x14000d580
+  ┌───────< 0x1403374f0      e95c020000     jmp 0x140337751
+  │└──────> 0x1403374f5      440f117c2470   movups xmmword [rsp + 0x70], xmm15
+  │ ││││╎   0x1403374fb      440f11bc24..   movups xmmword [rsp + 0x80], xmm15
+  │ ││││╎   0x140337504      488d0dd575..   lea rcx, [0x1403ceae0]
+  │ ││││╎   0x14033750b      48894c2470     mov qword [rsp + 0x70], rcx
+  │ ││││╎   0x140337510      488d0d89f0..   lea rcx, [0x1404f65a0]
+  │ ││││╎   0x140337517      48894c2478     mov qword [rsp + 0x78], rcx
+  │ ││││╎   0x14033751c      488b055d7d..   mov rax, qword [0x1407ff280] ; [0x1407ff280:8]=0
+  │ ││││╎   0x140337523      e85892d3ff     call 0x140070780
+  │ ││││╎   0x140337528      488d0df173..   lea rcx, [0x1403ce920]
+  │ ││││╎   0x14033752f      48898c2480..   mov qword [rsp + 0x80], rcx
+  │ ││││╎   0x140337537      4889842488..   mov qword [rsp + 0x88], rax
+  │ ││││╎   0x14033753f      90             nop
+  │ ││││╎   0x140337540      488b0529f7..   mov rax, qword [0x1407b6c70] ; [0x1407b6c70:8]=0
+  │ ││││╎   0x140337547      488d1dc25a..   lea rbx, [0x1404fd010]
+  │ ││││╎   0x14033754e      488d0d4b7c..   lea rcx, [0x1407ff1a0]
+  │ ││││╎   0x140337555      bf04000000     mov edi, 4
+  │ ││││╎   0x14033755a      488d35f017..   lea rsi, [0x140468d51]     ; "unsupported niagaradshim requestcannot read rolling certificate.Received status 204 - no updatesbuild device section in manifes"
+  │ ││││╎   0x140337561      41b820000000   mov r8d, 0x20              ; 32
+  │ ││││╎   0x140337567      4c8d4c2470     lea r9, [rsp + 0x70]
+  │ ││││╎   0x14033756c      41ba02000000   mov r10d, 2
+  │ ││││╎   0x140337572      4d89d3         mov r11, r10
+  │ ││││╎   0x140337575      e806e4deff     call 0x140125980
+  │┌──────< 0x14033757a      e9d2010000     jmp 0x140337751
+  ││└─────> 0x14033757f      488b0da2f6..   mov rcx, qword [0x1407b6c28] ; [0x1407b6c28:8]=0
+  ││ │││╎   0x140337586      48894c2458     mov qword [rsp + 0x58], rcx
+  ││ │││╎   0x14033758b      488d05ce2a..   lea rax, [0x14041a060]
+  ││ │││╎   0x140337592      e8a9f2cdff     call 0x140016840
+  ││ │││╎   0x140337597      488b4c2458     mov rcx, qword [rsp + 0x58]
+  ││ │││╎   0x14033759c      488b5138       mov rdx, qword [rcx + 0x38]
+  ││ │││╎   0x1403375a0      488910         mov qword [rax], rdx
+  ││ │││╎   0x1403375a3      4883793801     cmp qword [rcx + 0x38], 1
+  ││┌─────< 0x1403375a8      7522           jne 0x1403375cc
+  ││││││╎   0x1403375aa      488b11         mov rdx, qword [rcx]
+  ││││││╎   0x1403375ad      4885d2         test rdx, rdx
+  ────────< 0x1403375b0      741a           je 0x1403375cc
+  ││││││╎   0x1403375b2      833d27814c..   cmp dword [0x1407ff6e0], 0 ; [0x1407ff6e0:4]=0
+  ────────< 0x1403375b9      740d           je 0x1403375c8
+  ││││││╎   0x1403375bb      0f1f440000     nop dword [rax + rax]
+  ││││││╎   0x1403375c0      e8db34d4ff     call 0x14007aaa0
+  ││││││╎   0x1403375c5      498913         mov qword [r11], rdx
+  ────────> 0x1403375c8      48895008       mov qword [rax + 8], rdx
+  ──└─────> 0x1403375cc      4883793802     cmp qword [rcx + 0x38], 2
+  ││┌─────< 0x1403375d1      755b           jne 0x14033762e
+  ││││││╎   0x1403375d3      4883793000     cmp qword [rcx + 0x30], 0
+  ────────< 0x1403375d8      7454           je 0x14033762e
+  ││││││╎   0x1403375da      4889442460     mov qword [rsp + 0x60], rax
+  ││││││╎   0x1403375df      488d05fa74..   lea rax, [0x1403ceae0]
+  ││││││╎   0x1403375e6      e855f2cdff     call 0x140016840
+  ││││││╎   0x1403375eb      488b4c2458     mov rcx, qword [rsp + 0x58]
+  ││││││╎   0x1403375f0      488b5130       mov rdx, qword [rcx + 0x30]
+  ││││││╎   0x1403375f4      488b4928       mov rcx, qword [rcx + 0x28]
+  ││││││╎   0x1403375f8      48895008       mov qword [rax + 8], rdx
+  ││││││╎   0x1403375fc      833ddd804c..   cmp dword [0x1407ff6e0], 0 ; [0x1407ff6e0:4]=0
+  ────────< 0x140337603      7507           jne 0x14033760c
+  ││││││╎   0x140337605      488b542460     mov rdx, qword [rsp + 0x60]
+  ────────< 0x14033760a      eb19           jmp 0x140337625
+  ────────> 0x14033760c      488b542460     mov rdx, qword [rsp + 0x60]
+  ││││││╎   0x140337611      488b7210       mov rsi, qword [rdx + 0x10]
+  ││││││╎   0x140337615      e8c634d4ff     call 0x14007aae0
+  ││││││╎   0x14033761a      49890b         mov qword [r11], rcx
+  ││││││╎   0x14033761d      49894308       mov qword [r11 + 8], rax
+  ││││││╎   0x140337621      49897310       mov qword [r11 + 0x10], rsi
+  ────────> 0x140337625      488908         mov qword [rax], rcx
+  ││││││╎   0x140337628      48894210       mov qword [rdx + 0x10], rax
+  ────────< 0x14033762c      eb03           jmp 0x140337631
+  ──└─────> 0x14033762e      4889c2         mov rdx, rax
+  ────────> 0x140337631      48899424c0..   mov qword [rsp + 0xc0], rdx
+  ││ │││╎   0x140337639      48c78424c8..   mov qword [rsp + 0xc8], 0
+  ││ │││╎   0x140337645      488d05f44b..   lea rax, [0x14040c240]
+  ││ │││╎   0x14033764c      488d9c24c0..   lea rbx, [rsp + 0xc0]
+  ││ │││╎   0x140337654      e887b6cdff     call 0x140012ce0
+  ││ │││╎   0x140337659      488d0de04b..   lea rcx, [0x14040c240]
+  ││ │││╎   0x140337660      48898c24b0..   mov qword [rsp + 0xb0], rcx
+  ││ │││╎   0x140337668      48898424b8..   mov qword [rsp + 0xb8], rax
+  ││ │││╎   0x140337670      488b05c1f5..   mov rax, qword [0x1407b6c38] ; [0x1407b6c38:8]=0
+  ││ │││╎   0x140337677      488d9c24b0..   lea rbx, [rsp + 0xb0]
+  ││ │││╎   0x14033767f      90             nop
+  ││ │││╎   0x140337680      e8fb5ecdff     call 0x14000d580
+  ││┌─────< 0x140337685      e9c7000000     jmp 0x140337751
+  │││└────> 0x14033768a      440f11bc24..   movups xmmword [rsp + 0x90], xmm15
+  │││ ││╎   0x140337693      440f11bc24..   movups xmmword [rsp + 0xa0], xmm15
+  │││ ││╎   0x14033769c      488d0d3d74..   lea rcx, [0x1403ceae0]
+  │││ ││╎   0x1403376a3      48898c2490..   mov qword [rsp + 0x90], rcx
+  │││ ││╎   0x1403376ab      488d0d6eef..   lea rcx, [0x1404f6620]
+  │││ ││╎   0x1403376b2      48898c2498..   mov qword [rsp + 0x98], rcx
+  │││ ││╎   0x1403376ba      488b05bf7b..   mov rax, qword [0x1407ff280] ; [0x1407ff280:8]=0
+  │││ ││╎   0x1403376c1      e8ba90d3ff     call 0x140070780
+  │││ ││╎   0x1403376c6      488d0d5372..   lea rcx, [0x1403ce920]
+  │││ ││╎   0x1403376cd      48898c24a0..   mov qword [rsp + 0xa0], rcx
+  │││ ││╎   0x1403376d5      48898424a8..   mov qword [rsp + 0xa8], rax
+  │││ ││╎   0x1403376dd      90             nop
+  │││ ││╎   0x1403376de      488b058bf5..   mov rax, qword [0x1407b6c70] ; [0x1407b6c70:8]=0
+  │││ ││╎   0x1403376e5      488d1d2459..   lea rbx, [0x1404fd010]
+  │││ ││╎   0x1403376ec      488d0dad7a..   lea rcx, [0x1407ff1a0]
+  │││ ││╎   0x1403376f3      bf08000000     mov edi, 8
+  │││ ││╎   0x1403376f8      488d350ccd..   lea rsi, [0x14047440b]     ; "registration is complete. Unexpected message receivedhttp: putIdleConn: too many idle connections for hosthttp2: Framer %p: fai"
+  │││ ││╎   0x1403376ff      41b835000000   mov r8d, 0x35              ; '5' ; 53
+  │││ ││╎   0x140337705      4c8d8c2490..   lea r9, [rsp + 0x90]
+  │││ ││╎   0x14033770d      41ba02000000   mov r10d, 2
+  │││ ││╎   0x140337713      4d89d3         mov r11, r10
+  │││ ││╎   0x140337716      e865e2deff     call 0x140125980
+  │││┌────< 0x14033771b      eb34           jmp 0x140337751
+  ││││└───> 0x14033771d      90             nop
+  ││││ │╎   0x14033771e      90             nop
+  ││││ │╎   0x14033771f      488b054af5..   mov rax, qword [0x1407b6c70] ; [0x1407b6c70:8]=0
+  ││││ │╎   0x140337726      488d1de358..   lea rbx, [0x1404fd010]
+  ││││ │╎   0x14033772d      488d0d6c7a..   lea rcx, [0x1407ff1a0]
+  ││││ │╎   0x140337734      31ff           xor edi, edi
+  ││││ │╎   0x140337736      488d358a56..   lea rsi, [0x14045cdc7]     ; "installSoftwarecookieSendAgentwindows-versionGroup: bad kindapplication/pdfapplication/oggfont/collectionapplication/zipnegativ"
+  ││││ │╎   0x14033773d      41b80f000000   mov r8d, 0xf               ; 15
+  ││││ │╎   0x140337743      4531c9         xor r9d, r9d
+  ││││ │╎   0x140337746      4531d2         xor r10d, r10d
+  ││││ │╎   0x140337749      4d89d3         mov r11, r10
+  ││││ │╎   0x14033774c      e82fe2deff     call 0x140125980
+  └└└└────> 0x140337751      4881c4d000..   add rsp, 0xd0
+       │╎   0x140337758      5d             pop rbp
+       │╎   0x140337759      c3             ret
+       └──> 0x14033775a      4889442408     mov qword [rsp + 8], rax
+        ╎   0x14033775f      90             nop
+        ╎   0x140337760      e83b14d4ff     call 0x140078ba0
+        ╎   0x140337765      488b442408     mov rax, qword [rsp + 8]
+        └─< 0x14033776a      e931fcffff     jmp 0x1403373a0
+            0x14033776f      cc             int3
+            0x140337770      cc             int3
+            0x140337771      cc             int3
+            0x140337772      cc             int3
+            0x140337773      cc             int3
+            0x140337774      cc             int3
+            0x140337775      cc             int3
+            0x140337776      cc             int3
+            0x140337777      cc             int3
+            0x140337778      cc             int3
+            0x140337779      cc             int3
+            0x14033777a      cc             int3
+            0x14033777b      cc             int3
+            0x14033777c      cc             int3
+            0x14033777d      cc             int3
+            0x14033777e      cc             int3
+            0x14033777f      cc             int3

@@ -105,6 +105,8 @@
 
 ## 63.1 — B61-G1/B57-G2 CLOSED (call-site identity) / REFINED (station-start mechanism still open): `nre.dll` has exactly ONE `CreateProcessA` call site, inside the JNI-exported `NativePlatformProvider.restartPlatformDaemon0()`, and it spawns `<install-root>\bin\plat.exe restartdaemon` — reachable from an authenticated `UpdateDaemonServlet` HTTP request, gated by a native check that is ICF-folded to an unconditional `true` on this build `[CERT-hw]`
 
+> **Correction (added by [Block 117], §14 cross-block, §117.x).** `njre.dll` has **91** exports, not 95 (rabin2 -E, r2 iEj, objdump -p, PE NumberOfFunctions = 91; orchestrator re-verified with rabin2 -E). The 0-JNI finding stands.
+
 [Block 61] §61.2 confirmed via `objdump -x` that `nre.dll` (not `njre.dll`) imports `CreateProcessA`, but explicitly
 did not trace the call site, leaving two competing `[INFER]` readings open: (1) an unrelated JxBrowser child-process
 spawn, or (2) the OS Service Control Manager — not `nre.dll`'s own code — being the actual `station.exe` spawner.

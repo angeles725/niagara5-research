@@ -43,7 +43,7 @@ docs/, tools/ header comments, RESEARCH-STATE; one new block (B115); retro kit-d
       - Ephemeral: 151 /tmp paths near CERT-hw/live, 13 already gone.
       - Beta-vs-GA: sample clean.
       - Not done: full prose-vs-raw sweep (only the known B106 instance).
-- [ ] T4 (delegated writer running) Write B115 (fidelity matrix + audit results) and §14 pointers in affected blocks. Route: delegated writer
+- [x] T4 (ce7b266) Write B115 (fidelity matrix + audit results) and §14 pointers in affected blocks. Route: delegated writer
       if 2+ non-trivial blocks change, else inline.
 - [ ] T5 Add the fidelity rule to docs/decompiler-bakeoff.md, docs/n4-to-n5-porting-guide.md, tools/README.md,
       tools/n5-decompile.sh header, and the writer prompt. Route: inline (mechanical once T1-T3 known).
@@ -53,32 +53,161 @@ docs/, tools/ header comments, RESEARCH-STATE; one new block (B115); retro kit-d
 ## Prevention (user requirement 2026-09-28: "these same errors must not happen again")
 Prose rules already failed once (B84 was written after B90 established the resugaring rule). Prevention must be
 MECHANICAL and fail closed:
-- [ ] T8 (delegated writer running; R7 constant-inlining + R8 baseline-attribution added) tools/lint-block.py (TDD, fixtures): rules R1 syntax-adoption/N4-N5 syntax-delta claim without bytecode/docSource
+- [x] T8 (d458bc1 + fix aaa369d; RDD review-ff9661ae41472f13 approved on d458bc1; fix under review) tools/lint-block.py (TDD, fixtures): rules R1 syntax-adoption/N4-N5 syntax-delta claim without bytecode/docSource
       evidence token; R2 absence claim without class-level census token; R3 [CERT-hw]/[CERT-live] evidence only under /tmp;
       R4 child-gap bullet without coverage-check + measured-by clauses; R5 null-argument/fail-open permission claim without a
       resolved dispatch target; R6 comparison against another block without citing its raw artifact. Enforced (FAIL) for
       blocks >= 115; older blocks in --audit mode (report only) to drive T4 fixes. Explicit per-line waiver token with reason.
       Route: delegated writer (2+ non-trivial files).
-- [ ] T9 Wiring: tools/githooks/pre-commit (lint staged blocks + check-gap-drift + verify-block), `make install-hooks`
+- [x] T9 (d458bc1, aaa369d: hook lints staged blobs, integration-tested) Wiring: tools/githooks/pre-commit (lint staged blocks + check-gap-drift + verify-block), `make install-hooks`
       (core.hooksPath), SessionStart hook warns if hooks not installed, GitHub Actions CI (make test + lint). No branch
       protection on this private plan, so the orchestrator merge step MUST wait for green checks (gh pr checks --watch).
-- [ ] T10 Durable evidence: evidence/b<N>/ in repo for small [CERT-hw] artifacts (size cap), writer prompt updated.
-- [ ] T11 Versioned writer prompt docs/writer-prompt.md (replaces the session-scratch common.txt) with the checklist.
+- [x] T10 (evidence/b115, README LVT fact corrected in aaa369d) Durable evidence: evidence/b<N>/ in repo for small [CERT-hw] artifacts (size cap), writer prompt updated.
+- [x] T11 (d458bc1) Versioned writer prompt docs/writer-prompt.md (replaces the session-scratch common.txt) with the checklist.
 - [ ] T12 Orchestrator-side memory: feedback memory + engram; retro kit deltas (T6) mirror R1-R6 into METHODOLOGY proposals.
+
+## RESUME HERE (written 2026-09-28 before a context compact)
+State: branch feat/n5-wave14 pushed; draft PR #15 open (CI was green at d9a6f9b; re-check after bb58475).
+Commits after PR#14 (all tools commits RDD-approved+acknowledged unless noted): 9523a9e B116 · f4e49f8 census ·
+7bc188c B117 · 16fc6a8 grader · 1791db1 v2 · 1ad56eb xref · b8eebcd B118 · 9592b82 porting-guide fix · f591074
+upstream-sources · 1e44e71 v2 hardening · 0aaae58/d9a6f9b javap fixes · 6fb316d tests · 80c5f90 T20 (range RDD
+review-6f1c46518f56b786 approved) · 97a5d23 compare-skips (NOT yet RDD-reviewed) · bb58475 cons + extra-tridium (NOT yet
+RDD-reviewed).
+Running at compact time: `bash /tmp/run-cons-campaign.sh` (log /tmp/cons-campaign.log; phases: cons over 247 modules
+-P 6 → cons --bin-ext → --extra-tridium; prints ALL_DONE). Also a bats run: scratchpad/bats-t22.log (ends EXIT=<rc>).
+Next steps, in order:
+1. Wait for ALL_DONE in /tmp/cons-campaign.log (if the process died: re-run the same script; it is idempotent).
+   Verify: count organized/*/vineflower-cons (expect 247 minus class-less modules), organized/_etc-m2/* + _lib/* (10 jars),
+   organized/*/lib-inf/*; recon.json cons.status all ok.
+2. Run the line-mapping spot check /tmp/linecheck-t22.py (adapted from evidence/b118/linecheck.py; classes
+   BNumericWritable, StyleUtils, ValueDocDecoder, Column) — mapped `// N` must match docSource lines; record result.
+3. Fill the "Campaign run" numbers in docs/decompiler-bakeoff.md (T22 section), commit.
+4. Confirm bats-t22.log EXIT=0.
+5. RDD range review 80c5f90..HEAD (covers 97a5d23, bb58475, docs) in a clean worktree under
+   /home/cristian/niagara5-research-worktrees/rdd-<sha>; read advisories, verify, fix real ones (TDD).
+6. Push, mark PR #15 ready, wait for green CI (`gh pr checks 15`), merge via REST if GraphQL fails:
+   `gh api -X PUT repos/angeles725/niagara5-research/pulls/15/merge -f merge_method=merge`.
+7. Final single notice to the user with verified numbers (user asked for ONE notice when pipeline + verification done).
+Deferred to next session (user decision): all research child gaps (B115-B118 G*), T16 lint R9, T16b docs lint,
+T18b xref hardening, T21 full-corpus grading, grader report follow-ups, upstream-sources integration test.
+Key verified numbers: B116 11/36,977 Vineflower semantic defects (D1-D11); v2 fixes D4/D5; grader sample 192 classes:
+v1 124 exact, v2 125, 0 worse; docSource 3,707 classes byte-identical; B117 21,751 classes byte-exact, 356 jars signed,
+Authenticode 20/20; upstream sources 154/154, 92.4% third-party classes; krak2 -r byte-identical; jar mirror
+niagara5-research-localcache/jar-mirror-5.0.0.28 (sha256-verified, ~4.3x faster grading).
+
+## Session focus change (user, 2026-09-28)
+Research child gaps (B115-B118 G*) are deferred to the next session. Remaining work in THIS session: verify v1 vs v2,
+make the decompile complete and as faithful as possible.
+- [x] T18 (B118, b8eebcd; tool 1ad56eb RDD review-afef2ecdf952d3f2 approved) Logic-recovery method ladder.
+- [x] T18b (0d221e6, TDD; single commit on branch t18b-xref-hardening, worktree niagara5-research-worktrees/t18b-xref-hardening, integrated into feat/n5-wave14 as 0d221e6) Hardened
+      n5-bytecode-xref per its review-afef2ecdf952d3f2:
+      overriders now matches name+descriptor, with `--desc` to disambiguate overloads (R2-001); duplicate class names across
+      modules are kept and reported via `idx["duplicates"]`/`duplicate_classes` in every subcommand's output (R2-002); `--cha`
+      now also accepts subtype receivers that inherit the method (invokevirtual/invokeinterface on a subclass that does not
+      redeclare it), stopping descent at any subtype that redeclares it (R3-001); every subcommand's JSON and text output now
+      carries `parse_errors`/`parse error(s)` (R4). Evidence: 11 new/updated unit tests (RED confirmed for each fix, then
+      GREEN), full `make test` green (298 tests, 4 pre-existing skips), real-corpus sanity check on organized/{baja,control}
+      -- `callers niagara.sys.BComponent started --cha` went from 5 sites (old code) to 10 sites (new code), the 5 new ones
+      correctly tagged `subtype-owner`. Caller lists under `--cha` are now complete modulo reflection/invokedynamic (see
+      tools/README.md).
+- [~] T22 Completeness (code bb58475; Tridium-half campaign RUNNING at compact time) (third-party half DONE f591074: 154/154 upstream -sources.jar, 92.4% class coverage; Tridium half + conservative tree delegated): decompile (v2 + conservative line-mapped view) the 10 out-of-pipeline Tridium jars (etc/m2, lib doclet)
+      and the Tridium-owned nested LIB-INF jars; for identified third-party jars fetch the upstream -sources.jar by exact
+      Maven coordinates (original source beats any decompile); record per-class best representation. Route: delegated,
+      after T19b lands (same script).
+- [x] T22-rdd Range review 80c5f90..HEAD (tool base 7f6ba50; covers 97a5d23, bb58475, docs): lineage
+      review-83022868fd33530e APPROVED + acknowledged (authority burned), 4 lenses, 10 non-blocking advisories.
+      Orchestrator verified the WARNINGs: R4-libcache-empty-scan-strips-context REAL → T23; R3 .complete removal under
+      concurrent readers = by design (readers fail loudly with "run --prepare-libcache"; prepare runs serially first);
+      R3 source-sha cache reload per jar = performance only; R2 readability items deferred.
+- [x] T23 (8cd9467; follow-up in the T27 commit: two synthetic --extra-tridium bats fixtures had an empty modules dir, which the new guard correctly refuses — the orchestrator had run only the 13 libcache tests, not the full file, before committing T23; fixtures now carry one module jar) (TDD, bats T23a RED observed: exit 0 on an empty scan) `--prepare-libcache` refuses a zero-jar scan of
+      N5_MODULES_DIR + N5_BIN_EXT_DIR with exit 2 BEFORE touching the cache, so a mistyped/unmounted path can never
+      publish a "complete" cache that strips all LIB-INF context. GREEN: 13/13 libcache tests, shellcheck clean.
+      Route: inline (one script + one test).
+- [x] T24 (1875258) bajaui whole-module Vineflower timeout (found during the T22 line-mapping spot check; TDD, bats,
+      strict-TDD writer): root cause isolated by per-package then per-class bisection to exactly ONE class,
+      `com/tridium/ui/theme/custom/nss/query/NSS2SelectionResult` (its method-local record
+      `NSS2SelectionResult$1ValueAndAdvice` hangs Vineflower's ClassWriter.writeClass forever). Fix (shared by v1/v2/
+      cons, no copy-paste — `vf_handle_primary_timeout`/`vf_isolate_hung_classes`/`vf_build_excluded_classes_regex`/
+      `vf_render_noinner_view` in tools/n5-decompile.sh): on a whole-jar timeout, bisect by package then by top-level
+      class (own N5_ISOLATE_TIMEOUT budget, default 90s), re-run the whole jar ONCE with Vineflower's
+      `--excluded-classes=<regex>` excluding exactly the hung class(es) (regex semantics — FULL match against the
+      `/`-separated internal name — verified empirically against the real vineflower-1.12.0.jar, not guessed), CFR
+      for the hung class(es), plus a best-effort `--decompile-inner=false` secondary view
+      (`vineflower*-noinner/`). New env var N5_ISOLATE_TIMEOUT (default 90s), new recon.json fields
+      (`primary_status: ok_with_excluded`, `fallback_reason: primary_hang_isolated`, `excluded_classes`,
+      `isolate_time_seconds`, `primary_timeout_attempt_seconds`, `isolation_status`); a hang that can't be isolated
+      keeps today's original whole-module-CFR behavior exactly, with `isolation_status` explaining why. Real bajaui
+      re-run on the local mirror, all three variants: `primary_status=ok_with_excluded`,
+      `excluded_classes=[NSS2SelectionResult]`, 565/566 top-level `.java` in the primary tree (v1/v2/cons), 1 file in
+      fallback, 2 files in the noinner secondary view. Found and fixed one real bug along the way (not just a test
+      artifact): bash 5.2 raises "bad array subscript" on an empty-string associative-array key, which real
+      bajaui's `module-info.class` (no package) hits — covered by a dedicated regression test (T24e) and fixed by
+      not using an associative array for package dedup. Evidence: docs/decompiler-bakeoff.md's "Resolved (T24)"
+      bullet; tools/tests/n5-decompile.bats T24a-T24e. Route: delegated writer (TDD, bats).
+- [x] T27 (TDD, bats T27 RED observed: `KeyError: 'v2'` after v1 --force) v1 `write_recon` replaced recon.json
+      wholesale and dropped the "v2"/"cons" sub-objects; v1 also never cleared a stale `fallback/`. Fix:
+      tools/n5-recon-helper.py carries "v2"/"cons" over only when their `jar_sha256` equals the jar v1 just rebuilt,
+      else drops them and lists them in `dropped_stale_variants`; v1 clears `fallback/` before its primary run.
+      GREEN: full `bats tools/tests/n5-decompile.bats` 63/63 (EXIT=0), `make test` OK, shellcheck clean.
+      Route: inline (script + helper + test).
+
+- [x] T28 (67a7324) tools/n5-best-source.py trusted any same-path upstream .java as ground truth, even for a
+      vendor-rebuilt jar (paho mqttv3 0/110 classes identical: 96 classes were marked `upstream`). Now upstream wins
+      only with a manifest identity proof; otherwise the decompile wins and the upstream file is an
+      `upstream-different-build`/`upstream-unproven` alternate. Orchestrator-found; delegated writer (TDD).
+- [x] T30 (b68f84a) 81 manifest artifacts carried no identity verdict although evidence/b117 proved 78 of them
+      whole-jar SHA-1 exact (3 mixed exact/differs): n5-upstream-sources.py now records per-occurrence
+      `content_identity` (sha1-exact / resigned-identical / ... / unverified), best-source resolves the verdict per
+      occurrence. Orchestrator-verified manifest: resigned-identical 98, sha1-exact 78, identified 9, no-classes 2,
+      vendor-modified 1 (paho), 0 without verdict; upstream_unproven_artifacts 81 → 0. Third-party classes with a
+      byte-identical upstream source: 52,436/60,314 (86.9%, all-third-party denominator).
+- [x] T29 (6b1667d) Multi-Release JAR overrides (`META-INF/versions/<N>/`) were silently skipped by Vineflower (no
+      marker, no fallback): shared `vf_handle_mrjar_versions` re-roots each version's classes into a subset jar,
+      decompiles with the same variant context (CFR fallback, `mrjar_unrepresented` never silent). Real
+      `--third-party-libinf --force` (24 min): 94/94 jars, all 27 override classes in 16 jars now have files,
+      0 unrepresented. Full bats 70/70, make test 403 OK, shellcheck clean.
+- [x] Final index (orchestrator run after T29/T30, `tools/n5-best-source.py`): 455 populations, **64,929 classes —
+      docSource 2,809, upstream (proven byte-identical) 37,195, vineflower2 24,924, fallback2 1, missing 0**;
+      upstream_unproven_artifacts 0. Spot check: jackson-core-2.22.2 META-INF/versions/11 BigSignificand.java
+      present with its package/class. Browse: organized/_best/tree.
+
+- [x] Review-advisory rounds (native RDD, all slices APPROVED + acknowledged): round 1 = 8 chained slices
+      cc693dd..114960f (whole range exceeded the lens context budget), fixes 3cf34c1, 5af7a84, 4505d39, 987b734,
+      5c3d9c0, 9ddb521; round 2 = 4 slices 114960f..9ddb521, fixes 338f446, 6724b9f. Each advisory was verified
+      against code and classified REAL-fixed / ALREADY-FIXED-LATER / NOT-REAL / COSMETIC-DEFERRED by its writer;
+      orchestrator re-verified samples (CHA callers 10 sites, MRJAR/noinner/budget bats, kotlin facade mapping
+      GroupingKt → commonMain/kotlin/collections/Grouping.kt byte-identical). Coverage headline (third-party
+      classes, one unit = every .class entry, covered iff identity proven AND top-level source present):
+      61,491/77,719 = 79.1% (supersedes 86.9% / 77.7% / 70.5%, which mixed units or missed MRJAR/KMP layouts).
+      Current index: 64,929 classes — docSource 2,809, upstream 37,725, vineflower2 24,394, fallback2 1, missing 0.
+- [ ] Documented follow-ups (cosmetic / low risk, deferred by their writers with reasons in the commit reports):
+      duplicated v1 vs v2/cons timeout glue and Vineflower command prefix (n5-decompile.sh); decompile-vs-skip
+      tally inferred from a log line in --third-party-libinf; GRADE_RANK duplicated from n5-fidelity.py without a
+      drift test; find_identical_jar_candidate reimplements the rung chain; single-status rollup of
+      multi-occurrence artifacts; extracted upstream copies named after the class, not the original source file;
+      `@JvmMultifileClass` facades mapped to one file; kotlin-stdlib/woodstox residual facade gaps (2,468 classes
+      corpus-wide); n5-bytecode-xref advisories R2-003/R2-004 from 4505d39's slice (out of that writer's scope).
+      Final RDD (9ddb521..9571e9a, APPROVED + acknowledged) advisories, deferred (0 occurrences in the real corpus):
+      n5-best-source.py — a trusted upstream pick whose sources-jar entry fails to extract becomes `missing`
+      instead of falling back to the decompile rungs (R3/R4-upstream-extraction-failure-*; reason text says so
+      imprecisely, R2-upstream-extraction-failure-reason-misleading); duplicated materialize candidate guard.
+      n5-decompile.sh — MRJAR nested-class parent lookup uses the outermost `$` segment only
+      (R3-mrjar-nested-parent-lookup-uses-outermost-only). Test helpers: duplicated corrupt-entry helper; a bats
+      comment cites a line number.
 
 ## Maximum decompile fidelity (user requirement 2026-09-28: "the decompile must be right, no inventions, not tainted; try everything possible")
 - [x] T13 Integrity + completeness census [CERT-hw]: 252 recon.json (247 modules + bin/ext) — 0 jar sha256 mismatches vs the
-      installed jars, 0 missing jars; 14,894 top-level classes, 0 without a .java (vineflower or fallback); CFR fallback used in
+      installed jars, 0 missing jars; 14,894 top-level classes, 0 without a .java (CORRECTED by B117: this counted only top-level classes of the module jars — 24,896 classes in 98 nested LIB-INF jars and 958 classes in 10 out-of-pipeline Tridium jars were never decompiled; orchestrator verified 0 .java under any LIB-INF) (vineflower or fallback); CFR fallback used in
       6 modules (andoverAC256, backup, bajaui, ccn, ffmpeg, opcUaClient); obfuscation heuristic > 0.2 in none.
       docSource originals cover 2,776 of 7,284 top-level classes in docSource-eligible modules. Route: inline.
-- [ ] T14 Lossy-aspects catalog (answers "what else is not faithful"): synthetic javac-25 experiments for every candidate loss
+- [x] T14 (B116, 9523a9e) Lossy-aspects catalog (answers "what else is not faithful"): synthetic javac-25 experiments for every candidate loss
       class + EMPIRICAL differential of Vineflower output vs the 2,776 docSource originals (normalized), taxonomy with counts.
       Output: B116. Route: delegated researcher.
-- [ ] T15 Semantic fidelity grader tools/n5-fidelity.py (TDD): recompile each decompiled class against the original jars and
+- [x] T15 (16fc6a8; orchestrator re-ran svg+lonWattStopper: 6/6 roundtrip-exact, matches report) Semantic fidelity grader tools/n5-fidelity.py (TDD): recompile each decompiled class against the original jars and
       compare normalized bytecode per method with the shipped class; on mismatch try CFR/Procyon/JADX and keep the first that
       round-trips; grade per class (docsource-original / roundtrip-exact / roundtrip-normalized / compiles-mismatch / no-compile);
       write organized/<mod>/fidelity.json + committed docs/decompile-fidelity-report.md. Route: delegated writer.
-- [ ] T17 Extraction + native fidelity (B117): nested/multi-release jars, extracted/ byte-exactness vs jar entries, resources,
+- [x] T17 Extraction + native fidelity (B117; Authenticode 20/20 verified by orchestrator; nested-jar count cross-checked independently: 97 jars / 34,507 entries / 24,831 top-level vs B117's 98 / 34,605 / 24,896 — same units, 1-jar scope difference; tool f4e49f8 RDD review-49636f53e9119721 approved, hardening folded into B117-G7): nested/multi-release jars, extracted/ byte-exactness vs jar entries, resources,
       skipped bin/ext jars, N5 obfuscation re-check, jarsigner verification of all module jars, native inventory + every native
       claim classified single-tool vs >= 2 anchored instruments with corroboration run now. Route: delegated researcher.
 - Redundancy ladder added to T15 (user: "use everything, no limits"): kit corroborate-java.sh (java-corroboration.v1), krak2
@@ -88,8 +217,157 @@ MECHANICAL and fail closed:
       M2 bytecode-level analysis (Joern jimple2cpg / SootUp / OPAL call graphs, dispatch resolution), M3 differential execution of
       pure station-independent classes (original vs recompiled), M4 runtime tracing of license-free Tridium CLIs, M5 dataflow
       (CodeQL buildless / Joern), M6 krak2 round-trip, M7 others. Hard limits: no live station, no license bypass. Route: delegated.
+- [x] T19 (1791db1; orchestrator verified the Vineflower option-order quirk and the D4 fix `map.remove(Integer.valueOf(this.index))`) Pipeline v2 (from reviewing the user-supplied external niagara_decomp.py + a decompilation survey, 2026-09-28):
+      verified defect tools/n5-decompile.sh:199 — Vineflower ran with NO library context (no --add-external for other N5 jars,
+      no JDK runtime) and CFR fallback without --extraclasspath. v2 variant → organized/<mod>/vineflower2/ with library context +
+      explicit fidelity flags (condy conversion off, rename off, LVT/MethodParameters names); v1 kept for comparison; the grader
+      grades both trees. Route: delegated writer (TDD, bats).
+      Adopted from the external review: exclude own jar from classpath; argfiles; reference-not-replace fallback; forensic
+      Vineflower flags; CFR git-master pinned; meta-decompilation per method (Harrand et al. 2019/2020); japicmp; jqwik; ASM>=9.8;
+      JEP 513/456, condy, preview 65535, Kotlin metadata, Maven SHA-1 lookup. REJECTED from it: difflib similarity >= 0.90 as a
+      verdict and branch-target erasure ("L") in its normalizer (hides control-flow changes); -parameters (Tridium classes have no
+      MethodParameters, verified); re-signing/redistribution steps (out of scope: research is read-only).
+- [x] T19b (1e44e71; orchestrator verified 252/252 v2 ok with idempotency_key; RDD pending) Harden v2 after RDD review-4091d4df000d0cae: orchestrator verified a real library-context race —
+      5 modules (analyticsLibs, apachePoi, commonsIo, commonsLang, niagaraTest) were rm -rf/unzip-ed 07:20-07:31Z while parallel
+      workers scanned */extracted/LIB-INF/*.jar. Fix: immutable libcache prepared serially, idempotency key over the full
+      library set, failed runs never cached as success, fallback2/ cleared, stale-extract check, no shell→Python interpolation.
+      The first v2 tree is superseded until the clean rerun lands.
+- [x] T15b (done in T20) Grader normalizer holes from RDD review-a849ade48da9b9ae, orchestrator-verified with javac 25:
+      switch-case regex drops negative keys (javap `-5: 40`) → possible FALSE roundtrip-exact; iinc `2, 3` comma form not
+      canonicalized (conservative). Plus: masked module failures, truncated runs cached as complete, no subprocess timeouts,
+      harness failures graded as no-compile, tautological test. The 120/186 exact figure is provisional until re-graded.
+- [x] T20 (grader fixes T15b included; 46-module/192-class sample on the local mirror: v1 124/192 exact, v2 125/192, 0 worse, 1 better; ldc/ldc_w allowlist moved 1 class; orchestrator diffed v1 before/after: 191/192 unchanged, 0 exact→non-exact, so no false exacts from the negative-switch bug in this sample; decision: vineflower2 = recommended tree, precedence recorded in docs/writer-prompt.md) Per-tree fidelity files (fidelity.<tree>.json) and grade vineflower2 vs vineflower on the identical 43-module sample;
+      choose the primary tree by measured round-trip rate, not by text diff. Note: v2's +139% @Override is decompiler inference
+      (B116: @Override never survives compilation), not recovered information. Route: delegated writer (TDD).
+- [ ] T21 Full-corpus grading run (all ~15k top-level classes, both trees) — closes B116-G1; long run, forecast first. Route: delegated.
+- [x] T25 (4745a3e, worktree t25-best-source off feat/n5-wave14@2a08063; integrated into feat/n5-wave14 as 0e6b21c, follow-up fix as acee2d0) Per-class "best available representation"
+      index tools/n5-best-source.py (TDD, 17/17 tests GREEN) + `--materialize` browsable relative-symlink tree, so a
+      reader never has to re-derive the docs/writer-prompt.md precedence rule by hand. Structural discovery found one
+      undocumented split: devkit is the ONLY module with a genuine decompiled `<mod>/lib-inf/<jar>/` subtree; every
+      other module's LIB-INF-nested third-party jars are raw, undecompiled files at `extracted/LIB-INF/<jar>.jar`
+      (no per-class decompile anywhere in the corpus for those). Real run: 361 populations, 40678 classes — docSource
+      2809, upstream 13023, vineflower2 12708, fallback2 273, missing 11865 (28.2%, almost entirely LIB-INF-nested
+      third-party classes with no upstream-sources match); 0 vineflower(v1)-preferred picks (matches T20: v1 never
+      beats v2 on the 192 classes graded on both trees), 0 bare-fallback picks (fallback2 always already covers
+      whatever bare fallback would). Caught and fixed one real bug before reporting numbers: `module-info`/
+      `package-info` were being matched across UNRELATED upstream artifacts by filename alone (aaphp's module-info
+      matched to org.eclipse.angus:jakarta.mail's) — excluded from the upstream cross-artifact index, regression
+      test added. 3 spot-checks by hand (docSource: alarm/AlarmDbConnection; upstream: abstractMqttDriver's
+      jackson-annotations JacksonAnnotation, extracted+symlinked correctly; vineflower2: aaphp/BAaPhpDevice) all
+      resolved to the right file. Route: delegated writer (TDD).
+      **T25 follow-up fix (this commit, TDD, 20/20 tests GREEN)**: orchestrator verification found 146 `devkit`
+      classes (131 tridium-niagara-slotomatic-library-5.0.2 + 15 n-templates-5.0.54.9.2) wrongly reported `missing`
+      — devkit bundles a raw, undecompiled LIB-INF copy of each jar AND a genuine decompile of the byte-identical
+      jar at `organized/devkit/lib-inf/<jar>/`, never cross-linked. Fixed by keying every population's jar by
+      sha256 (`extracted/.jar_sha256` where present, else hashing the raw jar directly) and adding a rung-6
+      identical-jar fallback, linked by sha256 ONLY, never filename (regression test: same-named/different-bytes
+      jars stay unlinked). Added `missing_by_jar` to the summary. Rerun: docSource 2809, upstream 13023,
+      vineflower2 12854 (+146), fallback2 273, missing 11719 (-146, 28.8%). `missing_by_jar` top 10, all
+      genuinely-undecompiled third-party LIB-INF jars with no upstream match: prosys-opc-ua-sdk-client-server-
+      5.7.0-248 (3117), poi-ooxml-lite-5.5.1 (2325), poi-5.5.1 (1226), xmlbeans-5.3.0 (697), kotlin-stdlib-2.3.0
+      (687), poi-ooxml-5.5.1 (654), org.eclipse.swt.win32.win32.x86_64-3.134.0 (652), woodstox-core-7.2.0 (539),
+      hsqldb-2.7.4 (465), testng-7.12.0 (402). Spot-checked devkit/lib-inf-raw/n-templates-5.0.54.9.2's `Generator`
+      class: `best` and materialized symlink both resolve to `organized/devkit/lib-inf/n-templates-5.0.54.9.2/
+      vineflower2/.../Generator.java`, real content confirmed.
+- [x] T26b (432b362; TDD bats a/b/c/d RED confirmed then GREEN) `tools/n5-decompile.sh
+      --third-party-libinf`: decompiles EVERY non-Tridium nested LIB-INF jar (n5-classify-binext.py verdict "skip" —
+      the complement of `--extra-tridium`'s Tridium-owned handling) ONCE per distinct sha256, reusing
+      `decompile_module_v2` unchanged (same immutable libcache, same T24 hang-isolation path, no copy of the
+      decompile core) into `organized/_lib-inf-3p/<jar-stem>-<sha256[:12]>/{extracted,vineflower2,fallback2,
+      recon.json}`; source jars scanned directly from `$N5_MODULES_DIR`/`$N5_BIN_EXT_DIR`'s own zip entries, never
+      `organized/*/extracted/`. recon.json gains top-level `population: "lib-inf-3p"`, `jar_sha256`, `found_in`
+      (every `<module>!LIB-INF/<entry>` occurrence). Idempotent for free (decompile_module_v2's own content-based
+      idempotency key + deterministic output-dir naming). `tools/n5-best-source.py` extended (its own failing test
+      first, `test_finds_lib_inf_3p_population`) to discover `_lib-inf-3p/<jar-stem-sha>/` as a population root, same
+      as `_bin-ext`/`_etc-m2`/`_lib`. Real run (local mirror): `lib-inf-3p: decompiled=94 skipped-up-to-date=0
+      failed=0 distinct_jars=94`. Rerun `n5-best-source.py`: `missing` 11,719 (28.8%, T25) → **54** (0.08%) —
+      93 non-empty `_lib-inf-3p/` populations contribute 24,251 classes (12,536 superseded by an exact upstream
+      Maven match, 11,688 `best`=`vineflower2`, 27 residual missing). All 27 residual classes traced to ONE typed
+      cause: Multi-Release-JAR (JEP 238) per-JDK-version override `.class` entries under `META-INF/versions/<N>/...`
+      in 16 distinct third-party jars (jackson-core, log4j-api, xmlbeans, commons-{codec,collections4,compress,
+      dbcp2,io,pool2}, error_prone_annotations, gson, jackson-databind, kotlin-stdlib, poi, poi-ooxml,
+      poi-ooxml-lite) — verified by hand (jackson-core-2.22.2's `BigSignificand`): `extracted/` has the real
+      `.class` bytes, Vineflower's `vineflower2/META-INF/versions/11/...` creates the package directory but writes
+      no `.java` leaf (silent per-class skip, no decompiler-failure marker, so the whole-jar CFR fallback never
+      triggers); the BASE-layer (unversioned) class for every one of them IS represented. A decompiler MRJAR-override
+      limitation, not a `--third-party-libinf` scanning/dedup gap; not tracked as a new gap (≤27 classes
+      corpus-wide, narrowly explained). Verification: full `bats tools/tests/n5-decompile.bats` 67/67 (incl. the 4 new
+      a/b/c/d tests), `shellcheck tools/n5-decompile.sh` clean, `python3 -m unittest discover -s tools/tests`
+      319/319 (1 pre-existing skip). Route: direct (bounded writer assignment; not delegated further).
+- [x] T26a (362cfde on feat/n5-wave14; t26a-upstream-sha1 branch) Identify the 44 no-pom-properties jars by content SHA-1 against Maven
+      Central (search.maven.org solrsearch by SHA-1; on a miss, one filename-derived g:a:v guess accepted only if
+      Central's own published binary-jar SHA-1 matches). Real run: 9 identified-by-sha1 (real upstream sources fetched
+      and byte-verified: apache poi/poi-ooxml/poi-ooxml-lite 5.5.1, xmlbeans 5.3.0, kotlin-stdlib 2.3.0, json-path
+      2.10.0, hsqldb 2.7.4, testng 7.12.0, jcommander 1.83 — jcommander resolved to groupId org.jcommander, not
+      com.beust), 24 vendor-modified (same g:a:v on Central, different bytes -- asm/asm-* 9.10.1, bc*-fips/-jdk18on,
+      jna/jna-platform 5.19.1, kotlin-stdlib(-jdk7/-jdk8) 2.4.10, libthrift 0.24.0, okhttp/okhttp-jvm 5.5.0, okio-jvm
+      3.18.1, resilience4j-core/-retry 2.4.0 -- their fetched sources are marked non-ground-truth, class-name overlap
+      recorded), 11 truly not-on-central (mostly commercial/unpublished: jxbrowser x5, prosys-opc-ua-sdk, bc-bcfkswrapprov,
+      mibble-mibs, jffi-native, SWT win32 native fragment, xml-apis-ext guess 404). Fixed a real pipeline bug found by
+      the live run: run_fetch rebuilt each manifest record from a field allowlist and silently dropped
+      identification_method/vendor_modified (regression test added). docs/upstream-sources-report.md headline now
+      states the ALL-third-party-classes denominator explicitly: 26915/48868 (55.1%), vs the old fetched-only-scoped
+      92.4%/72.7% that got misread downstream. Route: delegated writer (TDD, hermetic HTTP mocks, real network run
+      against repo1.maven.org + search.maven.org only).
+- [x] T26a.2 (4efac11 on feat/n5-wave14; t26a-upstream-sha1 branch, 2nd commit) Orchestrator correction to T26a: manually verified
+      bin/ext/asm-9.10.1.jar's 39/39 `.class` entries are byte-identical to org.ow2.asm:asm:9.10.1 on Central by sha256
+      — the ONLY difference is Niagara's added META-INF/NIAGARA4.SF+.RSA signature — so T26a's whole-jar-SHA-1-only
+      "vendor-modified" call was wrong for it; sources ARE ground truth. Fix: new classify_jar_identity does a real
+      per-`.class` SHA-256 compare against Central's own binary jar (fetch_central_binary_jar) before ever calling
+      something vendor-modified, with a 3-way outcome — resigned-identical (all classes match, only non-class/signature
+      entries differ) / partially-modified (some match — those are covered, the rest still need decompile) /
+      vendor-modified (none match) — plus `unverifiable` when Central's binary can't be fetched. Real run on the T26a
+      44: 9 identified-by-sha1 + 23 resigned-identical + 1 vendor-modified (`okhttp` — the Kotlin-Multiplatform
+      metadata artifact, 0 local classes) + 11 not-on-central (unchanged). Also applied the SAME check to the ORIGINAL
+      154 pom.properties-identified artifacts whose evidence/b117 record showed a whole-jar SHA-1 mismatch (only ever
+      proven by their SOURCES jar's own SHA-1, never the BINARY): reused b117's own non-META-INF check where already
+      conclusive (64 resigned-identical, no network) and live-checked the rest (7 more resigned-identical incl.
+      mssql-jdbc and kotlin-reflect at their corrected versions; 2 genuinely vendor-modified — oauth2-oidc-sdk 0/533
+      classes match, org.eclipse.paho.client.mqttv3 0/110 match, confirming B117's prior "rebuilt-by-vendor" finding
+      for paho and extending it to oauth2-oidc-sdk, which had NO prior special-casing and was silently counted as
+      fully covered before this fix). Two more real bugs found and fixed by the live run itself: (1) the pom-identified
+      recheck looked up Central by the raw pom.properties `version` instead of `resolved_version`, 404ing
+      mssql-jdbc (13.4.0 vs the real 13.4.0.jre11) into a false "unverifiable"; (2) `classes_total_local == 0` (the
+      `okhttp` KMP metadata jar has zero local classes) was treated as falsy/missing and wrongly fell back to a stale
+      classdiff total. Both have regression tests. New headline: 51067/60314 (84.7%), up from 26915/48868 (55.1%) —
+      the T26a run had wrongly zeroed out coverage for every resigned/re-signed jar, not just the truly vendor-modified
+      ones. Verification: 98 unit tests + `make test` (342, both green before AND after the two extra bug fixes), real
+      run against repo1.maven.org + search.maven.org only. Route: delegated writer (TDD, hermetic HTTP mocks).
+- [x] T26a.3 (ce1317b on feat/n5-wave14; t26a-upstream-sha1 branch, 3rd commit) Second orchestrator correction: manually verified
+      oauth2.jar!LIB-INF/oauth2-oidc-sdk-11.26-jdk11.jar is a Maven CLASSIFIER build ("jdk11") — comparing it against
+      Central's classifier-less oauth2-oidc-sdk-11.26.jar (what T26b used) gave a false 0/533; the classifier binary
+      oauth2-oidc-sdk-11.26-jdk11.jar is 533/533 byte-identical. Fix: new `split_classifier`/`detect_classifier` +
+      classifier-aware `binary_sha1_from_central`/`fetch_central_binary_jar` (fetch `<artifact>-<version>-<classifier>.jar`,
+      never the classifier-less one, before ever calling something vendor-modified); `classifier` recorded on the
+      per-jar content_identity record, with a note that Maven's sources jar is shared across classifiers (no per-
+      classifier `-sources.jar`). Programmatically audited BOTH populations for every basename that doesn't equal
+      plain `<artifact>-<version>` (not just eyeballing the orchestrator's suffix list) — exactly 2 real classifier
+      cases total: oauth2-oidc-sdk (154-population, "jdk11") and jffi-1.4.0-native.jar (44-population, "native",
+      previously not-on-central — now identified as com.github.jnr:jffi:1.4.0 classifier=native, verified live: real
+      Central coordinate exists). mssql-jdbc's "13.4.0.jre11" is confirmed NOT a classifier (dot-fused, a literal
+      Central version, already handled by resolved_version) and the SWT win32 native fragment stays not-on-central
+      (only unofficial/wrong-version mirrors exist on Central, live-checked). Also fixed classify_jar_identity's
+      zero-class edge case while implementing this: jffi-1.4.0-native.jar and the earlier okhttp KMP-metadata jar
+      have ZERO local .class entries (pure-native/metadata-only jars) — lumping "nothing to compare" together with
+      "vendor-modified" (which means "compared classes, none matched") was misleading; new explicit "no-classes"
+      status (0 covered either way, math unchanged, only the label is now honest). New headline: 51600/60314 (85.6%),
+      up from 51067/60314 (84.7%). Verification: 113 unit tests + `make test` (357), real run against
+      repo1.maven.org + search.maven.org only. Route: delegated writer (TDD, hermetic HTTP mocks).
+- [x] T5 (9592b82) Porting guide: the only N5-only claim (`NiagaraSlotProcessor`) was false vs BOTH N4.14 and N4.15 — it is a
+      relocation (javax.baja.nre... in bin/ext/nre.jar → niagara.nre... in module niagaraAnnotationProcessors); fixed.
+- [ ] T16b Extend lint-block R1/R2/R8 to docs/*.md (the porting guide carried an R8 error the linter could not see). TDD.
 - [ ] T16 Make the grade visible where claims are made: lint rule R9 — a [CERT] citation into organized/<mod>/vineflower/<cls>
       whose class grade is compiles-mismatch/no-compile needs a bytecode (javap) or docSource co-citation. Route: after T15.
+
+## Grader report follow-ups (next session, from review-6f1c46518f56b786)
+- Render the new grades (timeout, harness-error) in the aggregate report table (0 occurrences in the current sample).
+- Reconcile the report's allowlist prose and sample-size note with the current run; restore the krak2 cross-check line.
+
+## Performance (2026-09-28)
+- Grading/decompiling read ~440 jars from /mnt/c (WSL 9p) per javac call — the dominant cost. Local mirror created and
+  sha256-verified: niagara5-research-localcache/jar-mirror-5.0.0.28/{modules,bin-ext} (+ modules.sha256, bin-ext.sha256).
+- Next session: n5-upstream-sources run_recompile_check integration test for the javap-error → None path (review
+  review-8361cb6c548924c1 R3-recompile-integration-unproved).
 
 ## Additional failure classes observed during this feature (fold into T3/T6)
 - C9 Gap opened without an ALREADY-COVERED check at open time: B109-G3 was already answered by B4 §4.2 + B109 §109.3 (B114).

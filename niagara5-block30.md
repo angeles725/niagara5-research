@@ -202,6 +202,8 @@ gap (§30.x).
 
 ## 30.6 — Obfuscation: confirmed absent, from two independent angles, against a known N4 positive
 
+> **Correction (added by [Block 117], §14 cross-block, §117.5-§117.6).** the no-obfuscation verdict is re-derived with a bytecode-level detector over all 253 Tridium jars with an N4 ZKM positive control, and jarsigner verification is extended from 4 to all 373 jars.
+
 **Angle 1 — class-name heuristic, whole corpus (not a sample).** Aggregating
 `obfuscation_heuristic.ratio` across all 246 recon'd modules + 6 bin/ext jars: **max ratio
 observed is 0.74%** (`obix`, 1/136 top-level classes), well under the bake-off's 5% ZKM/proguard

@@ -1,0 +1,236 @@
+EDGE XpDiff.dump(Lniagara/xml/XElem;Ljava/lang/StringBuilder;)V -> niagara.xml.XElem.attrName(I)Ljava/lang/String;
+EDGE XpDiff.dump(Lniagara/xml/XElem;Ljava/lang/StringBuilder;)V -> niagara.xml.XElem.attrNs(I)Lniagara/xml/XNs;
+EDGE XpDiff.dump(Lniagara/xml/XElem;Ljava/lang/StringBuilder;)V -> niagara.xml.XElem.attrSize()I
+EDGE XpDiff.dump(Lniagara/xml/XElem;Ljava/lang/StringBuilder;)V -> niagara.xml.XElem.attrValue(I)Ljava/lang/String;
+EDGE XpDiff.dump(Lniagara/xml/XElem;Ljava/lang/StringBuilder;)V -> niagara.xml.XElem.content(I)Lniagara/xml/XContent;
+EDGE XpDiff.dump(Lniagara/xml/XElem;Ljava/lang/StringBuilder;)V -> niagara.xml.XElem.contentSize()I
+EDGE XpDiff.dump(Lniagara/xml/XElem;Ljava/lang/StringBuilder;)V -> niagara.xml.XElem.line()I
+EDGE XpDiff.dump(Lniagara/xml/XElem;Ljava/lang/StringBuilder;)V -> niagara.xml.XElem.qname()Ljava/lang/String;
+EDGE XpDiff.dump(Lniagara/xml/XElem;Ljava/lang/StringBuilder;)V -> niagara.xml.XElem.uri()Ljava/lang/String;
+EDGE XpDiff.dump(Lniagara/xml/XElem;Ljava/lang/StringBuilder;)V -> niagara.xml.XNs.prefix()Ljava/lang/String;
+EDGE XpDiff.dump(Lniagara/xml/XElem;Ljava/lang/StringBuilder;)V -> niagara.xml.XText.isCDATA()Z
+EDGE XpDiff.dump(Lniagara/xml/XElem;Ljava/lang/StringBuilder;)V -> niagara.xml.XText.string()Ljava/lang/String;
+EDGE XpDiff.main([Ljava/lang/String;)V -> niagara.xml.XElem.write(Lniagara/xml/XWriter;)V
+EDGE XpDiff.main([Ljava/lang/String;)V -> niagara.xml.XParser.<clinit>()V
+EDGE XpDiff.main([Ljava/lang/String;)V -> niagara.xml.XParser.make(Ljava/lang/String;Z)Lniagara/xml/XParser;
+EDGE XpDiff.main([Ljava/lang/String;)V -> niagara.xml.XParser.parse()Lniagara/xml/XElem;
+EDGE XpDiff.main([Ljava/lang/String;)V -> niagara.xml.XWriter.<clinit>()V
+EDGE XpDiff.main([Ljava/lang/String;)V -> niagara.xml.XWriter.<init>(Ljava/io/OutputStream;)V
+EDGE XpDiff.main([Ljava/lang/String;)V -> niagara.xml.XWriter.flush()V
+EDGE niagara.xml.XElem.<init>()V -> niagara.xml.XElem.<init>(Lniagara/xml/XNs;Ljava/lang/String;)V
+EDGE niagara.xml.XElem.<init>(Lniagara/xml/XNs;Ljava/lang/String;)V -> niagara.xml.XContent.<init>()V
+EDGE niagara.xml.XElem.addContent(Lniagara/xml/XContent;)Lniagara/xml/XElem; -> niagara.xml.XElem.addContent(ILniagara/xml/XContent;)Lniagara/xml/XElem;
+EDGE niagara.xml.XElem.copy()Lniagara/xml/XElem; -> niagara.xml.XElem.<init>()V
+EDGE niagara.xml.XElem.write(Lniagara/xml/XWriter;)V -> niagara.xml.XElem.write(Lniagara/xml/XWriter;I)V
+EDGE niagara.xml.XElem.write(Lniagara/xml/XWriter;I)V -> niagara.xml.XElem.write(Lniagara/xml/XWriter;I)V
+EDGE niagara.xml.XElem.write(Lniagara/xml/XWriter;I)V -> niagara.xml.XText.write(Lniagara/xml/XWriter;)V
+EDGE niagara.xml.XElem.write(Lniagara/xml/XWriter;I)V -> niagara.xml.XWriter.indent(I)Lniagara/xml/XWriter;
+EDGE niagara.xml.XElem.write(Lniagara/xml/XWriter;I)V -> niagara.xml.XWriter.nl()Lniagara/xml/XWriter;
+EDGE niagara.xml.XElem.write(Lniagara/xml/XWriter;I)V -> niagara.xml.XWriter.safe(Ljava/lang/String;)Lniagara/xml/XWriter;
+EDGE niagara.xml.XElem.write(Lniagara/xml/XWriter;I)V -> niagara.xml.XWriter.w(C)Lniagara/xml/XWriter;
+EDGE niagara.xml.XElem.write(Lniagara/xml/XWriter;I)V -> niagara.xml.XWriter.w(Ljava/lang/Object;)Lniagara/xml/XWriter;
+EDGE niagara.xml.XException.<init>(Ljava/lang/String;)V -> niagara.xml.XException.<init>(Ljava/lang/String;IILjava/lang/Throwable;)V
+EDGE niagara.xml.XException.<init>(Ljava/lang/String;II)V -> niagara.xml.XException.<init>(Ljava/lang/String;IILjava/lang/Throwable;)V
+EDGE niagara.xml.XException.<init>(Ljava/lang/String;IILjava/lang/Throwable;)V -> niagara.xml.XException.format(Ljava/lang/String;II)Ljava/lang/String;
+EDGE niagara.xml.XInputStreamReader.read()I -> niagara.xml.XInputStreamReader.autoDetect()V
+EDGE niagara.xml.XInputStreamReader.read()I -> niagara.xml.XInputStreamReader.readUtf8(I)I
+EDGE niagara.xml.XParser.<init>(Ljava/io/InputStream;Z)V -> niagara.xml.XInputStreamReader.<init>(Ljava/io/InputStream;)V
+EDGE niagara.xml.XParser.<init>(Ljava/io/InputStream;Z)V -> niagara.xml.XText.<clinit>()V
+EDGE niagara.xml.XParser.<init>(Ljava/io/InputStream;Z)V -> niagara.xml.XText.<init>()V
+EDGE niagara.xml.XParser.bufToString()Ljava/lang/String; -> niagara.xml.XText.string()Ljava/lang/String;
+EDGE niagara.xml.XParser.close()V -> niagara.xml.XInputStreamReader.close()V
+EDGE niagara.xml.XParser.consume(Ljava/lang/String;)V -> niagara.xml.XParser.error(Ljava/lang/String;)Lniagara/xml/XException;
+EDGE niagara.xml.XParser.consume(Ljava/lang/String;)V -> niagara.xml.XParser.read()I
+EDGE niagara.xml.XParser.error(Ljava/lang/String;)Lniagara/xml/XException; -> niagara.xml.XException.<init>(Ljava/lang/String;II)V
+EDGE niagara.xml.XParser.make(Ljava/io/InputStream;Z)Lniagara/xml/XParser; -> niagara.xml.XParser.<init>(Ljava/io/InputStream;Z)V
+EDGE niagara.xml.XParser.make(Ljava/lang/String;Z)Lniagara/xml/XParser; -> niagara.xml.XParser.make(Ljava/io/InputStream;Z)Lniagara/xml/XParser;
+EDGE niagara.xml.XParser.next()I -> niagara.xml.XParser.consume(Ljava/lang/String;)V
+EDGE niagara.xml.XParser.next()I -> niagara.xml.XParser.error(Ljava/lang/String;)Lniagara/xml/XException;
+EDGE niagara.xml.XParser.next()I -> niagara.xml.XParser.parseCDATA()V
+EDGE niagara.xml.XParser.next()I -> niagara.xml.XParser.parseElemEnd()V
+EDGE niagara.xml.XParser.next()I -> niagara.xml.XParser.parseElemStart(I)V
+EDGE niagara.xml.XParser.next()I -> niagara.xml.XParser.parseText(I)Z
+EDGE niagara.xml.XParser.next()I -> niagara.xml.XParser.pop()V
+EDGE niagara.xml.XParser.next()I -> niagara.xml.XParser.read()I
+EDGE niagara.xml.XParser.next()I -> niagara.xml.XParser.skipComment()V
+EDGE niagara.xml.XParser.next()I -> niagara.xml.XParser.skipDocType()V
+EDGE niagara.xml.XParser.next()I -> niagara.xml.XParser.skipPI()V
+EDGE niagara.xml.XParser.parse()Lniagara/xml/XElem; -> niagara.xml.XParser.parse(Z)Lniagara/xml/XElem;
+EDGE niagara.xml.XParser.parse(Z)Lniagara/xml/XElem; -> niagara.xml.XParser.close()V
+EDGE niagara.xml.XParser.parse(Z)Lniagara/xml/XElem; -> niagara.xml.XParser.error(Ljava/lang/String;)Lniagara/xml/XException;
+EDGE niagara.xml.XParser.parse(Z)Lniagara/xml/XElem; -> niagara.xml.XParser.next()I
+EDGE niagara.xml.XParser.parse(Z)Lniagara/xml/XElem; -> niagara.xml.XParser.parseCurrent(Z)Lniagara/xml/XElem;
+EDGE niagara.xml.XParser.parseAttr(ILniagara/xml/XElem;)Z -> niagara.xml.XElem.addAttrImpl(Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;)Lniagara/xml/XElem;
+EDGE niagara.xml.XParser.parseAttr(ILniagara/xml/XElem;)Z -> niagara.xml.XParser.error(Ljava/lang/String;)Lniagara/xml/XException;
+EDGE niagara.xml.XParser.parseAttr(ILniagara/xml/XElem;)Z -> niagara.xml.XParser.parseQName(I)V
+EDGE niagara.xml.XParser.parseAttr(ILniagara/xml/XElem;)Z -> niagara.xml.XParser.parseString(I)Ljava/lang/String;
+EDGE niagara.xml.XParser.parseAttr(ILniagara/xml/XElem;)Z -> niagara.xml.XParser.pushNs(Lniagara/xml/XElem;Ljava/lang/String;Ljava/lang/String;)V
+EDGE niagara.xml.XParser.parseAttr(ILniagara/xml/XElem;)Z -> niagara.xml.XParser.read()I
+EDGE niagara.xml.XParser.parseAttr(ILniagara/xml/XElem;)Z -> niagara.xml.XParser.skipSpace()Z
+EDGE niagara.xml.XParser.parseCDATA()V -> niagara.xml.XParser.read()I
+EDGE niagara.xml.XParser.parseCDATA()V -> niagara.xml.XText.append(I)V
+EDGE niagara.xml.XParser.parseCDATA()V -> niagara.xml.XText.setLength(I)V
+EDGE niagara.xml.XParser.parseCurrent(Z)Lniagara/xml/XElem; -> niagara.xml.XContent.parent()Lniagara/xml/XElem;
+EDGE niagara.xml.XParser.parseCurrent(Z)Lniagara/xml/XElem; -> niagara.xml.XElem.addContent(Lniagara/xml/XContent;)Lniagara/xml/XElem;
+EDGE niagara.xml.XParser.parseCurrent(Z)Lniagara/xml/XElem; -> niagara.xml.XElem.copy()Lniagara/xml/XElem;
+EDGE niagara.xml.XParser.parseCurrent(Z)Lniagara/xml/XElem; -> niagara.xml.XParser.close()V
+EDGE niagara.xml.XParser.parseCurrent(Z)Lniagara/xml/XElem; -> niagara.xml.XParser.elem()Lniagara/xml/XElem;
+EDGE niagara.xml.XParser.parseCurrent(Z)Lniagara/xml/XElem; -> niagara.xml.XParser.next()I
+EDGE niagara.xml.XParser.parseCurrent(Z)Lniagara/xml/XElem; -> niagara.xml.XParser.text()Lniagara/xml/XText;
+EDGE niagara.xml.XParser.parseCurrent(Z)Lniagara/xml/XElem; -> niagara.xml.XText.copy()Lniagara/xml/XText;
+EDGE niagara.xml.XParser.parseElemEnd()V -> niagara.xml.XElem.qname()Ljava/lang/String;
+EDGE niagara.xml.XParser.parseElemEnd()V -> niagara.xml.XParser.error(Ljava/lang/String;)Lniagara/xml/XException;
+EDGE niagara.xml.XParser.parseElemEnd()V -> niagara.xml.XParser.parseQName(I)V
+EDGE niagara.xml.XParser.parseElemEnd()V -> niagara.xml.XParser.prefixToNs(Ljava/lang/String;)Lniagara/xml/XNs;
+EDGE niagara.xml.XParser.parseElemEnd()V -> niagara.xml.XParser.read()I
+EDGE niagara.xml.XParser.parseElemEnd()V -> niagara.xml.XParser.skipSpace()Z
+EDGE niagara.xml.XParser.parseElemStart(I)V -> niagara.xml.XParser.error(Ljava/lang/String;)Lniagara/xml/XException;
+EDGE niagara.xml.XParser.parseElemStart(I)V -> niagara.xml.XParser.parseAttr(ILniagara/xml/XElem;)Z
+EDGE niagara.xml.XParser.parseElemStart(I)V -> niagara.xml.XParser.parseQName(I)V
+EDGE niagara.xml.XParser.parseElemStart(I)V -> niagara.xml.XParser.prefixToNs(Ljava/lang/String;)Lniagara/xml/XNs;
+EDGE niagara.xml.XParser.parseElemStart(I)V -> niagara.xml.XParser.push()Lniagara/xml/XElem;
+EDGE niagara.xml.XParser.parseElemStart(I)V -> niagara.xml.XParser.read()I
+EDGE niagara.xml.XParser.parseElemStart(I)V -> niagara.xml.XParser.skipSpace()Z
+EDGE niagara.xml.XParser.parseName(I)Ljava/lang/String; -> niagara.xml.XParser.bufToString()Ljava/lang/String;
+EDGE niagara.xml.XParser.parseName(I)Ljava/lang/String; -> niagara.xml.XParser.error(Ljava/lang/String;)Lniagara/xml/XException;
+EDGE niagara.xml.XParser.parseName(I)Ljava/lang/String; -> niagara.xml.XParser.isName(I)Z
+EDGE niagara.xml.XParser.parseName(I)Ljava/lang/String; -> niagara.xml.XParser.read()I
+EDGE niagara.xml.XParser.parseName(I)Ljava/lang/String; -> niagara.xml.XText.append(I)V
+EDGE niagara.xml.XParser.parseName(I)Ljava/lang/String; -> niagara.xml.XText.setLength(I)V
+EDGE niagara.xml.XParser.parseQName(I)V -> niagara.xml.XParser.parseName(I)Ljava/lang/String;
+EDGE niagara.xml.XParser.parseQName(I)V -> niagara.xml.XParser.read()I
+EDGE niagara.xml.XParser.parseString(I)Ljava/lang/String; -> niagara.xml.XParser.bufToString()Ljava/lang/String;
+EDGE niagara.xml.XParser.parseString(I)Ljava/lang/String; -> niagara.xml.XParser.read()I
+EDGE niagara.xml.XParser.parseString(I)Ljava/lang/String; -> niagara.xml.XParser.toCharData(I)I
+EDGE niagara.xml.XParser.parseString(I)Ljava/lang/String; -> niagara.xml.XText.append(I)V
+EDGE niagara.xml.XParser.parseString(I)Ljava/lang/String; -> niagara.xml.XText.setLength(I)V
+EDGE niagara.xml.XParser.parseText(I)Z -> niagara.xml.XParser.isSpace(I)Z
+EDGE niagara.xml.XParser.parseText(I)Z -> niagara.xml.XParser.read()I
+EDGE niagara.xml.XParser.parseText(I)Z -> niagara.xml.XParser.toCharData(I)I
+EDGE niagara.xml.XParser.parseText(I)Z -> niagara.xml.XText.append(I)V
+EDGE niagara.xml.XParser.prefixToNs(Ljava/lang/String;)Lniagara/xml/XNs; -> niagara.xml.XException.<init>(Ljava/lang/String;)V
+EDGE niagara.xml.XParser.push()Lniagara/xml/XElem; -> niagara.xml.XElem.<clinit>()V
+EDGE niagara.xml.XParser.push()Lniagara/xml/XElem; -> niagara.xml.XElem.<init>()V
+EDGE niagara.xml.XParser.push()Lniagara/xml/XElem; -> niagara.xml.XElem.clearAttr()V
+EDGE niagara.xml.XParser.pushNs(Lniagara/xml/XElem;Ljava/lang/String;Ljava/lang/String;)V -> niagara.xml.XNs.<init>(Ljava/lang/String;Ljava/lang/String;)V
+EDGE niagara.xml.XParser.read()I -> niagara.xml.XInputStreamReader.read()I
+EDGE niagara.xml.XParser.skipComment()V -> niagara.xml.XParser.error(Ljava/lang/String;)Lniagara/xml/XException;
+EDGE niagara.xml.XParser.skipComment()V -> niagara.xml.XParser.read()I
+EDGE niagara.xml.XParser.skipDocType()V -> niagara.xml.XParser.read()I
+EDGE niagara.xml.XParser.skipPI()V -> niagara.xml.XParser.read()I
+EDGE niagara.xml.XParser.skipSpace()Z -> niagara.xml.XParser.isSpace(I)Z
+EDGE niagara.xml.XParser.skipSpace()Z -> niagara.xml.XParser.read()I
+EDGE niagara.xml.XParser.toCharData(I)I -> niagara.xml.XInputStreamReader.read()I
+EDGE niagara.xml.XParser.toCharData(I)I -> niagara.xml.XParser.error(Ljava/lang/String;)Lniagara/xml/XException;
+EDGE niagara.xml.XParser.toCharData(I)I -> niagara.xml.XParser.read()I
+EDGE niagara.xml.XParser.toCharData(I)I -> niagara.xml.XParser.toNum(III)I
+EDGE niagara.xml.XParser.toCharData(I)I -> niagara.xml.XText.append(I)V
+EDGE niagara.xml.XParser.toCharData(I)I -> niagara.xml.XText.setLength(I)V
+EDGE niagara.xml.XParser.toCharData(I)I -> niagara.xml.XText.string()Ljava/lang/String;
+EDGE niagara.xml.XParser.toNum(III)I -> niagara.xml.XParser.error(Ljava/lang/String;)Lniagara/xml/XException;
+EDGE niagara.xml.XText.<init>()V -> niagara.xml.XContent.<init>()V
+EDGE niagara.xml.XText.copy()Lniagara/xml/XText; -> niagara.xml.XText.<init>()V
+EDGE niagara.xml.XText.write(Lniagara/xml/XWriter;)V -> niagara.xml.XWriter.safe(IZ)Lniagara/xml/XWriter;
+EDGE niagara.xml.XText.write(Lniagara/xml/XWriter;)V -> niagara.xml.XWriter.w(C)Lniagara/xml/XWriter;
+EDGE niagara.xml.XText.write(Lniagara/xml/XWriter;)V -> niagara.xml.XWriter.w(Ljava/lang/Object;)Lniagara/xml/XWriter;
+EDGE niagara.xml.XWriter.indent(I)Lniagara/xml/XWriter; -> niagara.xml.XWriter.getSpaces(I)Ljava/lang/String;
+EDGE niagara.xml.XWriter.indent(I)Lniagara/xml/XWriter; -> niagara.xml.XWriter.write(Ljava/lang/String;)V
+EDGE niagara.xml.XWriter.nl()Lniagara/xml/XWriter; -> niagara.xml.XWriter.write(I)V
+EDGE niagara.xml.XWriter.safe(IZ)Lniagara/xml/XWriter; -> niagara.xml.XWriter.safe(Ljava/io/Writer;IZ)V
+EDGE niagara.xml.XWriter.safe(Ljava/io/Writer;IZ)V -> niagara.xml.XWriter.write(I)V
+EDGE niagara.xml.XWriter.safe(Ljava/io/Writer;IZ)V -> niagara.xml.XWriter.write(Ljava/lang/String;)V
+EDGE niagara.xml.XWriter.safe(Ljava/io/Writer;Ljava/lang/String;Z)V -> niagara.xml.XWriter.safe(Ljava/io/Writer;IZ)V
+EDGE niagara.xml.XWriter.safe(Ljava/lang/String;)Lniagara/xml/XWriter; -> niagara.xml.XWriter.safe(Ljava/io/Writer;Ljava/lang/String;Z)V
+EDGE niagara.xml.XWriter.w(C)Lniagara/xml/XWriter; -> niagara.xml.XWriter.write(I)V
+EDGE niagara.xml.XWriter.w(Ljava/lang/Object;)Lniagara/xml/XWriter; -> niagara.xml.XWriter.write(Ljava/lang/String;)V
+EDGE niagara.xml.XWriter.write(Ljava/lang/String;)V -> niagara.xml.XWriter.initOut()V
+ENTER niagara.xml.XContent.<init>()V
+ENTER niagara.xml.XContent.parent()Lniagara/xml/XElem;
+ENTER niagara.xml.XElem.<clinit>()V
+ENTER niagara.xml.XElem.<init>()V
+ENTER niagara.xml.XElem.<init>(Lniagara/xml/XNs;Ljava/lang/String;)V
+ENTER niagara.xml.XElem.addAttrImpl(Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;)Lniagara/xml/XElem;
+ENTER niagara.xml.XElem.addContent(ILniagara/xml/XContent;)Lniagara/xml/XElem;
+ENTER niagara.xml.XElem.addContent(Lniagara/xml/XContent;)Lniagara/xml/XElem;
+ENTER niagara.xml.XElem.attrName(I)Ljava/lang/String;
+ENTER niagara.xml.XElem.attrNs(I)Lniagara/xml/XNs;
+ENTER niagara.xml.XElem.attrSize()I
+ENTER niagara.xml.XElem.attrValue(I)Ljava/lang/String;
+ENTER niagara.xml.XElem.clearAttr()V
+ENTER niagara.xml.XElem.content(I)Lniagara/xml/XContent;
+ENTER niagara.xml.XElem.contentSize()I
+ENTER niagara.xml.XElem.copy()Lniagara/xml/XElem;
+ENTER niagara.xml.XElem.line()I
+ENTER niagara.xml.XElem.qname()Ljava/lang/String;
+ENTER niagara.xml.XElem.uri()Ljava/lang/String;
+ENTER niagara.xml.XElem.write(Lniagara/xml/XWriter;)V
+ENTER niagara.xml.XElem.write(Lniagara/xml/XWriter;I)V
+ENTER niagara.xml.XException.<init>(Ljava/lang/String;)V
+ENTER niagara.xml.XException.<init>(Ljava/lang/String;II)V
+ENTER niagara.xml.XException.<init>(Ljava/lang/String;IILjava/lang/Throwable;)V
+ENTER niagara.xml.XException.format(Ljava/lang/String;II)Ljava/lang/String;
+ENTER niagara.xml.XInputStreamReader.<init>(Ljava/io/InputStream;)V
+ENTER niagara.xml.XInputStreamReader.autoDetect()V
+ENTER niagara.xml.XInputStreamReader.close()V
+ENTER niagara.xml.XInputStreamReader.read()I
+ENTER niagara.xml.XInputStreamReader.readUtf8(I)I
+ENTER niagara.xml.XNs.<init>(Ljava/lang/String;Ljava/lang/String;)V
+ENTER niagara.xml.XNs.prefix()Ljava/lang/String;
+ENTER niagara.xml.XParser.<clinit>()V
+ENTER niagara.xml.XParser.<init>(Ljava/io/InputStream;Z)V
+ENTER niagara.xml.XParser.bufToString()Ljava/lang/String;
+ENTER niagara.xml.XParser.close()V
+ENTER niagara.xml.XParser.consume(Ljava/lang/String;)V
+ENTER niagara.xml.XParser.elem()Lniagara/xml/XElem;
+ENTER niagara.xml.XParser.error(Ljava/lang/String;)Lniagara/xml/XException;
+ENTER niagara.xml.XParser.isName(I)Z
+ENTER niagara.xml.XParser.isSpace(I)Z
+ENTER niagara.xml.XParser.make(Ljava/io/InputStream;Z)Lniagara/xml/XParser;
+ENTER niagara.xml.XParser.make(Ljava/lang/String;Z)Lniagara/xml/XParser;
+ENTER niagara.xml.XParser.next()I
+ENTER niagara.xml.XParser.parse()Lniagara/xml/XElem;
+ENTER niagara.xml.XParser.parse(Z)Lniagara/xml/XElem;
+ENTER niagara.xml.XParser.parseAttr(ILniagara/xml/XElem;)Z
+ENTER niagara.xml.XParser.parseCDATA()V
+ENTER niagara.xml.XParser.parseCurrent(Z)Lniagara/xml/XElem;
+ENTER niagara.xml.XParser.parseElemEnd()V
+ENTER niagara.xml.XParser.parseElemStart(I)V
+ENTER niagara.xml.XParser.parseName(I)Ljava/lang/String;
+ENTER niagara.xml.XParser.parseQName(I)V
+ENTER niagara.xml.XParser.parseString(I)Ljava/lang/String;
+ENTER niagara.xml.XParser.parseText(I)Z
+ENTER niagara.xml.XParser.pop()V
+ENTER niagara.xml.XParser.prefixToNs(Ljava/lang/String;)Lniagara/xml/XNs;
+ENTER niagara.xml.XParser.push()Lniagara/xml/XElem;
+ENTER niagara.xml.XParser.pushNs(Lniagara/xml/XElem;Ljava/lang/String;Ljava/lang/String;)V
+ENTER niagara.xml.XParser.read()I
+ENTER niagara.xml.XParser.skipComment()V
+ENTER niagara.xml.XParser.skipDocType()V
+ENTER niagara.xml.XParser.skipPI()V
+ENTER niagara.xml.XParser.skipSpace()Z
+ENTER niagara.xml.XParser.text()Lniagara/xml/XText;
+ENTER niagara.xml.XParser.toCharData(I)I
+ENTER niagara.xml.XParser.toNum(III)I
+ENTER niagara.xml.XText.<clinit>()V
+ENTER niagara.xml.XText.<init>()V
+ENTER niagara.xml.XText.append(I)V
+ENTER niagara.xml.XText.copy()Lniagara/xml/XText;
+ENTER niagara.xml.XText.isCDATA()Z
+ENTER niagara.xml.XText.setLength(I)V
+ENTER niagara.xml.XText.string()Ljava/lang/String;
+ENTER niagara.xml.XText.write(Lniagara/xml/XWriter;)V
+ENTER niagara.xml.XWriter.<clinit>()V
+ENTER niagara.xml.XWriter.<init>(Ljava/io/OutputStream;)V
+ENTER niagara.xml.XWriter.flush()V
+ENTER niagara.xml.XWriter.getSpaces(I)Ljava/lang/String;
+ENTER niagara.xml.XWriter.indent(I)Lniagara/xml/XWriter;
+ENTER niagara.xml.XWriter.initOut()V
+ENTER niagara.xml.XWriter.nl()Lniagara/xml/XWriter;
+ENTER niagara.xml.XWriter.safe(IZ)Lniagara/xml/XWriter;
+ENTER niagara.xml.XWriter.safe(Ljava/io/Writer;IZ)V
+ENTER niagara.xml.XWriter.safe(Ljava/io/Writer;Ljava/lang/String;Z)V
+ENTER niagara.xml.XWriter.safe(Ljava/lang/String;)Lniagara/xml/XWriter;
+ENTER niagara.xml.XWriter.w(C)Lniagara/xml/XWriter;
+ENTER niagara.xml.XWriter.w(Ljava/lang/Object;)Lniagara/xml/XWriter;
+ENTER niagara.xml.XWriter.write(I)V
+ENTER niagara.xml.XWriter.write(Ljava/lang/String;)V

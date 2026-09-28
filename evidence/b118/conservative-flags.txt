@@ -1,0 +1,1 @@
+--pattern-matching=false --decompile-switch-expressions=false --ternary-in-if=false --prettify-ifs=false --inline-simple-lambdas=false --bytecode-source-mapping=true --__dump_original_lines__=true

@@ -1,0 +1,12 @@
+00000001800060b0 <.text+0x50b0>:
+   1800060b0:	33 d2                	xor    edx,edx
+   1800060b2:	48 8d 8d b0 06 00 00 	lea    rcx,[rbp+0x6b0]
+   1800060b9:	e8 88 73 00 00       	call   0x18000d446
+   1800060be:	48 8d 05 43 a0 00 00 	lea    rax,[rip+0xa043]        # 0x180010108
+   1800060c5:	ba 04 01 00 00       	mov    edx,0x104
+   1800060ca:	4c 8d 0d 6f a0 00 00 	lea    r9,[rip+0xa06f]        # 0x180010140
+   1800060d1:	48 89 44 24 20       	mov    QWORD PTR [rsp+0x20],rax
+   1800060d6:	49 c7 c0 ff ff ff ff 	mov    r8,0xffffffffffffffff
+   1800060dd:	48 8d 8d b0 06 00 00 	lea    rcx,[rbp+0x6b0]
+   1800060e4:	e8 a7 e7 ff ff       	call   0x180004890
+   1800060e9:	48                   	rex.W

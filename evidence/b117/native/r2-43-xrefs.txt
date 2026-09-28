@@ -1,0 +1,3 @@
+sym.nre.dll__buildArgs_NreLauncherWin32__AEAAHHPEAPEAD_Z 0x1800060be [STRN:r--] lea[38;5;251m rax[0m,[38;5;178m[38;5;178m str.com.tridium.nre.platform.NativePlatformProviderTridium[0m
+---
+sym.nre.dll__buildArgs_NreLauncherWin32__AEAAHHPEAPEAD_Z 0x1800060ca [STRN:r--] lea[38;5;251m r9[0m,[38;5;178m[38;5;178m str._Dniagara.platform.provider_s[0m

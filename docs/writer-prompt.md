@@ -86,7 +86,10 @@ See `odd/tasks/decompiler-fidelity-audit.md` for the full experiment and evidenc
 - NEVER assert that Tridium "uses/adopted/rewrote to" a Java language feature, and NEVER report an
   N4<->N5 syntax delta, from decompiled source. Quoting decompiled code to explain BEHAVIOR is fine EXCEPT when the claim depends on overload binding, boxing/unboxing, numeric conversion or casts, `finally`/return control flow, varargs arguments, or whether a name is a local or a field — Vineflower 1.12 gets exactly these wrong in 11 of 36,977 recompiled Tridium methods (niagara5-block116.md, D1-D11; e.g. BDevice.checkFatalFault turns a local into the field `network`). For those, cite javap (`javap -c -p organized/<mod>/extracted/...class`) or the docSource original. CFR is not a semantic oracle either.
 - Bytecode-identical (javap cannot decide; only docSource originals or a non-resugaring decompiler
-  like CFR): `instanceof` patterns, `var`, text blocks, string concatenation form.
+  like CFR): `instanceof` patterns, `var`, text blocks, string concatenation form. For `instanceof` patterns the
+  LineNumberTable (`javap -l`) usually decides (classic instanceof/checkcast on different lines; niagara5-block118.md).
+  CFR is NOT a syntax oracle (git master resugars; 0.152 un-sugars real patterns). For "who calls X" use bytecode
+  (`python3 tools/n5-bytecode-xref.py callers ...`), never module-navigator alone (it missed 5 of 5 callers in B118).
 - Bytecode-visible (use `javap -v -p` on `organized/<mod>/extracted/...class`): records (Record
   attr), sealed (PermittedSubclasses), pattern switch (typeSwitch/SwitchBootstraps indy), lambdas
   (LambdaMetafactory vs `$1` inner class), array/Iterable for-each (Tridium ships `-g`, so
@@ -138,3 +141,13 @@ gaps opened (ID · priority · investigable|requires-execution|blocked-on-X). Co
 blocks (block §). New external artifacts cited (path/URL + sha256) for `sources/SOURCES.md`.
 `verify-block.sh` result. `tools/lint-block.py` result (must be a clean exit 0, or the exact waivers
 used and why).
+
+## Source precedence for code claims (decided 2026-09-28, T20; measured, not assumed)
+Cite the most faithful representation available, in this order:
+1. `organized/docSource/...` original Tridium source (recompiles byte-identical to the shipped bytecode, B116).
+2. Third-party code: the upstream `-sources.jar` under `organized/_upstream-sources/<g>/<a>/<v>/` (SHA-1 verified, B117/T22).
+3. `organized/<mod>/vineflower2/` (library-context decompile; 125/192 sampled classes round-trip exactly vs 124 for
+   `vineflower/`, zero regressions — docs/decompile-fidelity-report.md). Existing citations to `vineflower/` stay valid.
+4. `organized/<mod>/vineflower-cons/` when you need ORIGINAL line numbers or classic (non-resugared) syntax (B118 §118.1).
+5. Bytecode (`javap -c -p -l` on `organized/<mod>/extracted/...class`, or `krak2 dis -r`) — mandatory for any class graded
+   `bytecode-only` in `organized/<mod>/fidelity.vineflower2.json`, and for overload/boxing/numeric/finally/local-vs-field claims.

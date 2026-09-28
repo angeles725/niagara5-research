@@ -1,0 +1,202 @@
+"""Tests for tools/n5-extract-census.py: extraction completeness + integrity census.
+
+The census answers "are the bytes the decompile pipeline analysed exactly the
+vendor's bytes, and was anything inside the jar left unanalysed?" Unit tests
+build small synthetic jars in a temp dir so every rule is verified hermetically;
+a smoke test runs against one real N5 module when the install is present.
+"""
+import hashlib
+import importlib.util
+import io
+import json
+import os
+import subprocess
+import sys
+import tempfile
+import unittest
+import zipfile
+
+TOOLS_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SCRIPT = os.path.join(TOOLS_DIR, "n5-extract-census.py")
+N5_MODULES_DIR = "/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules"
+N5_ORGANIZED = os.path.join(os.path.dirname(TOOLS_DIR), "organized")
+
+
+def _load():
+    spec = importlib.util.spec_from_file_location("n5_extract_census", SCRIPT)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+CLASS_MAGIC = b"\xca\xfe\xba\xbe\x00\x00\x00\x45"  # major 69
+
+
+def _jar_bytes(entries, manifest=None):
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        if manifest is not None:
+            zf.writestr("META-INF/MANIFEST.MF", manifest)
+        for name, data in entries.items():
+            zf.writestr(name, data)
+    return buf.getvalue()
+
+
+def _write(path, data):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "wb") as fh:
+        fh.write(data)
+
+
+class TridiumShareTest(unittest.TestCase):
+    def test_counts_tridium_namespaces(self):
+        m = _load()
+        names = [
+            "com/tridium/a/A.class",
+            "javax/baja/b/B.class",
+            "niagara/c/C.class",
+            "org/other/D.class",
+            "com/tridium/x.lexicon",
+        ]
+        self.assertEqual(m.tridium_share(names), (3, 4))
+
+
+class NestedJarTest(unittest.TestCase):
+    def test_nested_jar_census_reports_classes_and_tridium(self):
+        m = _load()
+        inner = _jar_bytes({
+            "com/tridium/slot/S.class": CLASS_MAGIC,
+            "org/lib/L.class": CLASS_MAGIC,
+        })
+        info = m.nested_jar_census("LIB-INF/inner.jar", inner, release=25)
+        self.assertEqual(info["classes"], 2)
+        self.assertEqual(info["tridium_classes"], 1)
+        self.assertFalse(info["multi_release"])
+        self.assertEqual(info["sha256"], hashlib.sha256(inner).hexdigest())
+
+    def test_nested_multi_release_selection_for_release(self):
+        m = _load()
+        inner = _jar_bytes(
+            {
+                "org/lib/A.class": CLASS_MAGIC,
+                "META-INF/versions/9/org/lib/A.class": CLASS_MAGIC,
+                "META-INF/versions/21/org/lib/A.class": CLASS_MAGIC,
+                "META-INF/versions/26/org/lib/A.class": CLASS_MAGIC,
+                "META-INF/versions/11/module-info.class": CLASS_MAGIC,
+            },
+            manifest="Manifest-Version: 1.0\r\nMulti-Release: true\r\n\r\n",
+        )
+        info = m.nested_jar_census("LIB-INF/mr.jar", inner, release=25)
+        self.assertTrue(info["multi_release"])
+        self.assertEqual(info["mr_versions"], [9, 11, 21, 26])
+        # On release 25 the JVM loads versions/21 (highest <= 25), not base, not 26.
+        self.assertEqual(info["mr_selected"]["org/lib/A.class"],
+                         "META-INF/versions/21/org/lib/A.class")
+        self.assertEqual(info["mr_overridden_classes"], 2)
+
+    def test_versions_dir_without_manifest_flag_is_not_multi_release(self):
+        m = _load()
+        inner = _jar_bytes({
+            "org/lib/A.class": CLASS_MAGIC,
+            "META-INF/versions/9/org/lib/A.class": CLASS_MAGIC,
+        })
+        info = m.nested_jar_census("LIB-INF/x.jar", inner, release=25)
+        self.assertFalse(info["multi_release"])
+        self.assertEqual(info["mr_selected"], {})
+
+
+class ByteExactTest(unittest.TestCase):
+    def setUp(self):
+        self.m = _load()
+        self.tmp = tempfile.mkdtemp()
+        self.jar = os.path.join(self.tmp, "mod.jar")
+        _write(self.jar, _jar_bytes({
+            "com/tridium/a/A.class": CLASS_MAGIC + b"A",
+            "com/tridium/a/B.class": CLASS_MAGIC + b"B",
+            "com/tridium/a/x.lexicon": b"k=v\n",
+            "LIB-INF/in.jar": _jar_bytes({"com/tridium/q/Q.class": CLASS_MAGIC}),
+        }))
+        self.moddir = os.path.join(self.tmp, "mod")
+        _write(os.path.join(self.moddir, "extracted/com/tridium/a/A.class"), CLASS_MAGIC + b"A")
+        _write(os.path.join(self.moddir, "extracted/com/tridium/a/B.class"), CLASS_MAGIC + b"TAMPERED")
+        _write(os.path.join(self.moddir, "extracted/com/tridium/a/x.lexicon"), b"k=v\n")
+        _write(os.path.join(self.moddir, "resources/com/tridium/a/x.lexicon"), b"k=v\n")
+        # LIB-INF/in.jar missing from extracted/ and resources/ on purpose
+
+    def test_detects_mismatch_and_missing(self):
+        r = self.m.census_module(self.jar, self.moddir, release=25)
+        self.assertEqual(r["classes"]["checked"], 2)
+        self.assertEqual(r["classes"]["mismatched"], ["com/tridium/a/B.class"])
+        self.assertEqual(r["classes"]["missing"], [])
+        self.assertEqual(r["resources"]["expected"], 2)
+        self.assertIn("LIB-INF/in.jar", r["resources"]["missing"])
+        self.assertEqual(r["nested"][0]["name"], "LIB-INF/in.jar")
+        self.assertEqual(r["nested"][0]["tridium_classes"], 1)
+        self.assertEqual(r["nested_classes_total"], 1)
+        self.assertEqual(r["nested_classes_decompiled"], 0)
+
+    def test_clean_module_reports_no_mismatch(self):
+        _write(os.path.join(self.moddir, "extracted/com/tridium/a/B.class"), CLASS_MAGIC + b"B")
+        r = self.m.census_module(self.jar, self.moddir, release=25)
+        self.assertEqual(r["classes"]["mismatched"], [])
+
+
+class PayloadClassifierTest(unittest.TestCase):
+    def test_native_magic(self):
+        m = _load()
+        self.assertEqual(m.native_format(b"MZ\x90\x00" + b"\x00" * 60), "PE")
+        self.assertEqual(m.native_format(b"\x7fELF\x02\x01"), "ELF")
+        self.assertEqual(m.native_format(b"\xcf\xfa\xed\xfe"), "Mach-O")
+        self.assertIsNone(m.native_format(b"PK\x03\x04"))
+
+    def test_minified_js(self):
+        m = _load()
+        readable = b"function f(a) {\n  return a + 1;\n}\n" * 50
+        minified = b"!function(e){" + b"var a=1;" * 400 + b"}();"
+        self.assertFalse(m.is_minified_js(readable))
+        self.assertTrue(m.is_minified_js(minified))
+
+
+class CliTest(unittest.TestCase):
+    def test_cli_module_json(self):
+        tmp = tempfile.mkdtemp()
+        jar = os.path.join(tmp, "m.jar")
+        _write(jar, _jar_bytes({"com/tridium/a/A.class": CLASS_MAGIC}))
+        moddir = os.path.join(tmp, "m")
+        _write(os.path.join(moddir, "extracted/com/tridium/a/A.class"), CLASS_MAGIC)
+        out = subprocess.run(
+            [sys.executable, SCRIPT, "module", jar, moddir, "--json"],
+            capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(out.returncode, 0, out.stderr)
+        data = json.loads(out.stdout)
+        self.assertEqual(data["classes"]["checked"], 1)
+
+    def test_cli_exit_1_on_mismatch(self):
+        tmp = tempfile.mkdtemp()
+        jar = os.path.join(tmp, "m.jar")
+        _write(jar, _jar_bytes({"com/tridium/a/A.class": CLASS_MAGIC}))
+        moddir = os.path.join(tmp, "m")
+        _write(os.path.join(moddir, "extracted/com/tridium/a/A.class"), b"x")
+        out = subprocess.run(
+            [sys.executable, SCRIPT, "module", jar, moddir, "--json"],
+            capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(out.returncode, 1)
+
+
+@unittest.skipUnless(os.path.isfile(os.path.join(N5_MODULES_DIR, "control.jar"))
+                     and os.path.isdir(os.path.join(N5_ORGANIZED, "control")),
+                     "real N5 install / organized tree not present")
+class RealInstallSmokeTest(unittest.TestCase):
+    def test_control_module_is_byte_exact(self):
+        m = _load()
+        r = m.census_module(os.path.join(N5_MODULES_DIR, "control.jar"),
+                            os.path.join(N5_ORGANIZED, "control"), release=25)
+        self.assertEqual(r["classes"]["mismatched"], [])
+        self.assertEqual(r["classes"]["missing"], [])
+        self.assertGreater(r["classes"]["checked"], 0)
+
+
+if __name__ == "__main__":
+    unittest.main()
