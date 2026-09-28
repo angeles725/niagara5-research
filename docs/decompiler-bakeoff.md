@@ -886,7 +886,97 @@ per-class skip, not a marked failure (`scan_marker_files` finds nothing, so the 
 fallback path never triggers for it either). The BASE-layer (unversioned) class at the plain
 package path (`com/fasterxml/jackson/core/internal/shaded/fdp/v2_22_2/BigSignificand`) **is**
 represented (`vineflower2`, confirmed). This is a decompiler Multi-Release-JAR-override
-limitation, not a scanning or dedup gap in `--third-party-libinf` itself — fixing it (teaching
-Vineflower, or a fallback path, to render MRJAR override entries) is out of this task's scope
-and is not tracked as a new gap here since it affects at most 27 classes corpus-wide, all
-narrowly explained.
+limitation, not a scanning or dedup gap in `--third-party-libinf` itself. **Fixed below.**
+
+### Fix: Multi-Release JAR version overrides (`odd/tasks/decompiler-fidelity-audit.md`)
+
+`tools/n5-decompile.sh` now decompiles every `META-INF/versions/<N>/...` entry it finds under
+ANY jar's `extracted/` tree — `vf_handle_mrjar_versions`, shared by `decompile_module` (v1) and
+`decompile_module_variant` (v2/cons), called unconditionally right after each jar's whole-jar
+primary decompile settles, so every population this pipeline has (plain modules, `--bin-ext`,
+`--extra-tridium`, `--third-party-libinf`) picks it up with no separate call site. For each
+version `N` found, every `.class` entry under `META-INF/versions/N/` is copied into a temporary
+directory with the `META-INF/versions/N/` prefix stripped (re-rooted to its real package path —
+the exact path Vineflower resolves an ordinary class at), packaged into one throwaway subset jar,
+and decompiled with the SAME command/options/library context the real run used (v1: no library
+context; v2/cons: the same `--add-external`/`--include-runtime`/fidelity flags). A subset run that
+itself times out reuses `vf_isolate_hung_classes`/`vf_build_excluded_classes_regex` — the exact
+same T24 hang-isolation machinery a whole-jar hang uses (both helpers already take `extracted_dir`
+as a plain parameter, so pointing them at the temporary re-rooted directory needed no changes).
+Output lands at `<tree>/META-INF/versions/<N>/<pkg>/<Class>.java` (Vineflower) or the variant's
+fallback dir at the same path (CFR, for any class Vineflower still didn't produce). `recon.json`
+gains `mrjar_versions` (`{"N": {"classes": n, "decompiled": n, "fallback": n}}`, top-level for v1,
+inside the `"v2"`/`"cons"` sub-object for those variants) and `mrjar_unrepresented` (a list of
+`"N:<internal-name>"` entries) — silent zero is forbidden: any versioned class neither decompiler
+produced a file for is always named there, never dropped quietly the way the 27 corpus classes
+above were.
+
+Tests: `tools/tests/n5-decompile.bats`'s "MRJAR" section builds a REAL Multi-Release jar (real
+`javac`, base `com.example.Base` plus a byte-different `META-INF/versions/11/com/example/Base`
+override) and asserts, against the real Vineflower/CFR pipeline: the override `.java` exists at
+`vineflower/META-INF/versions/11/com/example/Base.java` with its own distinguishing content;
+`recon.json`'s `mrjar_versions.11` records `classes=1 decompiled=1 fallback=0` and
+`mrjar_unrepresented=[]`; a second test corrupts the override `.class` bytes so neither decompiler
+can produce anything for it, and asserts `mrjar_unrepresented=["11:com/example/Base"]` instead of
+a silent drop; a structural test asserts `vf_handle_mrjar_versions` is defined exactly once and
+called from at least 2 sites (v1 and v2/cons), matching the existing `T24d` pattern for
+`vf_handle_primary_timeout`.
+
+Real-corpus verification, re-running `--third-party-libinf --force` (no per-jar filter exists in
+this mode, so a `--force` full rerun was required — the mode's own idempotency key is unaffected
+by this fix, so a rerun WITHOUT `--force` would have skipped every already-`ok` jar and never
+reached `vf_handle_mrjar_versions` at all) against the sha256-verified local mirror, 2026-09-28
+14:01:30Z-14:25:43Z (~24 minutes):
+
+```
+lib-inf-3p: decompiled=94 skipped-up-to-date=0 failed=0 distinct_jars=94
+```
+
+All 16 previously-affected jars' `mrjar_versions` now show `decompiled` equal to `classes` for
+every version `N`, `fallback=0`, and `mrjar_unrepresented=[]` throughout — **all 27 classes now
+have a file, 0 unrepresented**:
+
+| jar | version(s) | classes | decompiled | fallback |
+|---|---|---|---|---|
+| `commons-codec-1.18.0` | 9 | 1 | 1 | 0 |
+| `commons-collections4-4.5.0` | 9 | 1 | 1 | 0 |
+| `commons-compress-1.28.0` | 9 | 1 | 1 | 0 |
+| `commons-dbcp2-2.14.0` | 9 | 1 | 1 | 0 |
+| `commons-io-2.22.0` | 9 | 1 | 1 | 0 |
+| `commons-pool2-2.13.1` | 9 | 1 | 1 | 0 |
+| `error_prone_annotations-2.48.0` | 9 | 1 | 1 | 0 |
+| `gson-2.14.0` | 9 | 1 | 1 | 0 |
+| `jackson-core-2.22.2` | 9, 11, 17, 21 | 1, 3, 2, 2 (8 total) | 1, 3, 2, 2 | 0, 0, 0, 0 |
+| `jackson-databind-2.22.2` | 9 | 1 | 1 | 0 |
+| `kotlin-stdlib-2.3.0` | 9 | 1 | 1 | 0 |
+| `log4j-api-2.24.3` | 9 | 4 | 4 | 0 |
+| `poi-5.5.1` | 9 | 1 | 1 | 0 |
+| `poi-ooxml-5.5.1` | 9 | 1 | 1 | 0 |
+| `poi-ooxml-lite-5.5.1` | 9 | 1 | 1 | 0 |
+| `xmlbeans-5.3.0` | 9 | 2 | 2 | 0 |
+
+13 jars carry only `META-INF/versions/9/module-info.class` — 1 class each, 13 total; the
+remaining 3 carry real per-JDK-version override classes: `jackson-core` 8 across versions
+9/11/17/21, `log4j-api` 4, `xmlbeans` 2 — 13+8+4+2 = 27, matching the residual count above exactly.
+Every one of the 27 is confirmed present on disk, one `.java` file per class:
+
+```
+_lib-inf-3p/jackson-core-2.22.2-ff167a6317be/vineflower2/META-INF/versions/9/module-info.java
+_lib-inf-3p/jackson-core-2.22.2-ff167a6317be/vineflower2/META-INF/versions/11/com/fasterxml/jackson/core/internal/shaded/fdp/v2_22_2/BigSignificand.java
+_lib-inf-3p/jackson-core-2.22.2-ff167a6317be/vineflower2/META-INF/versions/11/com/fasterxml/jackson/core/internal/shaded/fdp/v2_22_2/FastDoubleSwar.java
+_lib-inf-3p/jackson-core-2.22.2-ff167a6317be/vineflower2/META-INF/versions/11/com/fasterxml/jackson/core/internal/shaded/fdp/v2_22_2/FastIntegerMath.java
+_lib-inf-3p/jackson-core-2.22.2-ff167a6317be/vineflower2/META-INF/versions/17/com/fasterxml/jackson/core/internal/shaded/fdp/v2_22_2/FastDoubleSwar.java
+_lib-inf-3p/jackson-core-2.22.2-ff167a6317be/vineflower2/META-INF/versions/17/com/fasterxml/jackson/core/internal/shaded/fdp/v2_22_2/FastIntegerMath.java
+_lib-inf-3p/jackson-core-2.22.2-ff167a6317be/vineflower2/META-INF/versions/21/com/fasterxml/jackson/core/internal/shaded/fdp/v2_22_2/FastDoubleSwar.java
+_lib-inf-3p/jackson-core-2.22.2-ff167a6317be/vineflower2/META-INF/versions/21/com/fasterxml/jackson/core/internal/shaded/fdp/v2_22_2/FastIntegerMath.java
+_lib-inf-3p/log4j-api-2.24.3-5b4a0a0cd0e7/vineflower2/META-INF/versions/9/org/apache/logging/log4j/util/Base64Util.java
+_lib-inf-3p/log4j-api-2.24.3-5b4a0a0cd0e7/vineflower2/META-INF/versions/9/org/apache/logging/log4j/util/ProcessIdUtil.java
+_lib-inf-3p/log4j-api-2.24.3-5b4a0a0cd0e7/vineflower2/META-INF/versions/9/org/apache/logging/log4j/util/StackLocator.java
+_lib-inf-3p/log4j-api-2.24.3-5b4a0a0cd0e7/vineflower2/META-INF/versions/9/org/apache/logging/log4j/util/internal/DefaultObjectInputFilter.java
+_lib-inf-3p/xmlbeans-5.3.0-6cc69da3b4d3/vineflower2/META-INF/versions/9/module-info.java
+_lib-inf-3p/xmlbeans-5.3.0-6cc69da3b4d3/vineflower2/META-INF/versions/9/org/apache/xmlbeans/impl/tool/MavenPluginResolver.java
+_lib-inf-3p/{commons-codec-1.18.0-ba005f304cef,commons-collections4-4.5.0-00f93263c267,commons-compress-1.28.0-e15229452184,commons-dbcp2-2.14.0-459bebb81919,commons-io-2.22.0-2b9a7b1f726f,commons-pool2-2.13.1-f77a5060d693,error_prone_annotations-2.48.0-b49c5c958316,gson-2.14.0-2cbd119bf196,jackson-databind-2.22.2-d0da14c12b16,kotlin-stdlib-2.3.0-887587c91713,poi-5.5.1-6c52e876ca75,poi-ooxml-5.5.1-bd7be2fdfe3f,poi-ooxml-lite-5.5.1-e6e37adeb6d6}/vineflower2/META-INF/versions/9/module-info.java
+```
+
+`tools/n5-best-source.py`'s corpus-wide `missing` index was not rerun as part of this fix (owned
+by a different writer in this checkout); the orchestrator runs the final index separately.

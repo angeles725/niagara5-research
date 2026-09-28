@@ -326,6 +326,18 @@ write_recon() {
   # time on success). See vf_handle_primary_timeout's doc comment.
   local excluded_classes_json="${9:-[]}" isolate_time="${10:-0}" \
         isolation_status="${11:-}" timeout_attempt_time="${12:-}"
+  # Multi-Release JAR (JEP 238) version overrides (odd/tasks/decompiler-fidelity-audit.md):
+  # $13=mrjar_versions as a JSON object string ("N": {classes,decompiled,fallback}),
+  # $14=mrjar_unrepresented as a JSON array string ("N:<internal-name>" entries). Both
+  # default to "empty" so a caller that never ran vf_handle_mrjar_versions (none do —
+  # decompile_module always calls it — but a future/test caller might) still writes a
+  # valid, if trivial, recon.json. See vf_handle_mrjar_versions's doc comment.
+  # (a literal "{}" default inside a "${n:-...}" expansion is a known bash brace-
+  # matching trap — it silently APPENDS a stray extra "}" onto a non-empty $13 instead
+  # of only supplying the default for a missing one; verified empirically 2026-09-28 —
+  # so the object default is applied in a separate step instead.)
+  local mrjar_versions_json="${13:-}" mrjar_unrepresented_json="${14:-[]}"
+  [[ -z "$mrjar_versions_json" ]] && mrjar_versions_json="{}"
   local sha; sha="$(sha256_of "$jar")"
 
   local signed="false" sig_name="null"
@@ -355,6 +367,29 @@ write_recon() {
     --isolation-status "$isolation_status" \
     --timeout-attempt-time "$timeout_attempt_time" \
     --out "$moddir/recon.json"
+
+  # Multi-Release JAR (JEP 238) version overrides: merged onto recon.json's TOP level
+  # (a fact about the source jar, independent of which decompiler variant read it — same
+  # placement as write_recon_language's "language" field) as a step AFTER
+  # n5-recon-helper.py's own write above, rather than as one more of that script's own
+  # CLI flags, so tools/n5-recon-helper.py (owned by a different writer in this
+  # checkout) never needs to change for this fix. See vf_handle_mrjar_versions's doc
+  # comment.
+  RECON_PATH="$moddir/recon.json" \
+  RECON_MRJAR_VERSIONS="$mrjar_versions_json" \
+  RECON_MRJAR_UNREPRESENTED="$mrjar_unrepresented_json" \
+  python3 <<'PYEOF'
+import json, os
+
+path = os.environ["RECON_PATH"]
+with open(path) as fh:
+    recon = json.load(fh)
+recon["mrjar_versions"] = json.loads(os.environ["RECON_MRJAR_VERSIONS"])
+recon["mrjar_unrepresented"] = json.loads(os.environ["RECON_MRJAR_UNREPRESENTED"])
+with open(path, "w") as fh:
+    json.dump(recon, fh, indent=2)
+    fh.write("\n")
+PYEOF
 }
 
 # ---------------------------------------------------------------------------
@@ -724,6 +759,195 @@ vf_handle_primary_timeout() {
 }
 
 # ---------------------------------------------------------------------------
+# Multi-Release JAR (JEP 238) version overrides (odd/tasks/decompiler-fidelity-audit.md,
+# fix for the T26b "residual 27 classes" note in docs/decompiler-bakeoff.md): a class
+# nested under META-INF/versions/<N>/... inside the jar being decompiled is a real,
+# ordinary, compilable class — just packaged at a special path the multi-release-jar
+# mechanism (not Vineflower) understands. Vineflower 1.12.0 creates the package
+# directory tree for these entries during the WHOLE-JAR primary run above but writes
+# NO .java at the leaf, silently — no decompiler-failure marker, so scan_marker_files
+# never sees anything wrong and the per-class CFR fallback above never triggers either.
+# Verified corpus-wide 2026-09-28: 27 classes in 16 third-party jars (found via
+# --third-party-libinf; see docs/decompiler-bakeoff.md's T26b section).
+#
+# Fix: re-decompile every META-INF/versions/<N>/ class on its own, RE-ROOTED into its
+# real package path (the "META-INF/versions/<N>/" prefix stripped, so it lands at the
+# same internal name Vineflower would resolve for an ordinary class), in one subset jar
+# per version N, with the SAME variant command/options/library context as the real run
+# — "$@" is that variant's own Additional-option flags array (v1: empty; v2/cons:
+# --include-runtime=... plus the variant's fidelity flags, same convention
+# vf_handle_primary_timeout's callers already build) and $6/$7 are dash_e/
+# cfr_extraclasspath, same meaning as vf_handle_primary_timeout's own. A subset run
+# that itself times out reuses vf_isolate_hung_classes/vf_build_excluded_classes_regex
+# — the EXACT SAME T24 machinery a whole-jar hang uses — just pointed at the temporary
+# re-rooted extraction directory instead of $moddir/extracted, since every T24 helper
+# already takes extracted_dir as a plain parameter and needs no changes to be reused
+# here.
+#
+# Shared by decompile_module (v1) and decompile_module_variant (v2/cons) — called
+# unconditionally, right after the whole-jar primary decompile (and any T24 hang
+# handling) settles, for EVERY jar, so every population this script has
+# (--bin-ext/--extra-tridium/--third-party-libinf/plain modules, which all funnel
+# through one of these two functions) gets this fix for free with no separate call
+# site. A no-op (both outputs empty/default) when the jar has no META-INF/versions/ at
+# all — the overwhelming majority of this corpus.
+#
+# $1=module $2=moddir $3=out_dir_name (the variant's primary tree, e.g. "vineflower")
+# $4=fallback_dir_name (e.g. "fallback") $5=logfile $6=dash_e ("-e=<lib CSV>", or "" for
+# v1) $7=cfr_extraclasspath (the same lib CSV colon-joined, or "" for v1), then "$@"
+# (from $8) = the variant's own Additional-option flags, in the exact order to pass —
+# EXCLUDING --log-level=error (always added) and EXCLUDING -e/--add-external (dash_e is
+# appended separately, last, per the header's "Undocumented Vineflower 1.12.0 CLI
+# ordering requirement").
+#
+# Writes <moddir>/$3/META-INF/versions/<N>/<pkg>/<Class>.java for every class Vineflower
+# decompiled, <moddir>/$4/META-INF/versions/<N>/<pkg>/<Class>.java (CFR) for every class
+# it did not, and sets (globals, read by the caller immediately after calling):
+#   VFM_VERSIONS_JSON     JSON object "N": {"classes": n, "decompiled": n, "fallback": n}
+#                          (VFM_VERSIONS_JSON="{}" when no versions/ entries exist)
+#   VFM_UNREPRESENTED     bash array of "N:<internal-name>", one entry per class NEITHER
+#                          decompiler produced a file for — silent zero is forbidden:
+#                          the caller records this in recon.json so a class Vineflower
+#                          silently skipped can never again go unnoticed the way the 27
+#                          corpus classes above did.
+vf_handle_mrjar_versions() {
+  local module="$1" moddir="$2" out_dir_name="$3" fallback_dir_name="$4" logfile="$5" \
+        dash_e="$6" cfr_extraclasspath="$7"
+  shift 7
+  local -a own_flags=("$@")
+  local extracted_dir="$moddir/extracted"
+  local versions_root="$extracted_dir/META-INF/versions"
+
+  VFM_VERSIONS_JSON="{}"
+  VFM_UNREPRESENTED=()
+
+  [[ -d "$versions_root" ]] || return 0
+
+  local -a versions=()
+  readarray -t versions < <(
+    find "$versions_root" -mindepth 1 -maxdepth 1 -type d -print \
+      | while IFS= read -r d; do basename "$d"; done \
+      | sort -n
+  )
+  [[ "${#versions[@]}" -gt 0 ]] || return 0
+
+  local -a isolate_prefix=("$N5_JAVA" -jar "$N5_VINEFLOWER" --log-level=error)
+  [[ "${#own_flags[@]}" -gt 0 ]] && isolate_prefix+=("${own_flags[@]}")
+  [[ -n "$dash_e" ]] && isolate_prefix+=("$dash_e")
+
+  local versions_json="{" first_v=true n
+  for n in "${versions[@]}"; do
+    # a real MRJAR release directory name is always numeric (JEP 238); ignore
+    # anything else under versions/ rather than mis-decompiling it as one.
+    [[ "$n" =~ ^[0-9]+$ ]] || continue
+    local ver_dir="$versions_root/$n"
+
+    local -a internal_names=()
+    local f rel
+    while IFS= read -r f; do
+      rel="${f#"$ver_dir"/}"
+      internal_names+=("${rel%.class}")
+    done < <(find "$ver_dir" -name '*.class' | sort)
+    local total="${#internal_names[@]}"
+    [[ "$total" -gt 0 ]] || continue
+
+    log "$module" "mrjar: version $n has $total override class(es), re-decompiling re-rooted"
+
+    local reroot_dir; reroot_dir="$(mktemp -d)"
+    local internal
+    for internal in "${internal_names[@]}"; do
+      mkdir -p "$reroot_dir/$(dirname "$internal")"
+      cp "$ver_dir/$internal.class" "$reroot_dir/$internal.class"
+    done
+
+    local subset_jar="$reroot_dir.jar"
+    printf '%s\n' "${internal_names[@]}" | vf_build_subset_jar "$reroot_dir" "$subset_jar"
+
+    local target_dir="$moddir/$out_dir_name/META-INF/versions/$n"
+    local fb_dir="$moddir/$fallback_dir_name/META-INF/versions/$n"
+    rm -rf "$target_dir"; mkdir -p "$target_dir"
+    local status
+    status="$(vf_run_timed "$subset_jar" "$target_dir" "$N5_PRIMARY_TIMEOUT" "$logfile" "${isolate_prefix[@]}")"
+
+    if [[ "$status" == "timeout" ]]; then
+      log "$module" "mrjar: version $n whole-subset run timed out, isolating hung class(es) (T24, shared path)"
+      vf_isolate_hung_classes "$module" "$reroot_dir" "$N5_ISOLATE_TIMEOUT" "$logfile" "${isolate_prefix[@]}"
+      if [[ "$VF_ISOLATE_STATUS" == "isolated" ]]; then
+        local regex; regex="$(vf_build_excluded_classes_regex "${VF_ISOLATE_HUNG_CLASSES[@]}")"
+        local -a rerun_cmd=("$N5_JAVA" -jar "$N5_VINEFLOWER" --log-level=error)
+        [[ "${#own_flags[@]}" -gt 0 ]] && rerun_cmd+=("${own_flags[@]}")
+        rerun_cmd+=("--excluded-classes=$regex")
+        [[ -n "$dash_e" ]] && rerun_cmd+=("$dash_e")
+        rm -rf "$target_dir"; mkdir -p "$target_dir"
+        status="$(vf_run_timed "$subset_jar" "$target_dir" "$N5_PRIMARY_TIMEOUT" "$logfile" "${rerun_cmd[@]}")"
+        if [[ "$status" == "ok" ]]; then
+          mkdir -p "$fb_dir"
+          local hung classfile
+          for hung in "${VF_ISOLATE_HUNG_CLASSES[@]}"; do
+            classfile="$reroot_dir/$hung.class"
+            [[ -f "$classfile" ]] || continue
+            local -a cfr_cmd=("$N5_JAVA" -jar "$N5_CFR" "$classfile" --outputdir "$fb_dir" --silent true)
+            [[ -n "$cfr_extraclasspath" ]] && cfr_cmd+=(--extraclasspath "$cfr_extraclasspath")
+            "${cfr_cmd[@]}" >> "$logfile" 2>&1 \
+              || log "$module" "mrjar: version $n CFR fallback for hung class $hung also failed"
+          done
+        fi
+      fi
+    fi
+
+    if [[ "$status" != "ok" ]]; then
+      log "$module" "mrjar: version $n whole-subset run status=$status, falling back to CFR for all $total class(es)"
+      mkdir -p "$fb_dir"
+      local -a cfr_cmd=("$N5_JAVA" -jar "$N5_CFR" "$subset_jar" --outputdir "$fb_dir" --silent true)
+      [[ -n "$cfr_extraclasspath" ]] && cfr_cmd+=(--extraclasspath "$cfr_extraclasspath")
+      "${cfr_cmd[@]}" >> "$logfile" 2>&1 \
+        || log "$module" "mrjar: version $n whole-subset CFR fallback also failed"
+    fi
+
+    # per-class marker scan (same pattern as the whole-module one in
+    # decompile_module/decompile_module_variant): a class Vineflower DID emit
+    # a .java for but flagged internally still needs a CFR retry.
+    local marker_files; marker_files="$(scan_marker_files "$target_dir")"
+    if [[ -n "$marker_files" ]]; then
+      mkdir -p "$fb_dir"
+      local javafile relj classrel
+      while IFS= read -r javafile; do
+        [[ -z "$javafile" ]] && continue
+        relj="${javafile#"$target_dir"/}"
+        classrel="${relj%.java}.class"
+        [[ -f "$reroot_dir/$classrel" ]] || continue
+        local -a cfr_cmd=("$N5_JAVA" -jar "$N5_CFR" "$reroot_dir/$classrel" --outputdir "$fb_dir" --silent true)
+        [[ -n "$cfr_extraclasspath" ]] && cfr_cmd+=(--extraclasspath "$cfr_extraclasspath")
+        "${cfr_cmd[@]}" >> "$logfile" 2>&1 || true
+      done <<< "$marker_files"
+    fi
+
+    # tally: for each class, decompiled iff a .java exists in target_dir at its
+    # exact relative path; fallback iff not decompiled but a .java exists in
+    # fb_dir; unrepresented (silent zero — must never go unrecorded) iff neither.
+    local decompiled=0 fallback=0
+    for internal in "${internal_names[@]}"; do
+      if [[ -f "$target_dir/$internal.java" ]]; then
+        decompiled=$((decompiled + 1))
+      elif [[ -f "$fb_dir/$internal.java" ]]; then
+        fallback=$((fallback + 1))
+      else
+        VFM_UNREPRESENTED+=("$n:$internal")
+      fi
+    done
+    log "$module" "mrjar: version $n classes=$total decompiled=$decompiled fallback=$fallback unrepresented=$((total - decompiled - fallback))"
+
+    $first_v || versions_json+=","
+    first_v=false
+    versions_json+="\"$n\": {\"classes\": $total, \"decompiled\": $decompiled, \"fallback\": $fallback}"
+
+    rm -rf "$reroot_dir" "$subset_jar"
+  done
+  versions_json+="}"
+  VFM_VERSIONS_JSON="$versions_json"
+}
+
+# ---------------------------------------------------------------------------
 # decompile one module jar
 # ---------------------------------------------------------------------------
 decompile_module() {
@@ -852,9 +1076,21 @@ decompile_module() {
       >> "$LOG_DIR/$module.log" 2>&1 || log "$module" "fallback(cfr) also failed"
   fi
 
+  # Multi-Release JAR (JEP 238) version overrides — see vf_handle_mrjar_versions's doc
+  # comment. Runs unconditionally, independent of the whole-jar primary_status above (a
+  # META-INF/versions/ entry is a separate namespace this jar may carry regardless of
+  # how the base classes decompiled). v1 has no library context at all (no -e, no
+  # --extraclasspath), same as the T24 call above.
+  local -a v1_mrjar_own_flags=()
+  vf_handle_mrjar_versions "$module" "$moddir" "vineflower" "fallback" "$LOG_DIR/$module.log" \
+    "" "" "${v1_mrjar_own_flags[@]}"
+  local mrjar_unrepresented_json
+  mrjar_unrepresented_json="$(python3 -c 'import json,sys; print(json.dumps(sys.argv[1:]))' "${VFM_UNREPRESENTED[@]}")"
+
   write_recon "$module" "$jar" "$moddir" "$primary_status" "$primary_time" \
     "$fallback_used" "$fallback_reason" "$class_count" \
-    "$excluded_classes_json" "$isolate_time" "$isolation_status" "$timeout_attempt_time"
+    "$excluded_classes_json" "$isolate_time" "$isolation_status" "$timeout_attempt_time" \
+    "$VFM_VERSIONS_JSON" "$mrjar_unrepresented_json"
   log "$module" "done"
 }
 
@@ -1423,6 +1659,13 @@ write_recon_variant() {
   # primary_timeout_attempt_seconds. See vf_handle_primary_timeout's doc comment.
   local excluded_classes_json="${4:-[]}" isolate_time="${5:-0}" \
         isolation_status="${6:-}" timeout_attempt_time="${7:-}"
+  # Multi-Release JAR (JEP 238) version overrides (odd/tasks/decompiler-fidelity-audit.md):
+  # $8=mrjar_versions as a JSON object string, $9=mrjar_unrepresented as a JSON array
+  # string. See vf_handle_mrjar_versions's doc comment.
+  # (a literal "{}" default inside a "${n:-...}" expansion is a known bash brace-
+  # matching trap — see write_recon's identical comment above.)
+  local mrjar_versions_json="${8:-}" mrjar_unrepresented_json="${9:-[]}"
+  [[ -z "$mrjar_versions_json" ]] && mrjar_versions_json="{}"
   local vf_sha cfr_sha vf_version cfr_version flags_json
   vf_sha="$(sha256_of "$N5_VINEFLOWER")"
   cfr_sha="$(sha256_of "$N5_CFR")"
@@ -1455,6 +1698,8 @@ write_recon_variant() {
   RECON_ISOLATE_TIME="$isolate_time" \
   RECON_ISOLATION_STATUS="$isolation_status" \
   RECON_TIMEOUT_ATTEMPT_TIME="$timeout_attempt_time" \
+  RECON_MRJAR_VERSIONS="$mrjar_versions_json" \
+  RECON_MRJAR_UNREPRESENTED="$mrjar_unrepresented_json" \
   python3 <<'PYEOF'
 import json, os
 
@@ -1491,6 +1736,8 @@ recon[key] = {
     "idempotency_key": os.environ["RECON_IDEMPOTENCY_KEY"],
     "excluded_classes": json.loads(os.environ["RECON_EXCLUDED_CLASSES_JSON"]),
     "isolate_time_seconds": int(os.environ["RECON_ISOLATE_TIME"]),
+    "mrjar_versions": json.loads(os.environ["RECON_MRJAR_VERSIONS"]),
+    "mrjar_unrepresented": json.loads(os.environ["RECON_MRJAR_UNREPRESENTED"]),
 }
 _isolation_status = os.environ.get("RECON_ISOLATION_STATUS", "")
 if _isolation_status:
@@ -1708,9 +1955,21 @@ print(d.get(os.environ['RECON_KEY'], {}).get('status', ''))
     status="failed"
   fi
 
+  # Multi-Release JAR (JEP 238) version overrides — see vf_handle_mrjar_versions's doc
+  # comment. Runs unconditionally, independent of primary_status/status above, with the
+  # SAME library context and variant flags ("$@", plus --include-runtime, same
+  # convention the T24 timeout handling above already uses for variant_own_flags) the
+  # real run used.
+  local -a variant_mrjar_own_flags=("--include-runtime=$N5_JDK25_HOME" "$@")
+  vf_handle_mrjar_versions "$module" "$moddir" "$out_dir_name" "$fallback_dir_name" \
+    "$LOG_DIR/$module.$variant_label.log" "-e=$V2_LIB_CSV" "$V2_LIB_COLON" "${variant_mrjar_own_flags[@]}"
+  local mrjar_unrepresented_json
+  mrjar_unrepresented_json="$(python3 -c 'import json,sys; print(json.dumps(sys.argv[1:]))' "${VFM_UNREPRESENTED[@]}")"
+
   write_recon_variant "$recon_key" "$module" "$moddir" "$jar" "$sha" "$primary_status" "$primary_time" \
     "$fallback_used" "$fallback_reason" "$status" "$idempotency_key" "$out_dir_name" \
-    "$excluded_classes_json" "$isolate_time" "$isolation_status" "$timeout_attempt_time"
+    "$excluded_classes_json" "$isolate_time" "$isolation_status" "$timeout_attempt_time" \
+    "$VFM_VERSIONS_JSON" "$mrjar_unrepresented_json"
 
   if [[ "$status" == "failed" ]]; then
     log "$module" "$variant_label FAILED: both Vineflower and CFR produced zero output for $class_count classes"

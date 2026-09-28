@@ -1384,3 +1384,118 @@ PY
   [ "$(python3 -c "import json;print(json.load(open('$recon'))['dropped_stale_variants'])")" = "['cons']" ]
   [ ! -e "$local_out/$MODULE/fallback/Stale.java" ]
 }
+
+# ---------------------------------------------------------------------------
+# Multi-Release JAR (JEP 238) version overrides — META-INF/versions/<N>/...
+# (odd/tasks/decompiler-fidelity-audit.md: Vineflower 1.12.0 creates the
+# package directories for these entries during the whole-jar primary run but
+# writes no .java for them, silently, with no failure marker, so the
+# per-class CFR fallback never triggers either — see docs/decompiler-bakeoff.md's
+# T26b "residual 27 classes" note for the corpus-wide shape of this bug.)
+# ---------------------------------------------------------------------------
+
+# Builds a REAL Multi-Release module jar at $1: a base com/example/Base.class
+# (real javac bytes) at the normal package path, PLUS a byte-DIFFERENT
+# override — compiled from a distinct source returning a distinguishing
+# marker string — nested at META-INF/versions/$3/com/example/Base.class (real
+# MRJAR layout, JEP 238; $2 = module.xml vendor, $3 = version, default 11).
+mrjar_build_module_jar() {
+  local dest="$1" vendor="$2" version="${3:-11}"
+  local javac_bin="${N5_JDK25_HOME:-/home/linuxbrew/.linuxbrew/opt/openjdk@25/libexec}/bin/javac"
+  [[ -x "$javac_bin" ]] || javac_bin="$(command -v javac)"
+
+  local base_src base_out override_src override_out
+  base_src="$(mktemp -d)"; base_out="$(mktemp -d)"
+  override_src="$(mktemp -d)"; override_out="$(mktemp -d)"
+  mkdir -p "$base_src/com/example" "$override_src/com/example"
+  cat > "$base_src/com/example/Base.java" <<'JAVA'
+package com.example;
+public class Base {
+  public String marker() { return "BASE_ORIGINAL"; }
+}
+JAVA
+  cat > "$override_src/com/example/Base.java" <<'JAVA'
+package com.example;
+public class Base {
+  public String marker() { return "MRJAR_OVERRIDE_MARKER"; }
+}
+JAVA
+  "$javac_bin" -d "$base_out" "$base_src/com/example/Base.java"
+  "$javac_bin" -d "$override_out" "$override_src/com/example/Base.java"
+
+  python3 - "$dest" "$vendor" "$version" "$base_out" "$override_out" <<'PY'
+import sys, zipfile, os
+dest, vendor, version, base_out, override_out = sys.argv[1:]
+with zipfile.ZipFile(dest, "w") as z:
+    z.writestr("META-INF/module.xml", '<module vendor="%s"/>' % vendor)
+    z.writestr("com/example/Base.class",
+               open(os.path.join(base_out, "com/example/Base.class"), "rb").read())
+    z.writestr("META-INF/versions/%s/com/example/Base.class" % version,
+               open(os.path.join(override_out, "com/example/Base.class"), "rb").read())
+PY
+  rm -rf "$base_src" "$base_out" "$override_src" "$override_out"
+}
+
+@test "MRJAR: a META-INF/versions/<N> override class is decompiled into vineflower/META-INF/versions/<N>/... and recorded top-level in recon.json's mrjar_versions (v1, real javac/Vineflower/CFR)" {
+  local_dir="$BATS_TEST_TMPDIR/mrjar"
+  mkdir -p "$local_dir/modules" "$local_dir/out"
+  mrjar_build_module_jar "$local_dir/modules/mrjar_mod.jar" Tridium 11
+
+  N5_MODULES_DIR="$local_dir/modules" N5_OUT_DIR="$local_dir/out" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" mrjar_mod
+  [ "$status" -eq 0 ]
+
+  base_java="$local_dir/out/mrjar_mod/vineflower/com/example/Base.java"
+  [ -f "$base_java" ]
+  grep -q "BASE_ORIGINAL" "$base_java"
+
+  override_java="$local_dir/out/mrjar_mod/vineflower/META-INF/versions/11/com/example/Base.java"
+  [ -f "$override_java" ]
+  grep -q "MRJAR_OVERRIDE_MARKER" "$override_java"
+
+  recon="$local_dir/out/mrjar_mod/recon.json"
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['mrjar_versions']['11']['classes'])")" = "1" ]
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['mrjar_versions']['11']['decompiled'])")" = "1" ]
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['mrjar_versions']['11']['fallback'])")" = "0" ]
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['mrjar_unrepresented'])")" = "[]" ]
+}
+
+@test "MRJAR: a class neither Vineflower nor CFR can produce a file for is listed in mrjar_unrepresented, never silently dropped" {
+  local_dir="$BATS_TEST_TMPDIR/mrjar-bad"
+  mkdir -p "$local_dir/modules" "$local_dir/out"
+  mrjar_build_module_jar "$local_dir/modules/mrjar_bad.jar" Tridium 11
+  # Corrupt the override .class bytes IN the jar so neither decompiler can
+  # produce any output for it — the exact "silent zero" the fix must always
+  # surface instead of dropping quietly.
+  python3 - "$local_dir/modules/mrjar_bad.jar" <<'PY'
+import sys, zipfile, os
+path = sys.argv[1]
+tmp = path + ".tmp"
+with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w") as zout:
+    for item in zin.infolist():
+        data = zin.read(item.filename)
+        if item.filename == "META-INF/versions/11/com/example/Base.class":
+            data = b"not a class file"
+        zout.writestr(item, data)
+os.replace(tmp, path)
+PY
+
+  N5_MODULES_DIR="$local_dir/modules" N5_OUT_DIR="$local_dir/out" \
+    run "$REPO_ROOT/tools/n5-decompile.sh" mrjar_bad
+  [ "$status" -eq 0 ]
+
+  [ ! -f "$local_dir/out/mrjar_bad/vineflower/META-INF/versions/11/com/example/Base.java" ]
+  recon="$local_dir/out/mrjar_bad/recon.json"
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['mrjar_versions']['11']['classes'])")" = "1" ]
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['mrjar_versions']['11']['decompiled'])")" = "0" ]
+  [ "$(python3 -c "import json;print(json.load(open('$recon'))['mrjar_unrepresented'])")" = "['11:com/example/Base']" ]
+}
+
+@test "MRJAR: v1 and --variant v2/cons share ONE MRJAR-version-override helper (no copy-paste)" {
+  def_count=$(grep -c '^vf_handle_mrjar_versions()' "$REPO_ROOT/tools/n5-decompile.sh")
+  [ "$def_count" -eq 1 ]
+  # both decompile_module (v1) and decompile_module_variant (v2/cons, shared
+  # by decompile_module_v2/decompile_module_cons) call it.
+  call_count=$(grep -c 'vf_handle_mrjar_versions "' "$REPO_ROOT/tools/n5-decompile.sh")
+  [ "$call_count" -ge 2 ]
+}
