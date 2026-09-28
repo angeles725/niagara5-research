@@ -334,7 +334,7 @@ template set; the gap's own question is answered definitively, not merely advanc
 
 ## 111.7 — Child gaps opened this block
 
-- **B111-G1** (low priority) — Extend §111.1's `feature_census.py` (or a variant) to ALSO census
+- **B111-G1** (low priority; scope CORRECTED by [Block 114] §114.4: 7 files / 11 call sites, not 2 / 5) — Extend §111.1's `feature_census.py` (or a variant) to ALSO census
   `com.tridium.niagarad.license.Feature` (`niagarad`'s own separate, structurally-identical-shaped but
   textually-distinct license `Feature` class, confirmed at `organized/_bin-ext/niagarad/vineflower/
   com/tridium/niagarad/license/Feature.java`) across its own module scope — 2 files / 5 call sites were
