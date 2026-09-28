@@ -299,6 +299,26 @@ def subtypes(idx, name):
     return sorted(_dotted(s) for s in seen)
 
 
+def _infer_desc(idx, name, method, desc):
+    """Resolve the descriptor to filter on for (<name>, <method>): the explicit `desc` if given,
+    else <name>'s own declaration of <method> IF that declaration is unambiguous (exactly one
+    descriptor); otherwise None (every descriptor named <method> is accepted -- best effort when
+    the base declaration is not indexed, e.g. an interface method with no body in <name> itself).
+
+    Shared by overriders() (R2-001) and _inheriting_subtypes() (R2-002/R3-004): both need to tell
+    a genuine override (same name AND descriptor) apart from an unrelated overload (same name,
+    different descriptor) on a subtype, and a name-only comparison reports/accepts the overload as
+    if it were the real thing."""
+    if desc is not None:
+        return desc
+    base = idx["classes"].get(_internal(name))
+    if base:
+        base_descs = sorted(set(m["desc"] for m in base["methods"] if m["name"] == method))
+        if len(base_descs) == 1:
+            return base_descs[0]
+    return None
+
+
 def overriders(idx, name, method, desc=None):
     """<name> and its subtypes that DECLARE <method> (R2-001: name AND descriptor must match, not
     name alone -- otherwise an unrelated overload with the same name is reported as a false
@@ -306,12 +326,7 @@ def overriders(idx, name, method, desc=None):
     if that declaration is unambiguous (exactly one descriptor); otherwise every descriptor named
     <method> is accepted, same as before (best effort when the base declaration is not indexed,
     e.g. an interface method with no body in <name> itself)."""
-    if desc is None:
-        base = idx["classes"].get(_internal(name))
-        if base:
-            base_descs = sorted(set(m["desc"] for m in base["methods"] if m["name"] == method))
-            if len(base_descs) == 1:
-                desc = base_descs[0]
+    desc = _infer_desc(idx, name, method, desc)
     out = []
     for c in [_internal(name)] + [_internal(s) for s in subtypes(idx, name)]:
         k = idx["classes"].get(c)
@@ -324,7 +339,13 @@ def _inheriting_subtypes(idx, name, method, desc):
     """R3-001: internal names of subtypes of <name> whose invokevirtual/invokeinterface still
     dispatches to <name>'s own (method, desc) at run time -- i.e. no override of it exists between
     them and <name>. Descent stops at any subtype that redeclares (method, desc): its own
-    descendants belong to THAT override, not to <name>'s."""
+    descendants belong to THAT override, not to <name>'s.
+
+    When `desc` is omitted, it is inferred the same way overriders() infers it (R2-002/R3-004):
+    without this, a subtype that merely OVERLOADS <method> with an unrelated descriptor was wrongly
+    treated as redeclaring it, stopping descent early and silently dropping every real
+    subtype-owner candidate beneath that subtype."""
+    desc = _infer_desc(idx, name, method, desc)
     out = []
     stack = list(idx["children"].get(_internal(name), []))
     while stack:
@@ -413,7 +434,13 @@ def main(argv=None):
                                   (len(res["subtypes"]), parse_errors, duplicate_classes)]
     elif a.cmd == "overriders":
         declared_in = overriders(idx, a.cls, a.method, a.desc)
-        res = {"target": a.cls + "." + a.method, "desc": a.desc, "declared_in": declared_in,
+        # R2-003: "desc" is the raw --desc CLI argument (None when omitted); "resolved_desc" is
+        # what was ACTUALLY filtered on, including a descriptor silently inferred from a.cls's own
+        # unambiguous declaration -- without this, --json output for an inferred query looked
+        # identical to one where every overload was accepted, with no way to tell which happened.
+        res = {"target": a.cls + "." + a.method, "desc": a.desc,
+               "resolved_desc": _infer_desc(idx, a.cls, a.method, a.desc),
+               "declared_in": declared_in,
                "parse_errors": parse_errors, "duplicate_classes": duplicate_classes}
         text = declared_in + ["%d overrider(s); %d parse error(s); %d duplicate class name(s)" %
                               (len(declared_in), parse_errors, duplicate_classes)]

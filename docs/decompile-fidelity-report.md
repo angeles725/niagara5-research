@@ -425,8 +425,13 @@ on this corpus once checked per occurrence). This run happened concurrently with
 `tools/n5-decompile.sh --third-party-libinf --force` rebuild of `organized/_lib-inf-3p/*`, so its
 `missing`/`vineflower2` counts are transient (observed `missing` 57 and 718, `vineflower2` 24867
 and 24206, across two runs seconds apart) — `upstream` and `upstream_unproven_artifacts` were
-stable across both and are this fix's own effect; the orchestrator owns the final, authoritative
-full-index run once that rebuild is done.
+stable across both and are this fix's own effect.
+
+**Final real run** (2026-09-28, orchestrator's own authoritative full-index run, `organized/
+_lib-inf-3p/*` rebuild settled, same command): 455 populations, 64929 classes — `docSource` 2809,
+`upstream` 37195, `vineflower2` 24924, `fallback2` 1, `missing` 0; `upstream_unproven_artifacts`
+0, 0 `vineflower`(v1) picks, 0 bare-`fallback` picks. This is the number this file's own two
+transient/in-progress runs above were pending on; it supersedes both.
 
 **Browsing**: `organized/_best/best-source.json` is the full machine-readable index (per class:
 `module`, `class`, `best`, `best_kind`, `reason`, `line_mapped_view`, `alternates`, `grade`, plus

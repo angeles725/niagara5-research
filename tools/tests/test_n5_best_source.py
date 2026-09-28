@@ -37,6 +37,7 @@ organized 2026-09-28, read-only):
 Unit tests build small synthetic organized/ trees in a temp dir; no dependency on the real
 corpus being mounted.
 """
+import contextlib
 import importlib.util
 import io
 import json
@@ -186,6 +187,44 @@ class EnumerateClassesTest(unittest.TestCase):
                    "root": None, "jar_path": jar_path, "docsource_name": None}
             classes = set(m.enumerate_classes(pop))
             self.assertEqual(classes, {"org/thirdparty/Foo", "org/thirdparty/Baz"})
+
+    def test_raw_jar_population_rejects_zip_slip_entries(self):
+        """R1-001/R4-002/R4-004: a raw third-party LIB-INF jar is untrusted input -- a zip entry
+        using ".." to escape its own directory must never become a class key, since class keys
+        flow straight into filesystem paths (find_rung_file, extract_upstream_file, and
+        materialize()'s symlink target) with no further sanitization anywhere downstream."""
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            jar_bytes = _jar_bytes({
+                "org/thirdparty/Good.class": b"stub",
+                "../../../../tmp/evil.class": b"stub",
+                "/etc/evil2.class": b"stub",
+            })
+            jar_path = root / "thirdparty-1.0.jar"
+            jar_path.write_bytes(jar_bytes)
+            pop = {"kind": "module-lib-inf-raw", "name": "modA/lib-inf-raw/thirdparty-1.0",
+                   "root": None, "jar_path": jar_path, "docsource_name": None}
+            classes = set(m.enumerate_classes(pop))
+            self.assertEqual(classes, {"org/thirdparty/Good"})
+
+    def test_corrupt_raw_jar_warns_instead_of_silently_reporting_zero_classes(self):
+        """R2-005/R3-005/R4-003: a raw LIB-INF jar this tool cannot even open as a zip must not
+        silently vanish from the index with no trace -- it is surfaced on stderr so the corpus-
+        completeness claim ("never silently dropped") holds at the population level too, not just
+        the per-class level."""
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            jar_path = root / "not-a-real-jar.jar"
+            jar_path.write_bytes(b"definitely not a zip file")
+            pop = {"kind": "module-lib-inf-raw", "name": "modA/lib-inf-raw/not-a-real-jar",
+                   "root": None, "jar_path": jar_path, "docsource_name": None}
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                classes = m.enumerate_classes(pop)
+            self.assertEqual(classes, [])
+            self.assertIn(str(jar_path), stderr.getvalue())
 
 
 class PrecedenceTest(unittest.TestCase):
@@ -675,6 +714,41 @@ class UpstreamIdentityVerificationTest(unittest.TestCase):
                                      jar_sha256="cc" * 32)
         self.assertNotEqual(unlinked_rec["best_kind"], "upstream")
 
+    def test_mixed_artifact_unlinked_by_name_only_is_unproven_not_different_build(self):
+        """R2-alt-kind-mislabel: the weak, name-only "mixed" placeholder genuinely doesn't know
+        which occurrence applies -- it has NO proof either way, so it must be labeled
+        `upstream-unproven`, never `upstream-different-build` (which claims proof of divergence
+        this unlinked match never actually established). The old code labeled every untrusted
+        verdict except the literal string "no-verdict" as `upstream-different-build`, which wrongly
+        overstated what was proven for "mixed" (and for "unverifiable"/"no-classes"/"unverified")
+        matches too."""
+        m = _load()
+        _write_class(self.mod_root / "extracted" / "pkg" / "MixedNameOnlyClass.class")
+        sources_jar = self._write_sources_jar(("grp", "mixed-name-only-art", "1.0"),
+                                               {"pkg/MixedNameOnlyClass.java": b"// shared\n"})
+        self._write_manifest({
+            "groupId": "grp", "artifactId": "mixed-name-only-art", "version": "1.0",
+            "status": "fetched", "sources_jar_path": sources_jar,
+            "classdiff": {"sources_only": [], "binary_only": [], "common": 1},
+            "content_identity": {"status": "mixed", "source": "per-occurrence",
+                                  "reason": "occurrences disagree"},
+            "occurrences": [
+                {"kind": "LIB-INF", "name": "mod.jar!LIB-INF/mixed-1.0.jar",
+                 "binary_sha256": "aa" * 32,
+                 "content_identity": {"status": "sha1-exact",
+                                       "source": "evidence/b117/maven-repo1.json"}},
+            ],
+        })
+        self.fx.add_rung("modA", "vineflower2", "pkg/MixedNameOnlyClass", content="// decompiled\n")
+        name_index, sha_index, verdicts = m.build_upstream_index(self.root)
+        self.assertEqual(verdicts.get("mixed"), 1)
+        # No jar_sha256 given here -> this population falls back to the weak name-only index.
+        rec = self._record("pkg/MixedNameOnlyClass", (name_index, sha_index))
+        self.assertEqual(rec["best_kind"], "vineflower2")
+        alt = [a for a in rec["alternates"] if a["kind"] == "upstream-unproven"]
+        self.assertEqual(len(alt), 1, rec["alternates"])
+        self.assertFalse([a for a in rec["alternates"] if a["kind"] == "upstream-different-build"])
+
 
 def m_hash(data: bytes) -> str:
     import hashlib
@@ -752,6 +826,71 @@ class MainRunAndMaterializeTest(unittest.TestCase):
             # every .class under extracted/ must appear, even with no representation at all.
             self.assertIn("pkg/MissingClass", classes)
             self.assertIn("pkg/UpstreamClass", classes)
+
+    def test_materialize_refuses_a_record_whose_class_key_would_escape_materialize_dir(self):
+        """R1-001/R3-001/R4-001/R4-004, defense in depth: even if a record's `class`/`module`
+        field somehow carried a path-traversal segment, materialize() must never create a symlink
+        outside materialize_dir -- it refuses that one record (and keeps going) instead of relying
+        solely on the caller (build_index) to have sanitized it, and instead of a bare `assert`
+        (stripped under `python -O`) as the only guard."""
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            organized_root = Path(td) / "organized"
+            real_file = organized_root / "modA" / "pkg" / "Real.java"
+            real_file.parent.mkdir(parents=True)
+            real_file.write_text("// real\n")
+            materialize_dir = Path(td) / "tree"
+            materialize_dir.mkdir()
+            escape_target = Path(td) / "escaped.java"
+            records = [{
+                "module": "modA", "class": "../../escaped", "best_kind": "docSource",
+                "best": "organized/modA/pkg/Real.java",
+            }]
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                linked = m.materialize(organized_root, materialize_dir, records)
+            self.assertEqual(linked, 0)
+            self.assertFalse(escape_target.exists())
+            self.assertIn("escape", stderr.getvalue())
+
+    def test_materialize_rejects_a_best_path_outside_organized_root_without_relying_on_assert(self):
+        """R2-007/R3-001/R4-001: the "best" path must stay under organized_root even when Python
+        runs with `-O` (which strips `assert` statements) -- this is an explicit check, not an
+        assert."""
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            organized_root = Path(td) / "organized"
+            organized_root.mkdir()
+            materialize_dir = Path(td) / "tree"
+            materialize_dir.mkdir()
+            records = [{"module": "modA", "class": "pkg/Bad", "best_kind": "docSource",
+                       "best": "not-under-organized/pkg/Bad.java"}]
+            with self.assertRaises(ValueError):
+                m.materialize(organized_root, materialize_dir, records)
+
+    def test_materialize_skips_a_record_it_cannot_link_without_aborting_the_batch(self):
+        """R3-008/R4-005: one record's link target colliding with a real (non-symlink) directory
+        must not abort materializing every other record in the batch."""
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td) / "organized"
+            fx = FixtureOrganized(root)
+            fx.add_module_skeleton("modA")
+            fx.add_docsource("modA", "pkg/DocClass")
+            fx.add_rung("modA", "vineflower2", "pkg/V2Class")
+            out_dir = root / "_best"
+            materialize_dir = out_dir / "tree"
+            # Pre-create a REAL directory exactly where DocClass.java's symlink would go.
+            (materialize_dir / "modA" / "pkg" / "DocClass.java").mkdir(parents=True)
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                rc = m.main(["--organized", str(root), "--out", str(out_dir),
+                             "--materialize", str(materialize_dir)])
+            self.assertEqual(rc, 0)
+            # DocClass could not be linked (still a real dir), but V2Class -- unrelated -- was.
+            self.assertTrue((materialize_dir / "modA" / "pkg" / "DocClass.java").is_dir())
+            v2_link = materialize_dir / "modA" / "pkg" / "V2Class.java"
+            self.assertTrue(v2_link.is_symlink())
 
 
 if __name__ == "__main__":

@@ -286,6 +286,19 @@ def _is_nested(simple_name: str) -> bool:
     return "$" in simple_name
 
 
+def _is_safe_class_key(class_key: str) -> bool:
+    """False for a class key that is not a safe, self-contained relative path (e.g. a zip entry
+    using ".." to climb out of its own directory, or an absolute path). A `module-lib-inf-raw`
+    population's class keys come straight from a raw, third-party jar's own zip entry names --
+    untrusted input -- and every rung lookup downstream (find_rung_file, find_docsource_file,
+    extract_upstream_file) as well as materialize()'s symlink target builds a filesystem path by
+    simple string concatenation with no further sanitization, so an unsafe key here would let a
+    malformed or adversarial jar entry write or read outside the intended directory (zip slip)."""
+    if not class_key or class_key.startswith("/") or "\\" in class_key:
+        return False
+    return all(part not in ("", ".", "..") for part in class_key.split("/"))
+
+
 def enumerate_classes(pop: dict) -> list[str]:
     """Top-level class keys (slash form, no extension) for one population."""
     if pop["kind"] == "module-lib-inf-raw":
@@ -300,8 +313,14 @@ def enumerate_classes(pop: dict) -> list[str]:
                     simple = base.rsplit("/", 1)[-1]
                     if _is_nested(simple):
                         continue
+                    if not _is_safe_class_key(base):
+                        print(f"n5-best-source: skipping unsafe zip entry {n!r} in {jar_path} "
+                              "(path-traversal-looking class key, never trusted)", file=sys.stderr)
+                        continue
                     names.append(base)
-        except (zipfile.BadZipFile, OSError):
+        except (zipfile.BadZipFile, OSError) as exc:
+            print(f"n5-best-source: cannot read {jar_path} as a zip ({exc}); population "
+                  f"{pop.get('name')} will report 0 classes for this run", file=sys.stderr)
             return []
         return sorted(set(names))
 
@@ -707,8 +726,18 @@ def build_class_record(organized_root: Path, pop: dict, class_key: str,
     # investigating this class should see the upstream file existed and why it wasn't trusted.
     if up_candidate is not None and not up_candidate["trusted"]:
         gav = f"{up_candidate['groupId']}:{up_candidate['artifactId']}:{up_candidate['version']}"
-        alt_kind = ("upstream-unproven" if up_candidate["verdict"] == "no-verdict"
-                    else "upstream-different-build")
+        # Only a verdict that actually PROVES this build differs from the shipped binary earns
+        # "upstream-different-build" ("vendor-modified" whole-jar, or "partially-modified" for
+        # THIS class specifically). Every other untrusted verdict -- no identity information at
+        # all ("no-verdict"), an ambiguous "mixed" artifact matched only by class name (so it
+        # isn't even known which occurrence applies), or a verification that simply could not be
+        # completed ("unverifiable"/"unverified"/"no-classes"/"unknown") -- is "upstream-unproven":
+        # we have no proof either way, a different claim from proof of divergence (2026-09-28 fix,
+        # orchestrator-found defect: every untrusted verdict except the literal string "no-verdict"
+        # used to be mislabeled "upstream-different-build", overstating what was actually proven).
+        alt_kind = ("upstream-different-build"
+                    if up_candidate["verdict"] in ("vendor-modified", "partially-modified")
+                    else "upstream-unproven")
         alternates.append({
             "kind": alt_kind, "path": f"upstream:{gav}:{class_key}.java", "grade": None,
             "reason": f"{up_candidate['reason']} [{up_candidate['link']}]",
@@ -789,27 +818,46 @@ def build_index(organized_root: Path, extract_dir: Path) -> dict:
 def materialize(organized_root: Path, materialize_dir: Path, records: list[dict]) -> int:
     """Idempotent RELATIVE symlink tree DIR/<module>/<pkg>/<Class>.<ext> -> the chosen `best`
     file. Extension matches the actual source file (.java or .kt), not forced to .java, since a
-    .java symlink pointing at Kotlin content would misrepresent the file for any reader/editor."""
+    .java symlink pointing at Kotlin content would misrepresent the file for any reader/editor.
+
+    Two invariants are enforced explicitly (never via `assert`, which `python -O` strips,
+    silently turning both into no-ops): `best` must stay under organized_root (a corrupted index
+    is a hard error -- something built it wrong), and the symlink's own LOCATION must stay under
+    materialize_dir (defense in depth: `rec["module"]`/`rec["class"]` are expected to already be
+    safe -- module names come from real corpus directory listings, class keys are filtered by
+    enumerate_classes's zip-slip guard -- but this is the one place that actually creates a
+    filesystem entry from them, so it never trusts that alone). A record materialize() cannot
+    safely or successfully link is skipped with a warning, never aborting the rest of the batch."""
     linked = 0
+    materialize_norm = os.path.normpath(str(materialize_dir))
     for rec in records:
         if rec["best_kind"] == "missing" or not rec["best"]:
             continue
         best_rel = rec["best"]
-        assert best_rel.startswith("organized/")
+        if not best_rel.startswith("organized/"):
+            raise ValueError(f"best-source record for {rec['module']}/{rec['class']} has a "
+                              f"'best' path outside organized/: {best_rel!r}")
         target_abs = organized_root / best_rel[len("organized/"):]
         ext = target_abs.suffix
         link_path = materialize_dir / rec["module"] / (rec["class"] + ext)
-        link_path.parent.mkdir(parents=True, exist_ok=True)
-        rel_target = os.path.relpath(target_abs, start=link_path.parent)
-        if link_path.is_symlink() or link_path.exists():
-            try:
+        link_path_norm = os.path.normpath(str(link_path))
+        if link_path_norm != materialize_norm and not link_path_norm.startswith(materialize_norm + os.sep):
+            print(f"n5-best-source: refusing to materialize {rec['module']}/{rec['class']} -- "
+                  f"its link path would escape {materialize_dir}", file=sys.stderr)
+            continue
+        try:
+            link_path.parent.mkdir(parents=True, exist_ok=True)
+            rel_target = os.path.relpath(target_abs, start=link_path.parent)
+            if link_path.is_symlink() or link_path.exists():
                 if link_path.is_symlink() and os.readlink(link_path) == rel_target:
                     linked += 1
                     continue
-            except OSError:
-                pass
-            link_path.unlink()
-        os.symlink(rel_target, link_path)
+                link_path.unlink()
+            os.symlink(rel_target, link_path)
+        except OSError as exc:
+            print(f"n5-best-source: could not materialize {rec['module']}/{rec['class']} at "
+                  f"{link_path}: {exc}", file=sys.stderr)
+            continue
         linked += 1
     return linked
 

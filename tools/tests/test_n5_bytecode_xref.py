@@ -82,6 +82,21 @@ FIXTURES = {
           }
         }
         """,
+    # fx.Other only OVERLOADS perm (perm(String), a different descriptor) -- it does NOT
+    # override the inherited perm(Object), so a call through an fx.Other-typed receiver whose
+    # argument is statically Object must still resolve to (and invoke) the INHERITED perm(Object),
+    # with a symbolic invokevirtual owner of fx/Other (R2-001/R2-002/R3-003/R3-004: without this
+    # real call site, "fx.Other must never be offered as a subtype-owner" was never actually
+    # exercised -- there was nothing to observe the claim through).
+    "fx/CallerOther.java": """
+        package fx;
+        public class CallerOther {
+          Object viaOther(Other o) {
+            Object arg = "via-other";
+            return o.perm(arg);
+          }
+        }
+        """,
     "fx/Caller.java": """
         package fx;
         public class Caller {
@@ -219,12 +234,21 @@ class FixtureTests(unittest.TestCase):
         self.assertIn(("fx.CallerLeaf", "subtype-owner", "fx.Leaf"), kinds)
 
     def test_callers_cha_subtype_owner_stops_at_a_redeclaring_override(self):
-        # fx.Other overrides perm with a DIFFERENT descriptor (String, not Object); it must never
-        # be offered as a subtype-owner for fx.Base.perm(Object) callers.
+        # fx.Sub REDECLARES perm(Object) exactly (an @Override, same descriptor): it and its own
+        # subtype fx.Leaf must never be offered as a subtype-owner for a DIRECT fx.Base.perm(Object)
+        # query -- their calls dispatch through Sub's own override (already reachable via the
+        # fx.Sub target itself, not via widening from fx.Base).
         idx = self.mod.build_index(self.organized)
         res = self.mod.callers(idx, "fx.Base", "perm", desc="(Ljava/lang/Object;)Ljava/lang/Object;", cha=True)
         owners = {r["owner"] for r in res}
-        self.assertNotIn("fx.Other", owners)
+        self.assertNotIn("fx.Sub", owners)
+        self.assertNotIn("fx.Leaf", owners)
+        # fx.Other only OVERLOADS perm (perm(String) -- a different descriptor); it does NOT
+        # redeclare perm(Object), so it correctly remains eligible, and fx.CallerOther's real
+        # invoke site on it (R2-001/R2-002/R3-003/R3-004 -- see fixture) proves the CHA widening
+        # actually reaches it, rather than passing vacuously because no site touched fx.Other at
+        # all (the old version of this test never had such a site).
+        self.assertIn("fx.Other", owners)
 
     def test_subtypes_is_transitive(self):
         idx = self.mod.build_index(self.organized)
@@ -277,6 +301,46 @@ class ParserEdgeTests(unittest.TestCase):
         mod = _load()
         with self.assertRaises(ValueError):
             mod.parse_class(b"PK\x03\x04not a class")
+
+
+# R2-002/R3-004: _inheriting_subtypes must infer the base's own unambiguous descriptor when none
+# is given, exactly like overriders() already does (R2-001) -- otherwise an unrelated overload
+# (same method NAME, different descriptor) declared on a subtype is wrongly treated as a
+# redeclaration of the base method. That stops CHA descent at that subtype, silently dropping
+# every real subtype-owner candidate below it, even though the subtype never actually overrode
+# the method being queried. Exercised directly against a hand-built index (no javac / real class
+# files needed) so it always runs, unlike the FixtureTests below.
+class InheritingSubtypesDescInferenceTests(unittest.TestCase):
+    @staticmethod
+    def _idx():
+        return {
+            "classes": {
+                "p/Base": {"name": "p/Base", "methods": [{"name": "m", "desc": "()V"}]},
+                # Overload only -- declares "m" but with a DIFFERENT descriptor than Base's "m".
+                # It does NOT redeclare Base.m()V.
+                "p/Overload": {"name": "p/Overload", "methods": [{"name": "m", "desc": "(I)V"}]},
+                "p/Grandchild": {"name": "p/Grandchild", "methods": []},
+                # A genuine redeclaration (same name AND descriptor) -- descent must stop here.
+                "p/RealOverride": {"name": "p/RealOverride", "methods": [{"name": "m", "desc": "()V"}]},
+                "p/OverrideChild": {"name": "p/OverrideChild", "methods": []},
+            },
+            "children": {
+                "p/Base": ["p/Overload", "p/RealOverride"],
+                "p/Overload": ["p/Grandchild"],
+                "p/RealOverride": ["p/OverrideChild"],
+            },
+        }
+
+    def test_unrelated_overload_does_not_stop_descent_when_desc_omitted(self):
+        mod = _load()
+        out = mod._inheriting_subtypes(self._idx(), "p.Base", "m", None)
+        self.assertEqual(sorted(out), ["p/Grandchild", "p/Overload"])
+
+    def test_real_override_still_stops_descent_when_desc_omitted(self):
+        mod = _load()
+        out = mod._inheriting_subtypes(self._idx(), "p.Base", "m", None)
+        self.assertNotIn("p/RealOverride", out)
+        self.assertNotIn("p/OverrideChild", out)
 
 
 # R2-002: the same internal class name appearing in two modules must not be dropped silently.
