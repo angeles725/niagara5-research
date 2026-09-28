@@ -66,6 +66,19 @@ MECHANICAL and fail closed:
 - [x] T11 (d458bc1) Versioned writer prompt docs/writer-prompt.md (replaces the session-scratch common.txt) with the checklist.
 - [ ] T12 Orchestrator-side memory: feedback memory + engram; retro kit deltas (T6) mirror R1-R6 into METHODOLOGY proposals.
 
+## Session focus change (user, 2026-09-28)
+Research child gaps (B115-B118 G*) are deferred to the next session. Remaining work in THIS session: verify v1 vs v2,
+make the decompile complete and as faithful as possible.
+- [x] T18 (B118, b8eebcd; tool 1ad56eb RDD review-afef2ecdf952d3f2 approved) Logic-recovery method ladder.
+- [ ] T18b (next session) Harden n5-bytecode-xref per its review: overriders must match name+descriptor (R2-001); duplicate
+      class names across modules must not be dropped silently (R2-002); --cha must accept subtype receivers that inherit the
+      method (R3-001, current result can MISS callers); surface parse_errors in every subcommand (R4). Until fixed, treat its
+      caller lists as lower bounds.
+- [ ] T22 Completeness: decompile (v2 + conservative line-mapped view) the 10 out-of-pipeline Tridium jars (etc/m2, lib doclet)
+      and the Tridium-owned nested LIB-INF jars; for identified third-party jars fetch the upstream -sources.jar by exact
+      Maven coordinates (original source beats any decompile); record per-class best representation. Route: delegated,
+      after T19b lands (same script).
+
 ## Maximum decompile fidelity (user requirement 2026-09-28: "the decompile must be right, no inventions, not tainted; try everything possible")
 - [x] T13 Integrity + completeness census [CERT-hw]: 252 recon.json (247 modules + bin/ext) — 0 jar sha256 mismatches vs the
       installed jars, 0 missing jars; 14,894 top-level classes, 0 without a .java (CORRECTED by B117: this counted only top-level classes of the module jars — 24,896 classes in 98 nested LIB-INF jars and 958 classes in 10 out-of-pipeline Tridium jars were never decompiled; orchestrator verified 0 .java under any LIB-INF) (vineflower or fallback); CFR fallback used in
