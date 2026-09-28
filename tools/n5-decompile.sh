@@ -152,7 +152,11 @@
 #                    immediately (isolation_status=total_budget_exhausted, no partial hung-class
 #                    list kept — see vf_isolate_hung_classes' doc comment) and falls back to
 #                    today's original whole-module CFR behavior, exactly as if no hung class
-#                    could be isolated at all.
+#                    could be isolated at all. N5_ISOLATE_TOTAL_BUDGET=0 (decompile-pipeline
+#                    review, R2-isolate-budget-zero-semantics-undocumented) disables isolation
+#                    entirely: the very first package-probe budget check already reads
+#                    elapsed(0) >= 0 and abandons isolation before running even one probe —
+#                    deterministic, not an error (see bats test T24i).
 #   N5_PARALLELISM   default: 6 (used only as documentation for callers driving xargs -P)
 #   N5_JDK25_HOME    default: /home/linuxbrew/.linuxbrew/opt/openjdk@25/libexec
 #                    (--variant v2 only) passed to Vineflower's --include-runtime. Must be
@@ -1001,10 +1005,36 @@ vf_handle_mrjar_versions() {
     # to carry an inner class, even though it was fully represented inside its
     # parent's .java (confirmed empirically: a synthetic override with one
     # anonymous Runnable reported its Name$1 as unrepresented every time).
+    #
+    # decompile-pipeline review fix (orchestrator, 2026-09-28,
+    # R4-mrjar-toplevel-filter-drops-nested-only-overrides): folding a
+    # Name$N into its enclosing top-level class is only correct when THIS
+    # version's own override set also ships that top-level class's .class
+    # file. A versions/<N>/ dir that ships ONLY a nested/local/anon class
+    # (no top-level Outer.class alongside it — confirmed empirically: real
+    # Vineflower/CFR both decompile a standalone Outer$Inner.class to a file
+    # named literally Outer$Inner.java, never Outer.java) has nothing to
+    # fold into; the old basename-only "contains '$'" filter dropped it from
+    # $top_level_names — and therefore from $total and every one of
+    # decompiled/fallback/unrepresented — with no trace anywhere, exactly
+    # the "silent zero" this whole tally exists to forbid.
+    local -A internal_name_set=()
+    for internal in "${internal_names[@]}"; do internal_name_set["$internal"]=1; done
     local -a top_level_names=()
+    local base parent_internal parent_dir
     for internal in "${internal_names[@]}"; do
-      case "$(basename "$internal")" in
-        *'$'*) continue ;;
+      base="$(basename "$internal")"
+      case "$base" in
+        *'$'*)
+          parent_dir="$(dirname "$internal")"
+          if [[ "$parent_dir" == "." ]]; then
+            parent_internal="${base%%\$*}"
+          else
+            parent_internal="$parent_dir/${base%%\$*}"
+          fi
+          [[ -n "${internal_name_set[$parent_internal]:-}" ]] && continue
+          top_level_names+=("$internal")
+          ;;
         *) top_level_names+=("$internal") ;;
       esac
     done
@@ -1016,10 +1046,27 @@ vf_handle_mrjar_versions() {
     # CFR successfully replaced); fallback iff not decompiled but a .java
     # exists in fb_dir; unrepresented (silent zero — must never go unrecorded)
     # iff neither.
+    #
+    # decompile-pipeline review fix (orchestrator, 2026-09-28,
+    # R2-mrjar-marker-cfr-miss-counted-decompiled / R3-002): a marker-flagged
+    # class is checked FIRST and EXCLUSIVELY against fb_dir — it must never
+    # fall through to the plain target_dir check below. Vineflower writes the
+    # marker-flagged .java into target_dir even though it flagged that exact
+    # file as a decompiler failure (see is_marker_flagged's own comment
+    # above), so the old ordering (target_dir checked whenever the marker+
+    # fb_dir combo didn't match) counted "marker-flagged AND the real CFR
+    # retry produced nothing" as a clean "decompiled" success — hiding both
+    # the retry's failure and the fact that the surviving .java is the
+    # decompiler-flagged one, not a good one. That case is unrepresented, the
+    # same as any other class neither decompiler produced usable output for.
     local decompiled=0 fallback=0
     for internal in "${top_level_names[@]}"; do
-      if [[ -n "${is_marker_flagged[$internal]:-}" && -f "$fb_dir/$internal.java" ]]; then
-        fallback=$((fallback + 1))
+      if [[ -n "${is_marker_flagged[$internal]:-}" ]]; then
+        if [[ -f "$fb_dir/$internal.java" ]]; then
+          fallback=$((fallback + 1))
+        else
+          VFM_UNREPRESENTED+=("$n:$internal")
+        fi
       elif [[ -f "$target_dir/$internal.java" ]]; then
         decompiled=$((decompiled + 1))
       elif [[ -f "$fb_dir/$internal.java" ]]; then
@@ -1256,27 +1303,45 @@ decompile_binext() {
 # appends every resulting sha256 to the caller's PREP_CURRENT_LIBINF_SHAS
 # array (T19-hardening fix 3's pruning list — see compute_v2_library_jars).
 # Updates the caller's PREP_ADDED_COUNT.
+# decompile-pipeline review fix (orchestrator, 2026-09-28, R3-002/R4-002,
+# de-duplicated per R2-duplicated-unzip-libinf-error-handling / R3-003):
+# extracts $1's LIB-INF/*.jar entries into already-created dir $2, logging a
+# WARNING under log tag $3 (identifying the source as $4 in the message) when
+# unzip's exit code means more than the ordinary "no LIB-INF here" case.
+#
+# exit 11 ("no matching files") is the ordinary case for the overwhelming
+# majority of jars, which carry no LIB-INF/*.jar at all — but unzip ALSO
+# returns nonzero (and still writes whatever bytes it managed, e.g. a
+# CRC-mismatched entry) on a genuinely corrupt/truncated LIB-INF entry, which
+# used to be swallowed identically and silently via a blanket
+# `2>/dev/null || true`. A corrupted entry would then be hashed and
+# cached/recorded under ITS OWN (wrong) sha256 as if it were a legitimate
+# distinct lib jar, with no trace anywhere that the extraction itself had
+# failed. Any OTHER nonzero exit is now surfaced as a warning (unzip's own
+# message, captured instead of discarded) so a reader can tell "no LIB-INF
+# here" apart from "LIB-INF extraction actually failed" — $5 names the exact
+# risk each caller's own downstream use of the corrupted bytes carries
+# ("cached" for cache_source_jar_libinf, "recorded" for
+# run_third_party_libinf), so the warning text stays accurate for both.
+#
+# This used to be two independently maintained near-identical copies of the
+# same rc-checking block (one per caller below) — cache_source_jar_libinf's
+# own copy had no dedicated test of its own, unlike run_third_party_libinf's
+# (test "(e)"), so a regression in ONE copy could have gone unnoticed.
+extract_libinf_jars_or_warn() {
+  local jar="$1" tmpdir="$2" log_tag="$3" label="$4" risk_verb="$5"
+  local unzip_out unzip_rc=0
+  unzip_out="$(unzip -o -q "$jar" 'LIB-INF/*.jar' -d "$tmpdir" 2>&1)" || unzip_rc=$?
+  if [[ "$unzip_rc" -ne 0 && "$unzip_rc" -ne 11 ]]; then
+    log "$log_tag" "WARNING: unzip exited $unzip_rc extracting LIB-INF/*.jar from $label — a partially/incorrectly extracted entry may be $risk_verb under a misleading sha256; unzip output: $unzip_out"
+  fi
+}
+
 cache_source_jar_libinf() {
   local jar="$1" cache_dir="$2" force="$3"
   local tmpdir libjar libsha dest
   tmpdir="$(mktemp -d)"
-  # decompile-pipeline review fix (orchestrator, 2026-09-28,
-  # R3-002/R4-002): exit 11 ("no matching files") is the ordinary case for
-  # the overwhelming majority of jars, which carry no LIB-INF/*.jar at all —
-  # but unzip ALSO returns nonzero (and still writes whatever bytes it
-  # managed, e.g. a CRC-mismatched entry) on a genuinely corrupt/truncated
-  # LIB-INF entry, which this used to swallow identically and silently via a
-  # blanket `2>/dev/null || true`. A corrupted entry would then be hashed and
-  # cached under ITS OWN (wrong) sha256 as if it were a legitimate distinct
-  # lib jar, with no trace anywhere that the extraction itself had failed.
-  # Any OTHER nonzero exit is now surfaced as a warning (unzip's own message,
-  # captured instead of discarded) so a reader can tell "no LIB-INF here"
-  # apart from "LIB-INF extraction actually failed".
-  local unzip_out unzip_rc=0
-  unzip_out="$(unzip -o -q "$jar" 'LIB-INF/*.jar' -d "$tmpdir" 2>&1)" || unzip_rc=$?
-  if [[ "$unzip_rc" -ne 0 && "$unzip_rc" -ne 11 ]]; then
-    log "_prepare-libcache" "WARNING: unzip exited $unzip_rc extracting LIB-INF/*.jar from $jar — a partially/incorrectly extracted entry may be cached under a misleading sha256; unzip output: $unzip_out"
-  fi
+  extract_libinf_jars_or_warn "$jar" "$tmpdir" "_prepare-libcache" "$jar" "cached"
   while IFS= read -r -d '' libjar; do
     libsha="$(sha256_of "$libjar")"
     [[ -z "$libsha" ]] && continue
@@ -2434,16 +2499,12 @@ run_third_party_libinf() {
     modname="$(basename "$src" .jar)"
     tmpdir="$(mktemp -d)"
     # decompile-pipeline review fix (orchestrator, 2026-09-28, R3-002/R4-002):
-    # see cache_source_jar_libinf's identical fix above for the full
-    # rationale — exit 11 ("no matching files") is the ordinary case, any
-    # OTHER nonzero exit means a genuinely corrupt/truncated LIB-INF entry
-    # was extracted anyway (with bad bytes) and used to be swallowed
-    # identically and silently.
-    local unzip_out unzip_rc=0
-    unzip_out="$(unzip -o -q "$src" 'LIB-INF/*.jar' -d "$tmpdir" 2>&1)" || unzip_rc=$?
-    if [[ "$unzip_rc" -ne 0 && "$unzip_rc" -ne 11 ]]; then
-      log "_lib-inf-3p" "WARNING: unzip exited $unzip_rc extracting LIB-INF/*.jar from $modname — a partially/incorrectly extracted entry may be recorded under a misleading sha256; unzip output: $unzip_out"
-    fi
+    # see extract_libinf_jars_or_warn's doc comment (above
+    # cache_source_jar_libinf) for the full rationale — exit 11 ("no matching
+    # files") is the ordinary case, any OTHER nonzero exit means a genuinely
+    # corrupt/truncated LIB-INF entry was extracted anyway (with bad bytes)
+    # and used to be swallowed identically and silently.
+    extract_libinf_jars_or_warn "$src" "$tmpdir" "_lib-inf-3p" "$modname" "recorded"
     while IFS= read -r -d '' entry; do
       rel="${entry#"$tmpdir"/}"
       stem="$(basename "$entry" .jar)"
