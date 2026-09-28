@@ -1803,19 +1803,27 @@ def generate_report(module_results: list[dict], cross_checks: Optional[dict] = N
 # T20: v1-vs-v2 (or any tree-vs-tree) comparison — per-class grade transition
 # ---------------------------------------------------------------------------
 
-def load_tree_results(organized_dir: Path, modules: list[str], tree: str) -> list[dict]:
+def load_tree_results(organized_dir: Path, modules: list[str], tree: str,
+                      skipped: Optional[list] = None) -> list[dict]:
     """Read each module's ALREADY-GRADED fidelity.<tree>.json (or its legacy
     fidelity.json for "vineflower" — see fidelity_read_path). Never grades
     anything itself: --compare is a pure reporting mode over existing runs.
+
+    A module whose file is missing or unreadable is never dropped silently: it is
+    appended to ``skipped`` as ``(module, reason)`` so callers can report it.
     """
     out = []
     for module in modules:
         p = fidelity_read_path(Path(organized_dir) / module, tree)
         if p is None:
+            if skipped is not None:
+                skipped.append((module, f"missing fidelity.{tree}.json"))
             continue
         try:
             out.append(json.loads(p.read_text()))
-        except (json.JSONDecodeError, OSError):
+        except (json.JSONDecodeError, OSError) as e:
+            if skipped is not None:
+                skipped.append((module, f"unreadable fidelity.{tree}.json: {e}"))
             continue
     return out
 
@@ -1924,6 +1932,16 @@ def generate_compare_report(
         f"({', '.join(comparison['modules_common'])})."
     )
     lines.append("")
+    skipped_modules = comparison.get("skipped_modules") or {}
+    skipped_rows = [(t, m, r) for t, items in skipped_modules.items() for m, r in items]
+    if skipped_rows:
+        lines.append(f"**{len(skipped_rows)} module result(s) could not be loaded and are NOT in this comparison:**")
+        lines.append("")
+        lines.extend(f"- `{t}/{m}`: {r}" for t, m, r in skipped_rows)
+        lines.append("")
+    else:
+        lines.append("No module was skipped: every requested module had a readable result for both trees.")
+        lines.append("")
     lines.append(f"| Transition (`{tree_a}` -> `{tree_b}`) | Count |")
     lines.append("|---|---:|")
     for key in sorted(comparison["transition_counts"]):
@@ -2131,9 +2149,15 @@ def main(argv: Optional[list[str]] = None) -> int:
             parser.error("--compare requires exactly two comma-separated tree names, e.g. vineflower,vineflower2")
             return 2
         tree_a, tree_b = parts
-        results_a = load_tree_results(organized_dir, modules, tree_a)
-        results_b = load_tree_results(organized_dir, modules, tree_b)
+        skipped_a: list = []
+        skipped_b: list = []
+        results_a = load_tree_results(organized_dir, modules, tree_a, skipped=skipped_a)
+        results_b = load_tree_results(organized_dir, modules, tree_b, skipped=skipped_b)
+        for label, skipped in ((tree_a, skipped_a), (tree_b, skipped_b)):
+            for module, reason in skipped:
+                print(f"[compare] SKIPPED {label}/{module}: {reason}", file=sys.stderr)
         comparison = compare_tree_grades(results_a, results_b, tree_a, tree_b)
+        comparison["skipped_modules"] = {tree_a: skipped_a, tree_b: skipped_b}
         print(
             f"[compare {tree_a} -> {tree_b}] {comparison['common_class_count']} common classes across "
             f"{len(comparison['modules_common'])} common modules, {len(comparison['worse'])} worse, "

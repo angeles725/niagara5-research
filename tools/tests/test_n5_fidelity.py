@@ -1890,5 +1890,28 @@ class TestCompareCLIWritesReportSection(unittest.TestCase):
                 ])
 
 
+class TestLoadTreeResultsReportsSkippedModules(unittest.TestCase):
+    """Review review-6f1c46518f56b786 R3-compare-silently-drops-modules: a missing or corrupt
+    fidelity.<tree>.json must be REPORTED, never silently dropped from a --compare."""
+
+    def test_missing_and_corrupt_modules_are_reported(self):
+        mod = _load()
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            (root / "good").mkdir()
+            (root / "good" / "fidelity.vineflower2.json").write_text(json.dumps({"module": "good", "classes": {}}))
+            (root / "broken").mkdir()
+            (root / "broken" / "fidelity.vineflower2.json").write_text("{not json")
+            (root / "absent").mkdir()
+            skipped = []
+            out = mod.load_tree_results(root, ["good", "broken", "absent"], "vineflower2", skipped=skipped)
+            self.assertEqual([r["module"] for r in out], ["good"])
+            self.assertEqual(sorted(m for m, _ in skipped), ["absent", "broken"])
+            reasons = dict(skipped)
+            self.assertIn("missing", reasons["absent"])
+            self.assertIn("unreadable", reasons["broken"])
+
+
+
 if __name__ == "__main__":
     unittest.main()
