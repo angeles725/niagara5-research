@@ -24,6 +24,8 @@ public class T {
     assertTrue("must hold", ok());
     assertFalse(bad());
     assertNull("n", v);
+    assertArrayEquals(new int[] {1, 2}, row(a, b));
+    assertArrayEquals("arr", exp, got);
   }
 }
 """
@@ -48,6 +50,17 @@ class TestPortJunit4ToTestng(unittest.TestCase):
 
     def test_single_argument_asserts_are_only_prefixed(self):
         self.assertIn("Assert.assertFalse(bad())", self.out)
+
+    def test_assert_array_equals_maps_to_testng_assert_equals_with_swap(self):
+        # TestNG has no assertArrayEquals; arrays use the overloaded assertEquals(actual, expected).
+        self.assertIn("Assert.assertEquals(row(a, b), new int[] {1, 2})", self.out)
+        self.assertIn('Assert.assertEquals(got, exp, "arr")', self.out)
+        self.assertNotIn("assertArrayEquals", self.out)
+
+    def test_unported_calls_counts_bare_junit_asserts_only(self):
+        mod = _load()
+        self.assertEqual(mod.unported_calls(self.out), 0)
+        self.assertEqual(mod.unported_calls("assertArrayEquals(a, b); Assert.assertEquals(c, d);"), 1)
 
 
 if __name__ == "__main__":

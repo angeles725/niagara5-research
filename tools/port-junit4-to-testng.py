@@ -164,13 +164,16 @@ ASSERT_KINDS = {
     "assertSame": reorder_assert_equals_args,
     "assertNotSame": reorder_assert_equals_args,
     # TestNG's Assert class has NO assertArrayEquals method at all — arrays go through the
-    # SAME overloaded assertEquals(actual[], expected[]) family. Not exercised by the
-    # ColdRoomPan-rt corpus (grep-confirmed zero uses); flagged as B29-G (recipe limitation)
-    # rather than silently mis-emitting a call TestNG doesn't have.
+    # SAME overloaded assertEquals(actual[], expected[]) family, so the call is renamed to
+    # assertEquals and reordered exactly like assertEquals (niagara5-block97.md §97.8, B29-G3).
+    "assertArrayEquals": reorder_assert_equals_args,
 }
 
+# JUnit name -> TestNG name when they differ.
+TESTNG_NAME = {"assertArrayEquals": "assertEquals"}
+
 ASSERT_CALL = re.compile(r'(?<!Assert\.)\b(assertTrue|assertFalse|assertNull|assertNotNull|'
-                          r'assertSame|assertNotSame|assertEquals)\s*\(')
+                          r'assertSame|assertNotSame|assertEquals|assertArrayEquals)\s*\(')
 
 
 def port_source(src: str) -> str:
@@ -199,12 +202,17 @@ def port_source(src: str) -> str:
         inner = out[open_idx + 1:close_idx]
         reorder_fn = ASSERT_KINDS[kind]
         new_inner = reorder_fn(inner)
-        result.append(f"Assert.{kind}({new_inner})")
+        result.append(f"Assert.{TESTNG_NAME.get(kind, kind)}({new_inner})")
         pos = close_idx + 1
     result.append(out[pos:])
     out = "".join(result)
 
     return out
+
+
+def unported_calls(src: str) -> int:
+    """Number of JUnit-style assert* calls left without an Assert. prefix (should be 0 after a port)."""
+    return len(ASSERT_CALL.findall(src))
 
 
 def main():
@@ -219,8 +227,10 @@ def main():
         f.write(ported)
     n_before = len(re.findall(r'\bassert(?:True|False|Null|NotNull|Same|NotSame|Equals|ArrayEquals)\s*\(', src))
     n_after = len(re.findall(r'\bassert(?:True|False|Null|NotNull|Same|NotSame|Equals|ArrayEquals)\s*\(', ported))
-    print(f"{src_path} -> {dest_path}: {n_before} assert* calls in, {n_after} out "
-          f"({'OK — count preserved' if n_before == n_after else 'MISMATCH — investigate'})")
+    left = unported_calls(ported)
+    ok = n_before == n_after and left == 0
+    print(f"{src_path} -> {dest_path}: {n_before} assert* calls in, {n_after} out, {left} unported "
+          f"({'OK — count preserved, none unported' if ok else 'MISMATCH — investigate'})")
 
 
 if __name__ == "__main__":
