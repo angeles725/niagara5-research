@@ -407,3 +407,186 @@ for fn in sorted(os.listdir(moddir)):
         print(fn, total, short)
 EOF
 ```
+
+## Semantic defects (B116)
+
+Everything above this section measures **syntax** fidelity (does the decompiled text use the
+right modern Java construct, does it recompile at all). It is not a semantic fidelity
+measurement. `niagara5-block116.md` (T14 of `odd/tasks/decompiler-fidelity-audit.md`) ran a
+per-method bytecode oracle — every decompiled method recompiled and compared, normalized,
+against the shipped class's own bytecode — over 36,977 methods across 3,436 class files (the
+2,809 docSource-covered files plus synthetic javac-25 probes) and found **11 confirmed
+semantic defects (D1-D11)**: 9 behavior-changing, 2 precision-edge, 0.030% of methods checked.
+Every D-case is a Vineflower case (the 293 CFR-rendered `bajaui` files in that sample
+contributed none); CFR is not a semantic oracle either — B116 also caught CFR dropping
+`(Object)null` casts.
+
+**The rule this establishes for every consumer of this corpus**: a corpus claim about behavior
+that depends on overload binding, boxing/unboxing, numeric conversion, `finally` control flow,
+or local-variable-vs-field identity must be confirmed with `javap -c -p` on the shipped
+`.class` or against a `docSource.jar` original — never read off the decompiled `.java` text
+alone. Concretely, in this run: a dropped `(Object)` cast or dropped `Long.valueOf`/boxing call
+silently rebinds an overload (`SpyWriter.prop(Object,Object)` → `prop(Object,Runnable)` or
+`prop(Object,double)`); `instanceof`-pattern resugaring can turn a local variable into a field
+reference with the same simple name (`BDevice.checkFatalFault`, `BProxyExt.checkFatalFault`);
+varargs calls can collapse to zero-length arrays; and a `try { throw; } finally { return; }`
+can lose the `return`. See `niagara5-block116.md` §116.5 for the full D1-D11 table (module ·
+class · method · docSource-vs-decompiled diff · effect) and §116.3 for the synthetic S1-S6
+reproductions with the exact Vineflower 1.12.0 release-note context.
+
+`niagara5-block116.md` §116.3 also already ran a library-context experiment ahead of this
+feature (re-decompiling the 7 Part-B defect classes with all 452 classpath jars as `-e`
+externals, no `--include-runtime`): it fixed only **D4/D5** (`Array.remove(Object)` →
+`remove(int)`) and left D1, D2/D3, D6/D7, and D8/D9 unchanged — library context resolves
+*type* information, not the overload-selection and control-flow-loss bugs behind most of these
+defects. See the "v2 library-context run" section below for this feature's own from-scratch
+check of D1-D11 against the actual `--variant v2` pipeline output (adds `--include-runtime`
+and the fidelity flags the §116.3 ad-hoc test did not use).
+
+## v2 library-context run
+
+T19 of `odd/tasks/decompiler-fidelity-audit.md`: v1 (`organized/<mod>/vineflower/`) runs
+Vineflower with **no library context at all** — no `--add-external` for the other N5/bin-ext
+jars, no `--include-runtime`. `tools/n5-decompile.sh --variant v2 [<module>|--all]` is a second,
+side-by-side variant, writing `organized/<mod>/vineflower2/` (+ `fallback2/` on a CFR
+whole-module or per-class fallback), that gives Vineflower the full picture: every *other* N5
+module jar (excluding the module's own), every jar under `bin/ext/` (all 109, not only the six
+`n5-classify-binext.py` calls Tridium-owned — a different question, see the header comment),
+every already-extracted `LIB-INF/*.jar` (embedded third-party libs some modules ship inside
+their own jar), and the real JDK 25 runtime via `--include-runtime`. CFR's whole-module/per-class
+fallback gets the same library set via `--extraclasspath`.
+
+**Undocumented Vineflower 1.12.0 CLI bug found while building this**: an "Additional option"
+(`--include-runtime`, `--use-lvt-names`, ...) placed *after* a "General option"
+(`-e`/`--add-external`) is silently dropped — Vineflower prints `warn: missing
+'--include-runtime=...', ignored` and treats the flag text as a bogus positional source file,
+exit code 0, no other sign anything was wrong. Verified with isolated single-flag repros
+(`--include-runtime` alone works; combined with `-e` in either order it silently drops unless
+every Additional option precedes `-e`). Every Additional option must precede
+`-e`/`--add-external` on the command line for v2 to actually apply them; `decompile_module_v2`
+enforces this order and a bats regression test asserts the log carries zero
+`warn: missing` lines. A second gotcha: Homebrew's keg-only `openjdk@25` formula symlinks
+`bin/`/`include/`/etc. under `opt/openjdk@25` itself, but the actual JDK home Vineflower needs
+(with `lib/modules`, the jrt image) is one level down at `opt/openjdk@25/libexec` — passing
+`opt/openjdk@25` itself crashes Vineflower with a `NullPointerException` in
+`JrtFinder.addRuntime`.
+
+### Campaign: v2 over all 246 modules + the 6 included bin/ext jars
+
+```bash
+# per-module, resumable (sha256-cached like v1), parallel via xargs -P 6
+find "$N5_MODULES_DIR" -maxdepth 1 -name '*.jar' ! -name docSource.jar -exec basename {} .jar \; \
+  | xargs -P 6 -I{} tools/n5-decompile.sh --variant v2 {}
+tools/n5-decompile.sh --variant v2 --bin-ext
+```
+
+Run 2026-09-28, `bats`/`make test` both green beforehand. **247/247 invocations exited 0**
+(246 modules + the bin-ext batch invocation, which itself decompiled the 6 included jars).
+Wall time ~19m15s end-to-end with `-P 6` (sum of per-module wall time 6,253s, mean 25.3s).
+`bajaui.jar` is the one module that times out on the 240s primary budget under v2 too (269s
+observed before `timeout` lands the kill, exactly as it does on v1 with no library context —
+the hang is not a library-context artifact) and correctly falls back to CFR whole-module
+(`organized/bajaui/fallback2/`). 5 other modules used v2's per-class CFR fallback for a handful
+of classes flagged by Vineflower's own failure marker (`ffmpeg`, `backup`, `ccn`,
+`andoverAC256`, `opcUaClient`) — the same 5 of 6 modules v1 already needed a fallback for
+(`bajaui` is the 6th, whole-module both times), confirming library context does not change
+*which* classes Vineflower fails on, consistent with the failure-marker counts below.
+
+### v1 vs v2 measurement (not a fidelity judgment — counts only)
+
+Method: for every module with both `vineflower/` and `vineflower2/`, diff every `.java` file
+present in both by relative path (byte-for-byte text, not normalized) and count Vineflower's own
+failure markers (`// $VF: `, `Unable to fully decompile class`, `COULD NOT DECOMPILE`,
+`<unknown>`) in each tree.
+
+| Metric | v1 (no library context) | v2 (library context) |
+|---|---:|---:|
+| `.java` files produced (252 module/bin-ext trees) | 14,578 | 14,578 |
+| Decompiler failure markers | 4 | 4 |
+| Classes present in both trees | 14,578 | 14,578 |
+| Classes with byte-different text | — | 8,486 / 14,578 (58.2%) |
+
+Same file count, same 4 failure markers — library context changes *what* gets written for a
+class, not *whether* Vineflower can produce one (the `bajaui` hang and the 5 modules' per-class
+markers are unchanged, see above). 58.2% of classes differ textually; three modules alone
+(`bacnet`, `workbench`, `lonworks`) account for over 1,100 of the differing classes, and 8 more
+modules (`provisioningNiagara`, `platform`, `analytics`, `kitControl`, `cloudLink`, `history`,
+`converters`, `platDaemon`) are each >85% differing internally — full ranked table in this
+session's `v1_vs_v2_rows.json` scratch output (not committed; regenerate with the method above).
+
+**Categories of textual difference**, from a random sample of 30 differing files plus targeted
+corpus-wide greps to size each category (this is directional evidence from inspection, not
+T15's per-method bytecode grading — that recompile-and-compare oracle is the only way to know
+which of these differences also change behavior; see the B116 section above for the 11 cases
+that already do):
+
+- **`@Override` annotations added — the largest, most systematic category.** Total occurrences
+  22,450 (v1) → 53,628 (v2), **+138.9%**; files containing at least one, 5,486 → 11,131 (of
+  14,578). Vineflower's `--override-annotation` can only detect an override when it can resolve
+  the ancestor class/interface method — without library context it only sees methods declared in
+  classes belonging to the *same* module, missing every override of a method declared in a
+  different module's jar (e.g. `BComponent`/`BComplex` methods in `baja.jar`, most `BWidget`
+  overrides in `bajaui.jar`, `IStyle` methods, etc.). This is a real, syntax-level annotation-
+  correctness gain from library context, not a behavior change.
+- **Generic type arguments restored on constructor calls (diamond `<>`).** `new X<>` occurrences
+  5,095 (v1) → 6,026 (v2), **+18.3%**. Example (`baja/niagara/sys/BFacets.java`):
+  `new Array(String.class)` (v1, raw type) → `new Array<>(String.class)` (v2) — Vineflower can
+  now see `Array<T>`'s own type parameter from `baja.jar`'s class file instead of guessing `Array`
+  is raw. the corresponding read now resolves without a cast:
+  `(String)noInternFacetKeys.get(i)` (v1) → `noInternFacetKeys.get(i)` (v2).
+- **Redundant downcasts removed** (return type now resolvable from the real declaring class, so
+  the explicit cast Vineflower inserted defensively in v1 is no longer needed). Example
+  (`workbench/.../BComponentPreviewWidget.java`): `(BBrush)cx.select(this, IStyle.COLOR)` →
+  `cx.select(this, IStyle.COLOR)`, `(BFont)cx.select(...)` → `cx.select(...)`, with the
+  now-unused `BGap`/`BBrush` imports dropped too.
+- **Overload-disambiguating casts added on ambiguous literals** (the "overload casts" category —
+  the same defect family as B116's D1/D2/D3, but here library context actually fixes the syntax
+  even though it did not fix D1-D3's semantics). Example (`analytics/.../BOptionalSimpleFe.java`):
+  `newAction(0, null)` (v1) → `newAction(0, (BFacets)null)` (v2) — the overload can only be
+  resolved once `BFacets` is a known type from `baja.jar`.
+- **Net effect on explicit casts is a decrease**: corpus-wide parenthesized-type-cast-like
+  occurrences 37,798 (v1) → 36,323 (v2), **-3.9%** — redundant-downcast removal outweighs the
+  new overload-disambiguating casts added.
+- The 30-file random sample's automated line-diff heuristic tagged 22/30 files
+  "other/formatting" (it pattern-matches diff lines, not a parser, so it mostly missed that
+  these are the `@Override`/import-line additions above rather than cosmetic noise) and 8/30
+  "cast-added"/"cast-removed" (the two categories above); it never tagged "generics-restored" in
+  this particular sample even though the corpus-wide diamond-generic count clearly moved — the
+  30-file sample is illustrative, not the source of the aggregate numbers above, which come from
+  the corpus-wide greps instead.
+
+### D1-D11 (B116 semantic defects) against the actual v2 output
+
+The orchestrator's addendum asked whether `--variant v2`'s own pipeline (not B116 §116.3's
+earlier ad-hoc `-e`-only test, which lacked `--include-runtime` and the fidelity flags) still
+reproduces each of B116's 11 confirmed semantic defects. Checked directly against
+`organized/<mod>/vineflower2/...` for every affected module (`bacnet`, `nrio`, `nurio`,
+`driver`, `lonworks`, `kitControl`, `organized/_bin-ext/nre`) in this run:
+
+| # | Defect | v2 result |
+|---|---|---|
+| D1 | `BBacnetProxyExt.spy` — dropped `(Object)` cast rebinds `prop` overload | **still reproduces** — `out.prop("pollService", this.pollService);`, no cast |
+| D2 | `BNrioNetwork.spy` — dropped `Long.valueOf` boxing rebinds `prop` overload | **still reproduces** — `out.prop("Message Count", this.getUnsolicitedMsgCount());` |
+| D3 | `BNurioNetwork.spy` — same as D2 | **still reproduces** — `out.prop("Total Process Time(ms)", totalProcessTime);`, no boxing |
+| D4 | `BNrioTabularThermistorDialog$DeleteCmd.doInvoke` — `Array.remove(Object)` vs `remove(int)` | **fixed** — `map.remove(Integer.valueOf(this.index));`, boxing restored |
+| D5 | `BNurioTabularThermistorDialog$DeleteCmd.doInvoke` — same as D4 | **fixed** — same restored boxing |
+| D6 | `BDevice.checkFatalFault` — instanceof-pattern resugar turns a local into the field `network` | **still reproduces** — bare `network = null;` before the loop still binds the field; `if (network == null)` after the loop still reads the field, not the pattern-scoped local |
+| D7 | `BProxyExt.checkFatalFault` — same as D6, field `deviceExt` | **still reproduces** — identical structure |
+| D8 | `BBacnetBitString.emptyBitString(int)` — varargs/array-length loss | **still reproduces** — `return make();`, `len` still dropped |
+| D9 | `LonFacetsUtil.parseNumber` — ternary numeric promotion | **still reproduces** — `return s instanceof BDouble ? ((BDouble)s).getDouble() : ((BFloat)s).getFloat();`, still a promoting ternary |
+| D10 | `BSequenceLinear.calculate` — `(float)` precision cast lost | **still reproduces** — `range / this.numOutputs`, still no cast |
+| D11 | `Base64.encode(byte[],int)` — `(float)` precision cast lost | **still reproduces** — `(int)(buf.length * 1.33)`, still no cast |
+
+**2 of 11 fixed (D4, D5 — both the same `Array.remove(Object)`-vs-`remove(int)` overload
+family), 9 of 11 unchanged**, matching B116 §116.3's own earlier finding on this exact defect
+set. Library context resolves *type* information (which fixes overloads that differ only by
+*argument type*, like D4/D5's `Object` vs `int`), but does not fix: overloads that differ by
+*argument identity/cast intent* rather than resolvable type (D1-D3 — `prop(Object,Object)` vs
+`prop(Object,Runnable)`/`prop(Object,double)` are both perfectly type-correct with the
+un-boxed/un-cast argument, so there is no ambiguity for the library-context-aware resolver to
+catch), control-flow/scope-loss bugs (D6-D7's field-vs-pattern-variable aliasing, D8's varargs
+collapse, D9's ternary promotion), or precision-only casts Vineflower considers safe to drop
+(D10-D11). **Conclusion for corpus writers: `--variant v2` is not a substitute for the B116
+verification rule** (confirm behavior-dependent claims with `javap`/docSource) — it measurably
+improves *readable* fidelity (`@Override`, generics, redundant-cast removal) but leaves the
+semantic defect surface B116 found almost entirely intact.

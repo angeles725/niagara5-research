@@ -51,3 +51,21 @@ Java decompiler's output against the real bytecode (e.g. it is what surfaced tha
   plain `.jar`/`.class` input and its CLI is exercised as a fourth data point.
 
 See `../../docs/decompiler-bakeoff.md` for the measured comparison.
+
+## `--help` provenance (T19, `--variant v2`)
+
+T19 (`odd/tasks/decompiler-fidelity-audit.md`) read every v2 flag name directly from each
+tool's own `--help` output before using it (`--add-external`/`-e`, `--include-runtime`,
+`--use-lvt-names`, `--use-method-parameters`, `--decompile-generics`, `--decompile-assert`,
+`--rename-members`, `--decompile-complex-constant-dynamic`, `--ignore-invalid-bytecode`,
+`--dump-bytecode-on-error`, `--decompiler-comments` for Vineflower 1.12.0; `--extraclasspath`
+for CFR 0.152) rather than assume any flag exists. Captured 2026-09-28:
+
+```bash
+java -jar vineflower-1.12.0.jar --help > vf-help.txt   # sha256 c26d2d56b7f925b851a3db40909ae9f81a56eadc0c70fdaf1ce4084552d33769
+java -jar cfr-0.152.jar --help > cfr-help.txt          # sha256 2c3bef2da5c1c71574d25f45d9ec31366797cc99c6ebfd10d0090dc24d75b043
+```
+
+Not committed (`--help` output is regenerable from the pinned jar shas above, not a fixed
+artifact) — re-run the two commands above and compare against these sha256sums to confirm the
+same flag set before relying on them.
