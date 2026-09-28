@@ -205,7 +205,7 @@ class PrecedenceTest(unittest.TestCase):
         pop = dict(self.pop)
         pop["fidelity_v2"] = m.load_fidelity(self.mod_root, "vineflower2")
         pop["fidelity_v1"] = m.load_fidelity(self.mod_root, "vineflower")
-        return m.build_class_record(self.root, pop, class_key, upstream_index or {},
+        return m.build_class_record(self.root, pop, class_key, upstream_index or ({}, {}),
                                      extract_dir or (self.root / "_extract"))
 
     def test_docsource_beats_everything(self):
@@ -217,6 +217,8 @@ class PrecedenceTest(unittest.TestCase):
         self.assertTrue(rec["best"].endswith("docSource/modA/pkg/DocClass.java"))
 
     def test_upstream_beats_vineflower2(self):
+        """An upstream match with a PROVEN identity verdict (resigned-identical: every class in
+        the jar matched Central byte-for-byte) is trusted and wins over vineflower2."""
         jar_bytes = _jar_bytes({"pkg/UpstreamClass.java": b"// upstream original\n"})
         art_dir = self.root / "_upstream-sources" / "grp" / "art" / "1.0"
         art_dir.mkdir(parents=True)
@@ -226,6 +228,7 @@ class PrecedenceTest(unittest.TestCase):
                 "groupId": "grp", "artifactId": "art", "version": "1.0", "status": "fetched",
                 "sources_jar_path": "organized/_upstream-sources/grp/art/1.0/art-1.0-sources.jar",
                 "classdiff": {"sources_only": [], "binary_only": [], "common": 1},
+                "content_identity": {"status": "resigned-identical"},
             }],
             "unidentified": [],
         }
@@ -233,9 +236,11 @@ class PrecedenceTest(unittest.TestCase):
         self.fx.add_rung("modA", "vineflower2", "pkg/UpstreamClass")
         m = _load()
         upstream_index = m.build_upstream_index(self.root)
-        rec = self._record("pkg/UpstreamClass", upstream_index=upstream_index)
+        self.assertEqual(upstream_index[2].get("resigned-identical"), 1)
+        rec = self._record("pkg/UpstreamClass", upstream_index=(upstream_index[0], upstream_index[1]))
         self.assertEqual(rec["best_kind"], "upstream")
-        self.assertEqual(rec["reason"], "upstream Maven sources jar match")
+        self.assertIn("resigned-identical", rec["reason"])
+        self.assertIn("proven byte-identical", rec["reason"])
         extracted = self.root / "_extract" / "grp" / "art" / "1.0" / "pkg" / "UpstreamClass.java"
         self.assertTrue(extracted.is_file())
         self.assertEqual(extracted.read_text(), "// upstream original\n")
@@ -325,10 +330,10 @@ class UpstreamNonPortableNamesTest(unittest.TestCase):
             }
             (root / "_upstream-sources" / "manifest.json").write_text(json.dumps(manifest))
             m = _load()
-            index = m.build_upstream_index(root)
-            self.assertNotIn("module-info", index)
-            self.assertNotIn("org/thing/package-info", index)
-            self.assertIn("org/thing/Real", index)
+            name_index, _sha_index, _verdicts = m.build_upstream_index(root)
+            self.assertNotIn("module-info", name_index)
+            self.assertNotIn("org/thing/package-info", name_index)
+            self.assertIn("org/thing/Real", name_index)
 
 
 class JarIdentityFallbackTest(unittest.TestCase):
@@ -419,6 +424,181 @@ class JarIdentityFallbackTest(unittest.TestCase):
             self.assertEqual(counts, sorted(counts, reverse=True))
             total = sum(entry["count"] for entry in missing_by_jar)
             self.assertEqual(total, data["summary"]["missing_count"])
+
+
+class UpstreamIdentityVerificationTest(unittest.TestCase):
+    """2026-09-28 orchestrator-found defect fix: an upstream `-sources.jar` is trusted as `best`
+    ONLY when manifest.json's own per-artifact identity verdict PROVES it byte-identical to the
+    shipped binary jar -- never merely because it was successfully fetched. Real corpus example
+    the old code got wrong: org.eclipse.paho.client.mqttv3 1.2.5 is vendor-rebuilt (0/110 classes
+    byte-identical to Central, B117 "rebuilt-by-vendor"), yet was marked `best_kind: upstream` for
+    96 of its classes because the old code trusted every "status": "fetched" artifact
+    unconditionally."""
+
+    def setUp(self):
+        self.td = tempfile.TemporaryDirectory()
+        self.addCleanup(self.td.cleanup)
+        self.root = Path(self.td.name)
+        self.fx = FixtureOrganized(self.root)
+        self.mod_root = self.fx.add_module_skeleton("modA")
+        self.pop = {"kind": "module", "name": "modA", "root": self.mod_root,
+                    "docsource_name": "modA"}
+
+    def _write_manifest(self, artifact: dict):
+        (self.root / "_upstream-sources").mkdir(parents=True, exist_ok=True)
+        (self.root / "_upstream-sources" / "manifest.json").write_text(
+            json.dumps({"artifacts": [artifact], "unidentified": []}))
+
+    def _write_sources_jar(self, gav, java_entries: dict) -> str:
+        g, a, v = gav
+        art_dir = self.root / "_upstream-sources" / g / a / v
+        art_dir.mkdir(parents=True, exist_ok=True)
+        jar_path = art_dir / f"{a}-{v}-sources.jar"
+        jar_path.write_bytes(_jar_bytes(java_entries))
+        return f"organized/_upstream-sources/{g}/{a}/{v}/{a}-{v}-sources.jar"
+
+    def _record(self, class_key, upstream_index, jar_sha256=None, extract_dir=None):
+        m = _load()
+        pop = dict(self.pop)
+        pop["fidelity_v2"] = m.load_fidelity(self.mod_root, "vineflower2")
+        pop["fidelity_v1"] = m.load_fidelity(self.mod_root, "vineflower")
+        if jar_sha256 is not None:
+            pop["jar_sha256"] = jar_sha256
+        return m.build_class_record(self.root, pop, class_key, upstream_index,
+                                     extract_dir or (self.root / "_extract"))
+
+    def test_whole_jar_sha1_match_is_trusted(self):
+        """identification_method present with NO content_identity == T26a's "identified-by-sha1":
+        the whole shipped binary jar's SHA-1 matched Central directly -- proven for every class."""
+        m = _load()
+        _write_class(self.mod_root / "extracted" / "pkg" / "ShaClass.class")
+        sources_jar = self._write_sources_jar(("grp", "sha-art", "1.0"),
+                                               {"pkg/ShaClass.java": b"// sha1-matched\n"})
+        self._write_manifest({
+            "groupId": "grp", "artifactId": "sha-art", "version": "1.0", "status": "fetched",
+            "sources_jar_path": sources_jar,
+            "classdiff": {"sources_only": [], "binary_only": [], "common": 1},
+            "identification_method": "sha1-search",
+        })
+        name_index, sha_index, verdicts = m.build_upstream_index(self.root)
+        self.assertEqual(verdicts.get("identified-by-sha1"), 1)
+        rec = self._record("pkg/ShaClass", (name_index, sha_index))
+        self.assertEqual(rec["best_kind"], "upstream")
+        self.assertIn("identification_method=sha1-search", rec["reason"])
+
+    def test_vendor_modified_artifact_never_trusted_paho_style(self):
+        """The real paho-mqttv3 1.2.5 scenario: content_identity=vendor-modified must never be
+        `best`; the decompile wins instead, and upstream is demoted to an alternate."""
+        m = _load()
+        _write_class(self.mod_root / "extracted" / "pkg" / "VendorClass.class")
+        sources_jar = self._write_sources_jar(("org.eclipse.paho", "mqttv3", "1.2.5"),
+                                               {"pkg/VendorClass.java": b"// not actually ours\n"})
+        self._write_manifest({
+            "groupId": "org.eclipse.paho", "artifactId": "mqttv3", "version": "1.2.5",
+            "status": "fetched", "sources_jar_path": sources_jar,
+            "classdiff": {"sources_only": [], "binary_only": [], "common": 1},
+            "content_identity": {"status": "vendor-modified", "classes_identical": 0,
+                                  "classes_different": 0, "classes_local_only": 1,
+                                  "different_classes": [], "local_only_classes": []},
+        })
+        self.fx.add_rung("modA", "vineflower2", "pkg/VendorClass", content="// decompiled\n")
+        name_index, sha_index, verdicts = m.build_upstream_index(self.root)
+        self.assertEqual(verdicts.get("vendor-modified"), 1)
+        rec = self._record("pkg/VendorClass", (name_index, sha_index))
+        self.assertEqual(rec["best_kind"], "vineflower2")
+        alt = [a for a in rec["alternates"] if a["kind"] == "upstream-different-build"]
+        self.assertEqual(len(alt), 1)
+        self.assertIn("vendor-modified", alt[0]["reason"])
+
+    def test_partially_modified_trusts_only_the_identical_class(self):
+        """A partially-modified jar: the class NOT in different_classes/local_only_classes is
+        trusted; the class that IS listed there is not, and falls back to the decompile."""
+        m = _load()
+        _write_class(self.mod_root / "extracted" / "pkg" / "PartialSameClass.class")
+        _write_class(self.mod_root / "extracted" / "pkg" / "PartialDiffClass.class")
+        sources_jar = self._write_sources_jar(("grp", "partial-art", "2.0"), {
+            "pkg/PartialSameClass.java": b"// identical to Central\n",
+            "pkg/PartialDiffClass.java": b"// differs from Central\n",
+        })
+        self._write_manifest({
+            "groupId": "grp", "artifactId": "partial-art", "version": "2.0", "status": "fetched",
+            "sources_jar_path": sources_jar,
+            "classdiff": {"sources_only": [], "binary_only": [], "common": 2},
+            "content_identity": {
+                "status": "partially-modified", "classes_identical": 1, "classes_different": 1,
+                "classes_local_only": 0,
+                "different_classes": ["pkg/PartialDiffClass.class"], "local_only_classes": [],
+            },
+        })
+        self.fx.add_rung("modA", "vineflower2", "pkg/PartialDiffClass", content="// decompiled\n")
+        name_index, sha_index, verdicts = m.build_upstream_index(self.root)
+        self.assertEqual(verdicts.get("partially-modified"), 1)
+
+        same_rec = self._record("pkg/PartialSameClass", (name_index, sha_index))
+        self.assertEqual(same_rec["best_kind"], "upstream")
+
+        diff_rec = self._record("pkg/PartialDiffClass", (name_index, sha_index))
+        self.assertEqual(diff_rec["best_kind"], "vineflower2")
+        alt = [a for a in diff_rec["alternates"] if a["kind"] == "upstream-different-build"]
+        self.assertEqual(len(alt), 1)
+        self.assertIn("partially-modified", alt[0]["reason"])
+
+    def test_no_verdict_artifact_is_unproven_and_counted(self):
+        """An artifact fetched but with NEITHER content_identity NOR identification_method -- the
+        manifest carries no identity verdict at all for it -- is not proven and must not become
+        `best`; it is counted in the artifact_verdict_counts / upstream_unproven_artifacts."""
+        m = _load()
+        _write_class(self.mod_root / "extracted" / "pkg" / "NoVerdictClass.class")
+        sources_jar = self._write_sources_jar(("grp", "no-verdict-art", "1.0"),
+                                               {"pkg/NoVerdictClass.java": b"// unverified\n"})
+        self._write_manifest({
+            "groupId": "grp", "artifactId": "no-verdict-art", "version": "1.0", "status": "fetched",
+            "sources_jar_path": sources_jar,
+            "classdiff": {"sources_only": [], "binary_only": [], "common": 1},
+        })
+        name_index, sha_index, verdicts = m.build_upstream_index(self.root)
+        self.assertEqual(verdicts.get("no-verdict"), 1)
+        rec = self._record("pkg/NoVerdictClass", (name_index, sha_index))
+        self.assertEqual(rec["best_kind"], "missing")
+        alt = [a for a in rec["alternates"] if a["kind"] == "upstream-unproven"]
+        self.assertEqual(len(alt), 1)
+
+        out_dir = self.root / "_best"
+        rc = m.main(["--organized", str(self.root), "--out", str(out_dir)])
+        self.assertEqual(rc, 0)
+        data = json.loads((out_dir / "best-source.json").read_text())
+        self.assertEqual(data["summary"]["upstream_unproven_artifacts"], 1)
+        self.assertEqual(data["summary"]["upstream_artifact_verdicts"].get("no-verdict"), 1)
+
+    def test_population_linked_by_jar_sha256_preferred_over_name_match(self):
+        """When this population's own jar_sha256 equals a manifest artifact's recorded
+        binary_sha256, that artifact's verdict is used via the sha256 join (reason says so);
+        without a matching jar_sha256, the same class name still falls back to the weaker
+        name-only index."""
+        m = _load()
+        _write_class(self.mod_root / "extracted" / "pkg" / "ShaLinkedClass.class")
+        sources_jar = self._write_sources_jar(("grp", "sha-linked-art", "1.0"),
+                                               {"pkg/ShaLinkedClass.java": b"// sha-linked\n"})
+        binary_sha256 = "ab" * 32
+        self._write_manifest({
+            "groupId": "grp", "artifactId": "sha-linked-art", "version": "1.0", "status": "fetched",
+            "sources_jar_path": sources_jar,
+            "classdiff": {"sources_only": [], "binary_only": [], "common": 1},
+            "content_identity": {"status": "resigned-identical"},
+            "binary_sha256": binary_sha256,
+        })
+        name_index, sha_index, _verdicts = m.build_upstream_index(self.root)
+        self.assertIn(binary_sha256, sha_index)
+
+        linked_rec = self._record("pkg/ShaLinkedClass", (name_index, sha_index),
+                                   jar_sha256=binary_sha256)
+        self.assertEqual(linked_rec["best_kind"], "upstream")
+        self.assertIn("population jar sha256", linked_rec["reason"])
+
+        unlinked_rec = self._record("pkg/ShaLinkedClass", (name_index, sha_index),
+                                     jar_sha256="ff" * 32)
+        self.assertEqual(unlinked_rec["best_kind"], "upstream")
+        self.assertIn("matched by class name only", unlinked_rec["reason"])
 
 
 def m_hash(data: bytes) -> str:

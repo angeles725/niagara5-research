@@ -6,10 +6,38 @@ reader never has to know the source-precedence rule by heart -- see docs/writer-
 Precedence, most faithful first:
   1. organized/docSource/<module>/<pkg>/<Class>.java     -- Tridium original source (byte-identical
                                                               recompile; B116).
-  2. organized/_upstream-sources/.../<artifact>-sources.jar -- fetched upstream Maven Central source
-                                                              for a byte-identical/vendor-resigned
-                                                              third-party jar (B117/T22), for classes
-                                                              its classdiff actually covers.
+  2. organized/_upstream-sources/.../<artifact>-sources.jar -- fetched upstream Maven Central source,
+                                                              trusted as ground truth ONLY for classes
+                                                              the manifest's own per-artifact identity
+                                                              verdict (manifest.json's content_identity
+                                                              / identification_method fields -- see
+                                                              classify_upstream_identity) proves
+                                                              byte-identical to the shipped binary jar:
+                                                              a whole-jar SHA-1 match (identified-by-
+                                                              sha1), resigned-identical (Niagara
+                                                              re-signature only), or -- for a
+                                                              partially-modified jar -- a class actually
+                                                              in that jar's own identical set. An
+                                                              unproven, vendor-modified, or
+                                                              partially-modified-but-this-class-differs
+                                                              artifact is demoted to `alternates` (kind
+                                                              upstream-unproven / upstream-different-
+                                                              build) and never used as `best` (fixed
+                                                              2026-09-28, orchestrator-found defect:
+                                                              org.eclipse.paho.client.mqttv3 1.2.5 is
+                                                              vendor-rebuilt -- 0/110 classes byte-
+                                                              identical to Central -- yet 96 of its
+                                                              classes were being trusted as `upstream`
+                                                              ground truth). Linked to a population by
+                                                              jar sha256 first (population's own
+                                                              extracted/.jar_sha256, or a raw jar's
+                                                              direct hash, against the manifest
+                                                              artifact's own binary_sha256 -- same hash
+                                                              space, same physical jar) when both sides
+                                                              have one; falls back to matching by class
+                                                              name alone (the pre-existing, weaker
+                                                              signal) when no sha256 link is available,
+                                                              and the `reason` records which one applied.
   3. organized/<pop>/vineflower2/...  -- v2 decompile (recommended tree; docs/decompile-fidelity-
                                           report.md).
   4. organized/<pop>/vineflower/...   -- v1 decompile. Preferred over v2 only when BOTH are graded
@@ -365,19 +393,106 @@ def _resolve_repo_relative(organized_root: Path, stored_path: str) -> Path:
     return organized_root.parent / norm
 
 
-def build_upstream_index(organized_root: Path) -> dict[str, dict]:
-    """class_key -> {groupId, artifactId, version, jar_path, entry} for every class name a
-    fetched upstream sources jar actually covers (per its own recorded classdiff), first match
-    wins on a name collision across artifacts."""
+def classify_upstream_identity(art: dict) -> dict:
+    """Whether one manifest.json artifact record proves its fetched Maven SOURCES are byte-
+    identical to the SHIPPED BINARY jar it was matched against -- i.e. whether it can be trusted
+    as ground truth for any/all of its classes (2026-09-28 fix, orchestrator-found defect: this
+    tool used to trust every "status": "fetched" artifact unconditionally, so a vendor-rebuilt jar
+    like org.eclipse.paho.client.mqttv3 1.2.5 -- 0/110 classes byte-identical to Central -- was
+    marked `best_kind: upstream` for 96 of its classes).
+
+    tools/n5-upstream-sources.py writes one of these identity signals per artifact, most reliable
+    first:
+      - art["content_identity"]["status"] == "resigned-identical": every .class entry matched
+        Central byte-for-byte (only non-class entries, e.g. Niagara's added signature, differ) --
+        proven for the WHOLE jar.
+      - art["content_identity"]["status"] == "partially-modified": only SOME classes matched;
+        content_identity["different_classes"] / ["local_only_classes"] list the ones that did NOT
+        -- everything else in the jar is proven, per class (see _class_trusted).
+      - art["content_identity"]["status"] in {"vendor-modified", "no-classes", "unverifiable"}:
+        not proven for any class.
+      - art["identification_method"] set with NO "content_identity" key at all: T26a's
+        identify_unidentified_entry returned "identified-by-sha1" -- the ONLY T26a outcome that
+        skips writing content_identity -- meaning the whole local BINARY jar's SHA-1 matched
+        Central's directly (the strongest possible proof: a whole-jar SHA-1 match).
+      - neither field present (the original ~154 pom.properties-identified artifacts that were
+        never rechecked -- either because evidence/b117 already recorded a whole-jar SHA-1 "exact"
+        match, which manifest.json does not carry forward as an explicit field, or because no
+        matching evidence record was found at all): the manifest itself carries NO identity
+        verdict for this artifact, so it is treated as NOT proven (`verdict` "no-verdict") --
+        conservative by design, and visible in the index summary's `upstream_unproven_artifacts`
+        rather than silently assumed correct.
+
+    Returns {"trust": "whole" | "partial" | "none", "verdict": <short label>, "reason": <human
+    text>, "different_classes": set[str] (partial only), "local_only_classes": set[str] (partial
+    only)} -- entries are full in-jar paths with .class extension (matching content_identity's own
+    lists), e.g. "com/foo/Bar.class" or "com/foo/Bar$Inner.class"."""
+    ci = art.get("content_identity")
+    if ci is not None:
+        status = ci.get("status")
+        if status == "resigned-identical":
+            return {"trust": "whole", "verdict": status,
+                    "reason": "content_identity=resigned-identical (every class byte-identical to "
+                              "Central; only non-class entries, e.g. Niagara's added signature, "
+                              "differ)"}
+        if status == "partially-modified":
+            return {"trust": "partial", "verdict": status,
+                    "different_classes": set(ci.get("different_classes") or []),
+                    "local_only_classes": set(ci.get("local_only_classes") or []),
+                    "reason": "content_identity=partially-modified (only this jar's own per-class "
+                              "byte-identical matches are trusted)"}
+        return {"trust": "none", "verdict": status or "unknown",
+                "reason": f"content_identity={status} (not proven byte-identical to the shipped jar)"}
+    if art.get("identification_method") and art.get("status") == "fetched":
+        return {"trust": "whole", "verdict": "identified-by-sha1",
+                "reason": f"identification_method={art['identification_method']} "
+                          "(whole shipped binary jar's SHA-1 matched Central directly)"}
+    return {"trust": "none", "verdict": "no-verdict",
+            "reason": "no identity verdict recorded in manifest.json for this artifact (no "
+                      "content_identity, no identification_method) -- not proven byte-identical "
+                      "to the shipped jar"}
+
+
+def _class_trusted(verdict: dict, class_key: str) -> bool:
+    """Per-class trust decision given one classify_upstream_identity() verdict."""
+    if verdict["trust"] == "whole":
+        return True
+    if verdict["trust"] == "partial":
+        entry = class_key + ".class"
+        return (entry not in verdict["different_classes"]
+                and entry not in verdict["local_only_classes"])
+    return False
+
+
+def build_upstream_index(organized_root: Path):
+    """Returns (name_index, sha_index, artifact_verdict_counts):
+      - name_index: class_key -> candidate dict, for every class name a fetched upstream sources
+        jar actually covers (per its own recorded classdiff); first match wins on a name collision
+        across artifacts (pre-existing, weaker signal -- a name match alone never proves THIS
+        population's own jar is the identity-verified one).
+      - sha_index: manifest artifact binary_sha256 -> {class_key: candidate dict}, for artifacts
+        that recorded one (set by n5-upstream-sources.py's classdiff step). A population whose own
+        jar_sha256 (extracted/.jar_sha256, or a raw jar hashed directly) equals an artifact's
+        binary_sha256 is DEFINITELY that artifact's own shipped jar -- both sides are SHA-256 of
+        the same physical jar bytes, so this is a real, filename-independent join key (see
+        find_upstream_candidate), preferred over the name-only index when available.
+      - artifact_verdict_counts: classify_upstream_identity()["verdict"] -> count of "fetched"
+        artifacts, e.g. {"no-verdict": 81, "resigned-identical": 95, ...} -- feeds the index
+        summary's `upstream_unproven_artifacts` (the "no-verdict" count).
+
+    Each candidate dict: {groupId, artifactId, version, jar_path, entry, trusted (bool),
+    verdict (str), reason (str)}."""
     manifest_path = organized_root / "_upstream-sources" / "manifest.json"
     if not manifest_path.is_file():
-        return {}
+        return {}, {}, {}
     try:
         manifest = json.loads(manifest_path.read_text())
     except (json.JSONDecodeError, OSError):
-        return {}
+        return {}, {}, {}
 
-    index: dict[str, dict] = {}
+    name_index: dict[str, dict] = {}
+    sha_index: dict[str, dict[str, dict]] = {}
+    verdict_counts: dict[str, int] = {}
     for art in manifest.get("artifacts", []):
         if art.get("status") != "fetched":
             continue
@@ -394,16 +509,46 @@ def build_upstream_index(organized_root: Path) -> dict[str, dict]:
         except (zipfile.BadZipFile, OSError):
             continue
         covered = java_names - sources_only
+        verdict = classify_upstream_identity(art)
+        verdict_counts[verdict["verdict"]] = verdict_counts.get(verdict["verdict"], 0) + 1
+        binary_sha256 = art.get("binary_sha256")
+        by_class_for_this_artifact: dict[str, dict] = {}
         for name in covered:
             if not _is_portable_class_name(name):
                 continue
-            if name in index:
-                continue
-            index[name] = {
+            candidate = {
                 "groupId": art["groupId"], "artifactId": art["artifactId"],
                 "version": art["version"], "jar_path": jar_path, "entry": name + ".java",
+                "trusted": _class_trusted(verdict, name), "verdict": verdict["verdict"],
+                "reason": verdict["reason"],
             }
-    return index
+            by_class_for_this_artifact[name] = candidate
+            if name not in name_index:
+                name_index[name] = candidate
+        if binary_sha256:
+            sha_index.setdefault(binary_sha256, {}).update(by_class_for_this_artifact)
+    return name_index, sha_index, verdict_counts
+
+
+def find_upstream_candidate(pop: dict, class_key: str, name_index: dict, sha_index: dict):
+    """The upstream candidate (if any) for one population's class, plus how it was linked.
+
+    Prefers a jar-sha256 link (this population's own jar IS the exact jar the manifest artifact's
+    identity verdict was computed against -- never a name coincidence) over the weaker class-name-
+    only index. Returns None if neither index covers this class."""
+    jar_sha256 = pop.get("jar_sha256")
+    if jar_sha256 and jar_sha256 in sha_index and class_key in sha_index[jar_sha256]:
+        cand = dict(sha_index[jar_sha256][class_key])
+        cand["link"] = (f"population jar sha256 {jar_sha256[:12]} matches manifest artifact "
+                         f"{cand['groupId']}:{cand['artifactId']}:{cand['version']}'s own "
+                         "binary_sha256 (same physical jar)")
+        return cand
+    if class_key in name_index:
+        cand = dict(name_index[class_key])
+        cand["link"] = ("matched by class name only (no jar-sha256 link between this population's "
+                         "jar and a manifest artifact)")
+        return cand
+    return None
 
 
 def extract_upstream_file(info: dict, extract_dir: Path, class_key: str) -> Optional[Path]:
@@ -434,16 +579,19 @@ def _rel(organized_root: Path, path: Optional[Path]) -> Optional[str]:
 
 
 def build_class_record(organized_root: Path, pop: dict, class_key: str,
-                        upstream_index: dict, extract_dir: Path,
+                        upstream_index, extract_dir: Path,
                         jar_identity_index: Optional[dict] = None) -> dict:
+    """`upstream_index` is the (name_index, sha_index) tuple build_upstream_index() returns."""
     pop_root = pop.get("root")
     fidelity_v2 = pop.get("fidelity_v2") or {}
     fidelity_v1 = pop.get("fidelity_v1") or {}
     grade_v2 = fidelity_v2.get(class_key, {}).get("grade")
     grade_v1 = fidelity_v1.get(class_key, {}).get("grade")
 
+    name_index, sha_index = upstream_index
+
     ds_file = find_docsource_file(organized_root, pop.get("docsource_name"), class_key)
-    up_info = upstream_index.get(class_key)
+    up_candidate = find_upstream_candidate(pop, class_key, name_index, sha_index)
     decompile_kind, decompile_file, decompile_grade, decompile_reason = choose_decompile_rung(
         pop_root, class_key, grade_v2, grade_v1)
     fb2_file = find_rung_file(pop_root, "fallback2", class_key)
@@ -453,8 +601,10 @@ def build_class_record(organized_root: Path, pop: dict, class_key: str,
     candidates = []
     if ds_file is not None:
         candidates.append(("docSource", ds_file, None, "Tridium original source (docSource)"))
-    if up_info is not None:
-        candidates.append(("upstream", None, None, "upstream Maven sources jar match"))
+    if up_candidate is not None and up_candidate["trusted"]:
+        candidates.append(("upstream", None, None,
+                           f"upstream Maven sources jar match, proven byte-identical -- "
+                           f"{up_candidate['reason']} [{up_candidate['link']}]"))
     if decompile_kind is not None:
         candidates.append((decompile_kind, decompile_file, decompile_grade, decompile_reason))
     if fb2_file is not None:
@@ -473,23 +623,36 @@ def build_class_record(organized_root: Path, pop: dict, class_key: str,
     alternates = []
     if not candidates:
         best_kind, best_path, grade, reason = "missing", None, None, (
-            "no docSource, upstream, vineflower2, vineflower, fallback2, fallback or "
-            "identical-jar-elsewhere representation found for this class"
+            "no docSource, proven-identical upstream, vineflower2, vineflower, fallback2, "
+            "fallback or identical-jar-elsewhere representation found for this class"
         )
     else:
         best_kind, best_path_raw, grade, reason = candidates[0]
         if best_kind == "upstream":
-            best_path = extract_upstream_file(up_info, extract_dir, class_key)
+            best_path = extract_upstream_file(up_candidate, extract_dir, class_key)
         else:
             best_path = best_path_raw
         for kind, path, alt_grade, _reason in candidates[1:]:
             if kind == "upstream":
-                gav = f"{up_info['groupId']}:{up_info['artifactId']}:{up_info['version']}"
+                gav = f"{up_candidate['groupId']}:{up_candidate['artifactId']}:{up_candidate['version']}"
                 alternates.append({"kind": kind, "path": f"upstream:{gav}:{class_key}.java",
                                    "grade": alt_grade})
             else:
                 alternates.append({"kind": kind, "path": _rel(organized_root, path),
                                    "grade": alt_grade})
+
+    # Not proven byte-identical (vendor-modified / unverifiable / no-classes / this class differs
+    # in a partially-modified jar / no identity verdict recorded at all): never used as `best`
+    # (see classify_upstream_identity), but still recorded, never silently dropped -- a reader
+    # investigating this class should see the upstream file existed and why it wasn't trusted.
+    if up_candidate is not None and not up_candidate["trusted"]:
+        gav = f"{up_candidate['groupId']}:{up_candidate['artifactId']}:{up_candidate['version']}"
+        alt_kind = ("upstream-unproven" if up_candidate["verdict"] == "no-verdict"
+                    else "upstream-different-build")
+        alternates.append({
+            "kind": alt_kind, "path": f"upstream:{gav}:{class_key}.java", "grade": None,
+            "reason": f"{up_candidate['reason']} [{up_candidate['link']}]",
+        })
 
     return {
         "module": pop["name"],
@@ -509,7 +672,8 @@ def build_class_record(organized_root: Path, pop: dict, class_key: str,
 
 def build_index(organized_root: Path, extract_dir: Path) -> dict:
     populations = discover_populations(organized_root)
-    upstream_index = build_upstream_index(organized_root)
+    name_index, sha_index, upstream_verdict_counts = build_upstream_index(organized_root)
+    upstream_index = (name_index, sha_index)
 
     # Enrich every population BEFORE building any class record: the jar-identity index (rung 6)
     # needs every population's fidelity grades and jar_sha256 available up front, since a class
@@ -552,6 +716,12 @@ def build_index(organized_root: Path, extract_dir: Path) -> dict:
         "by_population": by_population,
         "missing_count": by_best_kind.get("missing", 0),
         "missing_by_jar": missing_by_jar,
+        # "no-verdict" fetched upstream artifacts (organized/_upstream-sources/manifest.json has
+        # neither content_identity nor identification_method for them) -- treated as NOT proven,
+        # never used as `best`, per classify_upstream_identity(). Visible here rather than silently
+        # assumed correct (2026-09-28 fix).
+        "upstream_unproven_artifacts": upstream_verdict_counts.get("no-verdict", 0),
+        "upstream_artifact_verdicts": upstream_verdict_counts,
     }
     return {"schema_version": 1, "summary": summary, "classes": records}
 
@@ -592,6 +762,7 @@ def print_human_summary(index: dict) -> None:
     print("by best_kind:")
     for kind in sorted(s["by_best_kind"]):
         print(f"  {kind}: {s['by_best_kind'][kind]}")
+    print(f"upstream_unproven_artifacts: {s.get('upstream_unproven_artifacts', 0)}")
 
 
 # ---------------------------------------------------------------------------

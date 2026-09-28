@@ -285,10 +285,13 @@ jars).
 
 1. `organized/docSource/<module>/<pkg>/<Class>.java` — Tridium original source (byte-identical).
 2. A fetched upstream Maven Central `-sources.jar` (`organized/_upstream-sources/...`, T22) —
-   original third-party source, for the classes its own recorded classdiff actually covers.
-   `module-info`/`package-info` are excluded from this cross-artifact match: every artifact has
-   its own, unrelated one under that same filename (a real bug hit on the first full-corpus run:
-   `aaphp`'s `module-info` was matched to `org.eclipse.angus:jakarta.mail`'s).
+   original third-party source, for the classes its own recorded classdiff actually covers, AND
+   ONLY for classes `organized/_upstream-sources/manifest.json`'s own per-artifact identity
+   verdict proves byte-identical to the shipped binary jar (see the upstream-identity-verification
+   fix below) — a fetched-but-unverified or vendor-modified match is never `best`, only an
+   `alternates` entry. `module-info`/`package-info` are excluded from this cross-artifact match:
+   every artifact has its own, unrelated one under that same filename (a real bug hit on the first
+   full-corpus run: `aaphp`'s `module-info` was matched to `org.eclipse.angus:jakarta.mail`'s).
 3. `organized/<pop>/vineflower2/...` — v2 decompile (recommended tree, see above).
 4. `organized/<pop>/vineflower/...` — v1 decompile, preferred over v2 ONLY when a class is graded
    on both trees (`fidelity.vineflower2.json` / `fidelity.vineflower.json`) and v1's grade
@@ -339,11 +342,56 @@ descending) so the REMAINING gap is visible at a glance instead of hiding inside
 undecompiled third-party LIB-INF jars with no matching upstream-sources artifact, not a tooling
 gap like the devkit case was.
 
-**Real run** (2026-09-28, post jar-identity fix, `python3 tools/n5-best-source.py --organized
-organized --out organized/_best --materialize organized/_best/tree`): 361 populations, 40678
-classes — `docSource` 2809, `upstream` 13023, `vineflower2` 12854, `fallback2` 273, `missing`
-11719 (28.8%, down from 11865 pre-fix), 0 `vineflower`(v1) picks, 0 bare-`fallback` picks
-(fallback2 always already covers whatever bare fallback would, when both exist for a module).
+**Orchestrator-found defect, fixed 2026-09-28 (upstream identity verification)**: this tool used
+to mark a class `best_kind: upstream` whenever a fetched `-sources.jar` contained a same-path
+`.java`, regardless of whether that upstream artifact was ever proven to be the SAME build as the
+shipped jar. Real example: `org.eclipse.paho.client.mqttv3` 1.2.5 is vendor-rebuilt (B117
+§117.x) — 0/110 classes byte-identical to Central, per `n5-upstream-sources.py`'s own
+`content_identity: vendor-modified` verdict — yet its classes were being trusted as ground truth.
+
+`organized/_upstream-sources/manifest.json`'s per-artifact identity verdict (written by
+`n5-upstream-sources.py`'s classdiff / T26a / pom-identified-recheck steps) now gates `best_kind:
+upstream`, most reliable first: a whole-jar SHA-1 match (`identification_method` set with no
+`content_identity` at all — T26a's `identified-by-sha1`), `content_identity: resigned-identical`
+(every class matches Central byte-for-byte; only the added Niagara signature differs), or
+`content_identity: partially-modified` for a class actually in that jar's own identical set (i.e.
+NOT in its `different_classes` or `local_only_classes`). A `vendor-modified`, `unverifiable`,
+`no-classes`, or partially-modified-but-this-class-differs match is demoted to `alternates` (kind
+`upstream-different-build`, with a `reason`); the decompile (`vineflower2` → `vineflower` →
+`fallback2`/`fallback`) becomes `best` instead, or `missing` if no decompile exists either. An
+artifact with NO identity verdict recorded at all in the manifest (`content_identity` absent AND
+`identification_method` absent — the original ~154 pom.properties-identified artifacts that
+`n5-upstream-sources.py`'s recheck step skipped, because either evidence/b117 had already proven a
+whole-jar match it doesn't carry forward as an explicit manifest field, or no matching evidence
+record was ever found) is likewise treated as NOT proven (`upstream-unproven`, conservative by
+design) rather than silently assumed correct — visible in the index summary's
+`upstream_unproven_artifacts` count (81 on the real corpus) instead of hidden inside a blanket
+"fetched = trustworthy" assumption.
+
+A population is linked to its specific manifest artifact by jar sha256 first — the population's
+own `extracted/.jar_sha256` (or a raw undecompiled jar hashed directly) against the artifact's own
+`binary_sha256` field, both SHA-256 of the same physical jar bytes, so this is a real,
+filename-independent join, never a name coincidence — and falls back to the pre-existing
+class-name-only match (`reason` records which one applied) when no sha256 link is available.
+
+Real effect on the corpus: `org.eclipse.paho.client.mqttv3` 1.2.5's 192 referenced classes flipped
+from `upstream` to `vineflower2` (each carries an `upstream-different-build` alternate). By
+contrast `com.nimbusds:oauth2-oidc-sdk` 11.26 (`resigned-identical` — genuinely proven, its
+Niagara jar is just re-signed) stayed `upstream` for all 914 of its classes, unaffected.
+`com.squareup.okhttp3:okhttp(-jvm)` 5.5.0 has 0 classes covered either before or after this fix —
+a pre-existing, unrelated limitation: its sources jar carries Kotlin `.kt` files, and
+`build_upstream_index` only ever looks for `.java` entries.
+
+**Real run** (2026-09-28, post upstream-identity-verification fix, `python3
+tools/n5-best-source.py --organized organized --out organized/_best --materialize
+organized/_best/tree`): 455 populations, 64929 classes — `docSource` 2809, `upstream` 13100
+(down from 37387 pre-fix), `vineflower2` 48965 (up from 24678 pre-fix), `fallback2` 1, `missing`
+54 (unchanged — every class that lost a trusted upstream match had a decompile available),
+`upstream_unproven_artifacts` 81, 0 `vineflower`(v1) picks, 0 bare-`fallback` picks (fallback2
+always already covers whatever bare fallback would, when both exist for a module). Note: the
+455-population / 64929-class totals reflect corpus growth since the jar-identity-fix run above was
+recorded, not this fix alone — the upstream/vineflower2 shift (24287 classes reclassified from
+`upstream` to `vineflower2`, `missing` untouched) is this fix's own, isolated effect.
 
 **Browsing**: `organized/_best/best-source.json` is the full machine-readable index (per class:
 `module`, `class`, `best`, `best_kind`, `reason`, `line_mapped_view`, `alternates`, `grade`, plus
