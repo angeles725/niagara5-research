@@ -24,6 +24,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -1238,6 +1239,221 @@ class TestPrimaryTreeSelection(unittest.TestCase):
             self.assertEqual(result["classes"]["p/Foo"]["grade"], "harness-error")
 
 
+class TestClassJobsParallelGrading(unittest.TestCase):
+    """--class-jobs parallelizes per-class grading INSIDE one module; the
+    result must be identical (content and key order) to the serial path."""
+
+    NAMES = [f"C{i:02d}" for i in range(12)]
+
+    def setUp(self):
+        self.mod = _load()
+
+    def _make_module(self, td):
+        organized = Path(td)
+        mod_dir = organized / "fakemod"
+        (mod_dir / "extracted" / "p").mkdir(parents=True)
+        (mod_dir / "vineflower" / "p").mkdir(parents=True)
+        for n in self.NAMES:
+            (mod_dir / "extracted" / "p" / f"{n}.class").write_bytes(b"x")
+            (mod_dir / "vineflower" / "p" / f"{n}.java").write_text("class X {}")
+        return organized
+
+    def _fake_rag(self, fail_on=None):
+        import random
+        import time
+
+        def fake(java_file, class_name, *a, **kw):
+            time.sleep(random.random() * 0.01)
+            if class_name == fail_on:
+                raise RuntimeError("boom " + class_name)
+            grade = "roundtrip-exact" if int(class_name[1:]) % 2 == 0 else "roundtrip-equivalent"
+            return {"grade": grade, "first_error": None, "mismatched_methods": [], "allowlist_matches": []}
+        return fake
+
+    def test_class_jobs_matches_serial_content_and_order(self):
+        with tempfile.TemporaryDirectory() as td:
+            organized = self._make_module(td)
+            with mock.patch.object(self.mod, "recompile_and_grade", side_effect=self._fake_rag()):
+                serial = self.mod.grade_module("fakemod", organized_dir=organized, class_jobs=1)
+                parallel = self.mod.grade_module("fakemod", organized_dir=organized, class_jobs=4)
+            self.assertEqual(len(serial["classes"]), len(self.NAMES))
+            self.assertEqual(list(parallel["classes"]), list(serial["classes"]))
+            self.assertEqual(json.dumps(parallel, default=list), json.dumps(serial, default=list))
+
+    def test_exception_in_one_class_propagates_with_class_jobs(self):
+        with tempfile.TemporaryDirectory() as td:
+            organized = self._make_module(td)
+            with mock.patch.object(self.mod, "recompile_and_grade", side_effect=self._fake_rag(fail_on="C05")):
+                with self.assertRaises(RuntimeError):
+                    self.mod.grade_module("fakemod", organized_dir=organized, class_jobs=4)
+
+    def test_main_passes_class_jobs_through(self):
+        with tempfile.TemporaryDirectory() as td:
+            organized_dir = Path(td)
+            mod_dir = organized_dir / "m"
+            (mod_dir / "extracted").mkdir(parents=True)
+            (mod_dir / "recon.json").write_text(json.dumps({"jar_sha256": "sha-m"}))
+            seen = {}
+
+            def fake_grade_module(module, primary_tree="vineflower", limit=None, **kwargs):
+                seen.update(kwargs)
+                return {
+                    "module": module, "schema_version": self.mod.SCHEMA_VERSION,
+                    "jar_sha256": "sha-m", "primary_tree": primary_tree, "limit_per_module": limit,
+                    "class_count": 0, "grade_counts": {}, "classes": {},
+                }
+
+            with mock.patch.object(self.mod, "grade_module", side_effect=fake_grade_module), \
+                 mock.patch.object(self.mod, "build_classpath", return_value=""):
+                rc = self.mod.main([
+                    "--modules", "m", "--class-jobs", "3",
+                    "--organized-dir", str(organized_dir),
+                    "--classpath-cache-dir", str(organized_dir / "_cp"),
+                ])
+            self.assertEqual(rc, 0)
+            self.assertEqual(seen.get("class_jobs"), 3)
+
+
+class TestToolServer(unittest.TestCase):
+    """--tool-server: javac/javap run in one long-lived in-process JVM per worker
+    thread. Output must be byte-identical to the subprocess path."""
+
+    SOURCE = (
+        "package pk;\n"
+        "public class Tiny {\n"
+        "    private final int x;\n"
+        "    public Tiny(int x) { this.x = x; }\n"
+        "    public int getX() { return x + 1; }\n"
+        "}\n"
+    )
+    JAVAC_OPTS = ["--release", "25", "-g", "-implicit:none", "-proc:none", "-nowarn"]
+
+    def setUp(self):
+        if not _jdk_available():
+            self.skipTest("JDK 25 (javac/javap) not installed at the pinned brew path")
+        self.mod = _load()
+        self.tmpdir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmpdir, ignore_errors=True)
+        self.addCleanup(self.mod.shutdown_tool_servers)
+        self.src = os.path.join(self.tmpdir, "Tiny.java")
+        with open(self.src, "w") as f:
+            f.write(self.SOURCE)
+
+    def _server(self):
+        server = self.mod.ToolServer(java_bin=self.mod.DEFAULT_JAVA)
+        self.addCleanup(server.close)
+        return server
+
+    def _subprocess_compile(self, out_dir):
+        os.makedirs(out_dir)
+        subprocess.run([JDK25_JAVAC, *self.JAVAC_OPTS, "-d", out_dir, self.src], check=True, capture_output=True)
+        return os.path.join(out_dir, "pk", "Tiny.class")
+
+    def test_large_output_beyond_pipe_buffer_round_trips(self):
+        # regression: raw unbuffered pipe reads return short; javap -v of a JDK class is >100 KB
+        expected = subprocess.run([JDK25_JAVAP, "-v", "-p", "java.lang.String"], capture_output=True, text=True).stdout
+        self.assertGreater(len(expected), 200_000)
+        rc, out, err = self._server().run("javap", ["-v", "-p", "java.lang.String"], timeout=120)
+        self.assertEqual(rc, 0, err)
+        self.assertEqual(out, expected)
+
+    def test_javac_via_server_is_byte_identical_to_subprocess(self):
+        ref = self._subprocess_compile(os.path.join(self.tmpdir, "ref"))
+        srv_out = os.path.join(self.tmpdir, "srv")
+        os.makedirs(srv_out)
+        server = self._server()
+        rc, out, err = server.run("javac", [*self.JAVAC_OPTS, "-d", srv_out, self.src], timeout=60)
+        self.assertEqual(rc, 0, err)
+        with open(ref, "rb") as a, open(os.path.join(srv_out, "pk", "Tiny.class"), "rb") as b:
+            self.assertEqual(a.read(), b.read())
+
+    def test_javac_error_text_and_exit_code_round_trip(self):
+        bad = os.path.join(self.tmpdir, "Bad.java")
+        with open(bad, "w") as f:
+            f.write("class Bad { int f() { return \"\u00e9\"; } }\n")
+        out_dir = os.path.join(self.tmpdir, "o")
+        os.makedirs(out_dir)
+        proc = subprocess.run([JDK25_JAVAC, *self.JAVAC_OPTS, "-d", out_dir, bad], capture_output=True, text=True)
+        server = self._server()
+        rc, out, err = server.run("javac", [*self.JAVAC_OPTS, "-d", out_dir, bad], timeout=60)
+        self.assertNotEqual(rc, 0)
+        self.assertEqual(rc, proc.returncode)
+        self.assertEqual(err, proc.stderr)
+
+    def test_javap_via_server_text_equals_subprocess(self):
+        ref = self._subprocess_compile(os.path.join(self.tmpdir, "ref"))
+        expected = self.mod.run_javap_verbose(ref, javap_bin=JDK25_JAVAP)
+        got = self.mod.run_javap_verbose(ref, javap_bin=JDK25_JAVAP, tool_server=True)
+        self.assertEqual(got, expected)
+        self.assertIn("getX", got)
+
+    def test_timeout_restarts_server_and_grade_is_timeout(self):
+        server = self._server()
+        out_dir = os.path.join(self.tmpdir, "t")
+        os.makedirs(out_dir)
+        with self.assertRaises(subprocess.TimeoutExpired):
+            server.run("javac", [*self.JAVAC_OPTS, "-d", out_dir, self.src], timeout=0.001)
+        rc, _, err = server.run("javac", [*self.JAVAC_OPTS, "-d", out_dir, self.src], timeout=60)
+        self.assertEqual(rc, 0, err)
+        ref = self._subprocess_compile(os.path.join(self.tmpdir, "ref"))
+        result = self.mod.recompile_and_grade(
+            self.src, "Tiny", "", ref, os.path.join(self.tmpdir, "g"),
+            javac_bin=JDK25_JAVAC, javap_bin=JDK25_JAVAP, javac_timeout=0.001, tool_server=True,
+        )
+        self.assertEqual(result["grade"], "timeout")
+
+    def test_server_start_failure_falls_back_to_subprocess_with_identical_grade(self):
+        ref = self._subprocess_compile(os.path.join(self.tmpdir, "ref"))
+        baseline = self.mod.recompile_and_grade(
+            self.src, "Tiny", "", ref, os.path.join(self.tmpdir, "g1"),
+            javac_bin=JDK25_JAVAC, javap_bin=JDK25_JAVAP,
+        )
+        with mock.patch.object(self.mod, "TOOL_SERVER_SRC", os.path.join(self.tmpdir, "missing", "ToolServer.java")):
+            self.mod.shutdown_tool_servers()
+            fallback = self.mod.recompile_and_grade(
+                self.src, "Tiny", "", ref, os.path.join(self.tmpdir, "g2"),
+                javac_bin=JDK25_JAVAC, javap_bin=JDK25_JAVAP, tool_server=True,
+            )
+        self.assertEqual(fallback, baseline)
+        self.assertEqual(fallback["grade"], "roundtrip-exact")
+
+    def test_recompile_and_grade_via_server_matches_subprocess(self):
+        ref = self._subprocess_compile(os.path.join(self.tmpdir, "ref"))
+        a = self.mod.recompile_and_grade(self.src, "Tiny", "", ref, os.path.join(self.tmpdir, "g1"),
+                                         javac_bin=JDK25_JAVAC, javap_bin=JDK25_JAVAP)
+        b = self.mod.recompile_and_grade(self.src, "Tiny", "", ref, os.path.join(self.tmpdir, "g2"),
+                                         javac_bin=JDK25_JAVAC, javap_bin=JDK25_JAVAP, tool_server=True)
+        self.assertEqual(a, b)
+
+    def test_main_passes_tool_server_through(self):
+        with tempfile.TemporaryDirectory() as td:
+            organized_dir = Path(td)
+            mod_dir = organized_dir / "m"
+            (mod_dir / "extracted").mkdir(parents=True)
+            (mod_dir / "recon.json").write_text(json.dumps({"jar_sha256": "sha-m"}))
+            seen = {}
+
+            def fake_grade_module(module, primary_tree="vineflower", limit=None, **kwargs):
+                seen.update(kwargs)
+                return {
+                    "module": module, "schema_version": self.mod.SCHEMA_VERSION,
+                    "jar_sha256": "sha-m", "primary_tree": primary_tree, "limit_per_module": limit,
+                    "class_count": 0, "grade_counts": {}, "classes": {},
+                }
+
+            for argv_extra, expected in (([], False), (["--tool-server"], True)):
+                seen.clear()
+                with mock.patch.object(self.mod, "grade_module", side_effect=fake_grade_module), \
+                     mock.patch.object(self.mod, "build_classpath", return_value=""):
+                    rc = self.mod.main([
+                        "--modules", "m", "--force", *argv_extra,
+                        "--organized-dir", str(organized_dir),
+                        "--classpath-cache-dir", str(organized_dir / "_cp"),
+                    ])
+                self.assertEqual(rc, 0)
+                self.assertIs(seen.get("tool_server"), expected)
+
+
 class TestHarnessErrorsAndTimeouts(unittest.TestCase):
     """Missing ground-truth/source files and subprocess timeouts are HARNESS
     problems, never a decompiler-fidelity finding -- distinct typed grades
@@ -1915,3 +2131,552 @@ class TestLoadTreeResultsReportsSkippedModules(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestToolServerReaping(unittest.TestCase):
+    """R4-jvm-leak-per-module-pool: grade_module's per-module class pool starts a
+    tool-server JVM per worker thread; those JVMs must be closed once the pool's
+    threads are gone, or idle JVMs accumulate as modules x class_jobs."""
+
+    def setUp(self):
+        self.mod = _load()
+        self.addCleanup(self.mod.shutdown_tool_servers)
+        self.closed = []
+        closed = self.closed
+
+        class FakeServer:
+            def __init__(self, java_bin=None):
+                self.java_bin = java_bin
+
+            def close(self):
+                closed.append(self)
+
+        self.orig = self.mod.ToolServer
+        self.mod.ToolServer = FakeServer
+        self.addCleanup(setattr, self.mod, "ToolServer", self.orig)
+
+    def test_reap_closes_servers_of_finished_threads_only(self):
+        t = threading.Thread(target=self.mod._thread_tool_server, args=("java",))
+        t.start()
+        t.join()
+        mine = self.mod._thread_tool_server("java")
+        self.mod.reap_dead_thread_tool_servers()
+        self.assertEqual(len(self.closed), 1)
+        self.assertIsNot(self.closed[0], mine)
+        self.assertEqual([s for _, s in self.mod._tool_servers], [mine])
+
+    def test_grade_module_reaps_its_class_pool_servers(self):
+        tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, tmp, ignore_errors=True)
+        org = Path(tmp)
+        for i in range(6):
+            p = org / "m" / "extracted" / "pk" / f"C{i}.class"
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_bytes(b"x")
+
+        def fake_grade(fqcn, classfile, **kw):
+            self.mod._thread_tool_server("java")
+            return fqcn, {"grade": "roundtrip-exact"}
+
+        orig = self.mod._grade_one_class
+        self.mod._grade_one_class = fake_grade
+        self.addCleanup(setattr, self.mod, "_grade_one_class", orig)
+        self.mod.grade_module("m", organized_dir=org, class_jobs=3, tool_server=True)
+        self.assertEqual(self.mod._tool_servers, [])
+        self.assertGreaterEqual(len(self.closed), 1)
+
+
+# ---------------------------------------------------------------------------
+# F6: exact-normalizer soundness fixes (parameter slots pinned, wide slot
+# forms, exception-table row order = catch priority)
+# ---------------------------------------------------------------------------
+class TestExactNormalizerSoundness(unittest.TestCase):
+    def setUp(self):
+        self.mod = _load()
+
+    def test_schema_version_bumped_for_tightened_exact_semantics(self):
+        self.assertEqual(self.mod.SCHEMA_VERSION, 2)
+
+    def test_param_slot_count_from_descriptor(self):
+        f = self.mod.param_slot_count
+        self.assertEqual(f("(II)I", is_static=True), 2)
+        self.assertEqual(f("(JI)I", is_static=True), 3)
+        self.assertEqual(f("(DLjava/lang/Object;)I", is_static=False), 4)
+        self.assertEqual(f("([J[[Ljava/lang/String;Z)V", is_static=False), 4)
+        self.assertEqual(f("()V", is_static=True), 0)
+
+    def test_swapped_parameter_reads_are_not_normalized_equal(self):
+        # f(int a, int b) { return a - b; } vs { return b - a; }: first-use
+        # renumbering maps both to "load 0; load 1; isub" -- a false exact.
+        a = ["0: iload_0", "1: iload_1", "2: isub", "3: ireturn"]
+        b = ["0: iload_1", "1: iload_0", "2: isub", "3: ireturn"]
+        self.assertNotEqual(self.mod.normalize_method_instructions(a, param_slots=2),
+                            self.mod.normalize_method_instructions(b, param_slots=2))
+
+    def test_non_parameter_slots_still_renumbered_by_first_use(self):
+        a = ["0: aload_0", "1: astore_3", "2: aload_3", "3: areturn"]
+        b = ["0: aload_0", "1: astore        7", "3: aload         7", "5: areturn"]
+        self.assertEqual(self.mod.normalize_method_instructions(a, param_slots=1),
+                         self.mod.normalize_method_instructions(b, param_slots=1))
+
+    def test_wide_slot_forms_are_slot_canonicalized(self):
+        a = ["0: iload_w       302", "4: ireturn"]
+        b = ["0: iload         9", "2: ireturn"]
+        self.assertEqual(self.mod.normalize_method_instructions(a),
+                         self.mod.normalize_method_instructions(b))
+
+    def test_iinc_w_slot_canonicalized_and_width_allowlisted(self):
+        a = self.mod.normalize_method_instructions(["0: iinc_w        302, 1", "6: return"])
+        b = self.mod.normalize_method_instructions(["0: iinc          9, 1", "3: return"])
+        self.assertEqual(a[0], "insn0: iinc_w 0 1")
+        names = {e.name: e for e in self.mod.ALLOWLIST}
+        self.assertIn("iinc-vs-iinc_w-width", names)
+        self.assertTrue(names["iinc-vs-iinc_w-width"].predicate(a, b))
+        c = self.mod.normalize_method_instructions(["0: iinc_w        302, 2", "6: return"])
+        self.assertFalse(names["iinc-vs-iinc_w-width"].predicate(c, b))
+
+    def test_exception_rows_keep_catch_priority_order(self):
+        raw = ["0: aload_0", "1: invokevirtual #2 // Method f:()V", "4: return",
+               "5: astore_1", "6: return", "7: astore_1", "8: return"]
+        rows = [(0, 4, 5, "Class java/io/IOException"), (0, 4, 7, "Class java/lang/Exception")]
+        self.assertNotEqual(self.mod.normalize_exception_table(raw, rows),
+                            self.mod.normalize_exception_table(raw, list(reversed(rows))))
+
+    def test_parse_javap_verbose_keeps_raw_code_rows_and_param_slots(self):
+        text = (
+            "public class Foo\n  minor version: 0\n{\n"
+            "  public int compute(int);\n"
+            "    descriptor: (I)I\n"
+            "    flags: (0x0001) ACC_PUBLIC\n"
+            "    Code:\n"
+            "      stack=2, locals=3, args_size=2\n"
+            "         0: iload_1\n"
+            "         1: ireturn\n"
+            "         2: astore_2\n"
+            "         3: iconst_m1\n"
+            "         4: ireturn\n"
+            "      Exception table:\n"
+            "         from    to  target type\n"
+            "             0     1     2   any\n"
+            "}\n"
+        )
+        m = self.mod.parse_javap_verbose(text)["methods"][("compute", "(I)I")]
+        self.assertEqual(m["param_slots"], 2)
+        self.assertEqual(m["raw_code"][0], "0: iload_1")
+        self.assertEqual(m["raw_exception_rows"], [(0, 1, 2, "any")])
+
+    @unittest.skipUnless(_jdk_available(), "JDK 25 not installed")
+    def test_real_javac_swapped_parameters_do_not_compare_equal(self):
+        with tempfile.TemporaryDirectory() as td:
+            parsed = []
+            for i, body in enumerate(("return a - b;", "return b - a;")):
+                d = os.path.join(td, str(i))
+                os.makedirs(d)
+                src = os.path.join(d, "P.java")
+                Path(src).write_text(f"public class P {{ static int f(int a, int b) {{ {body} }} }}\n")
+                subprocess.run([JDK25_JAVAC, "--release", "25", "-g", "-d", d, src], check=True, capture_output=True)
+                parsed.append(self.mod.parse_javap_verbose(
+                    self.mod.run_javap_verbose(os.path.join(d, "P.class"), javap_bin=JDK25_JAVAP)))
+            diff = self.mod.diff_normalized_classes(parsed[0], parsed[1])
+            self.assertIn(("f", "(II)I"), diff["mismatched_methods"])
+
+
+# ---------------------------------------------------------------------------
+# F6: canonical grades (roundtrip-canonical / roundtrip-canonical-t2)
+# ---------------------------------------------------------------------------
+def _meth(lines, params=1, flags=("ACC_STATIC",), rows=()):
+    return {"flags": list(flags), "code": list(lines), "exceptions": [], "exception_table": [],
+            "has_method_parameters": False, "raw_code": list(lines), "raw_exception_rows": list(rows),
+            "param_slots": params}
+
+
+_TWO_RETURNS = ["0: iload_0", "1: ifeq 6", "4: iconst_1", "5: ireturn", "6: iconst_2", "7: ireturn"]
+_SHARED_RETURN = ["0: iload_0", "1: ifeq 8", "4: iconst_1", "5: goto 9", "8: iconst_2", "9: ireturn"]
+_BOOL_TERNARY = ["0: aload_0", "1: instanceof #7 // class java/lang/String", "4: ifeq 11", "7: iconst_1",
+                 "8: goto 12", "11: iconst_0", "12: ireturn"]
+_BOOL_DIRECT = ["0: aload_0", "1: instanceof #7 // class java/lang/String", "4: ireturn"]
+
+
+def _class_with(methods):
+    return {"class_decl": "public class C", "fields": {}, "methods": methods,
+            "attributes": {"record": False, "permitted_subclasses": None, "nest_members": None,
+                           "inner_classes": None}}
+
+
+class TestCanonicalGrades(unittest.TestCase):
+    def setUp(self):
+        self.mod = _load()
+
+    def _grade(self, a_methods, b_methods):
+        diff = self.mod.diff_normalized_classes(_class_with(a_methods), _class_with(b_methods))
+        return self.mod.grade_class_result(compiled_ok=True, diff=diff, first_error=None)
+
+    def test_grade_rank_and_clean_set(self):
+        r = self.mod._GRADE_RANK
+        self.assertGreater(r["roundtrip-exact"], r["roundtrip-equivalent"])
+        self.assertGreater(r["roundtrip-equivalent"], r["roundtrip-canonical"])
+        self.assertGreater(r["roundtrip-canonical"], r["roundtrip-canonical-t2"])
+        self.assertGreater(r["roundtrip-canonical-t2"], r["compiles-mismatch"])
+        for g in ("roundtrip-exact", "roundtrip-equivalent", "roundtrip-canonical", "roundtrip-canonical-t2"):
+            self.assertTrue(self.mod._is_clean(g))
+        self.assertFalse(self.mod._is_clean("compiles-mismatch"))
+
+    def test_tail_only_difference_grades_roundtrip_canonical(self):
+        key = ("f", "(Z)I")
+        g = self._grade({key: _meth(_TWO_RETURNS)}, {key: _meth(_SHARED_RETURN)})
+        self.assertEqual(g["grade"], "roundtrip-canonical")
+        self.assertEqual(g["canonical_rules"], ["tail"])
+        self.assertEqual(g["canonical_methods"], [key])
+        self.assertEqual(g["mismatched_methods"], [])
+        self.assertEqual(g["raw_mismatched_methods"], [key])
+
+    def test_boolean_ternary_grades_roundtrip_canonical_t2(self):
+        key = ("f", "(Ljava/lang/Object;)Z")
+        g = self._grade({key: _meth(_BOOL_DIRECT)}, {key: _meth(_BOOL_TERNARY)})
+        self.assertEqual(g["grade"], "roundtrip-canonical-t2")
+        self.assertIn("boolmat", g["canonical_rules"])
+
+    def test_genuine_difference_stays_compiles_mismatch_and_lists_only_residual_methods(self):
+        k1, k2 = ("f", "(Z)I"), ("g", "(Z)I")
+        other = [line.replace("iconst_2", "iconst_3") for line in _SHARED_RETURN]
+        g = self._grade({k1: _meth(_TWO_RETURNS), k2: _meth(_TWO_RETURNS)},
+                        {k1: _meth(_SHARED_RETURN), k2: _meth(other)})
+        self.assertEqual(g["grade"], "compiles-mismatch")
+        self.assertEqual(g["mismatched_methods"], [k2])
+        self.assertEqual(g["canonical_methods"], [k1])
+        self.assertEqual(g["raw_mismatched_methods"], [k1, k2])
+
+    def test_flag_difference_is_never_excused_by_canonicalization(self):
+        key = ("f", "(Z)I")
+        g = self._grade({key: _meth(_TWO_RETURNS)}, {key: _meth(_SHARED_RETURN, flags=("ACC_STATIC", "ACC_PUBLIC"))})
+        self.assertEqual(g["grade"], "compiles-mismatch")
+
+    def test_allowlist_only_methods_are_not_listed_as_mismatched(self):
+        key = ("f", "()Ljava/lang/String;")
+        a = _meth(["0: ldc #5 // String x", "2: areturn"], params=0)
+        b = _meth(["0: ldc_w #300 // String x", "3: areturn"], params=0)
+        a["code"] = ["insn0: ldc // String x", "insn1: areturn"]
+        b["code"] = ["insn0: ldc_w // String x", "insn1: areturn"]
+        g = self._grade({key: a}, {key: b})
+        self.assertEqual(g["grade"], "roundtrip-equivalent")
+        self.assertEqual(g["mismatched_methods"], [])
+        self.assertEqual(g["raw_mismatched_methods"], [key])
+
+    def test_report_has_canonical_columns_and_rule_catalog(self):
+        results = [{"module": "m", "class_count": 2, "grade_counts": {"roundtrip-canonical": 1,
+                                                                      "roundtrip-canonical-t2": 1},
+                    "classes": {"p/A": {"grade": "roundtrip-canonical", "canonical_rules": ["tail"]},
+                                "p/B": {"grade": "roundtrip-canonical-t2", "canonical_rules": ["boolmat"]}}}]
+        report = self.mod.generate_report(results)
+        self.assertIn("roundtrip-canonical |", report)
+        self.assertIn("roundtrip-canonical-t2", report)
+        self.assertIn("## Canonical grades", report)
+        self.assertIn("`tail`", report)
+        self.assertIn("asynchronous", report)
+
+    def test_compare_counts_canonical_as_clean(self):
+        a = [{"module": "m", "classes": {"p/A": {"grade": "compiles-mismatch"}}}]
+        b = [{"module": "m", "classes": {"p/A": {"grade": "roundtrip-canonical"}}}]
+        cmp_result = self.mod.compare_tree_grades(a, b, "x", "x.canon")
+        self.assertEqual(len(cmp_result["better"]), 1)
+        self.assertEqual(self.mod._tree_clean_count(cmp_result, "to"), 1)
+
+    @unittest.skipUnless(_jdk_available(), "JDK 25 not installed")
+    def test_end_to_end_recompile_grades_roundtrip_canonical_with_rules_recorded(self):
+        with tempfile.TemporaryDirectory() as td:
+            mod_dir = Path(td) / "fakemod"
+            (mod_dir / "extracted" / "p").mkdir(parents=True)
+            (mod_dir / "vineflower2" / "p").mkdir(parents=True)
+            shipped = ("package p;\npublic class Foo {\n  static String f(long v) { if (v == 0) return \"a\"; "
+                       "return \"b\"; }\n}\n")
+            decompiled = "package p;\npublic class Foo {\n  static String f(long v) { return v == 0 ? \"a\" : \"b\"; }\n}\n"
+            src_dir = Path(td) / "src" / "p"
+            src_dir.mkdir(parents=True)
+            (src_dir / "Foo.java").write_text(shipped)
+            subprocess.run([JDK25_JAVAC, "--release", "25", "-g", "-d", str(Path(td) / "g"), str(src_dir / "Foo.java")],
+                           check=True, capture_output=True)
+            shutil.copy(Path(td) / "g" / "p" / "Foo.class", mod_dir / "extracted" / "p" / "Foo.class")
+            (mod_dir / "vineflower2" / "p" / "Foo.java").write_text(decompiled)
+            # the other engines produce nothing, so the canonical first rung is the best grade
+            with mock.patch.object(self.mod, "_decompile_one_class_with", return_value=(None, None)):
+                result = self.mod.grade_module("fakemod", organized_dir=Path(td), classpath="",
+                                               primary_tree="vineflower2", javac_bin=JDK25_JAVAC, javap_bin=JDK25_JAVAP)
+            rec = result["classes"]["p/Foo"]
+            self.assertEqual(rec["grade"], "roundtrip-canonical")
+            self.assertEqual(rec["best_decompiler"], "vineflower2")
+            self.assertEqual(rec["canonical_rules"], ["tail"])
+            self.assertEqual(rec["attempted"], [("vineflower2", "roundtrip-canonical"), ("cfr", "no-compile"),
+                                                ("procyon", "no-compile")])
+
+
+class TestRegradeNonclean(unittest.TestCase):
+    """--regrade-nonclean: re-grade only the non-clean classes of an existing
+    fidelity.<tree>.json into fidelity.<tree>.canon.json (never overwriting
+    the source file); idempotent and resumable."""
+
+    def setUp(self):
+        self.mod = _load()
+
+    def _source(self, mod_dir, classes):
+        src = {"module": "m", "schema_version": 1, "jar_sha256": "j", "primary_tree": "vineflower2",
+               "class_count": len(classes), "grade_counts": {}, "classes": classes, "limit_per_module": None}
+        path = Path(mod_dir) / "fidelity.vineflower2.json"
+        path.write_text(json.dumps(src))
+        return path
+
+    def _fake_grader(self, calls):
+        def grade(fqcn, classfile, **kwargs):
+            calls.append(fqcn)
+            return fqcn, {"grade": "roundtrip-canonical", "canonical_rules": ["tail"]}
+        return grade
+
+    def test_only_nonclean_classes_are_regraded_into_a_separate_file(self):
+        with tempfile.TemporaryDirectory() as td:
+            mod_dir = Path(td) / "m"
+            mod_dir.mkdir()
+            src = self._source(mod_dir, {"p/A": {"grade": "roundtrip-exact"},
+                                         "p/B": {"grade": "bytecode-only"},
+                                         "p/C": {"grade": "no-compile"}})
+            before = src.read_bytes()
+            calls = []
+            out = self.mod.regrade_nonclean_module("m", organized_dir=Path(td), tree="vineflower2",
+                                                   grade_fn=self._fake_grader(calls))
+            self.assertEqual(sorted(calls), ["p/B", "p/C"])
+            self.assertEqual(src.read_bytes(), before)
+            written = json.loads((mod_dir / "fidelity.vineflower2.canon.json").read_text())
+            self.assertEqual(written, json.loads(json.dumps(out)))
+            self.assertTrue(written["complete"])
+            self.assertEqual(written["classes"]["p/A"], {"grade": "roundtrip-exact"})
+            self.assertEqual(written["classes"]["p/B"]["previous_grade"], "bytecode-only")
+            self.assertEqual(written["grade_counts"], {"roundtrip-exact": 1, "roundtrip-canonical": 2})
+            self.assertEqual(written["source_grade_counts"], {"roundtrip-exact": 1, "bytecode-only": 1,
+                                                              "no-compile": 1})
+            self.assertEqual(written["regraded_classes"], ["p/B", "p/C"])
+            self.assertEqual(written["schema_version"], self.mod.SCHEMA_VERSION)
+            self.assertEqual(list(written["classes"]), ["p/A", "p/B", "p/C"])
+
+    def test_second_run_is_a_no_op(self):
+        with tempfile.TemporaryDirectory() as td:
+            mod_dir = Path(td) / "m"
+            mod_dir.mkdir()
+            self._source(mod_dir, {"p/B": {"grade": "compiles-mismatch"}})
+            calls = []
+            self.mod.regrade_nonclean_module("m", organized_dir=Path(td), tree="vineflower2",
+                                             grade_fn=self._fake_grader(calls))
+            self.mod.regrade_nonclean_module("m", organized_dir=Path(td), tree="vineflower2",
+                                             grade_fn=self._fake_grader(calls))
+            self.assertEqual(calls, ["p/B"])
+
+    def test_partial_run_resumes_with_the_remaining_classes_only(self):
+        with tempfile.TemporaryDirectory() as td:
+            mod_dir = Path(td) / "m"
+            mod_dir.mkdir()
+            src = self._source(mod_dir, {"p/B": {"grade": "compiles-mismatch"},
+                                         "p/C": {"grade": "compiles-mismatch"}})
+            partial = {"schema_version": self.mod.SCHEMA_VERSION, "complete": False,
+                       "source_sha256": self.mod.sha256_of(src), "regraded_classes": ["p/B"],
+                       "classes": {"p/B": {"grade": "compiles-mismatch", "previous_grade": "compiles-mismatch"}}}
+            (mod_dir / "fidelity.vineflower2.canon.json").write_text(json.dumps(partial))
+            calls = []
+            out = self.mod.regrade_nonclean_module("m", organized_dir=Path(td), tree="vineflower2",
+                                                   grade_fn=self._fake_grader(calls))
+            self.assertEqual(calls, ["p/C"])
+            self.assertEqual(out["classes"]["p/B"]["grade"], "compiles-mismatch")
+            self.assertEqual(out["regraded_classes"], ["p/B", "p/C"])
+
+    def test_changed_source_invalidates_a_previous_canon_file(self):
+        with tempfile.TemporaryDirectory() as td:
+            mod_dir = Path(td) / "m"
+            mod_dir.mkdir()
+            self._source(mod_dir, {"p/B": {"grade": "compiles-mismatch"}})
+            calls = []
+            self.mod.regrade_nonclean_module("m", organized_dir=Path(td), tree="vineflower2",
+                                             grade_fn=self._fake_grader(calls))
+            self._source(mod_dir, {"p/B": {"grade": "compiles-mismatch"}, "p/D": {"grade": "no-compile"}})
+            self.mod.regrade_nonclean_module("m", organized_dir=Path(td), tree="vineflower2",
+                                             grade_fn=self._fake_grader(calls))
+            self.assertEqual(calls, ["p/B", "p/B", "p/D"])
+
+    def test_missing_source_file_raises(self):
+        with tempfile.TemporaryDirectory() as td:
+            (Path(td) / "m").mkdir()
+            with self.assertRaises(FileNotFoundError):
+                self.mod.regrade_nonclean_module("m", organized_dir=Path(td), tree="vineflower2",
+                                                 grade_fn=self._fake_grader([]))
+
+    @unittest.skipUnless(_jdk_available(), "JDK 25 not installed")
+    def test_cli_regrades_a_real_mismatch_to_roundtrip_canonical(self):
+        with tempfile.TemporaryDirectory() as td:
+            organized = Path(td) / "organized"
+            mod_dir = organized / "fakemod"
+            (mod_dir / "extracted" / "p").mkdir(parents=True)
+            (mod_dir / "vineflower2" / "p").mkdir(parents=True)
+            src_dir = Path(td) / "src" / "p"
+            src_dir.mkdir(parents=True)
+            (src_dir / "Foo.java").write_text(
+                'package p;\npublic class Foo {\n  static String f(long v) { if (v == 0) return "a"; return "b"; }\n}\n')
+            subprocess.run([JDK25_JAVAC, "--release", "25", "-g", "-d", str(Path(td) / "g"), str(src_dir / "Foo.java")],
+                           check=True, capture_output=True)
+            shutil.copy(Path(td) / "g" / "p" / "Foo.class", mod_dir / "extracted" / "p" / "Foo.class")
+            (mod_dir / "vineflower2" / "p" / "Foo.java").write_text(
+                'package p;\npublic class Foo {\n  static String f(long v) { return v == 0 ? "a" : "b"; }\n}\n')
+            (mod_dir / "recon.json").write_text(json.dumps({"jar_sha256": "j"}))
+            self._source(mod_dir, {"p/Foo": {"grade": "bytecode-only"}})
+            empty = Path(td) / "empty"
+            empty.mkdir()
+            with mock.patch.object(self.mod, "_decompile_one_class_with", return_value=(None, None)):
+                rc = self.mod.main(["--regrade-nonclean", "--modules", "fakemod", "--tree", "vineflower2",
+                                    "--organized-dir", str(organized), "--modules-dir", str(empty),
+                                    "--bin-ext-dir", str(empty), "--classpath-cache-dir", str(Path(td) / "cp")])
+            self.assertEqual(rc, 0)
+            out = json.loads((mod_dir / "fidelity.vineflower2.canon.json").read_text())
+            self.assertEqual(out["classes"]["p/Foo"]["grade"], "roundtrip-canonical")
+            self.assertEqual(out["classes"]["p/Foo"]["canonical_rules"], ["tail"])
+            self.assertEqual(out["classes"]["p/Foo"]["previous_grade"], "bytecode-only")
+
+
+class TestInvokedynamicBootstrapArguments(unittest.TestCase):
+    """javap prints an invokedynamic as `// InvokeDynamic #N:name:desc`; the
+    bootstrap method and its static arguments (the string-concat recipe, the
+    lambda implementation method) live in the class's BootstrapMethods
+    attribute. Dropping `#N` without resolving it made `"a" + x` and
+    `"b" + x` normalize identical (a false roundtrip-exact)."""
+
+    def setUp(self):
+        self.mod = _load()
+
+    def _text(self, recipe):
+        return (
+            "public class Foo\n  minor version: 0\n{\n"
+            "  static java.lang.String f(int);\n"
+            "    descriptor: (I)Ljava/lang/String;\n"
+            "    flags: (0x0008) ACC_STATIC\n"
+            "    Code:\n"
+            "      stack=1, locals=1, args_size=1\n"
+            "         0: iload_0\n"
+            "         1: invokedynamic #7,  0              // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n"
+            "         6: areturn\n"
+            "}\n"
+            "SourceFile: \"Foo.java\"\n"
+            "BootstrapMethods:\n"
+            "  0: #50 REF_invokeStatic java/lang/invoke/StringConcatFactory.makeConcatWithConstants:(Ljava/lang/invoke/MethodHandles$Lookup;)Ljava/lang/invoke/CallSite;\n"
+            "    Method arguments:\n"
+            f"      #44 {recipe}\\u0001\n"
+        )
+
+    def test_bootstrap_arguments_are_part_of_the_normalized_instruction(self):
+        a = self.mod.parse_javap_verbose(self._text("a"))["methods"][("f", "(I)Ljava/lang/String;")]
+        b = self.mod.parse_javap_verbose(self._text("b"))["methods"][("f", "(I)Ljava/lang/String;")]
+        self.assertNotEqual(a["code"], b["code"])
+        self.assertIn("StringConcatFactory.makeConcatWithConstants", a["code"][1])
+        self.assertIn("a\\u0001", a["code"][1])
+        self.assertIn("a\\u0001", a["raw_code"][1])
+
+    @unittest.skipUnless(_jdk_available(), "JDK 25 not installed")
+    def test_real_javac_different_concat_constants_do_not_compare_equal(self):
+        with tempfile.TemporaryDirectory() as td:
+            parsed = []
+            for i, body in enumerate(('return "a" + x;', 'return "b" + x;')):
+                d = os.path.join(td, str(i))
+                os.makedirs(d)
+                src = os.path.join(d, "P.java")
+                Path(src).write_text(f"public class P {{ static String f(int x) {{ {body} }} }}\n")
+                subprocess.run([JDK25_JAVAC, "--release", "25", "-g", "-d", d, src], check=True, capture_output=True)
+                parsed.append(self.mod.parse_javap_verbose(
+                    self.mod.run_javap_verbose(os.path.join(d, "P.class"), javap_bin=JDK25_JAVAP)))
+            diff = self.mod.diff_normalized_classes(parsed[0], parsed[1])
+            self.assertIn(("f", "(I)Ljava/lang/String;"), diff["mismatched_methods"])
+
+
+class TestRegradeNoncleanForce(unittest.TestCase):
+    def setUp(self):
+        self.mod = _load()
+
+    def test_force_regrades_even_a_complete_up_to_date_canon_file(self):
+        with tempfile.TemporaryDirectory() as td:
+            mod_dir = Path(td) / "m"
+            mod_dir.mkdir()
+            (mod_dir / "fidelity.vineflower2.json").write_text(json.dumps(
+                {"module": "m", "classes": {"p/B": {"grade": "compiles-mismatch"}}}))
+            calls = []
+
+            def grade(fqcn, classfile, **kwargs):
+                calls.append(fqcn)
+                return fqcn, {"grade": "compiles-mismatch"}
+            for force in (False, False, True):
+                self.mod.regrade_nonclean_module("m", organized_dir=Path(td), tree="vineflower2", grade_fn=grade,
+                                                 force=force)
+            self.assertEqual(calls, ["p/B", "p/B"])
+
+
+class TestLadderPrefersExactOverCanonical(unittest.TestCase):
+    """A canonical grade is clean but weaker evidence than exact/equivalent:
+    the redundancy ladder must keep going after it, and a later engine that
+    reaches roundtrip-exact/equivalent wins (57 classes of 5 modules lost
+    their CFR/Procyon roundtrip-exact when the ladder stopped at a canonical
+    first rung)."""
+
+    def setUp(self):
+        self.mod = _load()
+
+    def test_later_exact_beats_earlier_canonical(self):
+        result = self.mod.select_best_decompiler([
+            ("vineflower2", {"grade": "roundtrip-canonical"}), ("cfr", {"grade": "roundtrip-exact"})])
+        self.assertEqual((result["best_decompiler"], result["grade"]), ("cfr", "roundtrip-exact"))
+
+    def test_best_ranked_canonical_wins_when_nothing_is_exact(self):
+        result = self.mod.select_best_decompiler([
+            ("vineflower2", {"grade": "roundtrip-canonical-t2"}), ("cfr", {"grade": "roundtrip-canonical"}),
+            ("procyon", {"grade": "compiles-mismatch"})])
+        self.assertEqual((result["best_decompiler"], result["grade"]), ("cfr", "roundtrip-canonical"))
+        result = self.mod.select_best_decompiler([
+            ("vineflower2", {"grade": "roundtrip-canonical"}), ("cfr", {"grade": "roundtrip-canonical-t2"})])
+        self.assertEqual(result["best_decompiler"], "vineflower2")
+
+    def test_ladder_continues_after_a_canonical_rung_and_stops_at_exact(self):
+        calls = []
+
+        def engine(name, grade):
+            def run():
+                calls.append(name)
+                return {"grade": grade}
+            return run
+        result = self.mod.run_redundancy_ladder([
+            ("vineflower2", engine("vineflower2", "roundtrip-canonical")),
+            ("cfr", engine("cfr", "roundtrip-exact")),
+            ("procyon", engine("procyon", "roundtrip-exact"))])
+        self.assertEqual(calls, ["vineflower2", "cfr"])
+        self.assertEqual(result["grade"], "roundtrip-exact")
+
+    @unittest.skipUnless(_jdk_available(), "JDK 25 not installed")
+    def test_grade_one_class_tries_the_next_engine_after_a_canonical_first_rung(self):
+        with tempfile.TemporaryDirectory() as td:
+            mod_dir = Path(td) / "fakemod"
+            (mod_dir / "extracted" / "p").mkdir(parents=True)
+            (mod_dir / "vineflower2" / "p").mkdir(parents=True)
+            src_dir = Path(td) / "src" / "p"
+            src_dir.mkdir(parents=True)
+            (src_dir / "Foo.java").write_text(
+                'package p;\npublic class Foo {\n  static String f(long v) { if (v == 0) return "a"; return "b"; }\n}\n')
+            subprocess.run([JDK25_JAVAC, "--release", "25", "-g", "-d", str(Path(td) / "g"), str(src_dir / "Foo.java")],
+                           check=True, capture_output=True)
+            shutil.copy(Path(td) / "g" / "p" / "Foo.class", mod_dir / "extracted" / "p" / "Foo.class")
+            (mod_dir / "vineflower2" / "p" / "Foo.java").write_text(
+                'package p;\npublic class Foo {\n  static String f(long v) { return v == 0 ? "a" : "b"; }\n}\n')
+            calls = []
+
+            def fake_decompile(java_bin, engine, tool_jar, classfile, out_dir):
+                calls.append(engine)
+                out = Path(out_dir) / "p"
+                out.mkdir(parents=True, exist_ok=True)
+                (out / "Foo.java").write_text((src_dir / "Foo.java").read_text())
+                return out / "Foo.java", None
+            with mock.patch.object(self.mod, "_decompile_one_class_with", side_effect=fake_decompile):
+                result = self.mod.grade_module("fakemod", organized_dir=Path(td), classpath="",
+                                               primary_tree="vineflower2", javac_bin=JDK25_JAVAC, javap_bin=JDK25_JAVAP)
+            rec = result["classes"]["p/Foo"]
+            self.assertEqual(calls, ["cfr"])
+            self.assertEqual(rec["grade"], "roundtrip-exact")
+            self.assertEqual(rec["best_decompiler"], "cfr")
+            self.assertEqual(rec["attempted"], [("vineflower2", "roundtrip-canonical"), ("cfr", "roundtrip-exact")])
+            self.assertEqual(rec["canonical_rules"], [])

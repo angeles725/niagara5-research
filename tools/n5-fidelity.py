@@ -3,8 +3,9 @@
 
 Ground truth is the shipped Tridium .class files under organized/<mod>/extracted/.
 For every top-level class C, the decompiled Vineflower .java is recompiled with
-`javac --release 25` against a classpath of ALL N5 jars (classpath/unnamed-module
-mode — everything except C binds to the ORIGINAL bytecode) and the resulting
+`javac --release 25` against a classpath of ALL N5 jars -- modules, the launcher's
+bin/ext module path and the JavaFX modules of N5's bundled JRE, see build_classpath
+-- (classpath/unnamed-module mode — everything except C binds to the ORIGINAL bytecode) and the resulting
 .class is compared to the shipped .class with a normalizer built over
 `javap -v -p` output: constant-pool indices are dropped in favor of the symbolic
 comments javap already resolves, LineNumberTable/LocalVariableTable/StackMapTable
@@ -23,11 +24,31 @@ is recorded (`attempted`) so disagreement between engines is visible, and
 
 Grades (worst to best): no-compile, compiles-mismatch, bytecode-only (recorded
 only when redundancy was exhausted and nothing round-tripped — see
-compute_consensus), roundtrip-equivalent, roundtrip-exact.
+compute_consensus), roundtrip-canonical-t2, roundtrip-canonical,
+roundtrip-equivalent, roundtrip-exact. The two canonical grades are separate
+labels: every mismatched method was proven equivalent by the sound CFG
+canonicalization of tools/n5_canon.py (tier 1: unconditionally semantics-
+preserving, `cov` modulo asynchronous exceptions; tier 2 additionally relies on
+the JLS boolean-is-0-or-1 invariant); `canonical_rules` records per class the
+irreducible rule set that was needed. `roundtrip-exact` keeps its meaning:
+equal under the exact normalizer alone.
+
+--regrade-nonclean re-grades only the non-clean classes of an existing
+fidelity.<tree>.json into fidelity.<tree>.canon.json (never overwriting the
+source file); `--compare <tree>,<tree>.canon` then reports the transition.
+With --patch-tree <tree>p (a copy of patched classes written by
+tools/n5-patch-doprivileged.py) the patched source is graded as its own ladder
+rung right after the primary tree (engine label = the patch tree name); only
+non-clean classes that have a patched file are re-graded, into
+fidelity.<tree>.patched.json (tree "<tree>.patched" for --compare). A class
+counts as patched (`patched: true`, `patch: {tree, manifest, patched_sha256}`)
+only when the patch rung's grade is the class grade.
 
 Usage:
   python3 tools/n5-fidelity.py --modules control,alarm,schedule [--report]
-  python3 tools/n5-fidelity.py --all --jobs 6 [--limit-per-module 50]
+  python3 tools/n5-fidelity.py --all --jobs 6 [--class-jobs 4] [--limit-per-module 50]
+  (--jobs parallelizes across modules; --class-jobs parallelizes classes within a module)
+  python3 tools/n5-fidelity.py --modules alarm,bql --tree vineflower2 --regrade-nonclean --tool-server
 
 Resumable: a module is skipped when organized/<mod>/fidelity.json already
 records the module jar's current sha256 and this tool's SCHEMA_VERSION.
@@ -35,6 +56,7 @@ records the module jar's current sha256 and this tool's SCHEMA_VERSION.
 from __future__ import annotations
 
 import argparse
+import atexit
 import concurrent.futures
 import hashlib
 import json
@@ -43,21 +65,35 @@ import random
 import re
 import shutil
 import subprocess
+import struct
 import sys
 import tempfile
+import threading
 import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Optional
 
-SCHEMA_VERSION = 1
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import n5_canon  # noqa: E402  (tools/n5_canon.py: parser + sound CFG canonicalization)
+
+# 2 (F6): the exact normalizer was tightened -- parameter slots are pinned (a
+# first-use renumbering let `a - b` and `b - a` compare equal), exception-table
+# rows keep their order (row order is catch priority), wide slot forms
+# (iload_w/istore_w/iinc_w) are slot-canonicalized -- and the canonical grades
+# were added. A schema-1 file can hold a false `roundtrip-exact` and has no
+# canonical grades, so it is not an up-to-date cache of this grader.
+SCHEMA_VERSION = 2
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_ORGANIZED_DIR = REPO_ROOT / "organized"
 DEFAULT_MODULES_DIR = Path("/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules")
 DEFAULT_BIN_EXT_DIR = Path("/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext")
 
+DEFAULT_JRE_DIR = Path("/mnt/c/Program Files/Niagara/5.0.0.28/jre")
+
 DEFAULT_JAVAC = "/home/linuxbrew/.linuxbrew/opt/openjdk@25/bin/javac"
+DEFAULT_JIMAGE = "/home/linuxbrew/.linuxbrew/opt/openjdk@25/bin/jimage"
 DEFAULT_JAVAP = "/home/linuxbrew/.linuxbrew/opt/openjdk@25/bin/javap"
 
 DECOMPILERS_DIR = REPO_ROOT / "tools" / "decompilers"
@@ -109,6 +145,12 @@ _SLOT_SHORTFORM_RE = re.compile(
 _SLOT_LONGFORM_RE = re.compile(
     r"^(aload|astore|iload|istore|lload|lstore|fload|fstore|dload|dstore|ret)$"
 )
+# the `wide`-prefixed forms javap prints as e.g. "iload_w 302" (verified against
+# a real javac 25 compile of a method with >256 locals): same operation as the
+# long form, only the slot operand is 2 bytes wide.
+_SLOT_WIDEFORM_RE = re.compile(
+    r"^(aload|astore|iload|istore|lload|lstore|fload|fstore|dload|dstore)_w$"
+)
 _IINC_RE = re.compile(r"^\s*iinc\s+(\d+)\s*,?\s*(-?\d+)\s*$")
 
 _INSTR_LINE_RE = re.compile(r"^\s*(\d+):\s*(\S+)(.*)$")
@@ -128,90 +170,53 @@ def strip_cp_indices(line: str) -> str:
     return out
 
 
+def param_slot_count(descriptor: str, is_static: bool) -> int:
+    """Number of local-variable slots the JVM pre-loads with `this` + the
+    arguments (JVMS 2.6.1): long/double take two slots. javap's own
+    `args_size` counts ARGUMENTS, not slots, so it cannot be used for this."""
+    slots = 0 if is_static else 1
+    params = descriptor[1:descriptor.index(")")] if descriptor.startswith("(") and ")" in descriptor else ""
+    i = 0
+    while i < len(params):
+        c = params[i]
+        if c == "[":
+            while params[i] == "[":
+                i += 1
+            if params[i] == "L":
+                i = params.index(";", i)
+            slots += 1
+        elif c == "L":
+            i = params.index(";", i)
+            slots += 1
+        else:
+            slots += 2 if c in "JD" else 1
+        i += 1
+    return slots
+
+
 def _slot_of(mnemonic: str, operand: str) -> Optional[int]:
     m = _SLOT_SHORTFORM_RE.match(mnemonic)
     if m:
         return int(m.group(2))
-    if _SLOT_LONGFORM_RE.match(mnemonic):
+    if _SLOT_LONGFORM_RE.match(mnemonic) or _SLOT_WIDEFORM_RE.match(mnemonic):
         operand = operand.strip().split()[0] if operand.strip() else ""
         if operand.isdigit():
             return int(operand)
     return None
 
 
-# javap prints a negative case key bare (e.g. "-5: 36", verified against a real
-# javac 25 compile of a `switch` with negative int case labels) -- the target
-# offset itself is never negative in practice, but "-?\d+" is used for both so
-# a malformed/unexpected negative offset is captured (and compared) rather than
-# silently dropped, which is the false-exact bug this regex previously caused:
-# an unmatched row was skipped by _parse_code_stream instead of being added to
-# `entries`, so two switches differing ONLY in a negative-key arm's target
-# could normalize identical.
-_SWITCH_CASE_RE = re.compile(r"^\s*(-?\d+|default)\s*:\s*(-?\d+)\s*$")
-
-
-def _parse_code_stream(raw_lines: list[str]) -> list[dict]:
-    """Parse raw ``Code`` lines into a list of instruction records.
-
-    javap prints ``tableswitch``/``lookupswitch`` as a MULTI-LINE block::
-
-        1: lookupswitch  { // 2
-                       5: 28
-                     200: 31
-                 default: 34
-              }
-
-    Each ``<key>: <target>`` row inside that block is switch OPERAND data, not
-    a separate instruction — but it is syntactically indistinguishable from a
-    regular ``<offset>: <mnemonic>`` line by regex alone. Treating it as one
-    (the previous implementation's bug) corrupts offset->position numbering
-    for every instruction that follows: a switch with an arm at raw offset 28
-    would register a *second*, bogus "instruction" at offset 5 (the case key)
-    before the real instruction at offset 28 is ever seen. This function
-    explicitly consumes a switch's block as part of the switch record instead.
-    """
-    records: list[dict] = []
-    i = 0
-    while i < len(raw_lines):
-        m = _INSTR_LINE_RE.match(raw_lines[i])
-        if not m:
-            i += 1
-            continue
-        offset = int(m.group(1))
-        mnemonic = m.group(2)
-        rest = m.group(3)
-        if mnemonic in ("tableswitch", "lookupswitch"):
-            entries: list[tuple[int, int]] = []
-            default_target = None
-            i += 1
-            while i < len(raw_lines):
-                line = raw_lines[i].strip()
-                if line == "}":
-                    i += 1
-                    break
-                cm = _SWITCH_CASE_RE.match(line)
-                if cm:
-                    key, target = cm.group(1), int(cm.group(2))
-                    if key == "default":
-                        default_target = target
-                    else:
-                        entries.append((int(key), target))
-                i += 1
-            records.append({
-                "kind": "switch", "offset": offset, "mnemonic": mnemonic,
-                "entries": entries, "default": default_target,
-            })
-        else:
-            records.append({"kind": "insn", "offset": offset, "mnemonic": mnemonic, "rest": rest})
-            i += 1
-    return records
+# javap Code-stream parsing (multi-line tableswitch/lookupswitch blocks,
+# negative case keys) lives in tools/n5_canon.py, shared with the canonical
+# comparison so both read javap output identically.
+_SWITCH_CASE_RE = n5_canon.SWITCH_CASE_RE
+_parse_code_stream = n5_canon.parse_code_stream
 
 
 def _offset_to_pos_map(records: list[dict]) -> dict[int, int]:
     return {r["offset"]: i for i, r in enumerate(records)}
 
 
-def normalize_method_instructions(raw_lines: list[str]) -> list[str]:
+def normalize_method_instructions(raw_lines: list[str], param_slots: int = 0) -> list[str]:
     """Canonicalize one method's disassembled instruction stream.
 
     ``raw_lines`` are the ``<offset>: <mnemonic> [operand] [// comment]`` lines
@@ -227,7 +232,12 @@ def normalize_method_instructions(raw_lines: list[str]) -> list[str]:
     1. constant-pool indices dropped (``strip_cp_indices``);
     2. local-variable slot numbers renumbered by FIRST USE order, so two
        methods that reference the same locals in the same order compare equal
-       regardless of which raw slot number either compiler happened to pick;
+       regardless of which raw slot number either compiler happened to pick --
+       EXCEPT the first ``param_slots`` slots (``this`` + arguments, see
+       ``param_slot_count``), which keep their number: their entry values are
+       fixed by the caller, so renumbering them would let ``a - b`` and
+       ``b - a`` compare equal. Wide forms (``iload_w``/``iinc_w``) are
+       canonicalized like the long form;
     3. branch targets (goto/if*/jsr) rewritten as a position *relative to the
        branching instruction's own position in the instruction sequence*, so a
        shift in absolute byte offsets (e.g. from a wide/narrow instruction
@@ -243,8 +253,10 @@ def normalize_method_instructions(raw_lines: list[str]) -> list[str]:
     slot_map: dict[int, int] = {}
 
     def canonical_slot(raw_slot: int) -> int:
+        if raw_slot < param_slots:
+            return raw_slot
         if raw_slot not in slot_map:
-            slot_map[raw_slot] = len(slot_map)
+            slot_map[raw_slot] = param_slots + len(slot_map)
         return slot_map[raw_slot]
 
     def _relabel(target_offset: Optional[int], pos: int) -> str:
@@ -276,7 +288,7 @@ def normalize_method_instructions(raw_lines: list[str]) -> list[str]:
         slot = _slot_of(mnemonic, rest)
         if slot is not None:
             canon = canonical_slot(slot)
-            shortform_m = _SLOT_SHORTFORM_RE.match(mnemonic)
+            shortform_m = _SLOT_SHORTFORM_RE.match(mnemonic) or _SLOT_WIDEFORM_RE.match(mnemonic)
             base = shortform_m.group(1) if shortform_m else mnemonic
             if canon <= 3:
                 mnemonic = f"{base}_{canon}"
@@ -284,7 +296,7 @@ def normalize_method_instructions(raw_lines: list[str]) -> list[str]:
             else:
                 mnemonic = base
                 rest = f" {canon}"
-        elif mnemonic == "iinc":
+        elif mnemonic in ("iinc", "iinc_w"):
             # javap prints "iinc          2, 3" (comma-separated, verified
             # against a real javac 25 compile) -- a plain-whitespace-only
             # pattern never matched, so the slot leaked through uncanonicalized.
@@ -315,6 +327,10 @@ def normalize_exception_table(raw_lines: list[str], rows: list[tuple[int, int, i
     exception a range is protected against is semantic), and the from/to/target
     offsets are relativized to instruction position the same way branch
     targets are, so a byte-offset shift elsewhere doesn't spuriously differ.
+
+    Row ORDER is kept, never sorted: when two rows cover the same instruction
+    the JVM dispatches to the first matching one (JVMS 2.10), so swapping
+    `catch (IOException)` and `catch (Exception)` rows changes behaviour.
     """
     records = _parse_code_stream(raw_lines)
     offset_to_pos = _offset_to_pos_map(records)
@@ -324,7 +340,7 @@ def normalize_exception_table(raw_lines: list[str], rows: list[tuple[int, int, i
         return f"insn{p}" if p is not None else f"abs{offset}"
 
     out = [f"[{pos_of(frm)}-{pos_of(to)}) -> {pos_of(target)}: {etype}" for frm, to, target, etype in rows]
-    return sorted(out)
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -345,16 +361,210 @@ def _indent_of(line: str) -> int:
     return len(line) - len(line.lstrip(" "))
 
 
+# ---------------------------------------------------------------------------
+# Optional persistent javac/javap server (--tool-server)
+#
+# Per-class JVM startup + a ~440-jar classpath scan dominates grading time. With
+# --tool-server each worker thread owns ONE long-lived JVM
+# (tools/n5-toolserver/ToolServer.java) that runs javac/javap in-process via
+# ToolProvider; results are identical to the subprocess path. Any failure to
+# start or talk to the server falls back to the subprocess path (logged once).
+# ---------------------------------------------------------------------------
+
+TOOL_SERVER_SRC = str(REPO_ROOT / "tools" / "n5-toolserver" / "ToolServer.java")
+TOOL_SERVER_START_TIMEOUT_SECONDS = 60
+# a long-lived javac accumulates heap/class-loader state; recycle the JVM periodically
+TOOL_SERVER_MAX_REQUESTS = 400
+_TOOL_SERVER_JVM_FLAGS = ["-Xmx1g", "-XX:+UseSerialGC", "-Xshare:auto"]
+
+
+class ToolServerError(RuntimeError):
+    """The tool server could not start, died, or spoke garbage (NOT a timeout)."""
+
+
+class ToolServer:
+    """Client for one ToolServer.java JVM. Not thread-safe: one per worker thread."""
+
+    def __init__(self, java_bin: str = DEFAULT_JAVA):
+        self.java_bin = java_bin
+        self.proc: Optional[subprocess.Popen] = None
+        self._requests = 0
+
+    # -- lifecycle ---------------------------------------------------------
+    def _read(self, n: int) -> bytes:
+        buf = self.proc.stdout.read(n)
+        if buf is None or len(buf) != n:
+            raise ToolServerError("tool server closed its pipe")
+        return buf
+
+    def _kill(self) -> None:
+        proc, self.proc = self.proc, None
+        if proc is None:
+            return
+        try:
+            proc.kill()
+        except OSError:
+            pass
+        for stream in (proc.stdin, proc.stdout):
+            try:
+                stream.close()
+            except OSError:
+                pass
+        try:
+            proc.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            pass
+
+    def start(self) -> None:
+        self._kill()
+        try:
+            self.proc = subprocess.Popen(
+                [self.java_bin, *_TOOL_SERVER_JVM_FLAGS, TOOL_SERVER_SRC],
+                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                # buffered pipes: read(n) must return exactly n bytes (raw reads return short)
+            )
+        except OSError as exc:
+            raise ToolServerError(f"cannot launch tool server: {exc}") from exc
+        timer = threading.Timer(TOOL_SERVER_START_TIMEOUT_SECONDS, self.proc.kill)
+        timer.start()
+        try:
+            if self._read(1) != b"R":
+                raise ToolServerError("tool server handshake mismatch")
+        except ToolServerError:
+            self._kill()
+            raise
+        finally:
+            timer.cancel()
+        self._requests = 0
+
+    def close(self) -> None:
+        self._kill()
+
+    # -- requests ----------------------------------------------------------
+    def run(self, tool: str, args: list, timeout: Optional[float] = None) -> tuple[int, str, str]:
+        """Run `tool` (javac/javap) with `args`; returns (returncode, stdout, stderr).
+        Raises subprocess.TimeoutExpired (server is killed; the next call restarts it)
+        or ToolServerError."""
+        if self.proc is None or self.proc.poll() is not None or self._requests >= TOOL_SERVER_MAX_REQUESTS:
+            self.start()
+        parts = [tool, *[str(a) for a in args]]
+        payload = bytearray(struct.pack(">i", len(parts)))
+        for part in parts:
+            raw = part.encode("utf-8")
+            payload += struct.pack(">i", len(raw)) + raw
+        timed_out = threading.Event()
+
+        def _expire():
+            timed_out.set()
+            try:
+                self.proc.kill()
+            except (OSError, AttributeError):
+                pass
+
+        timer = threading.Timer(timeout, _expire) if timeout is not None else None
+        if timer:
+            timer.start()
+        try:
+            self.proc.stdin.write(bytes(payload))
+            self.proc.stdin.flush()
+            rc = struct.unpack(">i", self._read(4))[0]
+            out = self._read(struct.unpack(">i", self._read(4))[0])
+            err = self._read(struct.unpack(">i", self._read(4))[0])
+        except (ToolServerError, OSError, struct.error) as exc:
+            self._kill()
+            if timed_out.is_set():
+                raise subprocess.TimeoutExpired([tool, *args], timeout) from exc
+            raise ToolServerError(f"tool server died during {tool}: {exc}") from exc
+        finally:
+            if timer:
+                timer.cancel()
+        if timed_out.is_set():  # finished as the timer fired: treat the killed server as a timeout
+            self._kill()
+            raise subprocess.TimeoutExpired([tool, *args], timeout)
+        self._requests += 1
+        return rc, out.decode("utf-8", "replace"), err.decode("utf-8", "replace")
+
+
+_tool_server_local = threading.local()
+_tool_servers: list = []
+_tool_servers_lock = threading.Lock()
+_tool_server_disabled = False
+
+
+def _thread_tool_server(java_bin: str) -> Optional[ToolServer]:
+    """This thread's ToolServer (started lazily), or None if unusable (caller falls back)."""
+    global _tool_server_disabled
+    if _tool_server_disabled:
+        return None
+    server = getattr(_tool_server_local, "server", None)
+    if server is None:
+        server = ToolServer(java_bin)
+        _tool_server_local.server = server
+        with _tool_servers_lock:
+            _tool_servers.append((threading.current_thread(), server))
+    return server
+
+
+def _disable_tool_server(reason: str) -> None:
+    global _tool_server_disabled
+    with _tool_servers_lock:
+        first = not _tool_server_disabled
+        _tool_server_disabled = True
+    if first:
+        print(f"n5-fidelity: --tool-server unavailable ({reason}); falling back to subprocess javac/javap", file=sys.stderr)
+
+
+def shutdown_tool_servers() -> None:
+    """Close every tool-server JVM and re-arm the feature (used at end of a run and by tests)."""
+    global _tool_server_disabled
+    with _tool_servers_lock:
+        servers = [server for _, server in _tool_servers]
+        _tool_servers.clear()
+        _tool_server_disabled = False
+    for server in servers:
+        server.close()
+    _tool_server_local.__dict__.clear()
+
+
+def reap_dead_thread_tool_servers() -> None:
+    """Close the tool-server JVMs whose owning thread has exited (e.g. a finished
+    per-module class pool), so idle JVMs never accumulate as modules x class_jobs
+    over a long run (R4-jvm-leak-per-module-pool). Live threads keep theirs."""
+    with _tool_servers_lock:
+        dead = [server for owner, server in _tool_servers if not owner.is_alive()]
+        _tool_servers[:] = [(owner, server) for owner, server in _tool_servers if owner.is_alive()]
+    for server in dead:
+        server.close()
+
+
+atexit.register(lambda: shutdown_tool_servers())
+
+
+def _run_jdk_tool(tool: str, tool_bin: str, args: list, timeout: Optional[float], tool_server: bool) -> tuple[int, str, str]:
+    """(returncode, stdout, stderr) of a javac/javap invocation, via the per-thread
+    tool server when enabled, else (or on any server failure) via a fresh subprocess.
+    subprocess.TimeoutExpired propagates in both paths."""
+    if tool_server:
+        server = _thread_tool_server(str(Path(tool_bin).with_name("java")) if os.sep in tool_bin else DEFAULT_JAVA)
+        if server is not None:
+            try:
+                return server.run(tool, args, timeout)
+            except ToolServerError as exc:
+                _disable_tool_server(str(exc))
+    proc = subprocess.run([tool_bin, *args], capture_output=True, text=True, timeout=timeout)
+    return proc.returncode, proc.stdout, proc.stderr
+
+
 def run_javap_verbose(
-    classfile: str, javap_bin: str = DEFAULT_JAVAP, timeout: Optional[float] = DEFAULT_JAVAP_TIMEOUT_SECONDS
+    classfile: str, javap_bin: str = DEFAULT_JAVAP, timeout: Optional[float] = DEFAULT_JAVAP_TIMEOUT_SECONDS,
+    tool_server: bool = False,
 ) -> str:
     # subprocess.TimeoutExpired is intentionally NOT caught here (this function's
     # contract stays "returns javap's stdout, or raises") -- callers that need a
     # typed "timeout" grade instead of a propagating exception catch it
     # themselves (see recompile_and_grade), since only they know what grade
     # dict shape to return for their call site.
-    proc = subprocess.run([javap_bin, "-v", "-p", classfile], capture_output=True, text=True, timeout=timeout)
-    return proc.stdout
+    return _run_jdk_tool("javap", javap_bin, ["-v", "-p", classfile], timeout, tool_server)[1]
 
 
 def parse_javap_verbose(text: str) -> dict:
@@ -384,6 +594,8 @@ def parse_javap_verbose(text: str) -> dict:
 
     fields: dict = {}
     methods: dict = {}
+    trailer = lines[body_end + 1:] if body_end != -1 else []
+    bootstrap = _parse_bootstrap_methods(trailer)
 
     if body_start != -1:
         i = body_start + 1
@@ -396,12 +608,11 @@ def parse_javap_verbose(text: str) -> dict:
                 block_end = i + 1
                 while block_end < body_end and (not lines[block_end].strip() or _indent_of(lines[block_end]) > 2):
                     block_end += 1
-                _parse_member_block(lines[i:block_end], fields, methods)
+                _parse_member_block(lines[i:block_end], fields, methods, bootstrap)
                 i = block_end
             else:
                 i += 1
 
-    trailer = lines[body_end + 1:] if body_end != -1 else []
     attributes = _parse_trailer_attributes(trailer)
 
     return {
@@ -412,7 +623,39 @@ def parse_javap_verbose(text: str) -> dict:
     }
 
 
-def _parse_member_block(block: list[str], fields: dict, methods: dict) -> None:
+_DYNAMIC_REF_RE = re.compile(r"(// (?:InvokeDynamic|Dynamic) )#(\d+):")
+
+
+def _parse_bootstrap_methods(trailer: list[str]) -> list[str]:
+    """The class's BootstrapMethods table as one symbolic string per entry:
+    bootstrap method handle + its static arguments (CP indices dropped). An
+    invokedynamic/condy's `#N` is an index into this table, and the arguments
+    ARE semantic: the string-concat recipe, the lambda implementation method."""
+    out: list[str] = []
+    in_table = False
+    for line in trailer:
+        stripped = line.strip()
+        if _indent_of(line) == 0 and stripped:
+            in_table = stripped.startswith("BootstrapMethods:")
+            continue
+        if not in_table or not stripped:
+            continue
+        m = re.match(r"^(\d+):\s*(.*)$", stripped)
+        if m and _indent_of(line) == 2:
+            out.append(strip_cp_indices(m.group(2)))
+        elif out and not stripped.startswith("Method arguments:"):
+            out[-1] += " | " + strip_cp_indices(stripped)
+    return out
+
+
+def _resolve_bootstrap_refs(line: str, bootstrap: list[str]) -> str:
+    def sub(m):
+        n = int(m.group(2))
+        return f"{m.group(1)}[{bootstrap[n]}]:" if n < len(bootstrap) else m.group(0)
+    return _DYNAMIC_REF_RE.sub(sub, line)
+
+
+def _parse_member_block(block: list[str], fields: dict, methods: dict, bootstrap: Optional[list[str]] = None) -> None:
     decl = block[0].strip().rstrip(";")
     descriptor = ""
     flags: list[str] = []
@@ -433,6 +676,9 @@ def _parse_member_block(block: list[str], fields: dict, methods: dict) -> None:
         exceptions: list[str] = []
         code: list[str] = []
         exception_table: list[str] = []
+        raw_instr_lines: list[str] = []
+        raw_exception_rows: list[tuple[int, int, int, str]] = []
+        param_slots = param_slot_count(descriptor, "ACC_STATIC" in flags)
         has_method_parameters = False
         j = idx
         while j < len(block):
@@ -472,9 +718,9 @@ def _parse_member_block(block: list[str], fields: dict, methods: dict) -> None:
                         while j < len(block) and (not block[j].strip() or _indent_of(block[j]) > header_indent):
                             j += 1
                         continue
-                    raw_instr_lines.append(inner_stripped)
+                    raw_instr_lines.append(_resolve_bootstrap_refs(inner_stripped, bootstrap or []))
                     j += 1
-                code = normalize_method_instructions(raw_instr_lines)
+                code = normalize_method_instructions(raw_instr_lines, param_slots=param_slots)
                 exception_table = normalize_exception_table(raw_instr_lines, raw_exception_rows)
             elif indent == 4 and stripped == "Exceptions:":
                 j += 1
@@ -502,6 +748,10 @@ def _parse_member_block(block: list[str], fields: dict, methods: dict) -> None:
             "exceptions": sorted(exceptions),
             "exception_table": exception_table,
             "has_method_parameters": has_method_parameters,
+            # uncompared inputs of the canonical comparison (tools/n5_canon.py)
+            "raw_code": raw_instr_lines,
+            "raw_exception_rows": raw_exception_rows,
+            "param_slots": param_slots,
         }
     else:
         constant_value = None
@@ -590,7 +840,16 @@ def diff_normalized_classes(a: dict, b: dict) -> dict:
             or am.get("has_method_parameters", False) != bm.get("has_method_parameters", False)
         ):
             mismatched.append(key)
-            method_bodies[key] = {"a": am["code"], "b": bm["code"]}
+            method_bodies[key] = {
+                "a": am["code"], "b": bm["code"],
+                # the full method records feed the canonical comparison, which
+                # may only ever excuse a Code/exception-table difference:
+                "a_method": am, "b_method": bm,
+                "body_only": (
+                    am["flags"] == bm["flags"] and am["exceptions"] == bm["exceptions"]
+                    and am.get("has_method_parameters", False) == bm.get("has_method_parameters", False)
+                ),
+            }
 
     return {
         "fields_match": fields_match,
@@ -628,6 +887,8 @@ class AllowlistEntry:
 #   - jsr / jsr_w:   both push a return address and jump to a subroutine (the
 #     instruction is deprecated/never emitted since Java 7, but the JVMS
 #     equivalence argument is identical to goto/goto_w).
+#   - iinc / iinc_w: both add the same signed constant to the same local; the
+#     `wide` form only widens the slot index and constant to 16 bits.
 #
 # Recompiling ONE decompiled class standalone (this grader's method — see
 # recompile_and_grade) gives javac a SMALLER classpath-local constant pool
@@ -638,7 +899,7 @@ class AllowlistEntry:
 # See docs/decompile-fidelity-report.md "Allowlist" for the measured effect.
 # ---------------------------------------------------------------------------
 
-_WIDE_VARIANT_PAIRS = (("ldc", "ldc_w"), ("goto", "goto_w"), ("jsr", "jsr_w"))
+_WIDE_VARIANT_PAIRS = (("ldc", "ldc_w"), ("goto", "goto_w"), ("jsr", "jsr_w"), ("iinc", "iinc_w"))
 
 
 def _make_wide_variant_collapser(narrow: str, wide: str) -> Callable[[str], str]:
@@ -711,54 +972,76 @@ ALLOWLIST: list[AllowlistEntry] = [
 ]
 
 
+def _canonical_resolution(bodies: dict) -> Optional[list[str]]:
+    """Rules (n5_canon) under which one mismatched method's shipped and
+    recompiled bodies are proven equivalent, or None. Tier-1 rules are tried
+    first; tier 2 only when tier 1 alone cannot prove it. Only a body-only
+    difference (flags, throws clause and MethodParameters equal) is eligible."""
+    if not bodies.get("body_only") or "a_method" not in bodies or "b_method" not in bodies:
+        return None
+    a, b = bodies["a_method"], bodies["b_method"]
+    return n5_canon.resolve_rules(a, b) or n5_canon.resolve_rules(a, b, tier2=True)
+
+
 def grade_class_result(compiled_ok: bool, diff: Optional[dict], first_error: Optional[str]) -> dict:
+    """Grade one recompiled class from its structural diff.
+
+    Per mismatched method, in order: the width ALLOWLIST (-> roundtrip-
+    equivalent), then the sound canonical comparison of tools/n5_canon.py
+    (-> roundtrip-canonical, or roundtrip-canonical-t2 when a tier-2 rule was
+    needed). `mismatched_methods` lists only methods neither resolves;
+    `raw_mismatched_methods` lists every method the exact normalizer found
+    different; `canonical_rules` is the sorted union of the irreducible rule
+    sets that resolved `canonical_methods`.
+    """
+    base = {"first_error": None, "mismatched_methods": [], "raw_mismatched_methods": [],
+            "allowlist_matches": [], "canonical_methods": [], "canonical_rules": []}
     if not compiled_ok:
-        return {"grade": "no-compile", "first_error": first_error, "mismatched_methods": [], "allowlist_matches": []}
+        return {**base, "grade": "no-compile", "first_error": first_error}
 
-    if diff["fields_match"] and diff["attrs_match"] and not diff["mismatched_methods"] \
+    raw_mismatched = list(diff["mismatched_methods"])
+    if diff["fields_match"] and diff["attrs_match"] and not raw_mismatched \
             and not diff["missing_methods"] and not diff["extra_methods"]:
-        return {"grade": "roundtrip-exact", "first_error": None, "mismatched_methods": [], "allowlist_matches": []}
+        return {**base, "grade": "roundtrip-exact"}
 
-    # missing/extra members and field/attribute mismatches are never allowlist-eligible:
-    # the allowlist only ever downgrades a *method-body* mismatch, never a structural one.
+    # missing/extra members and field/attribute mismatches are never excused:
+    # the allowlist and the canonical comparison only ever resolve a *method-body* mismatch.
     if not diff["fields_match"] or not diff["attrs_match"] or diff["missing_methods"] or diff["extra_methods"]:
-        return {
-            "grade": "compiles-mismatch",
-            "first_error": None,
-            "mismatched_methods": list(diff["mismatched_methods"]),
-            "allowlist_matches": [],
-        }
+        return {**base, "grade": "compiles-mismatch", "mismatched_methods": raw_mismatched,
+                "raw_mismatched_methods": raw_mismatched}
 
-    allowlist_matches = []
-    all_allowed = True
+    allowlist_matches: list[str] = []
+    canonical_methods: list = []
+    canonical_rules: set = set()
+    residual: list = []
     method_bodies = diff.get("method_bodies", {})
-    for key in diff["mismatched_methods"]:
-        bodies = method_bodies.get(key)
-        matched_this_method = False
-        if bodies:
-            for entry in ALLOWLIST:
-                if entry.predicate(bodies["a"], bodies["b"]):
-                    if entry.name not in allowlist_matches:
-                        allowlist_matches.append(entry.name)
-                    matched_this_method = True
-                    break
-        if not matched_this_method:
-            all_allowed = False
+    for key in raw_mismatched:
+        bodies = method_bodies.get(key) or {}
+        entry_hit = None
+        if "a" in bodies and "b" in bodies:
+            entry_hit = next((e for e in ALLOWLIST if e.predicate(bodies["a"], bodies["b"])), None)
+        if entry_hit is not None:
+            if entry_hit.name not in allowlist_matches:
+                allowlist_matches.append(entry_hit.name)
+            continue
+        rules = _canonical_resolution(bodies)
+        if rules is not None:
+            canonical_methods.append(key)
+            canonical_rules.update(rules)
+            continue
+        residual.append(key)
 
-    if all_allowed and diff["mismatched_methods"]:
-        return {
-            "grade": "roundtrip-equivalent",
-            "first_error": None,
-            "mismatched_methods": list(diff["mismatched_methods"]),
-            "allowlist_matches": allowlist_matches,
-        }
-
-    return {
-        "grade": "compiles-mismatch",
-        "first_error": None,
-        "mismatched_methods": list(diff["mismatched_methods"]),
-        "allowlist_matches": allowlist_matches,
-    }
+    if residual:
+        grade = "compiles-mismatch"
+    elif canonical_rules & set(n5_canon.TIER2_RULES):
+        grade = "roundtrip-canonical-t2"
+    elif canonical_methods:
+        grade = "roundtrip-canonical"
+    else:
+        grade = "roundtrip-equivalent"
+    return {**base, "grade": grade, "mismatched_methods": residual, "raw_mismatched_methods": raw_mismatched,
+            "allowlist_matches": allowlist_matches, "canonical_methods": canonical_methods,
+            "canonical_rules": sorted(canonical_rules)}
 
 
 _GRADE_RANK = {
@@ -767,13 +1050,22 @@ _GRADE_RANK = {
     "harness-error": 0,  # missing ground-truth/source file -- a corpus/setup bug, not a fidelity finding
     "compiles-mismatch": 1,
     "bytecode-only": 1,  # same rank as compiles-mismatch; distinct meaning (see compute_consensus)
-    "roundtrip-equivalent": 2,
-    "roundtrip-exact": 3,
+    "roundtrip-canonical-t2": 2,  # proven equal by n5_canon incl. a tier-2 (boolean 0/1) rule
+    "roundtrip-canonical": 3,  # proven equal by n5_canon tier-1 rules
+    "roundtrip-equivalent": 4,
+    "roundtrip-exact": 5,
 }
+
+CLEAN_GRADES = ("roundtrip-exact", "roundtrip-equivalent", "roundtrip-canonical", "roundtrip-canonical-t2")
+
+
+# grades that END the redundancy ladder: a canonical grade is clean but weaker
+# evidence, so the ladder keeps looking for an engine that round-trips exactly
+LADDER_STOP_GRADES = ("roundtrip-exact", "roundtrip-equivalent")
 
 
 def _is_clean(grade: str) -> bool:
-    return grade in ("roundtrip-exact", "roundtrip-equivalent")
+    return grade in CLEAN_GRADES
 
 
 # ---------------------------------------------------------------------------
@@ -784,25 +1076,32 @@ def run_redundancy_ladder(ladder: list[tuple[str, Callable[[], dict]]]) -> dict:
     """Run each (name, thunk) in order, stopping at the first clean grade.
 
     Every engine actually invoked is recorded in `attempted` (for disagreement
-    visibility), but engines after a clean hit are never run — this is the
-    "keep the first that round-trips" rule from the task spec, made cheap.
+    visibility), but engines after an exact/equivalent hit are never run —
+    the "keep the first that round-trips" rule, made cheap. A canonical grade
+    does not stop the ladder (see LADDER_STOP_GRADES).
     """
     attempted: list[tuple[str, dict]] = []
     for name, thunk in ladder:
         result = thunk()
         attempted.append((name, result))
-        if _is_clean(result["grade"]):
+        if result["grade"] in LADDER_STOP_GRADES:
             break
     return select_best_decompiler(attempted)
 
 
 def select_best_decompiler(attempts: list[tuple[str, dict]]) -> dict:
+    """The first engine reaching roundtrip-exact/equivalent; failing that, the
+    best-ranked canonical grade (tier 1 over tier 2, earlier engine on a tie);
+    failing that, bytecode-only."""
     best_name = None
     best_result = None
     for name, result in attempts:
-        if _is_clean(result["grade"]):
+        if not _is_clean(result["grade"]):
+            continue
+        if best_result is None or _GRADE_RANK[result["grade"]] > _GRADE_RANK[best_result["grade"]]:
             best_name = name
             best_result = result
+        if result["grade"] in LADDER_STOP_GRADES:
             break
     if best_result is None:
         grade = "bytecode-only"
@@ -1016,8 +1315,10 @@ def slot_field_names(parsed_class: dict) -> set[tuple[str, str]]:
 # needed for real corpus classes, not for the self-contained unit tests)
 # ---------------------------------------------------------------------------
 
-def run_javap_instructions(classfile: str, method_name: str, descriptor: str, javap_bin: str = DEFAULT_JAVAP) -> list[str]:
-    text = run_javap_verbose(classfile, javap_bin=javap_bin)
+def run_javap_instructions(
+    classfile: str, method_name: str, descriptor: str, javap_bin: str = DEFAULT_JAVAP, tool_server: bool = False
+) -> list[str]:
+    text = run_javap_verbose(classfile, javap_bin=javap_bin, tool_server=tool_server)
     parsed = parse_javap_verbose(text)
     method = parsed["methods"].get((method_name, descriptor))
     if method is None:
@@ -1047,6 +1348,7 @@ def recompile_and_grade(
     javap_bin: str = DEFAULT_JAVAP,
     javac_timeout: float = DEFAULT_JAVAC_TIMEOUT_SECONDS,
     javap_timeout: float = DEFAULT_JAVAP_TIMEOUT_SECONDS,
+    tool_server: bool = False,
 ) -> dict:
     """Recompile one decompiled .java (top-level class `class_name`, may define
     nested classes too) and grade the top-level class's .class against
@@ -1075,12 +1377,12 @@ def recompile_and_grade(
         }
 
     os.makedirs(out_dir, exist_ok=True)
-    cmd = [javac_bin, "--release", "25", "-g", "-implicit:none", "-proc:none", "-nowarn", "-d", out_dir]
+    javac_args = ["--release", "25", "-g", "-implicit:none", "-proc:none", "-nowarn", "-d", out_dir]
     if classpath:
-        cmd += ["-cp", classpath]
-    cmd.append(java_file)
+        javac_args += ["-cp", classpath]
+    javac_args.append(java_file)
     try:
-        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=javac_timeout)
+        javac_rc, _javac_out, javac_err = _run_jdk_tool("javac", javac_bin, javac_args, javac_timeout, tool_server)
     except subprocess.TimeoutExpired:
         return {
             "grade": "timeout",
@@ -1089,10 +1391,10 @@ def recompile_and_grade(
             "allowlist_matches": [],
         }
 
-    if proc.returncode != 0:
+    if javac_rc != 0:
         return {
             "grade": "no-compile",
-            "first_error": _first_javac_error(proc.stderr),
+            "first_error": _first_javac_error(javac_err),
             "mismatched_methods": [],
             "allowlist_matches": [],
         }
@@ -1112,8 +1414,8 @@ def recompile_and_grade(
     recompiled_class = str(candidates[0])
 
     try:
-        a = parse_javap_verbose(run_javap_verbose(ground_truth_class, javap_bin=javap_bin, timeout=javap_timeout))
-        b = parse_javap_verbose(run_javap_verbose(recompiled_class, javap_bin=javap_bin, timeout=javap_timeout))
+        a = parse_javap_verbose(run_javap_verbose(ground_truth_class, javap_bin=javap_bin, timeout=javap_timeout, tool_server=tool_server))
+        b = parse_javap_verbose(run_javap_verbose(recompiled_class, javap_bin=javap_bin, timeout=javap_timeout, tool_server=tool_server))
     except subprocess.TimeoutExpired:
         return {
             "grade": "timeout",
@@ -1138,39 +1440,112 @@ def sha256_of(path: Path) -> str:
     return h.hexdigest()
 
 
+# The module path N5's launcher builds (nre.dll initPaths() format strings,
+# T21/F7): `%s\bin\ext`, `%s\bin\ext\%s` with %s = bcfips|bcstd (chosen by
+# initFips()), `%s\bin\ext\jxbrowser`, `%s\bin\ext\system`, and the separate
+# security-bridge path `%s\bin\ext\securityBridge`. Only these directories --
+# never a blind recursive glob of bin/ext.
+BC_VARIANTS = ("bcstd", "bcfips")
+DEFAULT_BC_VARIANT = "bcstd"
+BIN_EXT_LAUNCHER_SUBDIRS = ("jxbrowser", "system", "securityBridge")
+# N5 runs on its bundled JRE (`<niagaraHome>\jre`), whose modules image adds the
+# JavaFX modules the grader's JDK lacks; they are extracted with jimage and put
+# on the classpath as directories.
+JRE_EXTRA_MODULE_RE = r"(javafx|jfx)\.[^/]+"
+CLASSPATH_LAYOUT_VERSION = 2
+
+
 def build_classpath(
     cache_dir: Path,
     modules_dir: Path = DEFAULT_MODULES_DIR,
     bin_ext_dir: Path = DEFAULT_BIN_EXT_DIR,
     force: bool = False,
+    bc_variant: str = DEFAULT_BC_VARIANT,
+    jre_dir: Optional[Path] = DEFAULT_JRE_DIR,
+    jimage_bin: str = DEFAULT_JIMAGE,
 ) -> str:
-    """Idempotent: on a cache hit (manifest recorded and every listed jar still
-    present) this only reads a file; nested LIB-INF jars are extracted at most
-    once per cache dir. Intended cache_dir: a scratch/session directory, not
-    the repo (see module docstring / task spec: "extract once to a cache dir
-    under the scratchpad").
+    """Idempotent: on a cache hit (same inputs recorded in classpath.inputs.json
+    and every listed entry still present) this only reads files; nested LIB-INF
+    jars and the JRE's extra modules are extracted at most once per cache dir.
+    Intended cache_dir: a scratch/session directory, not the repo.
+
+    Entries, in order: modules/*.jar (+ their nested LIB-INF jars), bin/ext/*.jar,
+    bin/ext/<bc_variant>/*.jar and bin/ext/{jxbrowser,system,securityBridge}/*.jar
+    (the launcher's module path, see BIN_EXT_LAUNCHER_SUBDIRS), then the
+    javafx.*/jfx.* module directories of `jre_dir`'s modules image (skipped when
+    `jre_dir` has no lib/modules).
     """
+    if bc_variant not in BC_VARIANTS:
+        raise ValueError(f"build_classpath: bc_variant must be one of {BC_VARIANTS}, got {bc_variant!r}")
     cache_dir = Path(cache_dir)
     cache_dir.mkdir(parents=True, exist_ok=True)
     manifest_path = cache_dir / "classpath.txt"
-    if not force and manifest_path.is_file():
+    inputs_path = cache_dir / "classpath.inputs.json"
+    jre_image = Path(jre_dir) / "lib" / "modules" if jre_dir is not None else None
+    if jre_image is not None and not jre_image.is_file():
+        jre_image = None
+    inputs = {
+        "layout_version": CLASSPATH_LAYOUT_VERSION,
+        "modules_dir": str(modules_dir),
+        "bin_ext_dir": str(bin_ext_dir),
+        "bc_variant": bc_variant,
+        "jre_modules": str(jre_image) if jre_image else None,
+    }
+    if not force and manifest_path.is_file() and inputs_path.is_file():
+        try:
+            recorded = json.loads(inputs_path.read_text())
+        except (json.JSONDecodeError, OSError):
+            recorded = {}
         entries = [line.strip() for line in manifest_path.read_text().splitlines() if line.strip()]
-        if entries and all(os.path.isfile(e) for e in entries):
+        if ({k: recorded.get(k) for k in inputs} == inputs
+                and all(os.path.exists(e) for e in entries)):
             return ":".join(entries)
 
     entries: list[str] = []
     nested_dir = cache_dir / "_nested-libinf"
     nested_dir.mkdir(parents=True, exist_ok=True)
 
-    for jar_dir in (modules_dir, bin_ext_dir):
+    bin_ext_dir = Path(bin_ext_dir)
+    jar_dirs = [Path(modules_dir), bin_ext_dir, bin_ext_dir / bc_variant]
+    jar_dirs += [bin_ext_dir / d for d in BIN_EXT_LAUNCHER_SUBDIRS]
+    for jar_dir in jar_dirs:
         if not jar_dir.is_dir():
             continue
         for jar in sorted(jar_dir.glob("*.jar")):
             entries.append(str(jar))
             entries.extend(_extract_nested_libinf(jar, nested_dir))
 
-    manifest_path.write_text("\n".join(entries) + "\n")
+    record = dict(inputs)
+    if jre_image is not None:
+        entries.extend(_extract_jre_extra_modules(jre_image, cache_dir / "_jre-modules", jimage_bin))
+        record["jre_modules_sha256"] = sha256_of(jre_image)
+
+    manifest_path.write_text("\n".join(entries) + ("\n" if entries else ""))
+    inputs_path.write_text(json.dumps(record, indent=2) + "\n")
     return ":".join(entries)
+
+
+def _extract_jre_extra_modules(jre_image: Path, out_dir: Path, jimage_bin: str) -> list[str]:
+    """Extract the JRE_EXTRA_MODULE_RE modules of a JDK modules image into
+    out_dir/<module>/ and return those directories (sorted). A jimage failure
+    is reported on stderr and yields no entries (the classes needing them then
+    grade no-compile, as before) -- never a silent partial classpath."""
+    if out_dir.is_dir():
+        shutil.rmtree(out_dir)
+    out_dir.mkdir(parents=True)
+    cmd = [jimage_bin, "extract", "--dir", str(out_dir), "--include", f"regex:/{JRE_EXTRA_MODULE_RE}/.*", str(jre_image)]
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        print(f"build_classpath: jimage extract failed: {exc!r}", file=sys.stderr)
+        shutil.rmtree(out_dir, ignore_errors=True)
+        return []
+    if proc.returncode != 0:
+        print(f"build_classpath: jimage extract rc={proc.returncode}: {proc.stderr.strip()}", file=sys.stderr)
+        shutil.rmtree(out_dir, ignore_errors=True)
+        return []
+    rx = re.compile(JRE_EXTRA_MODULE_RE)
+    return [str(d) for d in sorted(out_dir.iterdir()) if d.is_dir() and rx.fullmatch(d.name)]
 
 
 def _extract_nested_libinf(jar: Path, nested_dir: Path) -> list[str]:
@@ -1261,6 +1636,164 @@ def _decompile_one_class_with(
     return (candidates[0] if candidates else None), None
 
 
+def _grade_one_class(
+    fqcn: str,
+    classfile: Path,
+    *,
+    vineflower_dir: Path,
+    fallback_dir: Path,
+    docsource_dir: Path,
+    classpath: str,
+    javac_bin: str,
+    javap_bin: str,
+    java_bin: str,
+    cfr_jar: Path,
+    procyon_jar: Path,
+    jd_cli_jar: Optional[Path],
+    primary_tree: str,
+    tool_server: bool = False,
+    patch_tree: Optional[str] = None,
+    patch_dir: Optional[Path] = None,
+) -> tuple[str, dict]:
+    """Grade one top-level class (the redundancy ladder) and return
+    (fqcn, record). Self-contained: uses its own temp dirs, so it is safe to
+    run concurrently for different classes (see grade_module's class_jobs)."""
+    vf_java = vineflower_dir / f"{fqcn}.java"
+    fb_java = fallback_dir / f"{fqcn}.java"
+    source_java = vf_java if vf_java.is_file() else (fb_java if fb_java.is_file() else None)
+    class_short = fqcn.rsplit("/", 1)[-1]
+
+    docsource_java = docsource_dir / f"{fqcn}.java"
+    docsource_available = docsource_java.is_file()
+    docsource_roundtrip = None
+
+    if source_java is None:
+        # a missing decompiled source is a HARNESS problem (the corpus's
+        # decompile pass never ran / never wrote this tree), never
+        # "no-compile" (which claims the decompiled source itself failed
+        # to compile — a decompiler-fidelity finding, not a setup bug).
+        return fqcn, {
+            "grade": "harness-error",
+            "first_error": "no decompiled source found (vineflower/fallback both missing)",
+            "best_decompiler": None,
+            "attempted": [],
+            "consensus": {"reaching_roundtrip": [], "count": 0},
+            "docsource_available": docsource_available,
+            "docsource_roundtrip": docsource_roundtrip,
+        }
+
+    with tempfile.TemporaryDirectory(prefix=f"n5fid-{class_short}-") as td:
+        def _decompile_retry_thunk(engine, tool_jar, engine_label, classfile=classfile, class_short=class_short):
+            with tempfile.TemporaryDirectory() as decompile_td, tempfile.TemporaryDirectory() as compile_td:
+                java_src, reason = _decompile_one_class_with(java_bin, engine, tool_jar, classfile, Path(decompile_td))
+                if java_src is None:
+                    grade = "timeout" if reason == "timeout" else "no-compile"
+                    suffix = " (timeout)" if reason == "timeout" else ""
+                    return {"grade": grade, "first_error": f"{engine_label} retry decompile failed{suffix}", "mismatched_methods": [], "allowlist_matches": []}
+                return recompile_and_grade(str(java_src), class_short, classpath, str(classfile), compile_td, javac_bin, javap_bin, tool_server=tool_server)
+
+        def cfr_thunk():
+            return _decompile_retry_thunk("cfr", cfr_jar, "CFR")
+
+        def procyon_thunk():
+            return _decompile_retry_thunk("procyon", procyon_jar, "Procyon")
+
+        # first rung of the ladder is whatever tree grade_module was asked
+        # to grade (`primary_tree`) -- labeling it the literal string
+        # "vineflower" regardless of `--tree` misattributed a vineflower2
+        # (or any other tree's) result to vineflower in `attempted`/
+        # `per_engine_mismatched_methods`.
+        first = recompile_and_grade(str(source_java), class_short, classpath, str(classfile), td, javac_bin, javap_bin, tool_server=tool_server)
+        attempted = [(primary_tree, first)]
+        # patch-tree rung (T21/F8): a mechanically patched copy of the primary
+        # tree's source (tools/n5-patch-doprivileged.py) is graded right after
+        # it, under its own engine label, only when a patched file exists
+        patch_java = Path(patch_dir) / f"{fqcn}.java" if (patch_tree and patch_dir) else None
+        if first["grade"] not in LADDER_STOP_GRADES and patch_java is not None and patch_java.is_file():
+            with tempfile.TemporaryDirectory() as patch_td:
+                attempted.append((patch_tree, recompile_and_grade(
+                    str(patch_java), class_short, classpath, str(classfile), patch_td, javac_bin, javap_bin,
+                    tool_server=tool_server)))
+        if attempted[-1][1]["grade"] not in LADDER_STOP_GRADES:
+            cfr_result = cfr_thunk()
+            attempted.append(("cfr", cfr_result))
+            if cfr_result["grade"] not in LADDER_STOP_GRADES:
+                procyon_result = procyon_thunk()
+                attempted.append(("procyon", procyon_result))
+                if procyon_result["grade"] not in LADDER_STOP_GRADES and jd_cli_jar is not None:
+
+                    def jdcli_thunk():
+                        return _decompile_retry_thunk("jd-cli", jd_cli_jar, "JD-CLI")
+
+                    attempted.append(("jd-cli", jdcli_thunk()))
+
+        best = select_best_decompiler(attempted)
+        consensus = compute_consensus(attempted)
+
+        if docsource_available:
+            with tempfile.TemporaryDirectory() as ds_td:
+                ds_result = recompile_and_grade(str(docsource_java), class_short, classpath, str(classfile), ds_td, javac_bin, javap_bin, tool_server=tool_server)
+                docsource_roundtrip = _is_clean(ds_result["grade"])
+
+        record = {
+            "grade": best["grade"],
+            "best_decompiler": best["best_decompiler"],
+            "attempted": [(n, r["grade"]) for n, r in attempted],
+            "first_error": next((r.get("first_error") for _, r in attempted if r["grade"] == "no-compile"), None),
+            "mismatched_methods": [list(k) for k in (attempted[0][1].get("mismatched_methods") or [])],
+            "raw_mismatched_methods": [list(k) for k in (attempted[0][1].get("raw_mismatched_methods") or [])],
+            "allowlist_matches": attempted[0][1].get("allowlist_matches", []),
+            # canonical evidence of the engine whose grade IS the class grade
+            # (the first clean rung, else the primary tree): which methods the
+            # sound canonical comparison resolved and the rules it needed
+            "canonical_methods": [list(k) for k in (_grade_source(attempted, best)[1].get("canonical_methods") or [])],
+            "canonical_rules": list(_grade_source(attempted, best)[1].get("canonical_rules") or []),
+            # per-engine, per-method round-trip data — NOT a merge (an unsound
+            # per-method Frankenstein class is never assembled here; see
+            # docs/decompile-fidelity-report.md's Meta-decompilation section /
+            # Harrand et al. arXiv:2005.11315), just the raw material a later,
+            # separately-validated merge step would need.
+            "per_engine_mismatched_methods": {
+                n: [list(k) for k in (r.get("mismatched_methods") or [])] for n, r in attempted
+            },
+            "consensus": consensus,
+            "docsource_available": docsource_available,
+            "docsource_roundtrip": docsource_roundtrip,
+        }
+        if patch_tree:
+            # a patched (or spliced) class counts only when the patch rung's grade
+            # IS the class grade (never merely because a patch rung was attempted)
+            hit = best["best_decompiler"] == patch_tree
+            if patch_output_label(primary_tree, patch_tree) == "spliced":
+                record["spliced"] = hit
+                if hit:
+                    record["splice"] = _splice_record(fqcn, patch_tree, Path(patch_dir), patch_java)
+            else:
+                record["patched"] = hit
+                if hit:
+                    record["patch"] = {"tree": patch_tree, "manifest": f"{patch_tree}/PATCHES.json",
+                                       "patched_sha256": sha256_of(patch_java)}
+        return fqcn, record
+
+
+def _splice_record(fqcn: str, patch_tree: str, patch_dir: Path, spliced_java: Path) -> dict:
+    """Provenance of a spliced class grade: the SPLICES.json per-method donors
+    (engine, donor source sha256, per-method verdict) of this class."""
+    methods = None
+    manifest = patch_dir / "SPLICES.json"
+    if manifest.is_file():
+        entry = json.loads(manifest.read_text()).get("classes", {}).get(fqcn) or {}
+        methods = entry.get("methods")
+    return {"tree": patch_tree, "manifest": f"{patch_tree}/SPLICES.json",
+            "spliced_sha256": sha256_of(spliced_java), "donors": methods}
+
+
+def _grade_source(attempted: list[tuple[str, dict]], best: dict) -> tuple[str, dict]:
+    """The (engine, result) whose grade is the class grade: the selected best
+    decompiler, or the primary tree when nothing round-tripped."""
+    return next(((n, r) for n, r in attempted if n == best["best_decompiler"]), attempted[0])
+
+
 def grade_module(
     module: str,
     organized_dir: Path = DEFAULT_ORGANIZED_DIR,
@@ -1275,6 +1808,9 @@ def grade_module(
     krak2_bin: str = "krak2",
     member_sample_size: int = 0,
     primary_tree: str = "vineflower",
+    class_jobs: int = 1,
+    tool_server: bool = False,
+    patch_tree: Optional[str] = None,
 ) -> dict:
     """`primary_tree` names the decompiled source tree to grade as the FIRST
     rung of the redundancy ladder — normally "vineflower" (tools/n5-decompile.sh's
@@ -1293,96 +1829,36 @@ def grade_module(
     if limit is not None:
         classes = classes[:limit]
 
+    class_kwargs = dict(
+        vineflower_dir=vineflower_dir, fallback_dir=fallback_dir, docsource_dir=docsource_dir,
+        classpath=classpath, javac_bin=javac_bin, javap_bin=javap_bin, java_bin=java_bin,
+        cfr_jar=cfr_jar, procyon_jar=procyon_jar, jd_cli_jar=jd_cli_jar, primary_tree=primary_tree,
+        tool_server=tool_server,
+    )
+    if patch_tree:
+        class_kwargs.update(patch_tree=patch_tree, patch_dir=mod_dir / patch_tree)
     per_class = {}
-    for i, (fqcn, classfile) in enumerate(classes):
-        vf_java = vineflower_dir / f"{fqcn}.java"
-        fb_java = fallback_dir / f"{fqcn}.java"
-        source_java = vf_java if vf_java.is_file() else (fb_java if fb_java.is_file() else None)
-        class_short = fqcn.rsplit("/", 1)[-1]
-
-        docsource_java = docsource_dir / f"{fqcn}.java"
-        docsource_available = docsource_java.is_file()
-        docsource_roundtrip = None
-
-        if source_java is None:
-            # a missing decompiled source is a HARNESS problem (the corpus's
-            # decompile pass never ran / never wrote this tree), never
-            # "no-compile" (which claims the decompiled source itself failed
-            # to compile — a decompiler-fidelity finding, not a setup bug).
-            per_class[fqcn] = {
-                "grade": "harness-error",
-                "first_error": "no decompiled source found (vineflower/fallback both missing)",
-                "best_decompiler": None,
-                "attempted": [],
-                "consensus": {"reaching_roundtrip": [], "count": 0},
-                "docsource_available": docsource_available,
-                "docsource_roundtrip": docsource_roundtrip,
-            }
-            continue
-
-        with tempfile.TemporaryDirectory(prefix=f"n5fid-{class_short}-") as td:
-            def _decompile_retry_thunk(engine, tool_jar, engine_label, classfile=classfile, class_short=class_short):
-                with tempfile.TemporaryDirectory() as decompile_td, tempfile.TemporaryDirectory() as compile_td:
-                    java_src, reason = _decompile_one_class_with(java_bin, engine, tool_jar, classfile, Path(decompile_td))
-                    if java_src is None:
-                        grade = "timeout" if reason == "timeout" else "no-compile"
-                        suffix = " (timeout)" if reason == "timeout" else ""
-                        return {"grade": grade, "first_error": f"{engine_label} retry decompile failed{suffix}", "mismatched_methods": [], "allowlist_matches": []}
-                    return recompile_and_grade(str(java_src), class_short, classpath, str(classfile), compile_td, javac_bin, javap_bin)
-
-            def cfr_thunk():
-                return _decompile_retry_thunk("cfr", cfr_jar, "CFR")
-
-            def procyon_thunk():
-                return _decompile_retry_thunk("procyon", procyon_jar, "Procyon")
-
-            # first rung of the ladder is whatever tree grade_module was asked
-            # to grade (`primary_tree`) -- labeling it the literal string
-            # "vineflower" regardless of `--tree` misattributed a vineflower2
-            # (or any other tree's) result to vineflower in `attempted`/
-            # `per_engine_mismatched_methods`.
-            first = recompile_and_grade(str(source_java), class_short, classpath, str(classfile), td, javac_bin, javap_bin)
-            attempted = [(primary_tree, first)]
-            if not _is_clean(first["grade"]):
-                cfr_result = cfr_thunk()
-                attempted.append(("cfr", cfr_result))
-                if not _is_clean(cfr_result["grade"]):
-                    procyon_result = procyon_thunk()
-                    attempted.append(("procyon", procyon_result))
-                    if not _is_clean(procyon_result["grade"]) and jd_cli_jar is not None:
-
-                        def jdcli_thunk():
-                            return _decompile_retry_thunk("jd-cli", jd_cli_jar, "JD-CLI")
-
-                        attempted.append(("jd-cli", jdcli_thunk()))
-
-            best = select_best_decompiler(attempted)
-            consensus = compute_consensus(attempted)
-
-            if docsource_available:
-                with tempfile.TemporaryDirectory() as ds_td:
-                    ds_result = recompile_and_grade(str(docsource_java), class_short, classpath, str(classfile), ds_td, javac_bin, javap_bin)
-                    docsource_roundtrip = _is_clean(ds_result["grade"])
-
-            per_class[fqcn] = {
-                "grade": best["grade"],
-                "best_decompiler": best["best_decompiler"],
-                "attempted": [(n, r["grade"]) for n, r in attempted],
-                "first_error": next((r.get("first_error") for _, r in attempted if r["grade"] == "no-compile"), None),
-                "mismatched_methods": [list(k) for k in (attempted[0][1].get("mismatched_methods") or [])],
-                "allowlist_matches": attempted[0][1].get("allowlist_matches", []),
-                # per-engine, per-method round-trip data — NOT a merge (an unsound
-                # per-method Frankenstein class is never assembled here; see
-                # docs/decompile-fidelity-report.md's Meta-decompilation section /
-                # Harrand et al. arXiv:2005.11315), just the raw material a later,
-                # separately-validated merge step would need.
-                "per_engine_mismatched_methods": {
-                    n: [list(k) for k in (r.get("mismatched_methods") or [])] for n, r in attempted
-                },
-                "consensus": consensus,
-                "docsource_available": docsource_available,
-                "docsource_roundtrip": docsource_roundtrip,
-            }
+    if class_jobs > 1 and len(classes) > 1:
+        # subprocess-bound (javac/javap/java): threads suffice. Results are
+        # collected in submission (= sorted `classes`) order so per_class key
+        # order is deterministic regardless of completion order; a per-class
+        # exception propagates from .result() exactly as in the serial path.
+        with concurrent.futures.ThreadPoolExecutor(max_workers=class_jobs) as pool:
+            futures = [pool.submit(_grade_one_class, fqcn, classfile, **class_kwargs) for fqcn, classfile in classes]
+            try:
+                for fut in futures:
+                    fqcn, record = fut.result()
+                    per_class[fqcn] = record
+            except BaseException:
+                for fut in futures:
+                    fut.cancel()
+                raise
+        # the pool's worker threads are joined now; close the JVMs they started
+        reap_dead_thread_tool_servers()
+    else:
+        for fqcn, classfile in classes:
+            fqcn, record = _grade_one_class(fqcn, classfile, **class_kwargs)
+            per_class[fqcn] = record
 
     grade_counts: dict[str, int] = {}
     for c in per_class.values():
@@ -1493,6 +1969,185 @@ def is_module_up_to_date(
 
 
 # ---------------------------------------------------------------------------
+# --regrade-nonclean: re-grade only the non-clean classes of an existing run
+# ---------------------------------------------------------------------------
+
+REGRADE_CHECKPOINT_EVERY = 10
+
+
+def canon_output_path(mod_dir: Path, tree: str) -> Path:
+    """fidelity.<tree>.canon.json -- readable as tree "<tree>.canon" by
+    load_tree_results/--compare, never the source fidelity.<tree>.json."""
+    return Path(mod_dir) / f"fidelity.{tree}.canon.json"
+
+
+def patched_output_path(mod_dir: Path, tree: str) -> Path:
+    """fidelity.<tree>.patched.json -- --regrade-nonclean with --patch-tree:
+    readable as tree "<tree>.patched" by load_tree_results/--compare."""
+    return Path(mod_dir) / f"fidelity.{tree}.patched.json"
+
+
+def patch_output_label(tree: str, patch_tree: str) -> str:
+    """"spliced" for a per-method splice tree (T21/F9, tools/n5-splice-methods.py
+    writes <tree>s), "patched" for every other patch tree (F8's <tree>p)."""
+    return "spliced" if patch_tree == tree + "s" else "patched"
+
+
+def patch_manifest_name(tree: str, patch_tree: str) -> str:
+    return "SPLICES.json" if patch_output_label(tree, patch_tree) == "spliced" else "PATCHES.json"
+
+
+def patch_output_path(mod_dir: Path, tree: str, patch_tree: str) -> Path:
+    """fidelity.<tree>.<label>.json (label: patch_output_label) -- a splice run
+    never overwrites the F8 patched file, and vice versa."""
+    return Path(mod_dir) / f"fidelity.{tree}.{patch_output_label(tree, patch_tree)}.json"
+
+
+def _write_json_atomic(path: Path, data: dict) -> None:
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(json.dumps(data, indent=2, default=list) + "\n")
+    os.replace(tmp, path)
+
+
+def regrade_nonclean_module(
+    module: str,
+    organized_dir: Path = DEFAULT_ORGANIZED_DIR,
+    tree: str = "vineflower",
+    class_jobs: int = 1,
+    grade_fn: Optional[Callable[..., tuple[str, dict]]] = None,
+    checkpoint_every: int = REGRADE_CHECKPOINT_EVERY,
+    force: bool = False,
+    patch_tree: Optional[str] = None,
+    **grade_kwargs,
+) -> dict:
+    """Re-grade (recompile, full redundancy ladder, current grader) ONLY the
+    classes whose grade in organized/<module>/fidelity.<tree>.json is not
+    clean, and write the whole module -- clean classes copied verbatim,
+    re-graded ones with `previous_grade` -- to fidelity.<tree>.canon.json.
+    The source file is only read.
+
+    Idempotent: a complete canon file whose `source_sha256` matches the
+    current source file and whose schema is current is returned untouched.
+    Resumable: a partial one (checkpointed every `checkpoint_every` classes)
+    keeps its already re-graded classes and grades only the rest. A changed
+    source file or schema, or `force` (the grader itself changed), starts
+    over.
+
+    With `patch_tree` (T21/F8) only the non-clean classes that HAVE a patched
+    source under organized/<module>/<patch_tree>/ are re-graded (the patch rung
+    is the only thing that can change), the output is fidelity.<tree>.patched.json
+    (fidelity.<tree>.spliced.json for a <tree>s splice tree, see patch_output_label)
+    and a changed <patch_tree>/PATCHES.json (SPLICES.json) starts over. `grade_fn` defaults to _grade_one_class
+    (tests inject a fake); `grade_kwargs` are its keyword arguments minus the
+    per-module directories, which are derived here.
+    """
+    mod_dir = Path(organized_dir) / module
+    src_path = fidelity_read_path(mod_dir, tree)
+    if src_path is None:
+        raise FileNotFoundError(f"no fidelity.{tree}.json for module {module} under {organized_dir}")
+    src_sha = sha256_of(src_path)
+    source = json.loads(src_path.read_text())
+    out_path = patch_output_path(mod_dir, tree, patch_tree) if patch_tree else canon_output_path(mod_dir, tree)
+    patch_dir = mod_dir / patch_tree if patch_tree else None
+    manifest_path = patch_dir / patch_manifest_name(tree, patch_tree) if patch_dir else None
+    manifest_sha = sha256_of(manifest_path) if manifest_path and manifest_path.is_file() else None
+
+    previous = None
+    if out_path.is_file() and not force:
+        try:
+            previous = json.loads(out_path.read_text())
+        except (json.JSONDecodeError, OSError):
+            previous = None
+        if previous is not None and (previous.get("source_sha256") != src_sha
+                                     or previous.get("schema_version") != SCHEMA_VERSION
+                                     or previous.get("patch_manifest_sha256") != manifest_sha):
+            previous = None
+    if previous is not None and previous.get("complete"):
+        return previous
+
+    source_classes = source.get("classes", {})
+    targets = [fqcn for fqcn, rec in source_classes.items() if not _is_clean(rec.get("grade", ""))]
+    if patch_dir is not None:
+        targets = [fqcn for fqcn in targets if (patch_dir / f"{fqcn}.java").is_file()]
+    done: dict = {}
+    if previous is not None:
+        for fqcn in previous.get("regraded_classes", []):
+            if fqcn in previous.get("classes", {}) and fqcn in targets:
+                done[fqcn] = previous["classes"][fqcn]
+    todo = [f for f in targets if f not in done]
+
+    if grade_fn is None:
+        grade_fn = _grade_one_class
+        grade_kwargs.setdefault("vineflower_dir", mod_dir / tree)
+        grade_kwargs.setdefault("fallback_dir", mod_dir / "fallback")
+        grade_kwargs.setdefault("docsource_dir", Path(organized_dir) / "docSource" / module)
+        grade_kwargs.setdefault("primary_tree", tree)
+        if patch_tree:
+            grade_kwargs.setdefault("patch_tree", patch_tree)
+            grade_kwargs.setdefault("patch_dir", patch_dir)
+    extracted = mod_dir / "extracted"
+    lock = threading.Lock()
+
+    def snapshot(complete: bool) -> dict:
+        classes = {}
+        for fqcn, rec in source_classes.items():
+            classes[fqcn] = done.get(fqcn, rec)
+        counts: dict[str, int] = {}
+        for rec in classes.values():
+            counts[rec["grade"]] = counts.get(rec["grade"], 0) + 1
+        source_counts: dict[str, int] = {}
+        for rec in source_classes.values():
+            source_counts[rec["grade"]] = source_counts.get(rec["grade"], 0) + 1
+        return {
+            "module": module,
+            "schema_version": SCHEMA_VERSION,
+            "jar_sha256": source.get("jar_sha256"),
+            "primary_tree": tree,
+            "class_count": len(classes),
+            "grade_counts": counts,
+            "classes": classes,
+            "limit_per_module": source.get("limit_per_module"),
+            "regraded_from": src_path.name,
+            "source_schema_version": source.get("schema_version"),
+            "source_sha256": src_sha,
+            "source_grade_counts": source_counts,
+            "regraded_classes": [f for f in targets if f in done],
+            "complete": complete,
+            **({"patch_tree": patch_tree, "patch_manifest_sha256": manifest_sha} if patch_tree else {}),
+        }
+
+    def record(fqcn: str, rec: dict) -> None:
+        rec = dict(rec)
+        rec["previous_grade"] = source_classes[fqcn].get("grade")
+        with lock:
+            done[fqcn] = rec
+            if checkpoint_every and len(done) % checkpoint_every == 0:
+                _write_json_atomic(out_path, snapshot(complete=False))
+
+    def one(fqcn: str) -> tuple[str, dict]:
+        return grade_fn(fqcn, extracted / f"{fqcn}.class", **grade_kwargs)
+
+    if class_jobs > 1 and len(todo) > 1:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=class_jobs) as pool:
+            futures = [pool.submit(one, fqcn) for fqcn in todo]
+            try:
+                for fut in concurrent.futures.as_completed(futures):
+                    record(*fut.result())
+            except BaseException:
+                for fut in futures:
+                    fut.cancel()
+                raise
+        reap_dead_thread_tool_servers()
+    else:
+        for fqcn in todo:
+            record(*one(fqcn))
+
+    result = snapshot(complete=True)
+    _write_json_atomic(out_path, result)
+    return result
+
+
+# ---------------------------------------------------------------------------
 # Sampled independent cross-checks (krak2 + niagara_help.py) — run once at
 # report time over a capped, seeded-random sample of already-graded classes,
 # not inline in the per-class grading loop (which only needs the recompile
@@ -1552,9 +2207,11 @@ def generate_report(module_results: list[dict], cross_checks: Optional[dict] = N
     mixed_classes = []
 
     failed_modules = [mr for mr in module_results if mr.get("module_error")]
+    canonical_rule_classes: dict[str, int] = {}
 
-    lines.append("| Module | Classes | roundtrip-exact | roundtrip-equivalent | compiles-mismatch | no-compile | bytecode-only |")
-    lines.append("|---|---:|---:|---:|---:|---:|---:|")
+    lines.append("| Module | Classes | roundtrip-exact | roundtrip-equivalent | roundtrip-canonical | "
+                 "roundtrip-canonical-t2 | compiles-mismatch | no-compile | bytecode-only |")
+    lines.append("|---|---:|---:|---:|---:|---:|---:|---:|---:|")
     for mr in sorted(module_results, key=lambda r: r["module"]):
         if mr.get("module_error"):
             # a module that raised during grading must NEVER render as an
@@ -1562,7 +2219,7 @@ def generate_report(module_results: list[dict], cross_checks: Optional[dict] = N
             # clean" — the OPPOSITE of what happened): it is excluded from
             # every count/total below and surfaced in its own row and its own
             # "Module failures" section instead (R4-module-failure-masked).
-            lines.append(f"| {mr['module']} | **GRADING FAILED** — see failure details below | | | | | |")
+            lines.append(f"| {mr['module']} | **GRADING FAILED** — see failure details below | | | | | | | |")
             continue
         counts = mr["grade_counts"]
         for k, v in counts.items():
@@ -1570,10 +2227,13 @@ def generate_report(module_results: list[dict], cross_checks: Optional[dict] = N
         total_classes += mr["class_count"]
         lines.append(
             f"| {mr['module']} | {mr['class_count']} | {counts.get('roundtrip-exact', 0)} | "
-            f"{counts.get('roundtrip-equivalent', 0)} | {counts.get('compiles-mismatch', 0)} | "
+            f"{counts.get('roundtrip-equivalent', 0)} | {counts.get('roundtrip-canonical', 0)} | "
+            f"{counts.get('roundtrip-canonical-t2', 0)} | {counts.get('compiles-mismatch', 0)} | "
             f"{counts.get('no-compile', 0)} | {counts.get('bytecode-only', 0)} |"
         )
         for fqcn, c in mr["classes"].items():
+            for rule in c.get("canonical_rules") or []:
+                canonical_rule_classes[rule] = canonical_rule_classes.get(rule, 0) + 1
             if c.get("docsource_roundtrip") is not None:
                 docsource_checked += 1
                 if c["docsource_roundtrip"]:
@@ -1610,7 +2270,8 @@ def generate_report(module_results: list[dict], cross_checks: Optional[dict] = N
     lines.append("")
     lines.append("## Overall")
     lines.append("")
-    for grade in ("roundtrip-exact", "roundtrip-equivalent", "compiles-mismatch", "no-compile", "bytecode-only"):
+    for grade in ("roundtrip-exact", "roundtrip-equivalent", "roundtrip-canonical", "roundtrip-canonical-t2",
+                  "compiles-mismatch", "no-compile", "bytecode-only"):
         n = total_counts.get(grade, 0)
         pct = (100.0 * n / total_classes) if total_classes else 0.0
         lines.append(f"- {grade}: {n}/{total_classes} ({pct:.1f}%)")
@@ -1678,6 +2339,24 @@ def generate_report(module_results: list[dict], cross_checks: Optional[dict] = N
                       "`tools/n5-fidelity.py`) but no observed mismatch pattern has yet been confirmed "
                       "provably-semantics-preserving; every method-body mismatch currently grades "
                       "`compiles-mismatch`, never `roundtrip-equivalent`.")
+
+    lines.append("")
+    lines.append("## Canonical grades")
+    lines.append("")
+    lines.append(
+        "`roundtrip-canonical` and `roundtrip-canonical-t2` are SEPARATE, labelled grades, never folded into "
+        "`roundtrip-exact`: every mismatched method was proven equivalent by the sound control-flow "
+        "canonicalization of `tools/n5_canon.py` (basic blocks, branch polarity, DFS block order, unreachable "
+        "code dropped, parameter slots pinned, exception coverage kept in catch-priority order) plus the rules "
+        "below. Tier-1 rules are unconditionally semantics-preserving at bytecode level (`cov` modulo "
+        "asynchronous exceptions, JVMS 2.10); `roundtrip-canonical-t2` additionally needed a tier-2 rule, "
+        "which relies on the JLS invariant that a boolean is 0 or 1. Each class records the irreducible rule "
+        "set it needed (`canonical_rules`); the count is classes whose rule set contains the rule."
+    )
+    lines.append("")
+    for rule in n5_canon.ALL_RULES:
+        tier, why = n5_canon.RULES[rule]
+        lines.append(f"- `{rule}` (tier {tier}, {canonical_rule_classes.get(rule, 0)} classes): {why}")
 
     lines.append("")
     lines.append("## Redundancy: independent cross-checks (krak2, niagara_help.py)")
@@ -1780,8 +2459,8 @@ def generate_report(module_results: list[dict], cross_checks: Optional[dict] = N
         "recovered classes no single decompiler handled — 37.6% in their sample): their three-tier vocabulary "
         "(syntactically correct / semantically equivalent modulo inputs / strictly equivalent bytecode) maps "
         "onto this grader's grades roughly as: their \"strictly equivalent bytecode\" ~ `roundtrip-exact`; "
-        "their \"semantically equivalent\" ~ `roundtrip-equivalent` (this grader's allowlist mechanism, "
-        "currently empty — see Allowlist above); their \"syntactically correct\" has no direct equivalent here "
+        "their \"semantically equivalent\" ~ `roundtrip-equivalent` (the width allowlist) and the "
+        "two canonical grades (sound CFG canonicalization — see Canonical grades above); their \"syntactically correct\" has no direct equivalent here "
         "since this grader never accepts syntactic correctness alone as a passing grade (a `compiles-mismatch` "
         "is syntactically correct AND still fails). Per-engine, per-method round-trip data is recorded in "
         "`fidelity.json`'s `per_engine_mismatched_methods` as raw material for a possible future sound "
@@ -1889,7 +2568,7 @@ def compare_tree_grades(results_a: list[dict], results_b: list[dict], label_a: s
 
 
 def _tree_clean_count(comparison: dict, side: str) -> int:
-    """Count of classes graded roundtrip-exact/roundtrip-equivalent on one
+    """Count of classes graded clean (see CLEAN_GRADES) on one
     side (`side` is "from" for tree_a, "to" for tree_b) of every recorded
     transition -- the measured round-trip rate a primary-tree recommendation
     is based on (see generate_compare_report), never a textual/line-count diff.
@@ -1898,7 +2577,7 @@ def _tree_clean_count(comparison: dict, side: str) -> int:
     clean = 0
     for key, n in comparison["transition_counts"].items():
         grade = key.split("->")[idx]
-        if grade in ("roundtrip-exact", "roundtrip-equivalent"):
+        if _is_clean(grade):
             clean += n
     return clean
 
@@ -1995,11 +2674,11 @@ def generate_compare_report(
     lines.append("### Recommendation")
     lines.append("")
     lines.append(
-        f"- `{tree_a}` round-trip rate (roundtrip-exact + roundtrip-equivalent): "
+        f"- `{tree_a}` round-trip rate (exact + equivalent + canonical + canonical-t2): "
         f"{clean_a}/{total} ({rate_a:.1%})"
     )
     lines.append(
-        f"- `{tree_b}` round-trip rate (roundtrip-exact + roundtrip-equivalent): "
+        f"- `{tree_b}` round-trip rate (exact + equivalent + canonical + canonical-t2): "
         f"{clean_b}/{total} ({rate_b:.1%})"
     )
     if worse:
@@ -2098,11 +2777,48 @@ def _list_all_modules(organized_dir: Path) -> list[str]:
     return out
 
 
+def _main_regrade_nonclean(args, modules: list[str], organized_dir: Path, classpath: str,
+                           jd_cli_jar: Optional[Path]) -> int:
+    failed = []
+
+    def _one(module: str) -> None:
+        try:
+            result = regrade_nonclean_module(
+                module, organized_dir=organized_dir, tree=args.tree, class_jobs=args.class_jobs, force=args.force,
+                patch_tree=args.patch_tree,
+                classpath=classpath, javac_bin=DEFAULT_JAVAC, javap_bin=DEFAULT_JAVAP, java_bin=DEFAULT_JAVA,
+                cfr_jar=DEFAULT_CFR_JAR, procyon_jar=DEFAULT_PROCYON_JAR, jd_cli_jar=jd_cli_jar,
+                tool_server=args.tool_server,
+            )
+            print(f"[{module}] regrade-nonclean {len(result['regraded_classes'])} classes: "
+                  f"{result['source_grade_counts']} -> {result['grade_counts']}", file=sys.stderr)
+        except Exception as exc:  # noqa: BLE001 -- one module must not abort the batch
+            print(f"[{module}] regrade-nonclean FAILED: {exc!r}", file=sys.stderr)
+            failed.append(module)
+
+    if args.jobs > 1 and len(modules) > 1:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=args.jobs) as pool:
+            list(pool.map(_one, modules))
+    else:
+        for module in modules:
+            _one(module)
+    shutdown_tool_servers()
+    if failed:
+        print(f"FAILED: {len(failed)} module(s): {failed}", file=sys.stderr)
+        return 1
+    return 0
+
+
 def main(argv: Optional[list[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--modules", help="comma-separated module names")
     parser.add_argument("--all", action="store_true", help="grade every module with a recon.json")
     parser.add_argument("--jobs", type=int, default=1)
+    parser.add_argument("--class-jobs", type=int, default=1,
+                         help="grade this many classes concurrently within each module (default 1 = serial; results identical)")
+    parser.add_argument("--tool-server", action="store_true",
+                         help="run javac/javap in one persistent in-process JVM per worker thread instead of a fresh JVM per call "
+                              "(identical grades, much faster; falls back to subprocesses if the server cannot run)")
     parser.add_argument("--limit-per-module", type=int, default=None)
     parser.add_argument("--report", action="store_true", help="(re)write docs/decompile-fidelity-report.md")
     parser.add_argument("--organized-dir", default=str(DEFAULT_ORGANIZED_DIR))
@@ -2110,6 +2826,12 @@ def main(argv: Optional[list[str]] = None) -> int:
     parser.add_argument("--bin-ext-dir", default=str(DEFAULT_BIN_EXT_DIR))
     parser.add_argument("--classpath-cache-dir", default=None,
                          help="default: a scratch dir under $TMPDIR (see task: 'extract once to a cache dir under the scratchpad')")
+    parser.add_argument("--bc-variant", choices=BC_VARIANTS, default=DEFAULT_BC_VARIANT,
+                         help="which bin/ext BouncyCastle directory N5's launcher puts on the module path "
+                              "(bcstd = non-FIPS, bcfips = FIPS mode); default bcstd")
+    parser.add_argument("--jre-dir", default=str(DEFAULT_JRE_DIR),
+                         help="N5's bundled JRE; its javafx.*/jfx.* modules are extracted onto the classpath "
+                              "('' to skip)")
     parser.add_argument("--force", action="store_true", help="ignore fidelity.json's up-to-date cache")
     parser.add_argument("--jd-cli-jar", default=None)
     parser.add_argument("--cross-check-sample", type=int, default=0,
@@ -2119,6 +2841,19 @@ def main(argv: Optional[list[str]] = None) -> int:
                               "see grade_module docstring. Output is organized/<mod>/fidelity.<tree>.json — "
                               "grading a second tree for the same module writes a SEPARATE file, never "
                               "overwriting the first tree's grade (see fidelity_output_path).")
+    parser.add_argument("--regrade-nonclean", action="store_true",
+                         help="re-grade ONLY the non-clean classes of each selected module's existing "
+                              "fidelity.<tree>.json with the current grader and write the whole module to "
+                              "fidelity.<tree>.canon.json (the source file is never overwritten). Idempotent and "
+                              "resumable; honours --jobs/--class-jobs/--tool-server.")
+    parser.add_argument("--patch-tree", default=None, metavar="TREE",
+                         help="grade organized/<mod>/<TREE>/<Class>.java (a patched copy of --tree's source, e.g. "
+                              "vineflower2p from tools/n5-patch-doprivileged.py) as its own ladder rung right after "
+                              "--tree when that file exists; a class whose grade comes from it records patched: true. "
+                              "With --regrade-nonclean: only non-clean classes with a patched file are re-graded, into "
+                              "fidelity.<tree>.patched.json. TREE = <tree>s is a per-method splice tree "
+                              "(tools/n5-splice-methods.py, SPLICES.json): output fidelity.<tree>.spliced.json, "
+                              "records spliced: true + splice donors.")
     parser.add_argument("--compare", default=None, metavar="TREE_A,TREE_B",
                          help="report mode: read each already-graded module's fidelity.<tree>.json for BOTH "
                               "trees (no grading is performed) and report the per-class grade transition "
@@ -2134,6 +2869,10 @@ def main(argv: Optional[list[str]] = None) -> int:
                               "methodology caveat. Never invented by this tool; the caller supplies the facts.")
     args = parser.parse_args(argv)
 
+    if args.patch_tree and not args.regrade_nonclean:
+        # a patch rung must never leak into the pure fidelity.<tree>.json
+        parser.error("--patch-tree requires --regrade-nonclean (output: fidelity.<tree>.patched.json)")
+        return 2
     organized_dir = Path(args.organized_dir)
     if args.all:
         modules = _list_all_modules(organized_dir)
@@ -2177,9 +2916,13 @@ def main(argv: Optional[list[str]] = None) -> int:
         return 0
 
     cache_dir = Path(args.classpath_cache_dir) if args.classpath_cache_dir else Path(tempfile.gettempdir()) / "n5-fidelity-classpath-cache"
-    classpath = build_classpath(cache_dir, Path(args.modules_dir), Path(args.bin_ext_dir))
+    classpath = build_classpath(cache_dir, Path(args.modules_dir), Path(args.bin_ext_dir),
+                                bc_variant=args.bc_variant, jre_dir=Path(args.jre_dir) if args.jre_dir else None)
 
     jd_cli_jar = Path(args.jd_cli_jar) if args.jd_cli_jar else None
+
+    if args.regrade_nonclean:
+        return _main_regrade_nonclean(args, modules, organized_dir, classpath, jd_cli_jar)
 
     to_run = []
     for module in modules:
@@ -2210,6 +2953,8 @@ def main(argv: Optional[list[str]] = None) -> int:
                 limit=args.limit_per_module,
                 jd_cli_jar=jd_cli_jar,
                 primary_tree=args.tree,
+                class_jobs=args.class_jobs,
+                tool_server=args.tool_server,
             )
             fidelity_output_path(organized_dir / module, args.tree).write_text(
                 json.dumps(result, indent=2, default=list) + "\n"
@@ -2229,6 +2974,7 @@ def main(argv: Optional[list[str]] = None) -> int:
             results = list(pool.map(_run_one, to_run))
     else:
         results = [_run_one(m) for m in to_run]
+    shutdown_tool_servers()
 
     # include already-up-to-date modules in the report too
     for module in modules:
