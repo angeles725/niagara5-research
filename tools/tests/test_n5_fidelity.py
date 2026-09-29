@@ -2528,3 +2528,56 @@ class TestRegradeNonclean(unittest.TestCase):
             self.assertEqual(out["classes"]["p/Foo"]["grade"], "roundtrip-canonical")
             self.assertEqual(out["classes"]["p/Foo"]["canonical_rules"], ["tail"])
             self.assertEqual(out["classes"]["p/Foo"]["previous_grade"], "bytecode-only")
+
+
+class TestInvokedynamicBootstrapArguments(unittest.TestCase):
+    """javap prints an invokedynamic as `// InvokeDynamic #N:name:desc`; the
+    bootstrap method and its static arguments (the string-concat recipe, the
+    lambda implementation method) live in the class's BootstrapMethods
+    attribute. Dropping `#N` without resolving it made `"a" + x` and
+    `"b" + x` normalize identical (a false roundtrip-exact)."""
+
+    def setUp(self):
+        self.mod = _load()
+
+    def _text(self, recipe):
+        return (
+            "public class Foo\n  minor version: 0\n{\n"
+            "  static java.lang.String f(int);\n"
+            "    descriptor: (I)Ljava/lang/String;\n"
+            "    flags: (0x0008) ACC_STATIC\n"
+            "    Code:\n"
+            "      stack=1, locals=1, args_size=1\n"
+            "         0: iload_0\n"
+            "         1: invokedynamic #7,  0              // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;\n"
+            "         6: areturn\n"
+            "}\n"
+            "SourceFile: \"Foo.java\"\n"
+            "BootstrapMethods:\n"
+            "  0: #50 REF_invokeStatic java/lang/invoke/StringConcatFactory.makeConcatWithConstants:(Ljava/lang/invoke/MethodHandles$Lookup;)Ljava/lang/invoke/CallSite;\n"
+            "    Method arguments:\n"
+            f"      #44 {recipe}\\u0001\n"
+        )
+
+    def test_bootstrap_arguments_are_part_of_the_normalized_instruction(self):
+        a = self.mod.parse_javap_verbose(self._text("a"))["methods"][("f", "(I)Ljava/lang/String;")]
+        b = self.mod.parse_javap_verbose(self._text("b"))["methods"][("f", "(I)Ljava/lang/String;")]
+        self.assertNotEqual(a["code"], b["code"])
+        self.assertIn("StringConcatFactory.makeConcatWithConstants", a["code"][1])
+        self.assertIn("a\\u0001", a["code"][1])
+        self.assertIn("a\\u0001", a["raw_code"][1])
+
+    @unittest.skipUnless(_jdk_available(), "JDK 25 not installed")
+    def test_real_javac_different_concat_constants_do_not_compare_equal(self):
+        with tempfile.TemporaryDirectory() as td:
+            parsed = []
+            for i, body in enumerate(('return "a" + x;', 'return "b" + x;')):
+                d = os.path.join(td, str(i))
+                os.makedirs(d)
+                src = os.path.join(d, "P.java")
+                Path(src).write_text(f"public class P {{ static String f(int x) {{ {body} }} }}\n")
+                subprocess.run([JDK25_JAVAC, "--release", "25", "-g", "-d", d, src], check=True, capture_output=True)
+                parsed.append(self.mod.parse_javap_verbose(
+                    self.mod.run_javap_verbose(os.path.join(d, "P.class"), javap_bin=JDK25_JAVAP)))
+            diff = self.mod.diff_normalized_classes(parsed[0], parsed[1])
+            self.assertIn(("f", "(I)Ljava/lang/String;"), diff["mismatched_methods"])

@@ -583,6 +583,8 @@ def parse_javap_verbose(text: str) -> dict:
 
     fields: dict = {}
     methods: dict = {}
+    trailer = lines[body_end + 1:] if body_end != -1 else []
+    bootstrap = _parse_bootstrap_methods(trailer)
 
     if body_start != -1:
         i = body_start + 1
@@ -595,12 +597,11 @@ def parse_javap_verbose(text: str) -> dict:
                 block_end = i + 1
                 while block_end < body_end and (not lines[block_end].strip() or _indent_of(lines[block_end]) > 2):
                     block_end += 1
-                _parse_member_block(lines[i:block_end], fields, methods)
+                _parse_member_block(lines[i:block_end], fields, methods, bootstrap)
                 i = block_end
             else:
                 i += 1
 
-    trailer = lines[body_end + 1:] if body_end != -1 else []
     attributes = _parse_trailer_attributes(trailer)
 
     return {
@@ -611,7 +612,39 @@ def parse_javap_verbose(text: str) -> dict:
     }
 
 
-def _parse_member_block(block: list[str], fields: dict, methods: dict) -> None:
+_DYNAMIC_REF_RE = re.compile(r"(// (?:InvokeDynamic|Dynamic) )#(\d+):")
+
+
+def _parse_bootstrap_methods(trailer: list[str]) -> list[str]:
+    """The class's BootstrapMethods table as one symbolic string per entry:
+    bootstrap method handle + its static arguments (CP indices dropped). An
+    invokedynamic/condy's `#N` is an index into this table, and the arguments
+    ARE semantic: the string-concat recipe, the lambda implementation method."""
+    out: list[str] = []
+    in_table = False
+    for line in trailer:
+        stripped = line.strip()
+        if _indent_of(line) == 0 and stripped:
+            in_table = stripped.startswith("BootstrapMethods:")
+            continue
+        if not in_table or not stripped:
+            continue
+        m = re.match(r"^(\d+):\s*(.*)$", stripped)
+        if m and _indent_of(line) == 2:
+            out.append(strip_cp_indices(m.group(2)))
+        elif out and not stripped.startswith("Method arguments:"):
+            out[-1] += " | " + strip_cp_indices(stripped)
+    return out
+
+
+def _resolve_bootstrap_refs(line: str, bootstrap: list[str]) -> str:
+    def sub(m):
+        n = int(m.group(2))
+        return f"{m.group(1)}[{bootstrap[n]}]:" if n < len(bootstrap) else m.group(0)
+    return _DYNAMIC_REF_RE.sub(sub, line)
+
+
+def _parse_member_block(block: list[str], fields: dict, methods: dict, bootstrap: Optional[list[str]] = None) -> None:
     decl = block[0].strip().rstrip(";")
     descriptor = ""
     flags: list[str] = []
@@ -674,7 +707,7 @@ def _parse_member_block(block: list[str], fields: dict, methods: dict) -> None:
                         while j < len(block) and (not block[j].strip() or _indent_of(block[j]) > header_indent):
                             j += 1
                         continue
-                    raw_instr_lines.append(inner_stripped)
+                    raw_instr_lines.append(_resolve_bootstrap_refs(inner_stripped, bootstrap or []))
                     j += 1
                 code = normalize_method_instructions(raw_instr_lines, param_slots=param_slots)
                 exception_table = normalize_exception_table(raw_instr_lines, raw_exception_rows)
