@@ -11,7 +11,9 @@ Subcommands:
   module <jar> <moddir> [--release N] [--json]
       Census one module jar against organized/<mod>/{extracted,resources,
       vineflower,fallback}. Exit 0 = byte-exact and complete, 1 = at least one
-      class mismatch/missing or resource mismatch/missing, 2 = usage/read error.
+      class mismatch/missing or resource mismatch/missing, 2 = usage error (argparse),
+      3 = read/internal error (missing or corrupt jar, any unexpected exception). A
+      crash never exits 1 and a mismatch never exits 2/3, so a caller can gate on the code.
   sweep <jar-dir> <organized-dir> [--release N] [--json]
       Run `module` for every <jar-dir>/*.jar that has organized/<stem>/recon.json
       and print an aggregate. Same exit convention (1 if any module is not clean).
@@ -39,6 +41,7 @@ import re
 import sys
 import zipfile
 
+EXIT_CLEAN, EXIT_UNCLEAN, EXIT_USAGE, EXIT_ERROR = 0, 1, 2, 3
 TRIDIUM_PREFIXES = ("com/tridium/", "niagara/", "javax/baja/")
 VERSIONS_RE = re.compile(r"^META-INF/versions/(\d+)/(.+)$")
 
@@ -271,16 +274,16 @@ def main(argv=None):
                     json.dump(mods, fh, indent=1)
             clean = not agg["unclean_modules"]
             out = agg
-    except (OSError, zipfile.BadZipFile) as exc:
-        print(f"error: {exc}", file=sys.stderr)
-        return 2
+    except Exception as exc:  # noqa: BLE001 - exit 1 is reserved for "mismatch"
+        print(f"error: {type(exc).__name__}: {exc}", file=sys.stderr)
+        return EXIT_ERROR
     if args.json:
         print(json.dumps(out, indent=1))
     else:
         for k, v in out.items():
             if not isinstance(v, (list, dict)):
                 print(f"{k}: {v}")
-    return 0 if clean else 1
+    return EXIT_CLEAN if clean else EXIT_UNCLEAN
 
 
 if __name__ == "__main__":

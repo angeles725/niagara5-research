@@ -185,6 +185,45 @@ class CliTest(unittest.TestCase):
         self.assertEqual(out.returncode, 1)
 
 
+class ExitCodeTest(unittest.TestCase):
+    """Exit-code contract: 0 clean, 1 census found a mismatch, 2 usage (argparse), 3 read/internal
+    error. A crash must never masquerade as 1 (mismatch) nor a mismatch as 2 (usage)."""
+
+    def _run(self, *args):
+        return subprocess.run([sys.executable, SCRIPT, *args], capture_output=True, text=True,
+                              check=False)
+
+    def test_missing_jar_is_exit_3(self):
+        tmp = tempfile.mkdtemp()
+        out = self._run("module", os.path.join(tmp, "nope.jar"), tmp)
+        self.assertEqual(out.returncode, 3, out.stderr)
+
+    def test_corrupt_jar_is_exit_3(self):
+        tmp = tempfile.mkdtemp()
+        jar = os.path.join(tmp, "bad.jar")
+        _write(jar, b"this is not a zip")
+        out = self._run("module", jar, tmp)
+        self.assertEqual(out.returncode, 3, out.stderr)
+
+    def test_unexpected_exception_is_exit_3_not_1(self):
+        # A corrupt deflate stream raises BadZipFile/zlib.error; an uncaught traceback would
+        # exit 1 == "mismatch".
+        tmp = tempfile.mkdtemp()
+        jar = os.path.join(tmp, "trunc.jar")
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr("a/A.class", CLASS_MAGIC + os.urandom(4000))
+        raw = bytearray(buf.getvalue())
+        raw[60:120] = b"\x00" * 60  # corrupt the deflate stream, keep the directory intact
+        _write(jar, bytes(raw))
+        out = self._run("module", jar, tmp)
+        self.assertEqual(out.returncode, 3, out.stderr)
+        self.assertNotIn("Traceback", out.stderr)
+
+    def test_usage_error_is_exit_2(self):
+        self.assertEqual(self._run().returncode, 2)
+
+
 @unittest.skipUnless(os.path.isfile(os.path.join(N5_MODULES_DIR, "control.jar"))
                      and os.path.isdir(os.path.join(N5_ORGANIZED, "control")),
                      "real N5 install / organized tree not present")
