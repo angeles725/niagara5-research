@@ -2953,3 +2953,149 @@ class TestNestedRecordIntegration(unittest.TestCase):
     def test_report_without_any_nested_data_has_no_nested_section(self):
         mr = {"module": "m", "class_count": 1, "grade_counts": {"roundtrip-exact": 1}, "classes": {"p/A": {"grade": "roundtrip-exact"}}}
         self.assertNotIn("## Nested class files", self.mod.generate_report([mr]))
+
+
+class TestBinExtTridiumSelection(unittest.TestCase):
+    """C2a: the 6 Tridium bin/ext jars are identified by an explicit allowlist
+    AND a verifiable Tridium marker (the NIAGARA4.SF signature recorded in
+    recon.json); anything else under organized/_bin-ext is third-party (C2b)."""
+
+    def setUp(self):
+        self.mod = _load()
+
+    def _bin_ext(self, td, specs):
+        root = Path(td) / "_bin-ext"
+        for name, sig in specs.items():
+            d = root / name
+            d.mkdir(parents=True)
+            (d / "recon.json").write_text(json.dumps({"module": name, "jar_sha256": "j", "signature_file": sig}))
+        return Path(td)
+
+    def test_allowlist_is_exactly_the_six_tridium_jars(self):
+        self.assertEqual(sorted(self.mod.BIN_EXT_TRIDIUM_JARS), sorted([
+            "nre", "niagarad", "niagaraAnnotationProcessors", "niagara-remote-client-1.0.5", "securityBridge", "splash"]))
+
+    def test_selects_only_allowlisted_and_marker_verified_jars(self):
+        with tempfile.TemporaryDirectory() as td:
+            organized = self._bin_ext(td, {"nre": "NIAGARA4.SF", "splash": "NIAGARA4.SF",
+                                           "woodstox": "NIAGARA4.SF",   # right marker, not allowlisted
+                                           "niagarad": "OTHER.SF"})     # allowlisted, wrong marker
+            self.assertEqual(self.mod.bin_ext_tridium_modules(organized), ["nre", "splash"])
+
+    def test_missing_bin_ext_dir_yields_no_modules(self):
+        with tempfile.TemporaryDirectory() as td:
+            self.assertEqual(self.mod.bin_ext_tridium_modules(Path(td)), [])
+
+    def test_list_all_modules_never_includes_bin_ext(self):
+        with tempfile.TemporaryDirectory() as td:
+            organized = self._bin_ext(td, {"nre": "NIAGARA4.SF"})
+            (organized / "m").mkdir()
+            (organized / "m" / "recon.json").write_text("{}")
+            self.assertEqual(self.mod._list_all_modules(organized), ["m"])
+
+
+class TestBinExtTridiumCLI(unittest.TestCase):
+    def setUp(self):
+        self.mod = _load()
+
+    def _organized(self, td):
+        organized = Path(td) / "organized"
+        d = organized / "_bin-ext" / "nre"
+        (d / "extracted" / "p").mkdir(parents=True)
+        (d / "extracted" / "p" / "A.class").write_bytes(b"x")
+        (d / "extracted" / "p" / "A$1.class").write_bytes(b"x")
+        (d / "vineflower2" / "p").mkdir(parents=True)
+        (d / "vineflower2" / "p" / "A.java").write_text("class A {}")
+        (d / "recon.json").write_text(json.dumps({"module": "nre", "jar_sha256": "j", "signature_file": "NIAGARA4.SF"}))
+        return organized
+
+    def _fake_rag(self, java_file, class_name, *a, **kw):
+        return {"grade": "roundtrip-exact", "first_error": None, "mismatched_methods": [], "allowlist_matches": [],
+                "nested": {"files": {f"{class_name}$1.class": {"grade": "roundtrip-exact", "mismatched_methods": []}},
+                           "missing": [], "extra": [], "drift_suspected": False}}
+
+    def _run(self, td, organized, extra):
+        (Path(td) / "docs").mkdir(exist_ok=True)
+        with mock.patch.object(self.mod, "recompile_and_grade", side_effect=self._fake_rag), \
+             mock.patch.object(self.mod, "build_classpath", return_value=""), \
+             mock.patch.object(self.mod, "REPO_ROOT", Path(td)):
+            return self.mod.main(["--bin-ext-tridium", "--organized-dir", str(organized),
+                                  "--classpath-cache-dir", str(Path(td) / "cp")] + extra)
+
+    def test_grades_bin_ext_jars_into_their_own_fidelity_json_on_vineflower2(self):
+        with tempfile.TemporaryDirectory() as td:
+            organized = self._organized(td)
+            self.assertEqual(self._run(td, organized, []), 0)
+            out = json.loads((organized / "_bin-ext" / "nre" / "fidelity.vineflower2.json").read_text())
+            self.assertEqual(out["primary_tree"], "vineflower2")
+            self.assertEqual(out["grade_counts"], {"roundtrip-exact": 1})
+            self.assertEqual(out["fully_proven_count"], 1)
+            self.assertFalse((organized / "nre").exists())
+
+    def test_flag_conflicts_with_all_and_modules(self):
+        with tempfile.TemporaryDirectory() as td:
+            organized = self._organized(td)
+            for extra in (["--all"], ["--modules", "x"]):
+                with self.assertRaises(SystemExit):
+                    self.mod.main(["--bin-ext-tridium", "--organized-dir", str(organized)] + extra)
+
+    def test_report_upserts_a_separate_section_and_keeps_the_rest(self):
+        with tempfile.TemporaryDirectory() as td:
+            organized = self._organized(td)
+            report = Path(td) / "docs" / "decompile-fidelity-report.md"
+            report.parent.mkdir()
+            report.write_text("# Decompile fidelity report\n\n## Overall\n\n- roundtrip-exact: 1/1\n")
+            self.assertEqual(self._run(td, organized, ["--report"]), 0)
+            text = report.read_text()
+            self.assertIn("## Overall", text)
+            self.assertEqual(text.count("## bin/ext (Tridium)"), 1)
+            self.assertIn("| nre | 1 | 1 | 0 |", text)
+
+    def test_normal_report_includes_bin_ext_section_apart_from_module_totals(self):
+        with tempfile.TemporaryDirectory() as td:
+            organized = self._organized(td)
+            self.assertEqual(self._run(td, organized, []), 0)
+            m = organized / "m"
+            (m / "extracted").mkdir(parents=True)
+            (m / "recon.json").write_text(json.dumps({"jar_sha256": "mj"}))
+            (m / "fidelity.vineflower.json").write_text(json.dumps({
+                "module": "m", "schema_version": self.mod.SCHEMA_VERSION, "jar_sha256": "mj", "primary_tree": "vineflower",
+                "nested_schema_version": self.mod.NESTED_SCHEMA_VERSION, "limit_per_module": None,
+                "class_count": 2, "grade_counts": {"roundtrip-exact": 2}, "nested_file_count": 0,
+                "nested_grade_counts": {}, "extra_nested_count": 0, "fully_proven_count": 2, "classes": {}}))
+            with mock.patch.object(self.mod, "build_classpath", return_value=""), \
+                 mock.patch.object(self.mod, "REPO_ROOT", Path(td)):
+                rc = self.mod.main(["--modules", "m", "--organized-dir", str(organized), "--report",
+                                    "--classpath-cache-dir", str(Path(td) / "cp")])
+            self.assertEqual(rc, 0)
+            text = (Path(td) / "docs" / "decompile-fidelity-report.md").read_text()
+            self.assertIn("- roundtrip-exact: 2/2", text)          # module totals exclude bin/ext
+            self.assertIn("## bin/ext (Tridium)", text)
+            self.assertNotIn("| nre |", text.split("## bin/ext (Tridium)")[0])  # never in the module tables
+
+
+class TestGenerateBinExtSection(unittest.TestCase):
+    def setUp(self):
+        self.mod = _load()
+
+    def test_section_reports_counts_nested_fully_proven_and_share(self):
+        rows = [
+            {"module": "nre", "class_count": 4, "grade_counts": {"roundtrip-exact": 2, "roundtrip-canonical": 1, "bytecode-only": 1},
+             "nested_schema_version": 1, "nested_file_count": 3, "nested_grade_counts": {"roundtrip-exact": 2, "no-compile": 1},
+             "extra_nested_count": 0, "fully_proven_count": 2, "classes": {}},
+            {"module": "splash", "class_count": 1, "grade_counts": {"roundtrip-exact": 1},
+             "nested_schema_version": 1, "nested_file_count": 0, "nested_grade_counts": {},
+             "extra_nested_count": 0, "fully_proven_count": 1, "classes": {}},
+        ]
+        text = self.mod.generate_bin_ext_section(rows)
+        self.assertIn("| nre | 4 | 2 | 0 | 1 | 0 | 0 | 0 | 1 |", text)
+        self.assertIn("| splash | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |", text)
+        self.assertIn("| nre | 3 | 2 | 1 | 0 | 2 |", text)
+        self.assertIn("proven (any tier): 4/5 (80.0%)", text)
+        self.assertIn("fully proven (outer + nested): 3/5 (60.0%)", text)
+
+    def test_failed_module_is_flagged_not_counted(self):
+        rows = [{"module": "nre", "module_error": "boom", "classes": {}, "grade_counts": {}, "class_count": 0}]
+        text = self.mod.generate_bin_ext_section(rows)
+        self.assertIn("GRADING FAILED", text)
+        self.assertIn("0/0", text)

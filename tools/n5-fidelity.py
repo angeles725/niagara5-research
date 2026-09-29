@@ -2897,6 +2897,91 @@ def upsert_markdown_section(doc_text: str, heading_line: str, body: str) -> str:
 # CLI
 # ---------------------------------------------------------------------------
 
+# C2a: the Tridium-authored bin/ext jars, identified by BOTH an explicit
+# allowlist and a verifiable Tridium marker: their recon.json records the
+# NIAGARA4.SF jar signature (Tridium's signing identity). Every other bin/ext
+# jar (third-party) is out of scope here (C2b). Their trees live under
+# organized/_bin-ext/<jar>/ with the same layout as a module; they are graded
+# with the module ladder (grade_module with organized_dir=<organized>/_bin-ext)
+# and reported in their own section, never mixed into the module totals.
+BIN_EXT_TRIDIUM_JARS = ("nre", "niagarad", "niagaraAnnotationProcessors",
+                        "niagara-remote-client-1.0.5", "securityBridge", "splash")
+BIN_EXT_TRIDIUM_SIGNATURE = "NIAGARA4.SF"
+BIN_EXT_ORGANIZED_SUBDIR = "_bin-ext"
+# vineflower2 is the library-context decompile (classpath = the jar mirror), the
+# tree the modules' best-of results are led by; the classpath-less first pass
+# (vineflower) is not graded for bin/ext.
+BIN_EXT_DEFAULT_TREE = "vineflower2"
+BIN_EXT_SECTION_TITLE = "bin/ext (Tridium)"
+
+
+def bin_ext_tridium_modules(organized_dir: Path) -> list[str]:
+    """Allowlisted bin/ext jars under <organized_dir>/_bin-ext whose recon.json
+    carries the Tridium signature marker; sorted by allowlist order."""
+    root = Path(organized_dir) / BIN_EXT_ORGANIZED_SUBDIR
+    out = []
+    for name in BIN_EXT_TRIDIUM_JARS:
+        recon = root / name / "recon.json"
+        if not recon.is_file():
+            continue
+        try:
+            marker = json.loads(recon.read_text()).get("signature_file")
+        except (json.JSONDecodeError, OSError):
+            continue
+        if marker == BIN_EXT_TRIDIUM_SIGNATURE:
+            out.append(name)
+    return out
+
+
+def generate_bin_ext_section(results: list[dict]) -> str:
+    """Body of the separately labelled `## bin/ext (Tridium)` report section
+    (heading NOT included). Own totals; never merged into the module totals."""
+    order = ("roundtrip-exact", "roundtrip-equivalent", "roundtrip-canonical", "roundtrip-canonical-t2",
+             "compiles-mismatch", "no-compile", "bytecode-only")
+    lines = ["The Tridium-authored jars of `bin/ext` (identified by an explicit allowlist plus the "
+             f"`{BIN_EXT_TRIDIUM_SIGNATURE}` signature marker), graded with the same ladder as the modules. "
+             "These numbers are NOT part of the module totals above.", "",
+             "| Jar | Classes | roundtrip-exact | roundtrip-equivalent | roundtrip-canonical | roundtrip-canonical-t2 | "
+             "compiles-mismatch | no-compile | bytecode-only |",
+             "|---|---:|---:|---:|---:|---:|---:|---:|---:|"]
+    total = proven = full = 0
+    nested_rows = []
+    for mr in sorted(results, key=lambda r: r["module"]):
+        if mr.get("module_error"):
+            lines.append(f"| {mr['module']} | **GRADING FAILED** — {mr['module_error']} | | | | | | | |")
+            continue
+        counts = mr["grade_counts"]
+        total += mr["class_count"]
+        proven += sum(v for g, v in counts.items() if _is_clean(g))
+        full += mr.get("fully_proven_count", 0)
+        lines.append(f"| {mr['module']} | {mr['class_count']} | " + " | ".join(str(counts.get(g, 0)) for g in order) + " |")
+        if mr.get("nested_schema_version") == NESTED_SCHEMA_VERSION:
+            nested_rows.append(mr)
+    if nested_rows:
+        lines += ["", "| Jar | Nested files | Proven | Unproven | Extra (recompile only) | Classes fully proven |",
+                  "|---|---:|---:|---:|---:|---:|"]
+        for mr in nested_rows:
+            n_proven = sum(v for g, v in mr["nested_grade_counts"].items() if _is_clean(g))
+            lines.append(f"| {mr['module']} | {mr['nested_file_count']} | {n_proven} | {mr['nested_file_count'] - n_proven} | "
+                         f"{mr['extra_nested_count']} | {mr['fully_proven_count']} |")
+    pct = lambda n: (100.0 * n / total) if total else 0.0  # noqa: E731
+    lines += ["", f"- proven (any tier): {proven}/{total} ({pct(proven):.1f}%)",
+              f"- fully proven (outer + nested): {full}/{total} ({pct(full):.1f}%)"]
+    return "\n".join(lines)
+
+
+def _upsert_bin_ext_section(report_path: Path, results: list[dict]) -> None:
+    existing = report_path.read_text() if report_path.is_file() else "# Decompile fidelity report\n"
+    report_path.write_text(upsert_markdown_section(
+        existing, f"## {BIN_EXT_SECTION_TITLE}", generate_bin_ext_section(results)))
+
+
+def load_bin_ext_results(organized_dir: Path, tree: str = BIN_EXT_DEFAULT_TREE) -> list[dict]:
+    """Already-graded bin/ext results (no grading); absent jars are skipped."""
+    root = Path(organized_dir) / BIN_EXT_ORGANIZED_SUBDIR
+    return load_tree_results(root, bin_ext_tridium_modules(organized_dir), tree)
+
+
 def _list_all_modules(organized_dir: Path) -> list[str]:
     out = []
     for p in sorted(organized_dir.iterdir()):
@@ -2968,7 +3053,11 @@ def main(argv: Optional[list[str]] = None) -> int:
     parser.add_argument("--jd-cli-jar", default=None)
     parser.add_argument("--cross-check-sample", type=int, default=0,
                          help="with --report: also run krak2/niagara_help.py cross-checks on N sampled graded classes")
-    parser.add_argument("--tree", default="vineflower",
+    parser.add_argument("--bin-ext-tridium", action="store_true",
+                         help="grade the 6 Tridium bin/ext jars under <organized-dir>/_bin-ext (allowlist + NIAGARA4.SF "
+                              "marker; see BIN_EXT_TRIDIUM_JARS) instead of modules; default --tree vineflower2; with "
+                              "--report upserts a separate '## bin/ext (Tridium)' section, never module totals")
+    parser.add_argument("--tree", default=None,
                          help="decompiled source tree to grade, e.g. vineflower (default) or vineflower2 — "
                               "see grade_module docstring. Output is organized/<mod>/fidelity.<tree>.json — "
                               "grading a second tree for the same module writes a SEPARATE file, never "
@@ -3000,13 +3089,21 @@ def main(argv: Optional[list[str]] = None) -> int:
                               "output (repeatable) — e.g. classpath/jar provenance for this run, or a fixed "
                               "methodology caveat. Never invented by this tool; the caller supplies the facts.")
     args = parser.parse_args(argv)
+    args.tree = args.tree or (BIN_EXT_DEFAULT_TREE if args.bin_ext_tridium else "vineflower")
 
+    if args.bin_ext_tridium and (args.all or args.modules or args.compare):
+        parser.error("--bin-ext-tridium cannot be combined with --all, --modules or --compare")
+        return 2
     if args.patch_tree and not args.regrade_nonclean:
         # a patch rung must never leak into the pure fidelity.<tree>.json
         parser.error("--patch-tree requires --regrade-nonclean (output: fidelity.<tree>.patched.json)")
         return 2
     organized_dir = Path(args.organized_dir)
-    if args.all:
+    bin_ext_mode = args.bin_ext_tridium
+    if bin_ext_mode:
+        modules = bin_ext_tridium_modules(organized_dir)
+        organized_dir = organized_dir / BIN_EXT_ORGANIZED_SUBDIR
+    elif args.all:
         modules = _list_all_modules(organized_dir)
     elif args.modules:
         modules = [m.strip() for m in args.modules.split(",") if m.strip()]
@@ -3124,7 +3221,14 @@ def main(argv: Optional[list[str]] = None) -> int:
                 results, organized_dir=organized_dir, sample_size=args.cross_check_sample
             )
         report_path = REPO_ROOT / "docs" / "decompile-fidelity-report.md"
-        report_path.write_text(generate_report(results, cross_checks=cross_checks))
+        if bin_ext_mode:
+            _upsert_bin_ext_section(report_path, results)
+        else:
+            report_path.write_text(generate_report(results, cross_checks=cross_checks))
+            # keep the separately labelled bin/ext section when its grades exist
+            bin_ext_results = load_bin_ext_results(organized_dir)
+            if bin_ext_results:
+                _upsert_bin_ext_section(report_path, bin_ext_results)
         print(f"wrote {report_path}", file=sys.stderr)
 
     if failed_modules:
