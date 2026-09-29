@@ -1,0 +1,30 @@
+{
+ "ast": {
+  "pool": 821,
+  "n": 120,
+  "baselineOk": 120,
+  "negativeMatched": [],
+  "mutString": {
+   "tried": 103,
+   "detected": 103
+  },
+  "mutOp": {
+   "tried": 63,
+   "detected": 63
+  }
+ },
+ "skeleton": {
+  "pool": 1315,
+  "n": 120,
+  "baselineOk": 120,
+  "negativeMatched": [],
+  "mutString": {
+   "tried": 119,
+   "detected": 113
+  },
+  "mutOp": {
+   "tried": 83,
+   "detected": 0
+  }
+ }
+}
