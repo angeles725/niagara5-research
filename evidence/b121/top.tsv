@@ -1,0 +1,110 @@
+group	key	count
+field-class:n-conv-plugin	INSTANCE	6
+field-class:n-conv-plugin	synthetic	4
+field-class:n-plugin	declared-property-backing	342
+field-class:n-plugin	synthetic	329
+field-class:n-plugin	other	135
+field-class:n-plugin	INSTANCE	116
+field-class:n-plugin	enum-constant	74
+field-class:n-plugin	Companion	37
+field-class:n-plugin	compiler-$$	8
+field-class:n-plugin	delegate	8
+field-class:settings	declared-property-backing	10
+field-class:settings	other	5
+field-class:settings	Companion	2
+field-class:settings	synthetic	2
+field-class:settings	INSTANCE	1
+field-class:utils	declared-property-backing	5
+field-class:utils	synthetic	5
+field-class:utils	INSTANCE	1
+inline-fun-expanded	named	52
+inline-fun-expanded	typeOf	36
+inline-fun-expanded	newInstance	34
+inline-fun-expanded	property	33
+inline-fun-expanded	register	32
+inline-fun-expanded	the	24
+inline-fun-expanded	map	17
+inline-fun-expanded	mapTo	17
+inline-fun-expanded	create	15
+inline-fun-expanded	domainObjectContainer	15
+inline-fun-expanded	plugin	15
+inline-fun-expanded	forEach	14
+inline-fun-expanded	configure	12
+inline-fun-expanded	pickALogger	10
+inline-fun-expanded	withType	10
+inline-fun-expanded	toTypedArray	9
+inline-fun-expanded	filter	8
+inline-fun-expanded	filterTo	8
+inline-fun-expanded	apply	6
+inline-fun-expanded	getSourceProperty	6
+inline-fun-expanded	listProperty	5
+inline-fun-expanded	registerTransform	5
+inline-fun-expanded	getCopyImpl	4
+inline-fun-expanded	getSourceFiles$n_plugin	4
+inline-fun-expanded	any	3
+inline-fun-expanded	(distinct keys)	47
+method-class:n-conv-plugin	bridge	10
+method-class:n-conv-plugin	ctor-undeclared	10
+method-class:n-conv-plugin	synthetic-class-member(lambda/SAM body)	10
+method-class:n-conv-plugin	declared	8
+method-class:n-conv-plugin	clinit	6
+method-class:n-conv-plugin	declared(by-name; signature derived)	4
+method-class:n-conv-plugin	lambda-body	1
+method-class:n-plugin	declared	1528
+method-class:n-plugin	ctor-undeclared	355
+method-class:n-plugin	synthetic-class-member(lambda/SAM body)	283
+method-class:n-plugin	bridge	282
+method-class:n-plugin	clinit	185
+method-class:n-plugin	declared(by-name; signature derived)	157
+method-class:n-plugin	enum-generated	56
+method-class:n-plugin	default-args-ctor-synthetic	49
+method-class:n-plugin	lambda-body	32
+method-class:n-plugin	default-args-synthetic	27
+method-class:n-plugin	access$-synthetic	25
+method-class:n-plugin	other-synthetic	21
+method-class:n-plugin	read-only-collection-mutator-stub	16
+method-class:n-plugin	jvmstatic-forwarder	9
+method-class:n-plugin	declared(property accessor by-name)	6
+method-class:n-plugin	UNEXPLAINED	2
+method-class:settings	declared	110
+method-class:settings	declared(by-name; signature derived)	8
+method-class:settings	default-args-synthetic	6
+method-class:settings	access$-synthetic	4
+method-class:settings	ctor-undeclared	4
+method-class:settings	bridge	3
+method-class:settings	clinit	3
+method-class:settings	default-args-ctor-synthetic	3
+method-class:settings	synthetic-class-member(lambda/SAM body)	3
+method-class:utils	declared	45
+method-class:utils	default-args-synthetic	11
+method-class:utils	bridge	4
+method-class:utils	ctor-undeclared	4
+method-class:utils	synthetic-class-member(lambda/SAM body)	4
+method-class:utils	declared(by-name; signature derived)	2
+method-class:utils	clinit	1
+stdlib-Kt-owner	kotlin/io/CloseableKt.closeFinally	99
+stdlib-Kt-owner	kotlin/TuplesKt.to	41
+stdlib-Kt-owner	kotlin/collections/CollectionsKt.joinToString$default	39
+stdlib-Kt-owner	kotlin/collections/CollectionsKt.listOf	28
+stdlib-Kt-owner	kotlin/collections/CollectionsKt.collectionSizeOrDefault	18
+stdlib-Kt-owner	kotlin/LazyKt.lazy	17
+stdlib-Kt-owner	kotlin/collections/CollectionsKt.emptyList	16
+stdlib-Kt-owner	kotlin/collections/CollectionsKt.listOfNotNull	16
+stdlib-Kt-owner	kotlin/text/StringsKt.isBlank	16
+stdlib-Kt-owner	kotlin/text/StringsKt.replace$default	16
+stdlib-Kt-owner	kotlin/enums/EnumEntriesKt.enumEntries	14
+stdlib-Kt-owner	kotlin/text/StringsKt.endsWith$default	13
+stdlib-Kt-owner	kotlin/io/FilesKt.getNameWithoutExtension	12
+stdlib-Kt-owner	kotlin/collections/MapsKt.mapOf	8
+stdlib-Kt-owner	kotlin/text/StringsKt.split$default	7
+stdlib-Kt-owner	kotlin/io/FilesKt.copyTo$default	6
+stdlib-Kt-owner	kotlin/collections/MapsKt.mapCapacity	5
+stdlib-Kt-owner	kotlin/ranges/RangesKt.coerceAtLeast	5
+stdlib-Kt-owner	kotlin/text/StringsKt.trim	5
+stdlib-Kt-owner	kotlin/collections/ArraysKt.filterNotNull	4
+stdlib-Kt-owner	kotlin/collections/CollectionsKt.addAll	4
+stdlib-Kt-owner	kotlin/collections/CollectionsKt.toSet	4
+stdlib-Kt-owner	kotlin/io/FilesKt.resolve	4
+stdlib-Kt-owner	kotlin/sequences/SequencesKt.filter	4
+stdlib-Kt-owner	kotlin/text/StringsKt.startsWith$default	4
+stdlib-Kt-owner	(distinct keys)	73

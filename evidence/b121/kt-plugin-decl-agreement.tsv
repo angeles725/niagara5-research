@@ -1,0 +1,15 @@
+jar	metadata_fun_names	present_in_kt	kt_only_fun_names	classes_with_missing
+n-plugin	639	594	87	8
+n-conv-plugin	4	4	0	0
+settings	35	35	3	0
+utils	30	30	0	0
+
+# classes whose metadata function names are not all present as `fun` in the plugin's file (top-level class, missing names, count)
+n-plugin	com/tridium/gradle/plugins/grunt/util/GruntOptions	karma,toJsonObject	2
+n-plugin	com/tridium/gradle/plugins/grunt/util/KarmaConfig	ci,options,toJsonObject,watch	4
+n-plugin	com/tridium/gradle/plugins/natives/command/NativeCommand	getSourceFiles	1
+n-plugin	com/tridium/gradle/plugins/signing/SigningProfileFactory	createAndGetDefaultProfile,getDefaultSigningProfile,getProfile,getSigningProfile,make,registerFactoryForTypes,registerFa	7
+n-plugin	com/tridium/gradle/plugins/signing/profile/LocalSigningProfile	asPrivateKey,checkCaseSensitive,containsAlias,copyTo,create,createKeystore,deleteX509CertificateChain,doCreate,doSetX509	22
+n-plugin	com/tridium/gradle/plugins/task/AbstractSignedArchiveTaskKt	getCopyImpl,mapDefaults,pickALogger,signArchives	4
+n-plugin	com/tridium/gradle/plugins/task/SignedTar	copy,createCopyAction,getCompressor	3
+n-plugin	com/tridium/gradle/plugins/task/SignedZip	copy,createRootSpec	2

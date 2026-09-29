@@ -1,0 +1,10 @@
+# $VF marker census over the fresh --kt-enable=true trees (4 jars), count marker
+     67 $VF: Couldn't be decompiled
+     36 $VF: local visibility outside of methodSupplier
+     23 $VF: Class flags could not be determined
+      6 $VF: Unable to decompile class
+      1 $VF: Unable to resugar constructor
+# exception class named in the plugin stack traces
+     70 java.lang.IllegalStateException: Anonymous class does not have Class Kotlin metadata
+      8 java.lang.ArrayIndexOutOfBoundsException: Index 0 out of bounds for length 0
+      4 java.lang.NullPointerException: Cannot invoke "String.equals(Object)" because "n.simpleName"
