@@ -130,6 +130,9 @@ explains behaviour without being the source; claims read from it carry that cave
 included bin/ext class carries Kotlin, Scala (`ScalaSig`/`ScalaSignature`) or Groovy (`GroovyObject`) markers
 (0 of 21,752) `[CERT-hw]` (`jvmlang-preview.txt`).
 
+> **Correction (added by [Block 121], §121.2, §14 cross-block).** The four counts above are reproduced exactly (`evidence/b121/kotlin-census-all.tsv`), but "a Java decompile" is the wrong description of the corpus trees for these jars:
+> `organized/_etc-m2/<jar>/vineflower2/` holds Vineflower 1.12.0 **Kotlin-plugin** output (329 `.kt` + 62 `.java` files) with 67 method walls and 6 class walls; a Java-mode run (`--kt-enable=false`) has none. Scope clarification, not a refutation.
+
 **Preview class files:** 0. All 21,752 classes in the 247 module jars + 6 bin/ext jars are exactly
 major 69 / minor 0 (no minor 65535) `[CERT-hw]` (`jvmlang-preview.txt`).
 
