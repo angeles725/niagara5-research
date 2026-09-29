@@ -207,7 +207,7 @@ N4 content — B895/B922 had explicitly flagged N4's `-ux` client-JS half as "ja
 **`uxBuilder-ux.jar` (N4) contains zero `.class` files of any kind.** Full `namelist()`, 11 entries total:
 `META-INF/` (+`MANIFEST.MF`/`NIAGARA4.SF`/`NIAGARA4.RSA`/`module.xml`), `rc/uxBuilder.css`,
 `rc/uxBuilder.less`, `rc/uxBuilder.built.min.js`, `maps/uxBuilder.map` — CSS/LESS/a single pre-minified JS
-bundle and its sourcemap, and nothing else. `[CERT]` (`python3 zipfile.namelist()` over
+bundle and its sourcemap, and nothing else. **[CORRECTED by [Block 119] §119.6:** the N4 bundle is a 64-byte banner-only stub and `maps/uxBuilder.map` an empty map (0 sources); no shipped map belongs to any `*.built.min.js`.**]** `[CERT]` (`python3 zipfile.namelist()` over
 `organized/uxBuilder/uxBuilder-ux/uxBuilder-ux.jar`, this session, full listing printed and read). This
 independently CONFIRMS B895/B922's own "-ux half is jar-only, unreadable" framing at the strongest possible
 level: there is no compiled Java in this jar to enumerate — B895/B922 could not have missed any `ux/make`/

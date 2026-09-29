@@ -1,0 +1,562 @@
+{
+ "niagara5-block10.md": [
+  {
+   "tok": "Complex.js",
+   "resolved": 1,
+   "class": "readable"
+  }
+ ],
+ "niagara5-block102.md": [
+  {
+   "tok": "//uxBuilder/rc/fe/ActionArgEditor.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "//uxBuilder/rc/uxBuilder.built.min.js",
+   "resolved": 1,
+   "class": "minified-mean"
+  },
+  {
+   "tok": "ActionArgEditor.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "BoundOrdReplaceEditor.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "BoundOrdsEditor.js",
+   "resolved": 1,
+   "class": "long-line-only"
+  },
+  {
+   "tok": "Gruntfile.js",
+   "resolved": 3,
+   "class": "readable"
+  },
+  {
+   "tok": "MakeWidget.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "MwBoundLabel.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "MwChartWidget.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "MwFromPalette.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "MwPalettePreview.js",
+   "resolved": 1,
+   "class": "long-line-only"
+  },
+  {
+   "tok": "MwPropertiesWidget.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "MwPropertyBatch.js",
+   "resolved": 1,
+   "class": "long-line-only"
+  },
+  {
+   "tok": "MwPxInclude.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "MwWorkbenchView.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "NavNodesToUxModelFactory.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "VariablesEditor.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "javax.baja.web.js",
+   "resolved": 0,
+   "class": "unresolved"
+  },
+  {
+   "tok": "mwUtils.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "niagara.js",
+   "resolved": 0,
+   "class": "unresolved"
+  },
+  {
+   "tok": "niagara.web.js",
+   "resolved": 0,
+   "class": "unresolved"
+  },
+  {
+   "tok": "rc/ux/UxBuilder.js",
+   "resolved": 1,
+   "class": "long-line-only"
+  },
+  {
+   "tok": "rc/uxBuilder.built.min.js",
+   "resolved": 1,
+   "class": "minified-mean"
+  },
+  {
+   "tok": "uxBuilderUtils.js",
+   "resolved": 1,
+   "class": "long-line-only"
+  }
+ ],
+ "niagara5-block103.md": [
+  {
+   "tok": "ConfigFacetsCommand.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "FacetsRowEditor.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "nmodule/webEditors/rc/wb/commands/ConfigFacetsCommand.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "nmodule/webEditors/rc/wb/mixin/MultiSheetCommands.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "organized/webEditors/vineflower/rc/fe/baja/FacetsRowEditor.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "organized/webEditors/vineflower/rc/wb/MultiSheetRow.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "organized/webEditors/vineflower/rc/wb/PropertySheetRow.js",
+   "resolved": 1,
+   "class": "long-line-only"
+  },
+  {
+   "tok": "organized/webEditors/vineflower/rc/wb/commands/ConfigFacetsCommand.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "organized/webEditors/vineflower/rc/wb/mixin/MultiSheetCommands.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "webEditors/rc/wb/PropertySheetRow.js",
+   "resolved": 1,
+   "class": "long-line-only"
+  }
+ ],
+ "niagara5-block20.md": [
+  {
+   "tok": "Capacity.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "niagara/history/rc/baja/Capacity.js",
+   "resolved": 1,
+   "class": "readable"
+  }
+ ],
+ "niagara5-block21.md": [
+  {
+   "tok": "bajaux.built.min.js",
+   "resolved": 1,
+   "class": "minified-mean"
+  },
+  {
+   "tok": "bs.built.min.js",
+   "resolved": 1,
+   "class": "minified-mean"
+  },
+  {
+   "tok": "rc/baja/sys/BaseBajaObj.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "rc/bajaux.built.min.js",
+   "resolved": 1,
+   "class": "minified-mean"
+  },
+  {
+   "tok": "rc/bs.built.min.js",
+   "resolved": 1,
+   "class": "minified-mean"
+  },
+  {
+   "tok": "rc/bs.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "rc/env/jQueryBrowserEnvUtil.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "rc/env/require-node-config.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "rc/lifecycle/WidgetManager.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "rc/spandrel.js",
+   "resolved": 1,
+   "class": "readable"
+  }
+ ],
+ "niagara5-block26.md": [
+  {
+   "tok": "/tmp/claude-1000/n5b26/history_unzip/rc/fe/CapacityEditor.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "Capacity.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "CapacityEditor.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "organized/history/history-ux/vineflower/rc/fe/CapacityEditor.js",
+   "resolved": 1,
+   "class": "readable"
+  }
+ ],
+ "niagara5-block27.md": [
+  {
+   "tok": "activityMonitor.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "loginN4.js",
+   "resolved": 1,
+   "class": "readable"
+  }
+ ],
+ "niagara5-block36.md": [
+  {
+   "tok": "Gruftfile.js",
+   "resolved": 0,
+   "class": "unresolved"
+  },
+  {
+   "tok": "Gruntfile.js",
+   "resolved": 3,
+   "class": "readable"
+  }
+ ],
+ "niagara5-block38.md": [
+  {
+   "tok": "rc/TotpSecretKeyEditor.js",
+   "resolved": 1,
+   "class": "readable"
+  }
+ ],
+ "niagara5-block4.md": [
+  {
+   "tok": "JsPlayground.built.min.js",
+   "resolved": 1,
+   "class": "minified-mean"
+  },
+  {
+   "tok": "Sunlight.js",
+   "resolved": 0,
+   "class": "unresolved"
+  },
+  {
+   "tok": "babel.min.js",
+   "resolved": 1,
+   "class": "minified-mean"
+  },
+  {
+   "tok": "baja_comp_Component.js",
+   "resolved": 0,
+   "class": "unresolved"
+  },
+  {
+   "tok": "member-search-index.js",
+   "resolved": 0,
+   "class": "unresolved"
+  },
+  {
+   "tok": "module-search-index.js",
+   "resolved": 0,
+   "class": "unresolved"
+  },
+  {
+   "tok": "package-search-index.js",
+   "resolved": 0,
+   "class": "unresolved"
+  },
+  {
+   "tok": "type-search-index.js",
+   "resolved": 0,
+   "class": "unresolved"
+  }
+ ],
+ "niagara5-block49.md": [
+  {
+   "tok": "resources/rc/baja/boxcs/BoxComponentSpace.js",
+   "resolved": 1,
+   "class": "readable"
+  }
+ ],
+ "niagara5-block52.md": [
+  {
+   "tok": "csrfUtil.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "organized/js/vineflower/rc/csrf/csrfUtil.js",
+   "resolved": 1,
+   "class": "readable"
+  }
+ ],
+ "niagara5-block72.md": [
+  {
+   "tok": "CapacityEditor.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "DefaultSimpleEditor.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "FacetsRowEditor.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "organized/webEditors/vineflower/rc/fe/baja/DefaultSimpleEditor.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "organized/webEditors/vineflower/rc/fe/baja/FacetsRowEditor.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "rc/fe/baja/FacetsRowEditor.js",
+   "resolved": 1,
+   "class": "readable"
+  }
+ ],
+ "niagara5-block75.md": [
+  {
+   "tok": "rc/uxBuilder.built.min.js",
+   "resolved": 1,
+   "class": "minified-mean"
+  }
+ ],
+ "niagara5-block79.md": [
+  {
+   "tok": ".built.min.js",
+   "resolved": 0,
+   "class": "unresolved"
+  },
+  {
+   "tok": ".min.js",
+   "resolved": 0,
+   "class": "unresolved"
+  },
+  {
+   "tok": "//uxBuilder/rc/ux/UxBuilder.js",
+   "resolved": 1,
+   "class": "long-line-only"
+  },
+  {
+   "tok": "//uxBuilder/rc/uxBuilder.built.min.js",
+   "resolved": 1,
+   "class": "minified-mean"
+  },
+  {
+   "tok": "ActionArgEditor.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "BoundOrdReplaceEditor.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "Gruntfile.js",
+   "resolved": 3,
+   "class": "readable"
+  },
+  {
+   "tok": "MakeWidget.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "MwActionBatch.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "MwBoundLabel.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "MwChartWidget.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "MwFromPalette.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "MwPalettePreview.js",
+   "resolved": 1,
+   "class": "long-line-only"
+  },
+  {
+   "tok": "MwPropertiesWidget.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "MwPropertyBatch.js",
+   "resolved": 1,
+   "class": "long-line-only"
+  },
+  {
+   "tok": "MwPxInclude.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "MwWorkbenchView.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "UxMwConfig.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "VariablesEditor.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "WidgetEventEditor.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "WidgetPropertyEditor.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "bajaux.built.min.js",
+   "resolved": 1,
+   "class": "minified-mean"
+  },
+  {
+   "tok": "bs.built.min.js",
+   "resolved": 1,
+   "class": "minified-mean"
+  },
+  {
+   "tok": "mwUtils.js",
+   "resolved": 1,
+   "class": "readable"
+  },
+  {
+   "tok": "niagara.web.js",
+   "resolved": 0,
+   "class": "unresolved"
+  },
+  {
+   "tok": "organized/uxBuilder/vineflower/rc/ux/UxBuilder.js",
+   "resolved": 1,
+   "class": "long-line-only"
+  },
+  {
+   "tok": "organized/uxBuilder/vineflower/rc/uxBuilder.built.min.js",
+   "resolved": 1,
+   "class": "minified-mean"
+  },
+  {
+   "tok": "r.js",
+   "resolved": 1,
+   "class": "long-line-only"
+  },
+  {
+   "tok": "rc/ux/UxBuilder.js",
+   "resolved": 1,
+   "class": "long-line-only"
+  },
+  {
+   "tok": "rc/uxBuilder.built.min.js",
+   "resolved": 1,
+   "class": "minified-mean"
+  },
+  {
+   "tok": "relative-path-without-.js",
+   "resolved": 0,
+   "class": "unresolved"
+  },
+  {
+   "tok": "uxBuilder.built.min.js",
+   "resolved": 1,
+   "class": "minified-mean"
+  }
+ ]
+}

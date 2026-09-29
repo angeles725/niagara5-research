@@ -44,16 +44,16 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
      Field names use UNDERSCORES on purpose: they must never collide with the prose greps below. -->
 <!-- research-state.v1 -->
 schema: research-state.v1
-covered_blocks: 118
-gaps_closed: 389
-known_gaps: 510
-investigable_open: 22
-requires_execution_open: 23
+covered_blocks: 119
+gaps_closed: 390
+known_gaps: 515
+investigable_open: 25
+requires_execution_open: 24
 blocked_open: 64
 deferred_open: 12
 undocumented_findings: 0
-blocks_since_retro: 3
-last_iteration_ts: 2026-09-28T12:30:00Z
+blocks_since_retro: 4
+last_iteration_ts: 2026-09-29T01:20:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
      applies to every corpus (single-focus and campaign alike); the stall-detection instrument reads it
@@ -61,9 +61,9 @@ last_iteration_ts: 2026-09-28T12:30:00Z
 
 ## Coverage
 
-- **Covered blocks**: 118 (B1..B118)
-- **Coverage metric**: 389 / 510 closed
-- **Last iteration**: 2026-09-28 — B118 logic-recovery method ladder; research child gaps deferred to next session by user (focus: decompile fidelity)
+- **Covered blocks**: 119 (B1..B119)
+- **Coverage metric**: 390 / 515 closed
+- **Last iteration**: 2026-09-29 — B119 source-map census + minified-JS audit (closes B117-G3); focus: decompile fidelity
 
 ## Gap-backlog
 
@@ -496,7 +496,7 @@ last_iteration_ts: 2026-09-28T12:30:00Z
 | low | B116-G6 Independent second review of the 113 benign SEM? verdicts | evidence/b116 | pending |
 | high | B117-G1 Durable decompile of the 10 out-of-pipeline Tridium jars (etc/m2, lib doclet) and devkit LIB-INF Tridium jars | etc/m2 + devkit | pending |
 | medium | B117-G2 Audit corpus claims read from Java decompiles of the 4 Kotlin-compiled Tridium jars | corpus + etc/m2 | pending |
-| medium | B117-G3 Tag claims resting on minified JS; check the 86 .map files for original sources | module resources | pending |
+| medium | B117-G3 Tag claims resting on minified JS; check the 86 .map files for original sources | module resources | ✅ covered — B119 (86 maps: 42 carry originals, recovered to organized/_sourcemaps; 0 of the 234 minified files has a map; 132 truly minified + 102 long-line-only; 15 minified citations in 5 blocks, none contradicted) |
 | low | B117-G4 Decompile the 14 .NET assemblies (xprotect) and map the ffmpeg JNI surface | module payloads | pending |
 | medium | B117-G5 Verify Authenticode digests of the Tridium PE binaries | bin/ | ✅ covered — orchestrator (osslsigncode provisioned; 20/20 bin/*.dll,*.exe digest match, evidence/b117/authenticode-verify.txt; B117 counted 21 — 1 PE outside bin/ top level not yet checked) |
 | low | B117-G6 Second parser for B113 Go struct sizes | NCS-Agent binary | pending |
@@ -510,6 +510,11 @@ last_iteration_ts: 2026-09-28T12:30:00Z
 | low | B118-G5 Kit jvm-callgraph fails silently on class-file 69 (SootUp 2.0.0 / ASM <= V24) | kit toolbelt | pending (deferred; kit issue via retro) |
 | low | B118-G6 Extend the LineNumberTable discriminator to other resugarings (var, text blocks, switch expressions) | organized/ | pending (deferred to next session by user 2026-09-28) |
 | low | B118-G7 Launcher runtime trace (refused: license gate + config-home writes) | launchers | pending (refused; recorded wall) |
+| medium | B119-G1 Prove bundle membership: match the 71 rc/<module>.built.min.js define ids to shipped readable siblings | module resources | pending |
+| low | B119-G2 Hash the 160 upstream underscore 1.13.8 modules and 7 vendor min.js with dangling sourceMappingURL against npm | third-party JS | pending (needs external fetch) |
+| medium | B119-G3 Split is_minified_js into minified (mean >= 250 B) vs long-line-only in n5-extract-census.py; re-run sweep (132/102 not 234) | tools | pending |
+| low | B119-G4 Cite-form audit: file.js:line citations whose file has fewer lines (B21 built.min.js:1-400) | corpus | pending |
+| low | B119-G5 Compile the shipped .less and compare to shipped .css through the 42 LESS maps | module resources | requires-execution → §19 |
 | low | B104-G5 Live-station confirmation of B104's static driver/sync findings | station | requires-execution → §19 |
 | low | B106-G1 Gradle --info/dependencyInsight trace of which wiring puts the moduleTest jar on compileModuleTestJava | Gradle run | requires-execution → §19 |
 
@@ -635,6 +640,7 @@ last_iteration_ts: 2026-09-28T12:30:00Z
 | 116 | 2026-09-28 | Java decompile loss catalog: docSource = byte-identical ground truth (3,707 classes); 30-row synthetic loss matrix over 4 decompilers; 65,136 aligned members normalized; 11 confirmed Vineflower semantic defects D1-D11 (0.030%); §14 pointer B115 | B116 | yes · opus | 6 new — B116-G1..G6 |
 | 117 | 2026-09-28 | Extraction + native fidelity: 21,751 classes byte-exact, 356 signed jars verified, 0 obfuscation (ZKM positive control), 24,896 nested-jar + 958 out-of-pipeline Tridium classes never decompiled, 45/46 single-instrument native claims corroborated; §14 pointers B30/B43/B61/B63/B87/B94/B113 | B117 | yes · opus | 9 new — B117-G1..G9 |
 | 118 | 2026-09-28 | Logic-recovery method ladder: conservative line-mapped Vineflower (669/669 lines match docSource), LineNumberTable pattern discriminator, SootUp/Joern bytecode call graphs on class-file 69, differential execution + jqwik + JaCoCo, CodeQL traced vs Joern dataflow, krak2 -r 20,724/20,724 byte-identical; §14 pointers B107, B115 | B118 | yes · opus | 7 new — B118-G1..G7 |
+| 119 | 2026-09-29 | Source-map census + minified-JS audit (B117-G3): 86 JSON maps (42 with originals, all Babel-transpiled driver/workbench JS that already ships readable; 42 LESS; 1 underscore; 1 empty), 0 of 234 minified JS files has a map, 132 truly minified + 102 long-line-only, 15 minified citations in 5 blocks none contradicted; tools/n5-sourcemap-recover.py (RED→GREEN 16 tests) recovered 42 originals; §14 pointer B75 | B119 | yes · sonnet | 5 new — B119-G1..G5 |
 
 ## Blocked gaps (each tagged with what it needs)
 
@@ -705,8 +711,8 @@ last_iteration_ts: 2026-09-28T12:30:00Z
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 22
-- **Open gaps — requires-execution**: 23
+- **Open gaps — read-only investigable**: 25
+- **Open gaps — requires-execution**: 24
 - **Open gaps — blocked**: 64
 - Consecutive iterations with empty backlog (secondary): 0/2
 - Budget cap (default safety net): none

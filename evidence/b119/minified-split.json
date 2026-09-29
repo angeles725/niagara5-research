@@ -1,0 +1,1644 @@
+{
+ "mean_ge_250": [
+  {
+   "path": "ace/extracted/rc/ace.built.min.js",
+   "lines": 5,
+   "bytes": 1303,
+   "mean": 260.6,
+   "longest": 1239
+  },
+  {
+   "path": "alarm/extracted/rc/alarm.built.min.js",
+   "lines": 5,
+   "bytes": 154097,
+   "mean": 30819.4,
+   "longest": 154033
+  },
+  {
+   "path": "analytics/extracted/ext/datatables/jquery.dataTables.min.js",
+   "lines": 188,
+   "bytes": 87897,
+   "mean": 467.5,
+   "longest": 538
+  },
+  {
+   "path": "analytics/extracted/ext/billboard/billboard.min.js",
+   "lines": 35,
+   "bytes": 274542,
+   "mean": 7844.1,
+   "longest": 103098
+  },
+  {
+   "path": "analytics/extracted/rc/analytics.built.min.js",
+   "lines": 5,
+   "bytes": 527895,
+   "mean": 105579.0,
+   "longest": 527831
+  },
+  {
+   "path": "awsUtils/extracted/rc/awsUtils.built.min.js",
+   "lines": 4,
+   "bytes": 3013,
+   "mean": 753.2,
+   "longest": 2950
+  },
+  {
+   "path": "bacnet/extracted/rc/bacnet.built.min.js",
+   "lines": 5,
+   "bytes": 184061,
+   "mean": 36812.2,
+   "longest": 183997
+  },
+  {
+   "path": "bacnetAws/extracted/rc/bacnetAws.built.min.js",
+   "lines": 5,
+   "bytes": 26230,
+   "mean": 5246.0,
+   "longest": 26166
+  },
+  {
+   "path": "bajaScript/extracted/rc/bs.built.min.js",
+   "lines": 5,
+   "bytes": 363641,
+   "mean": 72728.2,
+   "longest": 363577
+  },
+  {
+   "path": "bajaScript/extracted/rc/ctypes.js",
+   "lines": 7,
+   "bytes": 16362,
+   "mean": 2337.4,
+   "longest": 16241
+  },
+  {
+   "path": "bajaui/extracted/rc/bajaui.built.min.js",
+   "lines": 5,
+   "bytes": 158504,
+   "mean": 31700.8,
+   "longest": 158440
+  },
+  {
+   "path": "bajaux/extracted/rc/bajaux.built.min.js",
+   "lines": 5,
+   "bytes": 155569,
+   "mean": 31113.8,
+   "longest": 155505
+  },
+  {
+   "path": "batchJob/extracted/rc/batchJob.built.min.js",
+   "lines": 5,
+   "bytes": 63634,
+   "mean": 12726.8,
+   "longest": 63570
+  },
+  {
+   "path": "bql/extracted/rc/bql.built.min.js",
+   "lines": 5,
+   "bytes": 90146,
+   "mean": 18029.2,
+   "longest": 90082
+  },
+  {
+   "path": "ccn/extracted/rc/ccn.built.min.js",
+   "lines": 1,
+   "bytes": 39781,
+   "mean": 39781.0,
+   "longest": 39781
+  },
+  {
+   "path": "cloudLink/extracted/rc/cloudLink.built.min.js",
+   "lines": 1,
+   "bytes": 32366,
+   "mean": 32366.0,
+   "longest": 32366
+  },
+  {
+   "path": "cloudLinkForge/extracted/rc/cloudLinkForge.built.min.js",
+   "lines": 1,
+   "bytes": 6654,
+   "mean": 6654.0,
+   "longest": 6654
+  },
+  {
+   "path": "control/extracted/rc/control.built.min.js",
+   "lines": 5,
+   "bytes": 19377,
+   "mean": 3875.4,
+   "longest": 19313
+  },
+  {
+   "path": "converters/extracted/rc/converters.built.min.js",
+   "lines": 5,
+   "bytes": 47514,
+   "mean": 9502.8,
+   "longest": 47450
+  },
+  {
+   "path": "dashboard/extracted/rc/dashboard.built.min.js",
+   "lines": 5,
+   "bytes": 10944,
+   "mean": 2188.8,
+   "longest": 10880
+  },
+  {
+   "path": "docDeveloper/extracted/ext/@babel/standalone/babel.min.js",
+   "lines": 5,
+   "bytes": 3073951,
+   "mean": 614790.2,
+   "longest": 3070049
+  },
+  {
+   "path": "docDeveloper/extracted/doc/jsdoc/batchJob/scripts/prettify/lang-css.js",
+   "lines": 3,
+   "bytes": 861,
+   "mean": 287.0,
+   "longest": 469
+  },
+  {
+   "path": "docDeveloper/extracted/doc/jsdoc/batchJob/scripts/prettify/prettify.js",
+   "lines": 29,
+   "bytes": 13632,
+   "mean": 470.1,
+   "longest": 592
+  },
+  {
+   "path": "docDeveloper/extracted/doc/jsdoc/export/scripts/prettify/lang-css.js",
+   "lines": 3,
+   "bytes": 861,
+   "mean": 287.0,
+   "longest": 469
+  },
+  {
+   "path": "docDeveloper/extracted/doc/jsdoc/export/scripts/prettify/prettify.js",
+   "lines": 29,
+   "bytes": 13632,
+   "mean": 470.1,
+   "longest": 592
+  },
+  {
+   "path": "docDeveloper/extracted/doc/jsdoc/webEditors/scripts/prettify/lang-css.js",
+   "lines": 3,
+   "bytes": 861,
+   "mean": 287.0,
+   "longest": 469
+  },
+  {
+   "path": "docDeveloper/extracted/doc/jsdoc/webEditors/scripts/prettify/prettify.js",
+   "lines": 29,
+   "bytes": 13632,
+   "mean": 470.1,
+   "longest": 592
+  },
+  {
+   "path": "docDeveloper/extracted/doc/jsdoc/js/scripts/prettify/lang-css.js",
+   "lines": 3,
+   "bytes": 861,
+   "mean": 287.0,
+   "longest": 469
+  },
+  {
+   "path": "docDeveloper/extracted/doc/jsdoc/js/scripts/prettify/prettify.js",
+   "lines": 29,
+   "bytes": 13632,
+   "mean": 470.1,
+   "longest": 592
+  },
+  {
+   "path": "docDeveloper/extracted/doc/jsdoc/bajaui/scripts/prettify/lang-css.js",
+   "lines": 3,
+   "bytes": 861,
+   "mean": 287.0,
+   "longest": 469
+  },
+  {
+   "path": "docDeveloper/extracted/doc/jsdoc/bajaui/scripts/prettify/prettify.js",
+   "lines": 29,
+   "bytes": 13632,
+   "mean": 470.1,
+   "longest": 592
+  },
+  {
+   "path": "docDeveloper/extracted/doc/jsdoc/bajaScript/scripts/prettify/lang-css.js",
+   "lines": 3,
+   "bytes": 861,
+   "mean": 287.0,
+   "longest": 469
+  },
+  {
+   "path": "docDeveloper/extracted/doc/jsdoc/bajaScript/scripts/prettify/prettify.js",
+   "lines": 29,
+   "bytes": 13632,
+   "mean": 470.1,
+   "longest": 592
+  },
+  {
+   "path": "docDeveloper/extracted/doc/jsdoc/driver/scripts/prettify/lang-css.js",
+   "lines": 3,
+   "bytes": 861,
+   "mean": 287.0,
+   "longest": 469
+  },
+  {
+   "path": "docDeveloper/extracted/doc/jsdoc/driver/scripts/prettify/prettify.js",
+   "lines": 29,
+   "bytes": 13632,
+   "mean": 470.1,
+   "longest": 592
+  },
+  {
+   "path": "docDeveloper/extracted/doc/jsdoc/bajaux/scripts/prettify/lang-css.js",
+   "lines": 3,
+   "bytes": 861,
+   "mean": 287.0,
+   "longest": 469
+  },
+  {
+   "path": "docDeveloper/extracted/doc/jsdoc/bajaux/scripts/prettify/prettify.js",
+   "lines": 29,
+   "bytes": 13632,
+   "mean": 470.1,
+   "longest": 592
+  },
+  {
+   "path": "docDeveloper/extracted/doc/jsdoc/converters/scripts/prettify/lang-css.js",
+   "lines": 3,
+   "bytes": 861,
+   "mean": 287.0,
+   "longest": 469
+  },
+  {
+   "path": "docDeveloper/extracted/doc/jsdoc/converters/scripts/prettify/prettify.js",
+   "lines": 29,
+   "bytes": 13632,
+   "mean": 470.1,
+   "longest": 592
+  },
+  {
+   "path": "docDeveloper/extracted/rc/JsPlayground.built.min.js",
+   "lines": 1,
+   "bytes": 2946323,
+   "mean": 2946323.0,
+   "longest": 2946323
+  },
+  {
+   "path": "driver/extracted/rc/driver.built.min.js",
+   "lines": 5,
+   "bytes": 62302,
+   "mean": 12460.4,
+   "longest": 62238
+  },
+  {
+   "path": "email/extracted/rc/email.built.min.js",
+   "lines": 5,
+   "bytes": 26594,
+   "mean": 5318.8,
+   "longest": 26530
+  },
+  {
+   "path": "export/extracted/rc/export.built.min.js",
+   "lines": 5,
+   "bytes": 3501,
+   "mean": 700.2,
+   "longest": 3437
+  },
+  {
+   "path": "gx/extracted/rc/gx.built.min.js",
+   "lines": 5,
+   "bytes": 135696,
+   "mean": 27139.2,
+   "longest": 135632
+  },
+  {
+   "path": "hierarchy/extracted/rc/hierarchy.built.min.js",
+   "lines": 5,
+   "bytes": 10027,
+   "mean": 2005.4,
+   "longest": 9963
+  },
+  {
+   "path": "history/extracted/rc/history.built.min.js",
+   "lines": 5,
+   "bytes": 93663,
+   "mean": 18732.6,
+   "longest": 93599
+  },
+  {
+   "path": "httpClient/extracted/rc/httpClient.built.min.js",
+   "lines": 4,
+   "bytes": 22709,
+   "mean": 5677.2,
+   "longest": 22646
+  },
+  {
+   "path": "hx/extracted/rc/container/hxContainer.built.min.js",
+   "lines": 4,
+   "bytes": 16035,
+   "mean": 4008.8,
+   "longest": 15972
+  },
+  {
+   "path": "js/extracted/com/tridium/js/ext/require/require.min.js",
+   "lines": 5,
+   "bytes": 17589,
+   "mean": 3517.8,
+   "longest": 17387
+  },
+  {
+   "path": "js/extracted/rc/js.built.min.js",
+   "lines": 6,
+   "bytes": 51618,
+   "mean": 8603.0,
+   "longest": 51553
+  },
+  {
+   "path": "js/extracted/rc/underscore/underscore-min.js",
+   "lines": 6,
+   "bytes": 19668,
+   "mean": 3278.0,
+   "longest": 19134
+  },
+  {
+   "path": "js/extracted/rc/bluebird/bluebird.min.js",
+   "lines": 31,
+   "bytes": 81526,
+   "mean": 2629.9,
+   "longest": 32017
+  },
+  {
+   "path": "js/extracted/rc/require-handlebars-plugin/hbs.built.min.js",
+   "lines": 8,
+   "bytes": 7348,
+   "mean": 918.5,
+   "longest": 7108
+  },
+  {
+   "path": "js/extracted/rc/d3/d3.min.js",
+   "lines": 3,
+   "bytes": 279706,
+   "mean": 93235.3,
+   "longest": 279645
+  },
+  {
+   "path": "js/extracted/rc/handlebars/handlebars.min.js",
+   "lines": 29,
+   "bytes": 89375,
+   "mean": 3081.9,
+   "longest": 32017
+  },
+  {
+   "path": "js/extracted/rc/handlebars/handlebars.runtime.min.js",
+   "lines": 27,
+   "bytes": 28642,
+   "mean": 1060.8,
+   "longest": 27539
+  },
+  {
+   "path": "js/extracted/rc/jquery/jquery.min.js",
+   "lines": 3,
+   "bytes": 87533,
+   "mean": 29177.7,
+   "longest": 87443
+  },
+  {
+   "path": "js/extracted/rc/jquery/contextMenu/jquery.contextMenu.min.js",
+   "lines": 3,
+   "bytes": 27928,
+   "mean": 9309.3,
+   "longest": 27876
+  },
+  {
+   "path": "js/extracted/rc/jquery/contextMenu/jquery.ui.position.min.js",
+   "lines": 6,
+   "bytes": 5937,
+   "mean": 989.5,
+   "longest": 5782
+  },
+  {
+   "path": "js/extracted/rc/ace/mode-javascript.js",
+   "lines": 8,
+   "bytes": 27948,
+   "mean": 3493.5,
+   "longest": 27758
+  },
+  {
+   "path": "js/extracted/rc/ace/mode-html.js",
+   "lines": 8,
+   "bytes": 63477,
+   "mean": 7934.6,
+   "longest": 63293
+  },
+  {
+   "path": "js/extracted/rc/ace/ace.js",
+   "lines": 23,
+   "bytes": 472478,
+   "mean": 20542.5,
+   "longest": 471722
+  },
+  {
+   "path": "js/extracted/rc/ace/mode-r.js",
+   "lines": 8,
+   "bytes": 5385,
+   "mean": 673.1,
+   "longest": 5204
+  },
+  {
+   "path": "js/extracted/rc/ace/worker-css.js",
+   "lines": 1,
+   "bytes": 151082,
+   "mean": 151082.0,
+   "longest": 151082
+  },
+  {
+   "path": "js/extracted/rc/ace/mode-velocity.js",
+   "lines": 8,
+   "bytes": 68252,
+   "mean": 8531.5,
+   "longest": 68064
+  },
+  {
+   "path": "js/extracted/rc/ace/theme-monokai.js",
+   "lines": 8,
+   "bytes": 3240,
+   "mean": 405.0,
+   "longest": 3052
+  },
+  {
+   "path": "js/extracted/rc/ace/mode-handlebars.js",
+   "lines": 8,
+   "bytes": 65350,
+   "mean": 8168.8,
+   "longest": 65160
+  },
+  {
+   "path": "js/extracted/rc/ace/ext-searchbox.js",
+   "lines": 8,
+   "bytes": 14033,
+   "mean": 1754.1,
+   "longest": 13845
+  },
+  {
+   "path": "js/extracted/rc/ace/worker-html.js",
+   "lines": 1,
+   "bytes": 208882,
+   "mean": 208882.0,
+   "longest": 208882
+  },
+  {
+   "path": "js/extracted/rc/ace/mode-java.js",
+   "lines": 8,
+   "bytes": 35235,
+   "mean": 4404.4,
+   "longest": 35051
+  },
+  {
+   "path": "js/extracted/rc/ace/mode-xml.js",
+   "lines": 8,
+   "bytes": 10264,
+   "mean": 1283.0,
+   "longest": 10081
+  },
+  {
+   "path": "js/extracted/rc/ace/worker-json.js",
+   "lines": 1,
+   "bytes": 24346,
+   "mean": 24346.0,
+   "longest": 24346
+  },
+  {
+   "path": "js/extracted/rc/ace/mode-jsx.js",
+   "lines": 8,
+   "bytes": 28290,
+   "mean": 3536.2,
+   "longest": 28107
+  },
+  {
+   "path": "js/extracted/rc/ace/mode-json.js",
+   "lines": 8,
+   "bytes": 5434,
+   "mean": 679.2,
+   "longest": 5250
+  },
+  {
+   "path": "js/extracted/rc/ace/theme-chrome.js",
+   "lines": 8,
+   "bytes": 3758,
+   "mean": 469.8,
+   "longest": 3571
+  },
+  {
+   "path": "js/extracted/rc/ace/worker-xml.js",
+   "lines": 1,
+   "bytes": 46914,
+   "mean": 46914.0,
+   "longest": 46914
+  },
+  {
+   "path": "js/extracted/rc/ace/mode-css.js",
+   "lines": 8,
+   "bytes": 20840,
+   "mean": 2605.0,
+   "longest": 20669
+  },
+  {
+   "path": "js/extracted/rc/ace/mode-less.js",
+   "lines": 8,
+   "bytes": 22843,
+   "mean": 2855.4,
+   "longest": 22659
+  },
+  {
+   "path": "js/extracted/rc/ace/worker-javascript.js",
+   "lines": 1,
+   "bytes": 513545,
+   "mean": 513545.0,
+   "longest": 513545
+  },
+  {
+   "path": "js/extracted/rc/moment/moment.min.js",
+   "lines": 2,
+   "bytes": 58890,
+   "mean": 29445.0,
+   "longest": 58851
+  },
+  {
+   "path": "jsonToolkit/extracted/rc/jsonToolkit.built.min.js",
+   "lines": 4,
+   "bytes": 33430,
+   "mean": 8357.5,
+   "longest": 33367
+  },
+  {
+   "path": "kitControl/extracted/rc/kitControl.built.min.js",
+   "lines": 5,
+   "bytes": 21112,
+   "mean": 4222.4,
+   "longest": 21048
+  },
+  {
+   "path": "kitIo/extracted/rc/kitIo.built.min.js",
+   "lines": 5,
+   "bytes": 3269,
+   "mean": 653.8,
+   "longest": 3205
+  },
+  {
+   "path": "kitPx/extracted/rc/kitPx.built.min.js",
+   "lines": 5,
+   "bytes": 52533,
+   "mean": 10506.6,
+   "longest": 52469
+  },
+  {
+   "path": "lonworks/extracted/rc/lonworks.built.min.js",
+   "lines": 5,
+   "bytes": 108404,
+   "mean": 21680.8,
+   "longest": 108340
+  },
+  {
+   "path": "maxpro/extracted/ext/std-video-player/dependency/video-js.min.js",
+   "lines": 26,
+   "bytes": 560398,
+   "mean": 21553.8,
+   "longest": 200171
+  },
+  {
+   "path": "maxpro/extracted/rc/maxpro.built.min.js",
+   "lines": 1,
+   "bytes": 594634,
+   "mean": 594634.0,
+   "longest": 594634
+  },
+  {
+   "path": "modbusAsync/extracted/rc/modbusAsync.built.min.js",
+   "lines": 1,
+   "bytes": 4074,
+   "mean": 4074.0,
+   "longest": 4074
+  },
+  {
+   "path": "modbusCore/extracted/rc/modbusCore.built.min.js",
+   "lines": 5,
+   "bytes": 26468,
+   "mean": 5293.6,
+   "longest": 26404
+  },
+  {
+   "path": "modbusSlave/extracted/rc/modbusSlave.built.min.js",
+   "lines": 1,
+   "bytes": 3852,
+   "mean": 3852.0,
+   "longest": 3852
+  },
+  {
+   "path": "modbusTcp/extracted/rc/modbusTcp.built.min.js",
+   "lines": 1,
+   "bytes": 5807,
+   "mean": 5807.0,
+   "longest": 5807
+  },
+  {
+   "path": "modbusTcpSlave/extracted/rc/modbusTcpSlave.built.min.js",
+   "lines": 1,
+   "bytes": 3970,
+   "mean": 3970.0,
+   "longest": 3970
+  },
+  {
+   "path": "naxisVideo/extracted/ext/naxisVideo/media-stream-library.min.js",
+   "lines": 43,
+   "bytes": 185200,
+   "mean": 4307.0,
+   "longest": 109121
+  },
+  {
+   "path": "naxisVideo/extracted/rc/naxisVideo.built.min.js",
+   "lines": 5,
+   "bytes": 12278,
+   "mean": 2455.6,
+   "longest": 12214
+  },
+  {
+   "path": "ndriver/extracted/rc/ndriver.built.min.js",
+   "lines": 5,
+   "bytes": 18965,
+   "mean": 3793.0,
+   "longest": 18901
+  },
+  {
+   "path": "niagaraDriver/extracted/rc/niagaraDriver.built.min.js",
+   "lines": 5,
+   "bytes": 51429,
+   "mean": 10285.8,
+   "longest": 51365
+  },
+  {
+   "path": "niagaraSystemIndex/extracted/rc/niagaraSystemIndex.built.min.js",
+   "lines": 5,
+   "bytes": 4391,
+   "mean": 878.2,
+   "longest": 4327
+  },
+  {
+   "path": "nrio/extracted/rc/nrio.built.min.js",
+   "lines": 5,
+   "bytes": 32301,
+   "mean": 6460.2,
+   "longest": 32237
+  },
+  {
+   "path": "nss/extracted/rc/nss.built.min.js",
+   "lines": 5,
+   "bytes": 45074,
+   "mean": 9014.8,
+   "longest": 45010
+  },
+  {
+   "path": "nurio/extracted/rc/nurio.built.min.js",
+   "lines": 5,
+   "bytes": 35464,
+   "mean": 7092.8,
+   "longest": 35400
+  },
+  {
+   "path": "onCall/extracted/rc/onCall.built.min.js",
+   "lines": 1,
+   "bytes": 12658,
+   "mean": 12658.0,
+   "longest": 12658
+  },
+  {
+   "path": "platCrypto/extracted/rc/platCrypto.built.min.js",
+   "lines": 5,
+   "bytes": 150076,
+   "mean": 30015.2,
+   "longest": 150012
+  },
+  {
+   "path": "platDataRecovery/extracted/rc/platDataRecovery.built.min.js",
+   "lines": 1,
+   "bytes": 6549,
+   "mean": 6549.0,
+   "longest": 6549
+  },
+  {
+   "path": "platform/extracted/rc/platform.built.min.js",
+   "lines": 5,
+   "bytes": 6036,
+   "mean": 1207.2,
+   "longest": 5972
+  },
+  {
+   "path": "provisioningNiagara/extracted/rc/provisioningNiagara.built.min.js",
+   "lines": 5,
+   "bytes": 165989,
+   "mean": 33197.8,
+   "longest": 165925
+  },
+  {
+   "path": "rdb/extracted/rc/rdb.built.min.js",
+   "lines": 5,
+   "bytes": 20434,
+   "mean": 4086.8,
+   "longest": 20370
+  },
+  {
+   "path": "rdbMySQL/extracted/rc/rdbMySQL.built.min.js",
+   "lines": 5,
+   "bytes": 4392,
+   "mean": 878.4,
+   "longest": 4328
+  },
+  {
+   "path": "rdbSqlServer/extracted/rc/rdbSqlServer.built.min.js",
+   "lines": 5,
+   "bytes": 4424,
+   "mean": 884.8,
+   "longest": 4360
+  },
+  {
+   "path": "report/extracted/rc/report.built.min.js",
+   "lines": 5,
+   "bytes": 25845,
+   "mean": 5169.0,
+   "longest": 25781
+  },
+  {
+   "path": "saml/extracted/rc/saml.built.min.js",
+   "lines": 5,
+   "bytes": 41849,
+   "mean": 8369.8,
+   "longest": 41785
+  },
+  {
+   "path": "schedule/extracted/rc/schedule.built.min.js",
+   "lines": 5,
+   "bytes": 128820,
+   "mean": 25764.0,
+   "longest": 128756
+  },
+  {
+   "path": "search/extracted/rc/search.built.min.js",
+   "lines": 5,
+   "bytes": 54263,
+   "mean": 10852.6,
+   "longest": 54199
+  },
+  {
+   "path": "seriesTransform/extracted/rc/seriesTransform.built.min.js",
+   "lines": 5,
+   "bytes": 2281,
+   "mean": 456.2,
+   "longest": 2217
+  },
+  {
+   "path": "signingService/extracted/rc/signingService.built.min.js",
+   "lines": 1,
+   "bytes": 14563,
+   "mean": 14563.0,
+   "longest": 14563
+  },
+  {
+   "path": "smartTableHx/extracted/rc/smartTableHx.built.min.js",
+   "lines": 9,
+   "bytes": 27004,
+   "mean": 3000.4,
+   "longest": 26882
+  },
+  {
+   "path": "tagdictionary/extracted/ext/vis-network/vis-network.min.js",
+   "lines": 27,
+   "bytes": 476576,
+   "mean": 17651.0,
+   "longest": 475990
+  },
+  {
+   "path": "tagdictionary/extracted/rc/tagdictionary.built.min.js",
+   "lines": 5,
+   "bytes": 102996,
+   "mean": 20599.2,
+   "longest": 102932
+  },
+  {
+   "path": "test/extracted/META-INF/resources/webjars/jquery/3.5.1/jquery.min.js",
+   "lines": 3,
+   "bytes": 87533,
+   "mean": 29177.7,
+   "longest": 87443
+  },
+  {
+   "path": "totpAuth/extracted/ext/forge/forge.min.js",
+   "lines": 3,
+   "bytes": 283280,
+   "mean": 94426.7,
+   "longest": 283241
+  },
+  {
+   "path": "totpAuth/extracted/rc/totpAuth.built.min.js",
+   "lines": 5,
+   "bytes": 313623,
+   "mean": 62724.6,
+   "longest": 313559
+  },
+  {
+   "path": "uxBuilder/extracted/rc/uxBuilder.built.min.js",
+   "lines": 5,
+   "bytes": 382030,
+   "mean": 76406.0,
+   "longest": 381966
+  },
+  {
+   "path": "videoDriver/extracted/ext/hls/hls.min.js",
+   "lines": 3,
+   "bytes": 541870,
+   "mean": 180623.3,
+   "longest": 541833
+  },
+  {
+   "path": "videoDriver/extracted/rc/videoDriver.built.min.js",
+   "lines": 5,
+   "bytes": 112914,
+   "mean": 22582.8,
+   "longest": 112850
+  },
+  {
+   "path": "weather/extracted/rc/weather.built.min.js",
+   "lines": 1,
+   "bytes": 35039,
+   "mean": 35039.0,
+   "longest": 35039
+  },
+  {
+   "path": "webChart/extracted/rc/webChart.built.min.js",
+   "lines": 5,
+   "bytes": 234851,
+   "mean": 46970.2,
+   "longest": 234787
+  },
+  {
+   "path": "webEditors/extracted/rc/webEditors.built.min.js",
+   "lines": 5,
+   "bytes": 959642,
+   "mean": 191928.4,
+   "longest": 959578
+  },
+  {
+   "path": "wiresheet/extracted/rc/wiresheet.built.min.js",
+   "lines": 5,
+   "bytes": 157710,
+   "mean": 31542.0,
+   "longest": 157646
+  },
+  {
+   "path": "workbench/extracted/rc/find/findCommands.built.min.js",
+   "lines": 5,
+   "bytes": 1926,
+   "mean": 385.2,
+   "longest": 1862
+  },
+  {
+   "path": "xprotect/extracted/ext/sdk/Lib/security/SHA512.js",
+   "lines": 24,
+   "bytes": 8320,
+   "mean": 346.7,
+   "longest": 548
+  },
+  {
+   "path": "xprotect/extracted/ext/sdk/Lib/security/SHA256.js",
+   "lines": 17,
+   "bytes": 4608,
+   "mean": 271.1,
+   "longest": 548
+  },
+  {
+   "path": "xprotect/extracted/ext/sdk/Lib/security/AES.js",
+   "lines": 36,
+   "bytes": 13358,
+   "mean": 371.1,
+   "longest": 548
+  },
+  {
+   "path": "xprotect/extracted/rc/xprotect.built.min.js",
+   "lines": 5,
+   "bytes": 21991,
+   "mean": 4398.2,
+   "longest": 21927
+  }
+ ],
+ "longest_only": [
+  {
+   "path": "alarm/extracted/rc/console/AlarmConsole.js",
+   "lines": 754,
+   "bytes": 28623,
+   "mean": 38.0,
+   "longest": 2079
+  },
+  {
+   "path": "alarm/extracted/rc/console/baja/BajaAlarmConsoleSupport.js",
+   "lines": 446,
+   "bytes": 17533,
+   "mean": 39.3,
+   "longest": 1225
+  },
+  {
+   "path": "alarm/extracted/rc/views/AlarmExtUxManager.js",
+   "lines": 734,
+   "bytes": 29659,
+   "mean": 40.4,
+   "longest": 1925
+  },
+  {
+   "path": "analytics/extracted/rc/report/base/AnalyticReportConfigItemEditor.js",
+   "lines": 194,
+   "bytes": 7857,
+   "mean": 40.5,
+   "longest": 1602
+  },
+  {
+   "path": "analytics/extracted/rc/report/base/AnalyticReportConfigEditor.js",
+   "lines": 639,
+   "bytes": 21934,
+   "mean": 34.3,
+   "longest": 1089
+  },
+  {
+   "path": "analytics/extracted/rc/report/menu/ReportListView.js",
+   "lines": 619,
+   "bytes": 21254,
+   "mean": 34.3,
+   "longest": 1018
+  },
+  {
+   "path": "analytics/extracted/rc/report/menu/AnalyticReportView.js",
+   "lines": 109,
+   "bytes": 4777,
+   "mean": 43.8,
+   "longest": 1084
+  },
+  {
+   "path": "analytics/extracted/rc/report/container/base/AnalyticsBaseReport.js",
+   "lines": 668,
+   "bytes": 23288,
+   "mean": 34.9,
+   "longest": 1256
+  },
+  {
+   "path": "analytics/extracted/rc/report/fe/UxNodeSelectionEditor.js",
+   "lines": 429,
+   "bytes": 15726,
+   "mean": 36.7,
+   "longest": 1289
+  },
+  {
+   "path": "analytics/extracted/rc/chart/base/AnalyticsBaseChart.js",
+   "lines": 373,
+   "bytes": 15263,
+   "mean": 40.9,
+   "longest": 1590
+  },
+  {
+   "path": "analytics/extracted/rc/chart/base/AnalyticsBaseWidget.js",
+   "lines": 1081,
+   "bytes": 40735,
+   "mean": 37.7,
+   "longest": 1786
+  },
+  {
+   "path": "analytics/extracted/rc/chart/base/AnalyticsCommandBar.js",
+   "lines": 279,
+   "bytes": 11464,
+   "mean": 41.1,
+   "longest": 1035
+  },
+  {
+   "path": "analytics/extracted/rc/chart/base/AnalyticC3BaseChart.js",
+   "lines": 544,
+   "bytes": 17214,
+   "mean": 31.6,
+   "longest": 1068
+  },
+  {
+   "path": "analytics/extracted/rc/chart/utils/AnalyticsDataUtils.js",
+   "lines": 1146,
+   "bytes": 47556,
+   "mean": 41.5,
+   "longest": 1111
+  },
+  {
+   "path": "analytics/extracted/rc/chart/fe/AnalyticUxWebChartSettingsFE.js",
+   "lines": 343,
+   "bytes": 13075,
+   "mean": 38.1,
+   "longest": 1247
+  },
+  {
+   "path": "analytics/extracted/rc/chart/fe/AnalyticRankingChartUXSettingsFE.js",
+   "lines": 56,
+   "bytes": 2893,
+   "mean": 51.7,
+   "longest": 1001
+  },
+  {
+   "path": "analytics/extracted/rc/chart/fe/TableUxWebChartSettingsFE.js",
+   "lines": 135,
+   "bytes": 5309,
+   "mean": 39.3,
+   "longest": 1213
+  },
+  {
+   "path": "analytics/extracted/rc/table/AnalyticsBaseTable.js",
+   "lines": 392,
+   "bytes": 15850,
+   "mean": 40.4,
+   "longest": 1629
+  },
+  {
+   "path": "bacnet/extracted/rc/wb/mgr/LazyBacnetPointUxManager.js",
+   "lines": 1009,
+   "bytes": 37936,
+   "mean": 37.6,
+   "longest": 1173
+  },
+  {
+   "path": "bacnet/extracted/rc/wb/mgr/BacnetDeviceUxManager.js",
+   "lines": 441,
+   "bytes": 19096,
+   "mean": 43.3,
+   "longest": 1493
+  },
+  {
+   "path": "bacnet/extracted/rc/wb/mgr/export/BacnetExportUxManager.js",
+   "lines": 395,
+   "bytes": 19687,
+   "mean": 49.8,
+   "longest": 1278
+  },
+  {
+   "path": "bacnet/extracted/rc/wb/mgr/model/BacnetExportModel.js",
+   "lines": 199,
+   "bytes": 13774,
+   "mean": 69.2,
+   "longest": 1517
+  },
+  {
+   "path": "bacnet/extracted/rc/wb/mgr/model/BacnetPointManagerModel.js",
+   "lines": 290,
+   "bytes": 11520,
+   "mean": 39.7,
+   "longest": 1016
+  },
+  {
+   "path": "bacnet/extracted/rc/wb/mgr/model/BacnetNiagaraLogExportModel.js",
+   "lines": 133,
+   "bytes": 9689,
+   "mean": 72.8,
+   "longest": 1222
+  },
+  {
+   "path": "bacnetAws/extracted/rc/wb/mgr/BacnetAwsDeviceUxManager.js",
+   "lines": 154,
+   "bytes": 7001,
+   "mean": 45.5,
+   "longest": 1232
+  },
+  {
+   "path": "bajaScript/extracted/rc/obj.js",
+   "lines": 74,
+   "bytes": 4386,
+   "mean": 59.3,
+   "longest": 1887
+  },
+  {
+   "path": "bajaScript/extracted/rc/ord.js",
+   "lines": 83,
+   "bytes": 4266,
+   "mean": 51.4,
+   "longest": 1531
+  },
+  {
+   "path": "bajaScript/extracted/rc/baja/comp/Flags.js",
+   "lines": 255,
+   "bytes": 5904,
+   "mean": 23.2,
+   "longest": 1031
+  },
+  {
+   "path": "bajaui/extracted/rc/ux/PxWidget.js",
+   "lines": 602,
+   "bytes": 25915,
+   "mean": 43.0,
+   "longest": 1321
+  },
+  {
+   "path": "bajaui/extracted/rc/ux/Slider.js",
+   "lines": 218,
+   "bytes": 10901,
+   "mean": 50.0,
+   "longest": 1142
+  },
+  {
+   "path": "batchJob/extracted/rc/wb/DeviceNetworkUxJobView.js",
+   "lines": 553,
+   "bytes": 25304,
+   "mean": 45.8,
+   "longest": 1501
+  },
+  {
+   "path": "batchJob/extracted/rc/util/JobSummariesTable.js",
+   "lines": 530,
+   "bytes": 22570,
+   "mean": 42.6,
+   "longest": 1114
+  },
+  {
+   "path": "bql/extracted/rc/builder/BqlQueryBuilder.js",
+   "lines": 1038,
+   "bytes": 41179,
+   "mean": 39.7,
+   "longest": 1559
+  },
+  {
+   "path": "cloudLink/extracted/rc/history/mgr/CloudHistoryExportUxManager.js",
+   "lines": 636,
+   "bytes": 26273,
+   "mean": 41.3,
+   "longest": 1937
+  },
+  {
+   "path": "docDeveloper/extracted/rc/sunlight.css-min.js",
+   "lines": 205,
+   "bytes": 15019,
+   "mean": 73.3,
+   "longest": 8554
+  },
+  {
+   "path": "email/extracted/rc/mgr/EmailAccountManager.js",
+   "lines": 224,
+   "bytes": 9564,
+   "mean": 42.7,
+   "longest": 1213
+  },
+  {
+   "path": "gx/extracted/rc/baja/Color.js",
+   "lines": 303,
+   "bytes": 12834,
+   "mean": 42.4,
+   "longest": 1931
+  },
+  {
+   "path": "history/extracted/rc/HistoryExtUxManager.js",
+   "lines": 711,
+   "bytes": 28517,
+   "mean": 40.1,
+   "longest": 1912
+  },
+  {
+   "path": "history/extracted/rc/fe/WebHistoryTable.js",
+   "lines": 960,
+   "bytes": 32583,
+   "mean": 33.9,
+   "longest": 1473
+  },
+  {
+   "path": "js/extracted/com/tridium/js/ext/require/r.js",
+   "lines": 30433,
+   "bytes": 1189232,
+   "mean": 39.1,
+   "longest": 8007
+  },
+  {
+   "path": "js/extracted/rc/d3/d3.js",
+   "lines": 20626,
+   "bytes": 587043,
+   "mean": 28.5,
+   "longest": 1567
+  },
+  {
+   "path": "js/extracted/rc/handlebars/handlebars.js",
+   "lines": 6026,
+   "bytes": 203800,
+   "mean": 33.8,
+   "longest": 14913
+  },
+  {
+   "path": "lonworks/extracted/rc/wb/mgr/UxLonRouterManager.js",
+   "lines": 820,
+   "bytes": 33507,
+   "mean": 40.9,
+   "longest": 1820
+  },
+  {
+   "path": "lonworks/extracted/rc/wb/mgr/UxLonDeviceManager.js",
+   "lines": 1193,
+   "bytes": 49395,
+   "mean": 41.4,
+   "longest": 1944
+  },
+  {
+   "path": "lonworks/extracted/rc/wb/mgr/model/LonPointManagerModel.js",
+   "lines": 325,
+   "bytes": 17125,
+   "mean": 52.7,
+   "longest": 1071
+  },
+  {
+   "path": "lonworks/extracted/rc/wb/mgr/model/LonDeviceManagerModel.js",
+   "lines": 562,
+   "bytes": 25275,
+   "mean": 45.0,
+   "longest": 1097
+  },
+  {
+   "path": "maxpro/extracted/ext/std-video-player/dependency/video-js.js",
+   "lines": 64463,
+   "bytes": 2066925,
+   "mean": 32.1,
+   "longest": 1969
+  },
+  {
+   "path": "modbusCore/extracted/rc/mgr/commands/ModbusNewPointCommand.js",
+   "lines": 141,
+   "bytes": 10858,
+   "mean": 77.0,
+   "longest": 1032
+  },
+  {
+   "path": "modbusCore/extracted/rc/mgr/model/ModbusPointManagerModel.js",
+   "lines": 475,
+   "bytes": 25061,
+   "mean": 52.8,
+   "longest": 1808
+  },
+  {
+   "path": "niagaraDriver/extracted/rc/wb/mgr/NiagaraStationUxManager.js",
+   "lines": 405,
+   "bytes": 17647,
+   "mean": 43.6,
+   "longest": 1111
+  },
+  {
+   "path": "niagaraDriver/extracted/rc/wb/mgr/model/NiagaraStationManagerModel.js",
+   "lines": 215,
+   "bytes": 12486,
+   "mean": 58.1,
+   "longest": 1140
+  },
+  {
+   "path": "niagaraDriver/extracted/rc/wb/mgr/model/NiagaraPointManagerModel.js",
+   "lines": 150,
+   "bytes": 9803,
+   "mean": 65.4,
+   "longest": 1028
+  },
+  {
+   "path": "nrio/extracted/rc/wb/mgr/NrioPointUxManager.js",
+   "lines": 492,
+   "bytes": 23144,
+   "mean": 47.0,
+   "longest": 1346
+  },
+  {
+   "path": "nurio/extracted/rc/wb/mgr/NurioDeviceUxManager.js",
+   "lines": 508,
+   "bytes": 23374,
+   "mean": 46.0,
+   "longest": 1087
+  },
+  {
+   "path": "nurio/extracted/rc/wb/mgr/NurioPointUxManager.js",
+   "lines": 575,
+   "bytes": 27388,
+   "mean": 47.6,
+   "longest": 1623
+  },
+  {
+   "path": "platCrypto/extracted/rc/wb/cert/tabs/UserKeyStoreTab.js",
+   "lines": 205,
+   "bytes": 11418,
+   "mean": 55.7,
+   "longest": 1142
+  },
+  {
+   "path": "platCrypto/extracted/rc/wb/cert/tabs/UserTrustStoreTab.js",
+   "lines": 169,
+   "bytes": 10075,
+   "mean": 59.6,
+   "longest": 1007
+  },
+  {
+   "path": "provisioningNiagara/extracted/rc/wb/jobBuilder/NiagaraNetworkJobEditor.js",
+   "lines": 965,
+   "bytes": 39247,
+   "mean": 40.7,
+   "longest": 1707
+  },
+  {
+   "path": "provisioningNiagara/extracted/rc/wb/fe/NtpEditor.js",
+   "lines": 538,
+   "bytes": 22935,
+   "mean": 42.6,
+   "longest": 1262
+  },
+  {
+   "path": "rdb/extracted/rc/model/RdbDeviceUxManagerModel.js",
+   "lines": 302,
+   "bytes": 16097,
+   "mean": 53.3,
+   "longest": 1103
+  },
+  {
+   "path": "report/extracted/rc/fe/GridTableContainer.js",
+   "lines": 591,
+   "bytes": 20134,
+   "mean": 34.1,
+   "longest": 1349
+  },
+  {
+   "path": "saml/extracted/rc/fe/CircleOfTrustManager.js",
+   "lines": 888,
+   "bytes": 36758,
+   "mean": 41.4,
+   "longest": 1455
+  },
+  {
+   "path": "schedule/extracted/rc/fe/CalendarEventsEditor.js",
+   "lines": 604,
+   "bytes": 21966,
+   "mean": 36.4,
+   "longest": 1248
+  },
+  {
+   "path": "schedule/extracted/rc/fe/Scheduler.js",
+   "lines": 343,
+   "bytes": 14069,
+   "mean": 41.0,
+   "longest": 1133
+  },
+  {
+   "path": "schedule/extracted/rc/baja/fe/WeeklySchedulePropertiesBar.js",
+   "lines": 263,
+   "bytes": 10816,
+   "mean": 41.1,
+   "longest": 1005
+  },
+  {
+   "path": "search/extracted/rc/DefaultSearchResultsWidget.js",
+   "lines": 873,
+   "bytes": 35976,
+   "mean": 41.2,
+   "longest": 1004
+  },
+  {
+   "path": "signingService/extracted/rc/wb/mgr/SessionTokenManager.js",
+   "lines": 313,
+   "bytes": 15288,
+   "mean": 48.8,
+   "longest": 1259
+  },
+  {
+   "path": "tagdictionary/extracted/ext/vis-network/vis-network.js",
+   "lines": 42828,
+   "bytes": 1430511,
+   "mean": 33.4,
+   "longest": 1008
+  },
+  {
+   "path": "tagdictionary/extracted/rc/RelationManager.js",
+   "lines": 380,
+   "bytes": 17047,
+   "mean": 44.9,
+   "longest": 1086
+  },
+  {
+   "path": "tagdictionary/extracted/rc/TagUxManager.js",
+   "lines": 811,
+   "bytes": 32634,
+   "mean": 40.2,
+   "longest": 1625
+  },
+  {
+   "path": "tagdictionary/extracted/rc/commands/EditTagCommand.js",
+   "lines": 269,
+   "bytes": 11546,
+   "mean": 42.9,
+   "longest": 1050
+  },
+  {
+   "path": "tagdictionary/extracted/rc/util/taggingUtil.js",
+   "lines": 624,
+   "bytes": 25186,
+   "mean": 40.4,
+   "longest": 1144
+  },
+  {
+   "path": "uxBuilder/extracted/rc/ux/UxBuilder.js",
+   "lines": 2473,
+   "bytes": 102009,
+   "mean": 41.2,
+   "longest": 3015
+  },
+  {
+   "path": "uxBuilder/extracted/rc/ux/make/MwPropertyBatch.js",
+   "lines": 748,
+   "bytes": 32470,
+   "mean": 43.4,
+   "longest": 1217
+  },
+  {
+   "path": "uxBuilder/extracted/rc/ux/make/MwPalettePreview.js",
+   "lines": 461,
+   "bytes": 20115,
+   "mean": 43.6,
+   "longest": 1165
+  },
+  {
+   "path": "uxBuilder/extracted/rc/ux/wysiwyg/PxArtisanStudio.js",
+   "lines": 2237,
+   "bytes": 83782,
+   "mean": 37.5,
+   "longest": 2228
+  },
+  {
+   "path": "uxBuilder/extracted/rc/ux/wysiwyg/artisans/PathArtisan.js",
+   "lines": 269,
+   "bytes": 15065,
+   "mean": 56.0,
+   "longest": 1042
+  },
+  {
+   "path": "uxBuilder/extracted/rc/ux/sidebars/BoundOrdsEditor.js",
+   "lines": 500,
+   "bytes": 21518,
+   "mean": 43.0,
+   "longest": 1060
+  },
+  {
+   "path": "uxBuilder/extracted/rc/ux/sidebars/PropertiesWidget.js",
+   "lines": 1926,
+   "bytes": 83151,
+   "mean": 43.2,
+   "longest": 1268
+  },
+  {
+   "path": "uxBuilder/extracted/rc/ux/model/UxModelTreeNode.js",
+   "lines": 1496,
+   "bytes": 68310,
+   "mean": 45.7,
+   "longest": 1242
+  },
+  {
+   "path": "uxBuilder/extracted/rc/util/uxBuilderUtils.js",
+   "lines": 2260,
+   "bytes": 87302,
+   "mean": 38.6,
+   "longest": 1994
+  },
+  {
+   "path": "uxBuilder/extracted/rc/util/uxBuilderContextMenu.js",
+   "lines": 253,
+   "bytes": 13640,
+   "mean": 53.9,
+   "longest": 2465
+  },
+  {
+   "path": "videoDriver/extracted/rc/live/LiveVideo.js",
+   "lines": 654,
+   "bytes": 26131,
+   "mean": 40.0,
+   "longest": 1510
+  },
+  {
+   "path": "videoDriver/extracted/rc/fe/surveillance/SurveillanceOptionsWidget.js",
+   "lines": 341,
+   "bytes": 16066,
+   "mean": 47.1,
+   "longest": 1103
+  },
+  {
+   "path": "videoDriver/extracted/rc/widget/ControlPanelWidget.js",
+   "lines": 234,
+   "bytes": 15132,
+   "mean": 64.7,
+   "longest": 5080
+  },
+  {
+   "path": "weather/extracted/rc/wb/baja/UxAirQualityView.js",
+   "lines": 129,
+   "bytes": 8746,
+   "mean": 67.8,
+   "longest": 1033
+  },
+  {
+   "path": "webChart/extracted/rc/ChartWidget.js",
+   "lines": 1531,
+   "bytes": 58166,
+   "mean": 38.0,
+   "longest": 1768
+  },
+  {
+   "path": "webEditors/extracted/rc/wb/PropertySheet.js",
+   "lines": 736,
+   "bytes": 27526,
+   "mean": 37.4,
+   "longest": 1236
+  },
+  {
+   "path": "webEditors/extracted/rc/wb/PropertySheetRow.js",
+   "lines": 1068,
+   "bytes": 37174,
+   "mean": 34.8,
+   "longest": 1387
+  },
+  {
+   "path": "webEditors/extracted/rc/wb/MultiSheet.js",
+   "lines": 356,
+   "bytes": 12466,
+   "mean": 35.0,
+   "longest": 1423
+  },
+  {
+   "path": "webEditors/extracted/rc/wb/RoleManager.js",
+   "lines": 159,
+   "bytes": 7310,
+   "mean": 46.0,
+   "longest": 1061
+  },
+  {
+   "path": "webEditors/extracted/rc/wb/table/EditTable.js",
+   "lines": 558,
+   "bytes": 24710,
+   "mean": 44.3,
+   "longest": 1001
+  },
+  {
+   "path": "webEditors/extracted/rc/wb/mgr/Manager.js",
+   "lines": 771,
+   "bytes": 31280,
+   "mean": 40.6,
+   "longest": 1645
+  },
+  {
+   "path": "webEditors/extracted/rc/wb/mgr/MgrLearn.js",
+   "lines": 965,
+   "bytes": 40985,
+   "mean": 42.5,
+   "longest": 1605
+  },
+  {
+   "path": "webEditors/extracted/rc/wb/profile/profile.js",
+   "lines": 625,
+   "bytes": 26008,
+   "mean": 41.6,
+   "longest": 1564
+  },
+  {
+   "path": "webEditors/extracted/rc/wb/links/OrdChooser.js",
+   "lines": 1361,
+   "bytes": 49716,
+   "mean": 36.5,
+   "longest": 1434
+  },
+  {
+   "path": "webEditors/extracted/rc/wb/util/category/CategoryBrowser.js",
+   "lines": 1078,
+   "bytes": 46130,
+   "mean": 42.8,
+   "longest": 1856
+  },
+  {
+   "path": "webEditors/extracted/rc/fe/baseEditorSet.js",
+   "lines": 13,
+   "bytes": 1673,
+   "mean": 128.7,
+   "longest": 1482
+  },
+  {
+   "path": "wiresheet/extracted/rc/wb/WbWiresheetEnv.js",
+   "lines": 434,
+   "bytes": 17378,
+   "mean": 40.0,
+   "longest": 1077
+  },
+  {
+   "path": "wiresheet/extracted/rc/wb/controller/WbInteractionController.js",
+   "lines": 884,
+   "bytes": 33788,
+   "mean": 38.2,
+   "longest": 1013
+  },
+  {
+   "path": "wiresheet/extracted/rc/wb/baja/BajaContextMenu.js",
+   "lines": 412,
+   "bytes": 18683,
+   "mean": 45.3,
+   "longest": 1465
+  },
+  {
+   "path": "xprotect/extracted/rc/xprotect/XProtectSession.js",
+   "lines": 585,
+   "bytes": 22384,
+   "mean": 38.3,
+   "longest": 2098
+  }
+ ]
+}

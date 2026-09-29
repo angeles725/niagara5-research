@@ -1,0 +1,1983 @@
+{
+ "summary": {
+  "total_js": 2572,
+  "minified": 237,
+  "minified_with_sourceMappingURL_comment": 7,
+  "minified_with_sibling_dot_map": 0,
+  "minified_with_existing_map_target": 0,
+  "minified_no_map_at_all": 237,
+  "by_module": {
+   "js": 35,
+   "docDeveloper": 21,
+   "analytics": 18,
+   "webEditors": 12,
+   "uxBuilder": 11,
+   "bacnet": 7,
+   "tagdictionary": 7,
+   "bajaScript": 5,
+   "lonworks": 5,
+   "videoDriver": 5,
+   "xprotect": 5,
+   "alarm": 4,
+   "niagaraDriver": 4,
+   "schedule": 4,
+   "wiresheet": 4,
+   "bajaui": 3,
+   "batchJob": 3,
+   "history": 3,
+   "maxpro": 3,
+   "modbusCore": 3,
+   "nurio": 3,
+   "platCrypto": 3,
+   "provisioningNiagara": 3,
+   "_bin-ext": 2,
+   "bacnetAws": 2,
+   "bql": 2,
+   "cloudLink": 2,
+   "email": 2,
+   "gx": 2,
+   "naxisVideo": 2,
+   "nrio": 2,
+   "rdb": 2,
+   "report": 2,
+   "saml": 2,
+   "search": 2,
+   "signingService": 2,
+   "totpAuth": 2,
+   "weather": 2,
+   "webChart": 2,
+   "_lib-inf-3p": 1,
+   "ace": 1,
+   "awsUtils": 1,
+   "bajaux": 1,
+   "ccn": 1,
+   "cloudLinkForge": 1,
+   "control": 1,
+   "converters": 1,
+   "dashboard": 1,
+   "driver": 1,
+   "export": 1,
+   "hierarchy": 1,
+   "httpClient": 1,
+   "hx": 1,
+   "jsonToolkit": 1,
+   "kitControl": 1,
+   "kitIo": 1,
+   "kitPx": 1,
+   "modbusAsync": 1,
+   "modbusSlave": 1,
+   "modbusTcp": 1,
+   "modbusTcpSlave": 1,
+   "ndriver": 1,
+   "niagaraSystemIndex": 1,
+   "nss": 1,
+   "onCall": 1,
+   "platDataRecovery": 1,
+   "platform": 1,
+   "rdbMySQL": 1,
+   "rdbSqlServer": 1,
+   "seriesTransform": 1,
+   "smartTableHx": 1,
+   "test": 1,
+   "workbench": 1
+  }
+ },
+ "files": [
+  {
+   "path": "_bin-ext/nre/extracted/com/tridium/nre/jetty/rc/auth.min.js",
+   "bytes": 300722,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "_bin-ext/nre/extracted/com/tridium/nre/jetty/rc/auth/forge/forge.min.js",
+   "bytes": 283280,
+   "mapref": "forge.min.js.map",
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "_lib-inf-3p/testng-7.12.0-5147e65e0bf0/extracted/org/testng/jquery-3.6.0.min.js",
+   "bytes": 89501,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "ace/extracted/rc/ace.built.min.js",
+   "bytes": 1303,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "alarm/extracted/rc/alarm.built.min.js",
+   "bytes": 154097,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "alarm/extracted/rc/console/AlarmConsole.js",
+   "bytes": 28623,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "alarm/extracted/rc/console/baja/BajaAlarmConsoleSupport.js",
+   "bytes": 17533,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "alarm/extracted/rc/views/AlarmExtUxManager.js",
+   "bytes": 29659,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "analytics/extracted/ext/datatables/jquery.dataTables.min.js",
+   "bytes": 87897,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "analytics/extracted/ext/billboard/billboard.min.js",
+   "bytes": 274542,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "analytics/extracted/rc/analytics.built.min.js",
+   "bytes": 527895,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "analytics/extracted/rc/report/base/AnalyticReportConfigItemEditor.js",
+   "bytes": 7857,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "analytics/extracted/rc/report/base/AnalyticReportConfigEditor.js",
+   "bytes": 21934,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "analytics/extracted/rc/report/menu/ReportListView.js",
+   "bytes": 21254,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "analytics/extracted/rc/report/menu/AnalyticReportView.js",
+   "bytes": 4777,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "analytics/extracted/rc/report/container/base/AnalyticsBaseReport.js",
+   "bytes": 23288,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "analytics/extracted/rc/report/fe/UxNodeSelectionEditor.js",
+   "bytes": 15726,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "analytics/extracted/rc/chart/base/AnalyticsBaseChart.js",
+   "bytes": 15263,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "analytics/extracted/rc/chart/base/AnalyticsBaseWidget.js",
+   "bytes": 40735,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "analytics/extracted/rc/chart/base/AnalyticsCommandBar.js",
+   "bytes": 11464,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "analytics/extracted/rc/chart/base/AnalyticC3BaseChart.js",
+   "bytes": 17214,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "analytics/extracted/rc/chart/utils/AnalyticsDataUtils.js",
+   "bytes": 47556,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "analytics/extracted/rc/chart/fe/AnalyticUxWebChartSettingsFE.js",
+   "bytes": 13075,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "analytics/extracted/rc/chart/fe/AnalyticRankingChartUXSettingsFE.js",
+   "bytes": 2893,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "analytics/extracted/rc/chart/fe/TableUxWebChartSettingsFE.js",
+   "bytes": 5309,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "analytics/extracted/rc/table/AnalyticsBaseTable.js",
+   "bytes": 15850,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "awsUtils/extracted/rc/awsUtils.built.min.js",
+   "bytes": 3013,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "bacnet/extracted/rc/bacnet.built.min.js",
+   "bytes": 184061,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "bacnet/extracted/rc/wb/mgr/LazyBacnetPointUxManager.js",
+   "bytes": 37936,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "bacnet/extracted/rc/wb/mgr/BacnetDeviceUxManager.js",
+   "bytes": 19096,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "bacnet/extracted/rc/wb/mgr/export/BacnetExportUxManager.js",
+   "bytes": 19687,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "bacnet/extracted/rc/wb/mgr/model/BacnetExportModel.js",
+   "bytes": 13774,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "bacnet/extracted/rc/wb/mgr/model/BacnetPointManagerModel.js",
+   "bytes": 11520,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "bacnet/extracted/rc/wb/mgr/model/BacnetNiagaraLogExportModel.js",
+   "bytes": 9689,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "bacnetAws/extracted/rc/bacnetAws.built.min.js",
+   "bytes": 26230,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "bacnetAws/extracted/rc/wb/mgr/BacnetAwsDeviceUxManager.js",
+   "bytes": 7001,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "bajaScript/extracted/rc/obj.js",
+   "bytes": 4386,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "bajaScript/extracted/rc/ord.js",
+   "bytes": 4266,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "bajaScript/extracted/rc/bs.built.min.js",
+   "bytes": 363641,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "bajaScript/extracted/rc/ctypes.js",
+   "bytes": 16362,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "bajaScript/extracted/rc/baja/comp/Flags.js",
+   "bytes": 5904,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "bajaui/extracted/rc/bajaui.built.min.js",
+   "bytes": 158504,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "bajaui/extracted/rc/ux/PxWidget.js",
+   "bytes": 25915,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "bajaui/extracted/rc/ux/Slider.js",
+   "bytes": 10901,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "bajaux/extracted/rc/bajaux.built.min.js",
+   "bytes": 155569,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "batchJob/extracted/rc/batchJob.built.min.js",
+   "bytes": 63634,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "batchJob/extracted/rc/wb/DeviceNetworkUxJobView.js",
+   "bytes": 25304,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "batchJob/extracted/rc/util/JobSummariesTable.js",
+   "bytes": 22570,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "bql/extracted/rc/bql.built.min.js",
+   "bytes": 90146,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "bql/extracted/rc/builder/BqlQueryBuilder.js",
+   "bytes": 41179,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "ccn/extracted/rc/ccn.built.min.js",
+   "bytes": 39781,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "cloudLink/extracted/rc/cloudLink.built.min.js",
+   "bytes": 32366,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "cloudLink/extracted/rc/history/mgr/CloudHistoryExportUxManager.js",
+   "bytes": 26273,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "cloudLinkForge/extracted/rc/cloudLinkForge.built.min.js",
+   "bytes": 6654,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "control/extracted/rc/control.built.min.js",
+   "bytes": 19377,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "converters/extracted/rc/converters.built.min.js",
+   "bytes": 47514,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "dashboard/extracted/rc/dashboard.built.min.js",
+   "bytes": 10944,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "docDeveloper/extracted/ext/@babel/standalone/babel.min.js",
+   "bytes": 3073951,
+   "mapref": "babel.min.js.map",
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "docDeveloper/extracted/doc/jsdoc/batchJob/scripts/prettify/lang-css.js",
+   "bytes": 861,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "docDeveloper/extracted/doc/jsdoc/batchJob/scripts/prettify/prettify.js",
+   "bytes": 13632,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "docDeveloper/extracted/doc/jsdoc/export/scripts/prettify/lang-css.js",
+   "bytes": 861,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "docDeveloper/extracted/doc/jsdoc/export/scripts/prettify/prettify.js",
+   "bytes": 13632,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "docDeveloper/extracted/doc/jsdoc/webEditors/scripts/prettify/lang-css.js",
+   "bytes": 861,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "docDeveloper/extracted/doc/jsdoc/webEditors/scripts/prettify/prettify.js",
+   "bytes": 13632,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "docDeveloper/extracted/doc/jsdoc/js/scripts/prettify/lang-css.js",
+   "bytes": 861,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "docDeveloper/extracted/doc/jsdoc/js/scripts/prettify/prettify.js",
+   "bytes": 13632,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "docDeveloper/extracted/doc/jsdoc/bajaui/scripts/prettify/lang-css.js",
+   "bytes": 861,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "docDeveloper/extracted/doc/jsdoc/bajaui/scripts/prettify/prettify.js",
+   "bytes": 13632,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "docDeveloper/extracted/doc/jsdoc/bajaScript/scripts/prettify/lang-css.js",
+   "bytes": 861,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "docDeveloper/extracted/doc/jsdoc/bajaScript/scripts/prettify/prettify.js",
+   "bytes": 13632,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "docDeveloper/extracted/doc/jsdoc/driver/scripts/prettify/lang-css.js",
+   "bytes": 861,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "docDeveloper/extracted/doc/jsdoc/driver/scripts/prettify/prettify.js",
+   "bytes": 13632,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "docDeveloper/extracted/doc/jsdoc/bajaux/scripts/prettify/lang-css.js",
+   "bytes": 861,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "docDeveloper/extracted/doc/jsdoc/bajaux/scripts/prettify/prettify.js",
+   "bytes": 13632,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "docDeveloper/extracted/doc/jsdoc/converters/scripts/prettify/lang-css.js",
+   "bytes": 861,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "docDeveloper/extracted/doc/jsdoc/converters/scripts/prettify/prettify.js",
+   "bytes": 13632,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "docDeveloper/extracted/rc/sunlight.css-min.js",
+   "bytes": 15019,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "docDeveloper/extracted/rc/JsPlayground.built.min.js",
+   "bytes": 2946323,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "driver/extracted/rc/driver.built.min.js",
+   "bytes": 62302,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "email/extracted/rc/email.built.min.js",
+   "bytes": 26594,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "email/extracted/rc/mgr/EmailAccountManager.js",
+   "bytes": 9564,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "export/extracted/rc/export.built.min.js",
+   "bytes": 3501,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "gx/extracted/rc/gx.built.min.js",
+   "bytes": 135696,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "gx/extracted/rc/baja/Color.js",
+   "bytes": 12834,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "hierarchy/extracted/rc/hierarchy.built.min.js",
+   "bytes": 10027,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "history/extracted/rc/history.built.min.js",
+   "bytes": 93663,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "history/extracted/rc/HistoryExtUxManager.js",
+   "bytes": 28517,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "history/extracted/rc/fe/WebHistoryTable.js",
+   "bytes": 32583,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "httpClient/extracted/rc/httpClient.built.min.js",
+   "bytes": 22709,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "hx/extracted/rc/container/hxContainer.built.min.js",
+   "bytes": 16035,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "js/extracted/com/tridium/js/ext/require/r.js",
+   "bytes": 1189232,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "js/extracted/com/tridium/js/ext/require/require.min.js",
+   "bytes": 17589,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "js/extracted/rc/js.built.min.js",
+   "bytes": 51618,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "js/extracted/rc/underscore/underscore-min.js",
+   "bytes": 19668,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "js/extracted/rc/bluebird/bluebird.min.js",
+   "bytes": 81526,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "js/extracted/rc/require-handlebars-plugin/hbs.built.min.js",
+   "bytes": 7348,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "js/extracted/rc/d3/d3.js",
+   "bytes": 587043,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "js/extracted/rc/d3/d3.min.js",
+   "bytes": 279706,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "js/extracted/rc/handlebars/handlebars.js",
+   "bytes": 203800,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "js/extracted/rc/handlebars/handlebars.min.js",
+   "bytes": 89375,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "js/extracted/rc/handlebars/handlebars.runtime.min.js",
+   "bytes": 28642,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "js/extracted/rc/jquery/jquery.min.js",
+   "bytes": 87533,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "js/extracted/rc/jquery/contextMenu/jquery.contextMenu.min.js",
+   "bytes": 27928,
+   "mapref": "jquery.contextMenu.min.js.map",
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "js/extracted/rc/jquery/contextMenu/jquery.ui.position.min.js",
+   "bytes": 5937,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "js/extracted/rc/ace/mode-javascript.js",
+   "bytes": 27948,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "js/extracted/rc/ace/mode-html.js",
+   "bytes": 63477,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "js/extracted/rc/ace/ace.js",
+   "bytes": 472478,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "js/extracted/rc/ace/mode-r.js",
+   "bytes": 5385,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "js/extracted/rc/ace/worker-css.js",
+   "bytes": 151082,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "js/extracted/rc/ace/mode-velocity.js",
+   "bytes": 68252,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "js/extracted/rc/ace/theme-monokai.js",
+   "bytes": 3240,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "js/extracted/rc/ace/mode-handlebars.js",
+   "bytes": 65350,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "js/extracted/rc/ace/ext-searchbox.js",
+   "bytes": 14033,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "js/extracted/rc/ace/worker-html.js",
+   "bytes": 208882,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "js/extracted/rc/ace/mode-java.js",
+   "bytes": 35235,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "js/extracted/rc/ace/mode-xml.js",
+   "bytes": 10264,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "js/extracted/rc/ace/worker-json.js",
+   "bytes": 24346,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "js/extracted/rc/ace/mode-jsx.js",
+   "bytes": 28290,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "js/extracted/rc/ace/mode-json.js",
+   "bytes": 5434,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "js/extracted/rc/ace/theme-chrome.js",
+   "bytes": 3758,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "js/extracted/rc/ace/worker-xml.js",
+   "bytes": 46914,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "js/extracted/rc/ace/mode-css.js",
+   "bytes": 20840,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "js/extracted/rc/ace/mode-less.js",
+   "bytes": 22843,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "js/extracted/rc/ace/worker-javascript.js",
+   "bytes": 513545,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "js/extracted/rc/moment/moment.min.js",
+   "bytes": 58890,
+   "mapref": "moment.min.js.map",
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "jsonToolkit/extracted/rc/jsonToolkit.built.min.js",
+   "bytes": 33430,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "kitControl/extracted/rc/kitControl.built.min.js",
+   "bytes": 21112,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "kitIo/extracted/rc/kitIo.built.min.js",
+   "bytes": 3269,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "kitPx/extracted/rc/kitPx.built.min.js",
+   "bytes": 52533,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "lonworks/extracted/rc/lonworks.built.min.js",
+   "bytes": 108404,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "lonworks/extracted/rc/wb/mgr/UxLonRouterManager.js",
+   "bytes": 33507,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "lonworks/extracted/rc/wb/mgr/UxLonDeviceManager.js",
+   "bytes": 49395,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "lonworks/extracted/rc/wb/mgr/model/LonPointManagerModel.js",
+   "bytes": 17125,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "lonworks/extracted/rc/wb/mgr/model/LonDeviceManagerModel.js",
+   "bytes": 25275,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "maxpro/extracted/ext/std-video-player/dependency/video-js.js",
+   "bytes": 2066925,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "maxpro/extracted/ext/std-video-player/dependency/video-js.min.js",
+   "bytes": 560398,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "maxpro/extracted/rc/maxpro.built.min.js",
+   "bytes": 594634,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "modbusAsync/extracted/rc/modbusAsync.built.min.js",
+   "bytes": 4074,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "modbusCore/extracted/rc/modbusCore.built.min.js",
+   "bytes": 26468,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "modbusCore/extracted/rc/mgr/commands/ModbusNewPointCommand.js",
+   "bytes": 10858,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "modbusCore/extracted/rc/mgr/model/ModbusPointManagerModel.js",
+   "bytes": 25061,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "modbusSlave/extracted/rc/modbusSlave.built.min.js",
+   "bytes": 3852,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "modbusTcp/extracted/rc/modbusTcp.built.min.js",
+   "bytes": 5807,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "modbusTcpSlave/extracted/rc/modbusTcpSlave.built.min.js",
+   "bytes": 3970,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "naxisVideo/extracted/ext/naxisVideo/media-stream-library.min.js",
+   "bytes": 185200,
+   "mapref": "media-stream-library.min.js.map",
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "naxisVideo/extracted/rc/naxisVideo.built.min.js",
+   "bytes": 12278,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "ndriver/extracted/rc/ndriver.built.min.js",
+   "bytes": 18965,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "niagaraDriver/extracted/rc/niagaraDriver.built.min.js",
+   "bytes": 51429,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "niagaraDriver/extracted/rc/wb/mgr/NiagaraStationUxManager.js",
+   "bytes": 17647,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "niagaraDriver/extracted/rc/wb/mgr/model/NiagaraStationManagerModel.js",
+   "bytes": 12486,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "niagaraDriver/extracted/rc/wb/mgr/model/NiagaraPointManagerModel.js",
+   "bytes": 9803,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "niagaraSystemIndex/extracted/rc/niagaraSystemIndex.built.min.js",
+   "bytes": 4391,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "nrio/extracted/rc/nrio.built.min.js",
+   "bytes": 32301,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "nrio/extracted/rc/wb/mgr/NrioPointUxManager.js",
+   "bytes": 23144,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "nss/extracted/rc/nss.built.min.js",
+   "bytes": 45074,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "nurio/extracted/rc/nurio.built.min.js",
+   "bytes": 35464,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "nurio/extracted/rc/wb/mgr/NurioDeviceUxManager.js",
+   "bytes": 23374,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "nurio/extracted/rc/wb/mgr/NurioPointUxManager.js",
+   "bytes": 27388,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "onCall/extracted/rc/onCall.built.min.js",
+   "bytes": 12658,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "platCrypto/extracted/rc/platCrypto.built.min.js",
+   "bytes": 150076,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "platCrypto/extracted/rc/wb/cert/tabs/UserKeyStoreTab.js",
+   "bytes": 11418,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "platCrypto/extracted/rc/wb/cert/tabs/UserTrustStoreTab.js",
+   "bytes": 10075,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "platDataRecovery/extracted/rc/platDataRecovery.built.min.js",
+   "bytes": 6549,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "platform/extracted/rc/platform.built.min.js",
+   "bytes": 6036,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "provisioningNiagara/extracted/rc/provisioningNiagara.built.min.js",
+   "bytes": 165989,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "provisioningNiagara/extracted/rc/wb/jobBuilder/NiagaraNetworkJobEditor.js",
+   "bytes": 39247,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "provisioningNiagara/extracted/rc/wb/fe/NtpEditor.js",
+   "bytes": 22935,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "rdb/extracted/rc/rdb.built.min.js",
+   "bytes": 20434,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "rdb/extracted/rc/model/RdbDeviceUxManagerModel.js",
+   "bytes": 16097,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "rdbMySQL/extracted/rc/rdbMySQL.built.min.js",
+   "bytes": 4392,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "rdbSqlServer/extracted/rc/rdbSqlServer.built.min.js",
+   "bytes": 4424,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "report/extracted/rc/report.built.min.js",
+   "bytes": 25845,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "report/extracted/rc/fe/GridTableContainer.js",
+   "bytes": 20134,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "saml/extracted/rc/saml.built.min.js",
+   "bytes": 41849,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "saml/extracted/rc/fe/CircleOfTrustManager.js",
+   "bytes": 36758,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "schedule/extracted/rc/schedule.built.min.js",
+   "bytes": 128820,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "schedule/extracted/rc/fe/CalendarEventsEditor.js",
+   "bytes": 21966,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "schedule/extracted/rc/fe/Scheduler.js",
+   "bytes": 14069,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "schedule/extracted/rc/baja/fe/WeeklySchedulePropertiesBar.js",
+   "bytes": 10816,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "search/extracted/rc/DefaultSearchResultsWidget.js",
+   "bytes": 35976,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "search/extracted/rc/search.built.min.js",
+   "bytes": 54263,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "seriesTransform/extracted/rc/seriesTransform.built.min.js",
+   "bytes": 2281,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "signingService/extracted/rc/signingService.built.min.js",
+   "bytes": 14563,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "signingService/extracted/rc/wb/mgr/SessionTokenManager.js",
+   "bytes": 15288,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "smartTableHx/extracted/rc/smartTableHx.built.min.js",
+   "bytes": 27004,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "tagdictionary/extracted/ext/vis-network/vis-network.js",
+   "bytes": 1430511,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "tagdictionary/extracted/ext/vis-network/vis-network.min.js",
+   "bytes": 476576,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "tagdictionary/extracted/rc/tagdictionary.built.min.js",
+   "bytes": 102996,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "tagdictionary/extracted/rc/RelationManager.js",
+   "bytes": 17047,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "tagdictionary/extracted/rc/TagUxManager.js",
+   "bytes": 32634,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "tagdictionary/extracted/rc/commands/EditTagCommand.js",
+   "bytes": 11546,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "tagdictionary/extracted/rc/util/taggingUtil.js",
+   "bytes": 25186,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "test/extracted/META-INF/resources/webjars/jquery/3.5.1/jquery.min.js",
+   "bytes": 87533,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "totpAuth/extracted/ext/forge/forge.min.js",
+   "bytes": 283280,
+   "mapref": "forge.min.js.map",
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "totpAuth/extracted/rc/totpAuth.built.min.js",
+   "bytes": 313623,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "uxBuilder/extracted/rc/uxBuilder.built.min.js",
+   "bytes": 382030,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "uxBuilder/extracted/rc/ux/UxBuilder.js",
+   "bytes": 102009,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "uxBuilder/extracted/rc/ux/make/MwPropertyBatch.js",
+   "bytes": 32470,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "uxBuilder/extracted/rc/ux/make/MwPalettePreview.js",
+   "bytes": 20115,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "uxBuilder/extracted/rc/ux/wysiwyg/PxArtisanStudio.js",
+   "bytes": 83782,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "uxBuilder/extracted/rc/ux/wysiwyg/artisans/PathArtisan.js",
+   "bytes": 15065,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "uxBuilder/extracted/rc/ux/sidebars/BoundOrdsEditor.js",
+   "bytes": 21518,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "uxBuilder/extracted/rc/ux/sidebars/PropertiesWidget.js",
+   "bytes": 83151,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "uxBuilder/extracted/rc/ux/model/UxModelTreeNode.js",
+   "bytes": 68310,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "uxBuilder/extracted/rc/util/uxBuilderUtils.js",
+   "bytes": 87302,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "uxBuilder/extracted/rc/util/uxBuilderContextMenu.js",
+   "bytes": 13640,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "videoDriver/extracted/ext/hls/hls.min.js",
+   "bytes": 541870,
+   "mapref": "hls.min.js.map",
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "videoDriver/extracted/rc/videoDriver.built.min.js",
+   "bytes": 112914,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "videoDriver/extracted/rc/live/LiveVideo.js",
+   "bytes": 26131,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "videoDriver/extracted/rc/fe/surveillance/SurveillanceOptionsWidget.js",
+   "bytes": 16066,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "videoDriver/extracted/rc/widget/ControlPanelWidget.js",
+   "bytes": 15132,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "weather/extracted/rc/weather.built.min.js",
+   "bytes": 35039,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "weather/extracted/rc/wb/baja/UxAirQualityView.js",
+   "bytes": 8746,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "webChart/extracted/rc/webChart.built.min.js",
+   "bytes": 234851,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "webChart/extracted/rc/ChartWidget.js",
+   "bytes": 58166,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "webEditors/extracted/rc/webEditors.built.min.js",
+   "bytes": 959642,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "webEditors/extracted/rc/wb/PropertySheet.js",
+   "bytes": 27526,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "webEditors/extracted/rc/wb/PropertySheetRow.js",
+   "bytes": 37174,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "webEditors/extracted/rc/wb/MultiSheet.js",
+   "bytes": 12466,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "webEditors/extracted/rc/wb/RoleManager.js",
+   "bytes": 7310,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "webEditors/extracted/rc/wb/table/EditTable.js",
+   "bytes": 24710,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "webEditors/extracted/rc/wb/mgr/Manager.js",
+   "bytes": 31280,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "webEditors/extracted/rc/wb/mgr/MgrLearn.js",
+   "bytes": 40985,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "webEditors/extracted/rc/wb/profile/profile.js",
+   "bytes": 26008,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "webEditors/extracted/rc/wb/links/OrdChooser.js",
+   "bytes": 49716,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "webEditors/extracted/rc/wb/util/category/CategoryBrowser.js",
+   "bytes": 46130,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "webEditors/extracted/rc/fe/baseEditorSet.js",
+   "bytes": 1673,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "wiresheet/extracted/rc/wiresheet.built.min.js",
+   "bytes": 157710,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "wiresheet/extracted/rc/wb/WbWiresheetEnv.js",
+   "bytes": 17378,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "wiresheet/extracted/rc/wb/controller/WbInteractionController.js",
+   "bytes": 33788,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "wiresheet/extracted/rc/wb/baja/BajaContextMenu.js",
+   "bytes": 18683,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "workbench/extracted/rc/find/findCommands.built.min.js",
+   "bytes": 1926,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "xprotect/extracted/ext/sdk/Lib/security/SHA512.js",
+   "bytes": 8320,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "xprotect/extracted/ext/sdk/Lib/security/SHA256.js",
+   "bytes": 4608,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "xprotect/extracted/ext/sdk/Lib/security/AES.js",
+   "bytes": 13358,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "xprotect/extracted/rc/xprotect.built.min.js",
+   "bytes": 21991,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  },
+  {
+   "path": "xprotect/extracted/rc/xprotect/XProtectSession.js",
+   "bytes": 22384,
+   "mapref": null,
+   "sibling_map": false,
+   "ref_target_exists": false,
+   "license_only_header": false
+  }
+ ]
+}

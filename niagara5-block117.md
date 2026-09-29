@@ -97,6 +97,7 @@ pipeline; the .NET ones are decompilable with the kit's `decompile-net.sh` (B117
 `tools/n5-extract-census.py:66`); 86 `.map` source maps ship alongside. Heaviest: `js` 35/76, `docDeveloper`
 21/114, `analytics` 18/141, `webEditors` 12/400, `uxBuilder` 11/116 `[CERT-hw]`. Any corpus claim about those
 234 files rests on minified code (B117-G3).
+**[CORRECTED by [Block 119] §119.6:** the 234 over-count by 102 — only 132 files are truly minified (mean line ≥ 250 B); 102 are readable Babel output caught by the longest-line half of the rule. The 86 maps do not "ship alongside minified JS": 42 map LESS, 42 map readable Babel ES5 with embedded ES2015+ originals, 1 maps underscore, 1 is empty; none of the 234 has a map.]**
 
 **Encoded/encrypted blobs.** Scanning every non-image/non-font/non-archive entry ≥ 256 B for Shannon entropy
 ≥ 7.2 bits/byte: 956 hits, all identified by magic — 704 gzip (`fonts.jar` `microFont/*.font`), 5 ZIP (`.bog`),

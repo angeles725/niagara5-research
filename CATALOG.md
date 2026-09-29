@@ -2,7 +2,7 @@
 
 # Block catalog
 
-Total: **118 blocks**
+Total: **119 blocks**
 
 | Block | File | Title |
 |-------|------|-------|
@@ -124,3 +124,4 @@ Total: **118 blocks**
 | 116 | [niagara5-block116.md](niagara5-block116.md) | What Java decompilation cannot or did not preserve: an empirical loss catalog for the N5 tree (synthetic javac-25 first principles, a 2,809-file docSource differential, a recompile-and-compare bytecode oracle, 11 confirmed semantic defects in the corpus's own decompiled text, and docSource proven byte-identical to the shipped bytecode) |
 | 117 | [niagara5-block117.md](niagara5-block117.md) | Extraction and native-binary fidelity audit: the analysed Java bytes are the vendor's (21,751 classes byte-exact, 356 signed jars verified), but 24,896 nested-jar classes and 958 out-of-pipeline Tridium classes were never decompiled; 45 of 46 single-instrument native claims confirmed by a second instrument, 3 details refuted |
 | 118 | [niagara5-block118.md](niagara5-block118.md) | Logic-recovery method ladder for N5: what each instrument proves (line-mapped Vineflower, a LineNumberTable pattern discriminator, SootUp/Joern/bytecode-xref call graphs, sandboxed differential execution, an ASM trace agent, CodeQL vs Joern dataflow, and a krak2 round-trip of all 20,724 module classes) |
+| 119 | [niagara5-block119.md](niagara5-block119.md) | Source-map census and minified-JS audit: 86 JSON source maps ship, only 42 carry originals (all Babel-transpiled driver/workbench code that already ships readable), none of the 234 minified JS files has a map, and the 42 originals are now recovered |
