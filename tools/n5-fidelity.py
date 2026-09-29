@@ -408,7 +408,8 @@ class ToolServer:
         try:
             self.proc = subprocess.Popen(
                 [self.java_bin, *_TOOL_SERVER_JVM_FLAGS, TOOL_SERVER_SRC],
-                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=0,
+                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                # buffered pipes: read(n) must return exactly n bytes (raw reads return short)
             )
         except OSError as exc:
             raise ToolServerError(f"cannot launch tool server: {exc}") from exc
@@ -453,6 +454,7 @@ class ToolServer:
             timer.start()
         try:
             self.proc.stdin.write(bytes(payload))
+            self.proc.stdin.flush()
             rc = struct.unpack(">i", self._read(4))[0]
             out = self._read(struct.unpack(">i", self._read(4))[0])
             err = self._read(struct.unpack(">i", self._read(4))[0])

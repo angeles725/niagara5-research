@@ -1348,6 +1348,14 @@ class TestToolServer(unittest.TestCase):
         subprocess.run([JDK25_JAVAC, *self.JAVAC_OPTS, "-d", out_dir, self.src], check=True, capture_output=True)
         return os.path.join(out_dir, "pk", "Tiny.class")
 
+    def test_large_output_beyond_pipe_buffer_round_trips(self):
+        # regression: raw unbuffered pipe reads return short; javap -v of a JDK class is >100 KB
+        expected = subprocess.run([JDK25_JAVAP, "-v", "-p", "java.lang.String"], capture_output=True, text=True).stdout
+        self.assertGreater(len(expected), 200_000)
+        rc, out, err = self._server().run("javap", ["-v", "-p", "java.lang.String"], timeout=120)
+        self.assertEqual(rc, 0, err)
+        self.assertEqual(out, expected)
+
     def test_javac_via_server_is_byte_identical_to_subprocess(self):
         ref = self._subprocess_compile(os.path.join(self.tmpdir, "ref"))
         srv_out = os.path.join(self.tmpdir, "srv")
