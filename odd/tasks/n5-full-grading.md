@@ -27,6 +27,9 @@ tools/n5-fidelity.py + tests (performance only, grading semantics unchanged); or
       v1/v2 source identical for 5,955 of 14,550 .java (41%).
 - [x] F2 (8350885, RDD review-f08d8c2ebebe6b46 approved+acknowledged) Intra-module class-level parallelism (`--class-jobs N`): per-class grading is independent (own temp dirs);
       results must be identical to the serial path and ordered deterministically. Route: delegated writer (TDD).
+- [x] F2b Opt-in persistent tool server (`--tool-server`, default off): tools/n5-toolserver/ToolServer.java runs javac/javap in-process via ToolProvider
+      (one JVM per worker thread, length-prefixed binary protocol, per-request timeout = kill+restart, fallback to subprocess on any server failure).
+      Grades identical to the subprocess path; SCHEMA_VERSION and cache key untouched. Route: delegated writer (TDD). Commits: 5efbc27, 156c533, 50ef661.
 - [ ] F3 Full run, vineflower2 then vineflower, all modules; failures recorded as module_error, never dropped.
       Route: inline background run.
 - [ ] F4 Report: regenerate docs/decompile-fidelity-report.md + `--compare vineflower,vineflower2`; verify numbers
@@ -40,4 +43,7 @@ tools/n5-fidelity.py + tests (performance only, grading semantics unchanged); or
 ## Progress / evidence
 - 2026-09-28 branch feat/n5-t21-full-grading off main b57cabf.
 - F2 real check: haystack --class-jobs 1 vs 8 → identical grades and key order for all 36 classes; only first_error temp paths differ; 282 s → 85 s.
+- F2b real check (class-jobs 4, machine saturated by the F3 run): wall --tool-server vs subprocess: haystack 116 s vs 324 s, abstractMqttDriver 145 s vs 483 s,
+  alarmOrion 128 s vs 489 s (~2.8-3.8x); all 129 classes identical (grade/best_decompiler/attempted/mismatched_methods/consensus/docsource_roundtrip) vs the F3 JSON; only first_error temp paths differ.
+  Bug found and fixed by verification: unbuffered pipe reads truncated >64 KB javap replies (regression test added).
 - F3 launched: scratchpad run-t21.sh (vineflower2 then vineflower), log t21.log.
