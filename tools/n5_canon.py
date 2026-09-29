@@ -544,13 +544,13 @@ def _tail(blocks: list[Block], rules: frozenset) -> None:
 def _boolean_materialization(blocks: list[Block]) -> None:
     """TIER 2: `z; ifeq L0 else L1; L0: iconst_0 -> J; L1: iconst_1 -> J` == `z -> J`."""
     def literal(x: int, op: str) -> bool:
-        blk = blocks[x]
-        return [d["op"] for d in blk.body] == [op] and not blk.cov and blk.term == ("jump",)
+        return [d["op"] for d in blocks[x].body] == [op] and not blocks[x].cov
     for b in blocks:
         if b.term == ("cond", "ifeq") and b.body and not b.cov and _is_boolean_producer(b.body[-1]):
             s0, s1 = b.succ
-            if literal(s0, "iconst_0") and literal(s1, "iconst_1") and blocks[s0].succ == blocks[s1].succ:
-                b.term, b.succ = ("jump",), list(blocks[s0].succ)
+            if (literal(s0, "iconst_0") and literal(s1, "iconst_1")
+                    and blocks[s0].term == blocks[s1].term and blocks[s0].succ == blocks[s1].succ):
+                b.term, b.succ = blocks[s0].term, list(blocks[s0].succ)
 
 
 def _inline_small(blocks: list[Block], rules: frozenset) -> None:
@@ -628,6 +628,201 @@ def _minimize(blocks: list[Block], entry: int) -> int:
 
 
 # ---------------------------------------------------------------------------
+# Data-flow rules
+# ---------------------------------------------------------------------------
+
+_PUSH1 = re.compile(r"^(aconst_null|iconst_\w+|fconst_\d|bipush|sipush|dup)$")
+_PUSH2 = re.compile(r"^(lconst_\d|dconst_\d|dup2)$")
+
+
+def _pure_push(d: dict, width: int) -> bool:
+    op = d["op"]
+    if d.get("slot") is not None:
+        return op in (("iload", "fload", "aload") if width == 1 else ("lload", "dload"))
+    if op in ("ldc", "ldc2_w"):
+        return not can_throw(d) and (op == "ldc") == (width == 1)
+    return bool((_PUSH1 if width == 1 else _PUSH2).match(op))
+
+
+def _peephole(body: list[dict], rules: frozenset) -> list[dict]:
+    out = list(body)
+    changed = True
+    while changed:
+        changed = False
+        new: list[dict] = []
+        i = 0
+        while i < len(out):
+            d = out[i]
+            n1 = out[i + 1] if i + 1 < len(out) else None
+            if "r1" in rules and n1 is not None and d["op"] == "aconst_null" and n1["op"] == "checkcast":
+                new.append(d)
+                i += 2
+                changed = True
+                continue
+            if "iinc" in rules and i + 3 < len(out):
+                c, add, st = out[i + 1], out[i + 2], out[i + 3]
+                k = int_const(c)
+                if (d["op"] == "iload" and st["op"] == "istore" and d["slot"] == st["slot"]
+                        and add["op"] in ("iadd", "isub") and k is not None):
+                    new.append(_insn("iinc", d["slot"], str(k if add["op"] == "iadd" else -k)))
+                    i += 4
+                    changed = True
+                    continue
+            if "peep" in rules and n1 is not None:
+                kind = d["op"][0]
+                width = 2 if kind in "ld" else 1
+                dup = _insn("dup2" if width == 2 else "dup")
+                if (d["op"].endswith("store") and n1["op"] == kind + "load" and d["slot"] == n1["slot"]):
+                    new.extend((dup, d))
+                    i += 2
+                    changed = True
+                    continue
+                if (d["op"].endswith("load") and d.get("slot") is not None and n1["op"] == d["op"]
+                        and n1["slot"] == d["slot"]):
+                    new.extend((d, dup))
+                    i += 2
+                    changed = True
+                    continue
+                if (n1["op"] == "pop" and _pure_push(d, 1)) or (n1["op"] == "pop2" and _pure_push(d, 2)):
+                    i += 2
+                    changed = True
+                    continue
+            new.append(d)
+            i += 1
+        out = new
+    return out
+
+
+def _dead_stores(blocks: list[Block], entry: int) -> None:
+    """Liveness over slots; a handler's live-in is live at every point of a
+    block it covers (the handler may be entered there)."""
+    order = _reachable(blocks, entry)
+    live_in: dict[int, set] = {x: set() for x in order}
+
+    def walk(x: int, rewrite: bool):
+        b = blocks[x]
+        hl: set = set()
+        for _, h in b.cov:
+            hl |= live_in[h]
+        live = set(hl)
+        for s in b.succ:
+            live |= live_in[s]
+        body = []
+        for d in reversed(b.body):
+            s = d.get("slot")
+            op = d["op"]
+            if s is None:
+                body.append(d)
+            elif op.endswith("store"):
+                if s in live or not rewrite:
+                    body.append(d)
+                else:
+                    body.append(_insn("pop2" if op[0] in "ld" else "pop"))
+                live.discard(s)
+                live |= hl
+            elif op == "iinc":
+                if s in live or not rewrite:
+                    body.append(d)
+                # a dead iinc neither reads nor writes anything observable
+            else:
+                live.add(s)
+                body.append(d)
+        if rewrite:
+            b.body = list(reversed(body))
+        return live
+
+    changed = True
+    while changed:
+        changed = False
+        for x in reversed(order):
+            live = walk(x, rewrite=False)
+            if live != live_in[x]:
+                live_in[x] = live
+                changed = True
+    for x in order:
+        walk(x, rewrite=True)
+
+
+def _web_names(blocks: list[Block], order: list[int], param_slots: int) -> dict:
+    """Name every slot access by its def-use web. Reaching definitions per
+    slot (a block's defs, and its entry state, reach every handler covering
+    it); each use joins all definitions that reach it into one web. A web
+    holding a parameter's entry value is named after that parameter slot."""
+    parent: dict = {}
+
+    def find(x):
+        parent.setdefault(x, x)
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    def union(a, b):
+        ra, rb = find(a), find(b)
+        if ra != rb:
+            parent[rb] = ra
+
+    rd_in: dict[int, dict] = {x: {} for x in order}
+    for s in range(param_slots):
+        rd_in[order[0]][s] = frozenset([("E", s)])
+
+    def transfer(x: int, record: bool):
+        state = dict(rd_in[x])
+        to_handlers = {k: set(v) for k, v in state.items()}
+        for i, d in enumerate(blocks[x].body):
+            s = d.get("slot")
+            if s is None:
+                continue
+            if not d["op"].endswith("store"):  # a load or an iinc reads s
+                defs = state.get(s) or frozenset([("E", s)])
+                if record:
+                    node = ("U", x, i)
+                    for df in defs:
+                        union(node, df)
+            if d["op"].endswith("store") or d["op"] == "iinc":
+                if record and d["op"] == "iinc":
+                    union(("U", x, i), (x, i))
+                state[s] = frozenset([(x, i)])
+                to_handlers.setdefault(s, set()).add((x, i))
+        return state, to_handlers
+
+    changed = True
+    while changed:
+        changed = False
+        for x in order:
+            out, to_handlers = transfer(x, record=False)
+            targets = [(s, out) for s in blocks[x].succ] + [(h, to_handlers) for _, h in blocks[x].cov]
+            for t, st in targets:
+                cur = rd_in[t]
+                for slot, defs in st.items():
+                    merged = frozenset(defs) | cur.get(slot, frozenset())
+                    if merged != cur.get(slot):
+                        cur[slot] = merged
+                        changed = True
+    for x in order:
+        transfer(x, record=True)
+
+    pinned = {}
+    for s in range(param_slots):
+        pinned[find(("E", s))] = f"p{s}"
+    names: dict = {}
+    fresh: dict = {}
+    for x in order:
+        for i, d in enumerate(blocks[x].body):
+            if d.get("slot") is None:
+                continue
+            node = (x, i) if d["op"].endswith("store") else ("U", x, i)
+            root = find(node)
+            if root in pinned:
+                names[(x, i)] = pinned[root]
+            else:
+                if root not in fresh:
+                    fresh[root] = f"v{len(fresh)}"
+                names[(x, i)] = fresh[root]
+    return names
+
+
+# ---------------------------------------------------------------------------
 # Entry points
 # ---------------------------------------------------------------------------
 
@@ -671,6 +866,13 @@ def canonical_form(method: dict, rules: Iterable[str] = ALL_RULES) -> tuple:
         _inline_small(blocks, rules)
     if "merge" in rules:
         _merge_chains(blocks, entry, rules)
+    if rules & {"r1", "iinc", "peep"}:
+        for b in blocks:
+            b.body = _peephole(b.body, rules)
+    if "dse" in rules:
+        _dead_stores(blocks, entry)
+        for b in blocks:
+            b.body = _peephole(b.body, rules)  # e.g. `push; pop` left by a dead store
     if "cov" in rules:
         for b in blocks:
             if not b.throws():
@@ -678,7 +880,11 @@ def canonical_form(method: dict, rules: Iterable[str] = ALL_RULES) -> tuple:
     if "min" in rules:
         entry = _minimize(blocks, entry)
     order = _dfs_number(blocks, entry)
-    names = _first_use_names(blocks, order, int(method.get("param_slots") or 0))
+    param_slots = int(method.get("param_slots") or 0)
+    if "web" in rules:
+        names = _web_names(blocks, order, param_slots)
+    else:
+        names = _first_use_names(blocks, order, param_slots)
     num = {b: k for k, b in enumerate(order)}
     out = []
     for b in order:

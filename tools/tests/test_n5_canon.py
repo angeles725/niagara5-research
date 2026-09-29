@@ -247,5 +247,155 @@ class TestJumpRulesRealJavac(CanonTestCase):
         self.assertIsNotNone(self.c.resolve_rules(a, b))
 
 
+class TestDataFlowRules(CanonTestCase):
+    """r1 / iinc / peep / dse / web / cov and the tier-2 cmp1 / boolmat."""
+    CALL_NULL = ["0: aconst_null", "1: checkcast #7 // class java/lang/String",
+                 "4: invokestatic #9 // Method m:(Ljava/lang/String;)V", "7: return"]
+
+    def test_r1_drops_checkcast_of_null(self):
+        a = m(self.CALL_NULL)
+        b = m(["0: aconst_null", "1: invokestatic #9 // Method m:(Ljava/lang/String;)V", "4: return"])
+        self.assertCanonDiffer(a, b, ())
+        self.assertCanonEqual(a, b, ("r1",))
+        c = m(["0: aload_0", "1: checkcast #7 // class java/lang/String",
+               "4: invokestatic #9 // Method m:(Ljava/lang/String;)V", "7: return"], params=1)
+        d = m(["0: aload_0", "1: invokestatic #9 // Method m:(Ljava/lang/String;)V", "4: return"], params=1)
+        self.assertCanonDiffer(c, d, self.c.ALL_RULES)
+
+    def test_iinc_folds_load_add_store(self):
+        a = m(["0: iload_0", "1: iconst_1", "2: iadd", "3: istore_0", "4: iload_0", "5: ireturn"], params=1)
+        b = m(["0: iinc 0, 1", "3: iload_0", "4: ireturn"], params=1)
+        self.assertCanonDiffer(a, b, ())
+        self.assertCanonEqual(a, b, ("iinc",))
+        sub = m(["0: iload_0", "1: iconst_3", "2: isub", "3: istore_0", "4: iload_0", "5: ireturn"], params=1)
+        self.assertCanonEqual(sub, m(["0: iinc 0, -3", "3: iload_0", "4: ireturn"], params=1), ("iinc",))
+        self.assertCanonDiffer(sub, b, self.c.ALL_RULES)
+
+    def test_iinc_w_is_iinc(self):
+        a = m(["0: iinc_w 0, 1000", "6: iload_0", "7: ireturn"], params=1)
+        b = m(["0: iinc 0, 1000", "3: iload_0", "4: ireturn"], params=1)
+        self.assertCanonEqual(a, b, ())
+
+    def test_peep_store_load_is_dup_store(self):
+        a = m(["0: invokestatic #2 // Method f:()I", "3: istore_1", "4: iload_1", "5: ireturn"])
+        b = m(["0: invokestatic #2 // Method f:()I", "3: dup", "4: istore_1", "5: ireturn"])
+        self.assertCanonDiffer(a, b, ())
+        self.assertCanonEqual(a, b, ("peep",))
+        direct = m(["0: invokestatic #2 // Method f:()I", "3: ireturn"])
+        self.assertCanonDiffer(a, direct, ("peep",))
+        self.assertCanonEqual(a, direct, ("peep", "dse"))
+
+    def test_dse_turns_a_dead_store_into_pop(self):
+        a = m(["0: invokestatic #2 // Method f:()I", "3: istore_1", "4: iconst_0", "5: ireturn"])
+        b = m(["0: invokestatic #2 // Method f:()I", "3: pop", "4: iconst_0", "5: ireturn"])
+        self.assertCanonDiffer(a, b, ())
+        self.assertCanonEqual(a, b, ("dse",))
+
+    def test_dse_keeps_a_store_read_by_an_exception_handler(self):
+        rows = [(2, 5, 7, "any")]
+        live = m(["0: iconst_5", "1: istore_1", "2: invokestatic #2 // Method f:()V", "5: iconst_0", "6: ireturn",
+                  "7: astore_2", "8: iload_1", "9: ireturn"], rows)
+        popped = m(["0: iconst_5", "1: pop", "2: invokestatic #2 // Method f:()V", "5: iconst_0", "6: ireturn",
+                    "7: astore_2", "8: iload_1", "9: ireturn"], rows)
+        self.assertCanonDiffer(live, popped, self.c.ALL_RULES)
+
+    SLOT_REUSE = ["0: invokestatic #2 // Method f:()I", "3: istore_1", "4: iload_1",
+                  "5: invokestatic #3 // Method g:(I)V", "8: invokestatic #2 // Method f:()I", "11: istore_1",
+                  "12: iload_1", "13: invokestatic #3 // Method g:(I)V", "16: return"]
+
+    def test_web_names_locals_by_live_range(self):
+        two_slots = list(self.SLOT_REUSE)
+        two_slots[5], two_slots[6] = "11: istore_2", "12: iload_2"
+        self.assertCanonDiffer(m(self.SLOT_REUSE), m(two_slots), ())
+        self.assertCanonEqual(m(self.SLOT_REUSE), m(two_slots), ("web",))
+        # the second call reads the FIRST value: a different data flow
+        crossed = list(two_slots)
+        crossed[6] = "12: iload_1"
+        self.assertCanonDiffer(m(two_slots), m(crossed), self.c.ALL_RULES)
+
+    def test_web_keeps_parameter_webs_pinned(self):
+        a = m(["0: iload_0", "1: istore_2", "2: iload_2", "3: ireturn"], params=2)
+        b = m(["0: iload_1", "1: istore_2", "2: iload_2", "3: ireturn"], params=2)
+        self.assertCanonDiffer(a, b, self.c.ALL_RULES)
+
+    def test_cov_ignores_coverage_of_non_throwing_code(self):
+        code = ["0: invokestatic #2 // Method f:()V", "3: iconst_0", "4: ireturn", "5: astore_0", "6: iconst_1",
+                "7: ireturn"]
+        narrow = m(code, [(0, 3, 5, "Class java/lang/RuntimeException")])
+        wide = m(code, [(0, 5, 5, "Class java/lang/RuntimeException")])
+        self.assertCanonDiffer(narrow, wide, ())
+        self.assertCanonEqual(narrow, wide, ("cov",))
+        uncovered = m(code, [(3, 5, 5, "Class java/lang/RuntimeException")])
+        self.assertCanonDiffer(narrow, uncovered, self.c.ALL_RULES)
+
+    Z_EQ_1 = ["0: aload_0", "1: invokevirtual #2 // Method isX:()Z", "4: iconst_1", "5: if_icmpne 10",
+              "8: iconst_1", "9: ireturn", "10: iconst_2", "11: ireturn"]
+
+    def test_cmp1_is_tier2_and_needs_a_boolean_producer(self):
+        z = m(self.Z_EQ_1, params=1)
+        ifeq = m(["0: aload_0", "1: invokevirtual #2 // Method isX:()Z", "4: ifeq 9", "7: iconst_1", "8: ireturn",
+                  "9: iconst_2", "10: ireturn"], params=1)
+        self.assertIn("cmp1", self.c.TIER2_RULES)
+        self.assertCanonDiffer(z, ifeq, self.c.TIER1_RULES)
+        self.assertCanonEqual(z, ifeq, ("cmp1",))
+        as_int = [line.replace("isX:()Z", "getI:()I") for line in self.Z_EQ_1]
+        ifeq_int = [line.replace("isX:()Z", "getI:()I") for line in ifeq["raw_code"]]
+        self.assertCanonDiffer(m(as_int, params=1), m(ifeq_int, params=1), self.c.ALL_RULES)
+
+    def test_boolmat_is_tier2(self):
+        a = m(["0: aload_0", "1: instanceof #7 // class java/lang/String", "4: ifeq 11", "7: iconst_1",
+               "8: goto 12", "11: iconst_0", "12: ireturn"], params=1)
+        b = m(["0: aload_0", "1: instanceof #7 // class java/lang/String", "4: ireturn"], params=1)
+        self.assertIn("boolmat", self.c.TIER2_RULES)
+        self.assertCanonDiffer(a, b, self.c.TIER1_RULES)
+        self.assertCanonEqual(a, b, ("boolmat", "tail"))
+        # z ? 0 : 1 is the negation, never z
+        neg = m(["0: aload_0", "1: instanceof #7 // class java/lang/String", "4: ifeq 11", "7: iconst_0",
+                 "8: goto 12", "11: iconst_1", "12: ireturn"], params=1)
+        self.assertCanonDiffer(neg, b, self.c.ALL_RULES)
+
+
+@unittest.skipUnless(_jdk_available(), "JDK 25 not installed")
+class TestDataFlowRulesRealJavac(CanonTestCase):
+    def test_x_equals_x_plus_1_vs_x_plus_plus(self):
+        a, b = javac_methods("x = x + 1; return x;", "x++; return x;")
+        self.assertCanonDiffer(a, b, ())
+        self.assertEqual(self.c.resolve_rules(a, b), ["iinc"])
+
+    def test_dead_temp(self):
+        a, b = javac_methods("int t = g(); return 0;", "g(); return 0;", extra="static int g() { return 1; }")
+        self.assertCanonDiffer(a, b, ())
+        self.assertEqual(self.c.resolve_rules(a, b), ["dse"])
+
+    def test_null_cast_overload(self):
+        a, b = javac_methods("m((String) null); return 0;", "m(null); return 0;", extra="static void m(String s) {}")
+        self.assertCanonDiffer(a, b, ())
+        self.assertEqual(self.c.resolve_rules(a, b), ["r1"])
+
+    def test_slot_reuse(self):
+        a, b = javac_methods("{ int a = g(); h(a); } { int b = g(); h(b); } return 0;",
+                             "int a = g(); h(a); int b = g(); h(b); return 0;",
+                             extra="static int g() { return 1; } static void h(int i) {}")
+        self.assertCanonDiffer(a, b, ())
+        self.assertEqual(self.c.resolve_rules(a, b), ["web"])
+
+    def test_try_range_extent(self):
+        a, b = javac_methods("try { g(); } catch (RuntimeException e) { return 1; } return 0;",
+                             "try { g(); return 0; } catch (RuntimeException e) { return 1; }",
+                             extra="static void g() {}")
+        self.assertCanonDiffer(a, b, ())
+        rules = self.c.resolve_rules(a, b)
+        self.assertIsNotNone(rules)
+        self.assertIn("cov", rules)
+
+    def test_boolean_ternary_needs_tier2(self):
+        a, b = javac_methods("return o instanceof String ? true : false;", "return o instanceof String;",
+                             header="static boolean f(Object o)")
+        self.assertIsNone(self.c.resolve_rules(a, b))
+        rules = self.c.resolve_rules(a, b, tier2=True)
+        self.assertIsNotNone(rules)
+        self.assertIn("boolmat", rules)
+
+
 if __name__ == "__main__":
     unittest.main()
