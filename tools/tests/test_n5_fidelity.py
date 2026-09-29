@@ -1238,6 +1238,81 @@ class TestPrimaryTreeSelection(unittest.TestCase):
             self.assertEqual(result["classes"]["p/Foo"]["grade"], "harness-error")
 
 
+class TestClassJobsParallelGrading(unittest.TestCase):
+    """--class-jobs parallelizes per-class grading INSIDE one module; the
+    result must be identical (content and key order) to the serial path."""
+
+    NAMES = [f"C{i:02d}" for i in range(12)]
+
+    def setUp(self):
+        self.mod = _load()
+
+    def _make_module(self, td):
+        organized = Path(td)
+        mod_dir = organized / "fakemod"
+        (mod_dir / "extracted" / "p").mkdir(parents=True)
+        (mod_dir / "vineflower" / "p").mkdir(parents=True)
+        for n in self.NAMES:
+            (mod_dir / "extracted" / "p" / f"{n}.class").write_bytes(b"x")
+            (mod_dir / "vineflower" / "p" / f"{n}.java").write_text("class X {}")
+        return organized
+
+    def _fake_rag(self, fail_on=None):
+        import random
+        import time
+
+        def fake(java_file, class_name, *a, **kw):
+            time.sleep(random.random() * 0.01)
+            if class_name == fail_on:
+                raise RuntimeError("boom " + class_name)
+            grade = "roundtrip-exact" if int(class_name[1:]) % 2 == 0 else "roundtrip-equivalent"
+            return {"grade": grade, "first_error": None, "mismatched_methods": [], "allowlist_matches": []}
+        return fake
+
+    def test_class_jobs_matches_serial_content_and_order(self):
+        with tempfile.TemporaryDirectory() as td:
+            organized = self._make_module(td)
+            with mock.patch.object(self.mod, "recompile_and_grade", side_effect=self._fake_rag()):
+                serial = self.mod.grade_module("fakemod", organized_dir=organized, class_jobs=1)
+                parallel = self.mod.grade_module("fakemod", organized_dir=organized, class_jobs=4)
+            self.assertEqual(len(serial["classes"]), len(self.NAMES))
+            self.assertEqual(list(parallel["classes"]), list(serial["classes"]))
+            self.assertEqual(json.dumps(parallel, default=list), json.dumps(serial, default=list))
+
+    def test_exception_in_one_class_propagates_with_class_jobs(self):
+        with tempfile.TemporaryDirectory() as td:
+            organized = self._make_module(td)
+            with mock.patch.object(self.mod, "recompile_and_grade", side_effect=self._fake_rag(fail_on="C05")):
+                with self.assertRaises(RuntimeError):
+                    self.mod.grade_module("fakemod", organized_dir=organized, class_jobs=4)
+
+    def test_main_passes_class_jobs_through(self):
+        with tempfile.TemporaryDirectory() as td:
+            organized_dir = Path(td)
+            mod_dir = organized_dir / "m"
+            (mod_dir / "extracted").mkdir(parents=True)
+            (mod_dir / "recon.json").write_text(json.dumps({"jar_sha256": "sha-m"}))
+            seen = {}
+
+            def fake_grade_module(module, primary_tree="vineflower", limit=None, **kwargs):
+                seen.update(kwargs)
+                return {
+                    "module": module, "schema_version": self.mod.SCHEMA_VERSION,
+                    "jar_sha256": "sha-m", "primary_tree": primary_tree, "limit_per_module": limit,
+                    "class_count": 0, "grade_counts": {}, "classes": {},
+                }
+
+            with mock.patch.object(self.mod, "grade_module", side_effect=fake_grade_module), \
+                 mock.patch.object(self.mod, "build_classpath", return_value=""):
+                rc = self.mod.main([
+                    "--modules", "m", "--class-jobs", "3",
+                    "--organized-dir", str(organized_dir),
+                    "--classpath-cache-dir", str(organized_dir / "_cp"),
+                ])
+            self.assertEqual(rc, 0)
+            self.assertEqual(seen.get("class_jobs"), 3)
+
+
 class TestHarnessErrorsAndTimeouts(unittest.TestCase):
     """Missing ground-truth/source files and subprocess timeouts are HARNESS
     problems, never a decompiler-fidelity finding -- distinct typed grades

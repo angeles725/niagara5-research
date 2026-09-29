@@ -27,7 +27,8 @@ compute_consensus), roundtrip-equivalent, roundtrip-exact.
 
 Usage:
   python3 tools/n5-fidelity.py --modules control,alarm,schedule [--report]
-  python3 tools/n5-fidelity.py --all --jobs 6 [--limit-per-module 50]
+  python3 tools/n5-fidelity.py --all --jobs 6 [--class-jobs 4] [--limit-per-module 50]
+  (--jobs parallelizes across modules; --class-jobs parallelizes classes within a module)
 
 Resumable: a module is skipped when organized/<mod>/fidelity.json already
 records the module jar's current sha256 and this tool's SCHEMA_VERSION.
@@ -1261,6 +1262,114 @@ def _decompile_one_class_with(
     return (candidates[0] if candidates else None), None
 
 
+def _grade_one_class(
+    fqcn: str,
+    classfile: Path,
+    *,
+    vineflower_dir: Path,
+    fallback_dir: Path,
+    docsource_dir: Path,
+    classpath: str,
+    javac_bin: str,
+    javap_bin: str,
+    java_bin: str,
+    cfr_jar: Path,
+    procyon_jar: Path,
+    jd_cli_jar: Optional[Path],
+    primary_tree: str,
+) -> tuple[str, dict]:
+    """Grade one top-level class (the redundancy ladder) and return
+    (fqcn, record). Self-contained: uses its own temp dirs, so it is safe to
+    run concurrently for different classes (see grade_module's class_jobs)."""
+    vf_java = vineflower_dir / f"{fqcn}.java"
+    fb_java = fallback_dir / f"{fqcn}.java"
+    source_java = vf_java if vf_java.is_file() else (fb_java if fb_java.is_file() else None)
+    class_short = fqcn.rsplit("/", 1)[-1]
+
+    docsource_java = docsource_dir / f"{fqcn}.java"
+    docsource_available = docsource_java.is_file()
+    docsource_roundtrip = None
+
+    if source_java is None:
+        # a missing decompiled source is a HARNESS problem (the corpus's
+        # decompile pass never ran / never wrote this tree), never
+        # "no-compile" (which claims the decompiled source itself failed
+        # to compile — a decompiler-fidelity finding, not a setup bug).
+        return fqcn, {
+            "grade": "harness-error",
+            "first_error": "no decompiled source found (vineflower/fallback both missing)",
+            "best_decompiler": None,
+            "attempted": [],
+            "consensus": {"reaching_roundtrip": [], "count": 0},
+            "docsource_available": docsource_available,
+            "docsource_roundtrip": docsource_roundtrip,
+        }
+
+    with tempfile.TemporaryDirectory(prefix=f"n5fid-{class_short}-") as td:
+        def _decompile_retry_thunk(engine, tool_jar, engine_label, classfile=classfile, class_short=class_short):
+            with tempfile.TemporaryDirectory() as decompile_td, tempfile.TemporaryDirectory() as compile_td:
+                java_src, reason = _decompile_one_class_with(java_bin, engine, tool_jar, classfile, Path(decompile_td))
+                if java_src is None:
+                    grade = "timeout" if reason == "timeout" else "no-compile"
+                    suffix = " (timeout)" if reason == "timeout" else ""
+                    return {"grade": grade, "first_error": f"{engine_label} retry decompile failed{suffix}", "mismatched_methods": [], "allowlist_matches": []}
+                return recompile_and_grade(str(java_src), class_short, classpath, str(classfile), compile_td, javac_bin, javap_bin)
+
+        def cfr_thunk():
+            return _decompile_retry_thunk("cfr", cfr_jar, "CFR")
+
+        def procyon_thunk():
+            return _decompile_retry_thunk("procyon", procyon_jar, "Procyon")
+
+        # first rung of the ladder is whatever tree grade_module was asked
+        # to grade (`primary_tree`) -- labeling it the literal string
+        # "vineflower" regardless of `--tree` misattributed a vineflower2
+        # (or any other tree's) result to vineflower in `attempted`/
+        # `per_engine_mismatched_methods`.
+        first = recompile_and_grade(str(source_java), class_short, classpath, str(classfile), td, javac_bin, javap_bin)
+        attempted = [(primary_tree, first)]
+        if not _is_clean(first["grade"]):
+            cfr_result = cfr_thunk()
+            attempted.append(("cfr", cfr_result))
+            if not _is_clean(cfr_result["grade"]):
+                procyon_result = procyon_thunk()
+                attempted.append(("procyon", procyon_result))
+                if not _is_clean(procyon_result["grade"]) and jd_cli_jar is not None:
+
+                    def jdcli_thunk():
+                        return _decompile_retry_thunk("jd-cli", jd_cli_jar, "JD-CLI")
+
+                    attempted.append(("jd-cli", jdcli_thunk()))
+
+        best = select_best_decompiler(attempted)
+        consensus = compute_consensus(attempted)
+
+        if docsource_available:
+            with tempfile.TemporaryDirectory() as ds_td:
+                ds_result = recompile_and_grade(str(docsource_java), class_short, classpath, str(classfile), ds_td, javac_bin, javap_bin)
+                docsource_roundtrip = _is_clean(ds_result["grade"])
+
+        return fqcn, {
+            "grade": best["grade"],
+            "best_decompiler": best["best_decompiler"],
+            "attempted": [(n, r["grade"]) for n, r in attempted],
+            "first_error": next((r.get("first_error") for _, r in attempted if r["grade"] == "no-compile"), None),
+            "mismatched_methods": [list(k) for k in (attempted[0][1].get("mismatched_methods") or [])],
+            "allowlist_matches": attempted[0][1].get("allowlist_matches", []),
+            # per-engine, per-method round-trip data — NOT a merge (an unsound
+            # per-method Frankenstein class is never assembled here; see
+            # docs/decompile-fidelity-report.md's Meta-decompilation section /
+            # Harrand et al. arXiv:2005.11315), just the raw material a later,
+            # separately-validated merge step would need.
+            "per_engine_mismatched_methods": {
+                n: [list(k) for k in (r.get("mismatched_methods") or [])] for n, r in attempted
+            },
+            "consensus": consensus,
+            "docsource_available": docsource_available,
+            "docsource_roundtrip": docsource_roundtrip,
+        }
+
+
 def grade_module(
     module: str,
     organized_dir: Path = DEFAULT_ORGANIZED_DIR,
@@ -1275,6 +1384,7 @@ def grade_module(
     krak2_bin: str = "krak2",
     member_sample_size: int = 0,
     primary_tree: str = "vineflower",
+    class_jobs: int = 1,
 ) -> dict:
     """`primary_tree` names the decompiled source tree to grade as the FIRST
     rung of the redundancy ladder — normally "vineflower" (tools/n5-decompile.sh's
@@ -1293,96 +1403,31 @@ def grade_module(
     if limit is not None:
         classes = classes[:limit]
 
+    class_kwargs = dict(
+        vineflower_dir=vineflower_dir, fallback_dir=fallback_dir, docsource_dir=docsource_dir,
+        classpath=classpath, javac_bin=javac_bin, javap_bin=javap_bin, java_bin=java_bin,
+        cfr_jar=cfr_jar, procyon_jar=procyon_jar, jd_cli_jar=jd_cli_jar, primary_tree=primary_tree,
+    )
     per_class = {}
-    for i, (fqcn, classfile) in enumerate(classes):
-        vf_java = vineflower_dir / f"{fqcn}.java"
-        fb_java = fallback_dir / f"{fqcn}.java"
-        source_java = vf_java if vf_java.is_file() else (fb_java if fb_java.is_file() else None)
-        class_short = fqcn.rsplit("/", 1)[-1]
-
-        docsource_java = docsource_dir / f"{fqcn}.java"
-        docsource_available = docsource_java.is_file()
-        docsource_roundtrip = None
-
-        if source_java is None:
-            # a missing decompiled source is a HARNESS problem (the corpus's
-            # decompile pass never ran / never wrote this tree), never
-            # "no-compile" (which claims the decompiled source itself failed
-            # to compile — a decompiler-fidelity finding, not a setup bug).
-            per_class[fqcn] = {
-                "grade": "harness-error",
-                "first_error": "no decompiled source found (vineflower/fallback both missing)",
-                "best_decompiler": None,
-                "attempted": [],
-                "consensus": {"reaching_roundtrip": [], "count": 0},
-                "docsource_available": docsource_available,
-                "docsource_roundtrip": docsource_roundtrip,
-            }
-            continue
-
-        with tempfile.TemporaryDirectory(prefix=f"n5fid-{class_short}-") as td:
-            def _decompile_retry_thunk(engine, tool_jar, engine_label, classfile=classfile, class_short=class_short):
-                with tempfile.TemporaryDirectory() as decompile_td, tempfile.TemporaryDirectory() as compile_td:
-                    java_src, reason = _decompile_one_class_with(java_bin, engine, tool_jar, classfile, Path(decompile_td))
-                    if java_src is None:
-                        grade = "timeout" if reason == "timeout" else "no-compile"
-                        suffix = " (timeout)" if reason == "timeout" else ""
-                        return {"grade": grade, "first_error": f"{engine_label} retry decompile failed{suffix}", "mismatched_methods": [], "allowlist_matches": []}
-                    return recompile_and_grade(str(java_src), class_short, classpath, str(classfile), compile_td, javac_bin, javap_bin)
-
-            def cfr_thunk():
-                return _decompile_retry_thunk("cfr", cfr_jar, "CFR")
-
-            def procyon_thunk():
-                return _decompile_retry_thunk("procyon", procyon_jar, "Procyon")
-
-            # first rung of the ladder is whatever tree grade_module was asked
-            # to grade (`primary_tree`) -- labeling it the literal string
-            # "vineflower" regardless of `--tree` misattributed a vineflower2
-            # (or any other tree's) result to vineflower in `attempted`/
-            # `per_engine_mismatched_methods`.
-            first = recompile_and_grade(str(source_java), class_short, classpath, str(classfile), td, javac_bin, javap_bin)
-            attempted = [(primary_tree, first)]
-            if not _is_clean(first["grade"]):
-                cfr_result = cfr_thunk()
-                attempted.append(("cfr", cfr_result))
-                if not _is_clean(cfr_result["grade"]):
-                    procyon_result = procyon_thunk()
-                    attempted.append(("procyon", procyon_result))
-                    if not _is_clean(procyon_result["grade"]) and jd_cli_jar is not None:
-
-                        def jdcli_thunk():
-                            return _decompile_retry_thunk("jd-cli", jd_cli_jar, "JD-CLI")
-
-                        attempted.append(("jd-cli", jdcli_thunk()))
-
-            best = select_best_decompiler(attempted)
-            consensus = compute_consensus(attempted)
-
-            if docsource_available:
-                with tempfile.TemporaryDirectory() as ds_td:
-                    ds_result = recompile_and_grade(str(docsource_java), class_short, classpath, str(classfile), ds_td, javac_bin, javap_bin)
-                    docsource_roundtrip = _is_clean(ds_result["grade"])
-
-            per_class[fqcn] = {
-                "grade": best["grade"],
-                "best_decompiler": best["best_decompiler"],
-                "attempted": [(n, r["grade"]) for n, r in attempted],
-                "first_error": next((r.get("first_error") for _, r in attempted if r["grade"] == "no-compile"), None),
-                "mismatched_methods": [list(k) for k in (attempted[0][1].get("mismatched_methods") or [])],
-                "allowlist_matches": attempted[0][1].get("allowlist_matches", []),
-                # per-engine, per-method round-trip data — NOT a merge (an unsound
-                # per-method Frankenstein class is never assembled here; see
-                # docs/decompile-fidelity-report.md's Meta-decompilation section /
-                # Harrand et al. arXiv:2005.11315), just the raw material a later,
-                # separately-validated merge step would need.
-                "per_engine_mismatched_methods": {
-                    n: [list(k) for k in (r.get("mismatched_methods") or [])] for n, r in attempted
-                },
-                "consensus": consensus,
-                "docsource_available": docsource_available,
-                "docsource_roundtrip": docsource_roundtrip,
-            }
+    if class_jobs > 1 and len(classes) > 1:
+        # subprocess-bound (javac/javap/java): threads suffice. Results are
+        # collected in submission (= sorted `classes`) order so per_class key
+        # order is deterministic regardless of completion order; a per-class
+        # exception propagates from .result() exactly as in the serial path.
+        with concurrent.futures.ThreadPoolExecutor(max_workers=class_jobs) as pool:
+            futures = [pool.submit(_grade_one_class, fqcn, classfile, **class_kwargs) for fqcn, classfile in classes]
+            try:
+                for fut in futures:
+                    fqcn, record = fut.result()
+                    per_class[fqcn] = record
+            except BaseException:
+                for fut in futures:
+                    fut.cancel()
+                raise
+    else:
+        for fqcn, classfile in classes:
+            fqcn, record = _grade_one_class(fqcn, classfile, **class_kwargs)
+            per_class[fqcn] = record
 
     grade_counts: dict[str, int] = {}
     for c in per_class.values():
@@ -2103,6 +2148,8 @@ def main(argv: Optional[list[str]] = None) -> int:
     parser.add_argument("--modules", help="comma-separated module names")
     parser.add_argument("--all", action="store_true", help="grade every module with a recon.json")
     parser.add_argument("--jobs", type=int, default=1)
+    parser.add_argument("--class-jobs", type=int, default=1,
+                         help="grade this many classes concurrently within each module (default 1 = serial; results identical)")
     parser.add_argument("--limit-per-module", type=int, default=None)
     parser.add_argument("--report", action="store_true", help="(re)write docs/decompile-fidelity-report.md")
     parser.add_argument("--organized-dir", default=str(DEFAULT_ORGANIZED_DIR))
@@ -2210,6 +2257,7 @@ def main(argv: Optional[list[str]] = None) -> int:
                 limit=args.limit_per_module,
                 jd_cli_jar=jd_cli_jar,
                 primary_tree=args.tree,
+                class_jobs=args.class_jobs,
             )
             fidelity_output_path(organized_dir / module, args.tree).write_text(
                 json.dumps(result, indent=2, default=list) + "\n"
