@@ -344,6 +344,22 @@ class EntryPathTest(unittest.TestCase):
         self.assertFalse(m.is_clean(r))
 
 
+class NestedUnreadableTest(unittest.TestCase):
+    def test_corrupt_nested_jar_is_reported_not_silently_skipped(self):
+        m = _load()
+        tmp = tempfile.mkdtemp()
+        jar = os.path.join(tmp, "m.jar")
+        broken = b"PK\x03\x04" + b"garbage" * 10
+        _write(jar, _jar_bytes({"a/A.class": CLASS_MAGIC, "LIB-INF/broken.jar": broken}))
+        moddir = os.path.join(tmp, "m")
+        _write(os.path.join(moddir, "extracted/a/A.class"), CLASS_MAGIC)
+        _write(os.path.join(moddir, "resources/LIB-INF/broken.jar"), broken)
+        r = m.census_module(jar, moddir)
+        self.assertEqual(r["nested"], [])
+        self.assertEqual([n["name"] for n in r["nested_unreadable"]], ["LIB-INF/broken.jar"])
+        self.assertEqual(r["nested_unreadable"][0]["sha256"], hashlib.sha256(broken).hexdigest())
+
+
 @unittest.skipUnless(os.path.isfile(os.path.join(N5_MODULES_DIR, "control.jar"))
                      and os.path.isdir(os.path.join(N5_ORGANIZED, "control")),
                      "real N5 install / organized tree not present")

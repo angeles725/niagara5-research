@@ -184,6 +184,7 @@ def census_module(jar, moddir, release=25):
         "classes": {"checked": 0, "mismatched": [], "missing": []},
         "resources": {"expected": 0, "present_exact": 0, "mismatched": [], "missing": []},
         "nested": [],
+        "nested_unreadable": [],
         "nested_classes_total": 0,
         "nested_classes_decompiled": 0,
         "natives": [],
@@ -232,7 +233,11 @@ def census_module(jar, moddir, release=25):
         if data[:4] == b"PK\x03\x04":
             try:
                 nested = nested_jar_census(name, data, release)
-            except zipfile.BadZipFile:
+            except zipfile.BadZipFile as exc:
+                # A nested jar that will not open was NOT analysed: say so instead of
+                # silently dropping it from the counts.
+                result["nested_unreadable"].append(
+                    {"name": name, "sha256": sha256(data), "error": str(exc)})
                 continue
             decompiled = 0
             tops = {_top_level_java(c) for c in nested["class_names"]
@@ -282,6 +287,7 @@ def sweep(jar_dir, organized, release=25):
         "resource_missing": sum(len(m["resources"]["missing"]) for m in modules),
         "unsafe_entries": sum(len(m["unsafe_entries"]) for m in modules),
         "nested_jars": sum(len(m["nested"]) for m in modules),
+        "nested_unreadable": sum(len(m["nested_unreadable"]) for m in modules),
         "nested_classes_total": sum(m["nested_classes_total"] for m in modules),
         "nested_top_level_decompiled": sum(m["nested_classes_decompiled"] for m in modules),
         "natives": sum(len(m["natives"]) for m in modules),
