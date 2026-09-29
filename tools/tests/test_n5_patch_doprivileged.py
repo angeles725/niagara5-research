@@ -565,6 +565,38 @@ class TestC3aCauses(unittest.TestCase):
         self.assertEqual(rec["_text"], C3A_SOURCES["InitTwo"])
         self.assertEqual(self._grade("InitTwo", rec), "roundtrip-exact")
 
+    def test_dropped_result_cast_is_restored_from_the_checkcast(self):
+        rec = self._patch("ResultCast")
+        self.assertTrue(rec["compiles"], rec["residual_errors"])
+        self.assertIn("return (byte[]) SecurityUtil.doPrivileged(", rec["_text"])
+        self.assertEqual([p["result_cast"] for p in rec["patches"]], ["byte[]"])
+        self.assertEqual(self._grade("ResultCast", rec), "roundtrip-exact")
+
+    def test_result_cast_is_not_applied_to_a_call_with_a_selection(self):
+        text = "x = SecurityUtil.doPrivileged(a).trim();"
+        self.assertFalse(self.mod.result_cast_applicable(text, text.index("SecurityUtil"), text.index(".trim")))
+        text = "x = SecurityUtil.doPrivileged(a)[0];"
+        self.assertFalse(self.mod.result_cast_applicable(text, text.index("SecurityUtil"), text.index("[0]")))
+        text = "x = SecurityUtil.doPrivileged(a);"
+        self.assertTrue(self.mod.result_cast_applicable(text, text.index("SecurityUtil"), text.index(";")))
+
+    def test_thrown_type_is_qualified_when_the_source_does_not_import_it(self):
+        rec = self._patch("Unimported")
+        self.assertTrue(rec["compiles"], rec["residual_errors"])
+        self.assertIn(f"{PSEA}<java.lang.String, java.io.IOException>) file::", rec["_text"])
+        self.assertEqual(self._grade("Unimported", rec), "roundtrip-exact")
+
+    def test_qualifier_keeps_visible_names_and_qualifies_the_rest(self):
+        known = {"java.io.IOException", "java.lang.Exception", "a.b.Custom", "java.net.URISyntaxException"}
+        src = "package a.b;\nimport java.io.IOException;\nclass X {}\n"
+        q = self.mod._make_qualifier(src, "a.b", known.__contains__)
+        self.assertEqual(q("IOException"), "IOException")           # single-type import
+        self.assertEqual(q("Exception"), "Exception")               # java.lang
+        self.assertEqual(q("Custom"), "Custom")                     # same package
+        self.assertEqual(q("URISyntaxException"), "java.net.URISyntaxException")
+        self.assertEqual(q("Nowhere"), "Nowhere")                   # unresolvable: unchanged
+        self.assertEqual(q("x.Y"), "x.Y")
+
     def test_access_controller_two_argument_form(self):
         rec = self._patch("Ctx")
         self.assertEqual(rec["refused"], [])

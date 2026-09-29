@@ -639,6 +639,37 @@ def cast_candidates(b: BytecodeSite) -> list[dict]:
     return [dict(c, iface=iface_src) for c in out]
 
 
+def result_cast_applicable(text: str, inv_start: int, inv_end: int) -> bool:
+    """A cast written in front of the call applies to the whole call only when
+    nothing selects on its result (`.m()`, `[i]`, `::m`)."""
+    rest = text[inv_end:].lstrip()
+    return not rest.startswith((".", "[", "::"))
+
+
+def checkcast_source_type(checkcast: Optional[str]) -> Optional[str]:
+    if not checkcast:
+        return None
+    return descriptor_to_source(checkcast) if checkcast.startswith("[") else internal_name_to_source(checkcast)
+
+
+def _insertions(original: str, chosen: dict, cand: dict, matched: dict) -> dict[int, str]:
+    """source offset -> inserted text for the chosen candidate of every site: the
+    argument cast, plus a result cast in front of the call when the candidate has one."""
+    out: dict[int, str] = {}
+    for k in chosen:
+        c = cand[k][chosen[k]]
+        site = matched[k]["site"]
+        out[site["arg_start"]] = out.get(site["arg_start"], "") + cast_text(c)
+        if c.get("result_cast"):
+            out[site["inv_start"]] = out.get(site["inv_start"], "") + f"({c['result_cast']}) "
+    return out
+
+
+def _describe(candidate: dict) -> str:
+    text = cast_text(candidate).strip()
+    return f"{text} result:({candidate['result_cast']})" if candidate.get("result_cast") else text
+
+
 def cast_text(candidate: dict) -> str:
     if candidate["type_args"]:
         return f"({candidate['iface']}<{', '.join(candidate['type_args'])}>) "
@@ -704,7 +735,8 @@ _THROWN_RES = (
 _FROM_OBJECT_RE = re.compile(r"incompatible types: (?:java\.lang\.)?Object cannot be converted to (.+)$")
 
 
-def _feedback_candidate(cur: dict, errors: list[dict], b: BytecodeSite, first: Optional[dict] = None) -> Optional[dict]:
+def _feedback_candidate(cur: dict, errors: list[dict], b: BytecodeSite, first: Optional[dict] = None,
+                        qualify=None, result_ok: bool = False) -> Optional[dict]:
     """The next cast for a patched site from javac errors inside it, or None.
 
     * an exception type javac names as thrown by the argument ("unreported
@@ -715,7 +747,14 @@ def _feedback_candidate(cur: dict, errors: list[dict], b: BytecodeSite, first: O
       the exception arguments of the evidence candidate `first` -- but only when
       X is consistent with the bytecode: its erasure is the instantiated return
       type, or X is a type variable (instantiated return Object and no checkcast
-      after the call, i.e. erasure(X) = Object)."""
+      after the call, i.e. erasure(X) = Object);
+    * "Object cannot be converted to X" with T = Object and a `checkcast X` right
+      after the call in the shipped bytecode: the original source had a result
+      cast `(X) SecurityUtil.doPrivileged(...)` the decompiler dropped (`result_ok`:
+      nothing selects on the call's result);
+    * javac names thrown types by simple name: `qualify` maps them to a name that
+      resolves in the file (see _make_qualifier)."""
+    qualify = qualify or (lambda n: n)
     if not cur["type_args"]:
         base = (first or {}).get("type_args")
         if not base:
@@ -724,8 +763,9 @@ def _feedback_candidate(cur: dict, errors: list[dict], b: BytecodeSite, first: O
     for e in errors:
         for rx in _THROWN_RES:
             m = rx.search(e["message"])
-            if m and len(cur["type_args"]) > 1 and m.group(1) not in cur["type_args"][1:]:
-                return dict(cur, type_args=[cur["type_args"][0]] + [m.group(1)] * (len(cur["type_args"]) - 1))
+            thrown = qualify(m.group(1)) if m else None
+            if m and len(cur["type_args"]) > 1 and thrown not in cur["type_args"][1:]:
+                return dict(cur, type_args=[cur["type_args"][0]] + [thrown] * (len(cur["type_args"]) - 1))
     for e in errors:
         m = _FROM_OBJECT_RE.search(e["message"])
         if not m or cur["type_args"][0] != "java.lang.Object":
@@ -736,10 +776,14 @@ def _feedback_candidate(cur: dict, errors: list[dict], b: BytecodeSite, first: O
         if (ret == "java.lang.Object" and is_type_var) or (
                 ret is not None and _simple_erased(target) == _simple_erased(ret) and ret != "java.lang.Object"):
             return dict(cur, type_args=[target] + cur["type_args"][1:])
+        cc = checkcast_source_type(b.checkcast)
+        if (result_ok and cc and ret == "java.lang.Object" and cc != "java.lang.Object"
+                and _simple_erased(target) == _simple_erased(cc) and "result_cast" not in cur):
+            return dict(cur, result_cast=cc)
     return None
 
 
-def patch_source(original: str, matched: dict[int, dict], compile_fn, max_iterations: int) -> dict:
+def patch_source(original: str, matched: dict[int, dict], compile_fn, max_iterations: int, qualify=None) -> dict:
     """javac-feedback loop for one source file. `compile_fn(text) -> stderr`
     ('' when it compiles). Returns {text, patches, unresolved, iterations}."""
     chosen: dict[int, int] = {}          # inv_start -> candidate index
@@ -750,7 +794,7 @@ def patch_source(original: str, matched: dict[int, dict], compile_fn, max_iterat
     stderr = ""
     changed = False
     for iterations in range(1, max_iterations + 1):
-        insertions = {matched[k]["site"]["arg_start"]: cast_text(cand[k][chosen[k]]) for k in chosen}
+        insertions = _insertions(original, chosen, cand, matched)
         text = render(original, insertions)
         stderr = compile_fn(text)
         errors = parse_javac_errors(stderr, text)
@@ -773,7 +817,7 @@ def patch_source(original: str, matched: dict[int, dict], compile_fn, max_iterat
                 unresolved.append({"offset": e["orig"], "reason": "no-cast-evidence"})
                 continue
             cand[key], chosen[key] = cs, 0
-            history.setdefault(key, []).append(cast_text(cs[0]).strip())
+            history.setdefault(key, []).append(_describe(cs[0]))
             changed = True
         for key in list(chosen):
             s = matched[key]["site"]
@@ -782,7 +826,8 @@ def patch_source(original: str, matched: dict[int, dict], compile_fn, max_iterat
             if not inside:
                 continue
             cur = cand[key][chosen[key]]
-            nxt = _feedback_candidate(cur, inside, matched[key]["bytecode"], cand[key][0])
+            nxt = _feedback_candidate(cur, inside, matched[key]["bytecode"], cand[key][0], qualify=qualify,
+                                      result_ok=result_cast_applicable(original, s["inv_start"], s["inv_end"]))
             if nxt is not None and nxt not in cand[key]:
                 cand[key].insert(chosen[key] + 1, nxt)
             else:
@@ -790,11 +835,11 @@ def patch_source(original: str, matched: dict[int, dict], compile_fn, max_iterat
             if nxt is None and chosen[key] + 1 >= len(cand[key]):
                 continue
             chosen[key] += 1
-            history[key].append(cast_text(cand[key][chosen[key]]).strip())
+            history[key].append(_describe(cand[key][chosen[key]]))
             changed = True
         if not changed:
             break
-    insertions = {matched[k]["site"]["arg_start"]: cast_text(cand[k][chosen[k]]) for k in chosen}
+    insertions = _insertions(original, chosen, cand, matched)
     final_text = render(original, insertions)
     if changed:
         # the last feedback step changed a cast: verify what is actually emitted
@@ -812,6 +857,7 @@ def patch_source(original: str, matched: dict[int, dict], compile_fn, max_iterat
                          "instantiated_return": b.instantiated_return, "impl_throws": b.impl_throws,
                          "checkcast": b.checkcast},
             "candidates_tried": history.get(key, []),
+            **({"result_cast": cand[key][chosen[key]]["result_cast"]} if cand[key][chosen[key]].get("result_cast") else {}),
         })
     line_of = lambda off: final_text.count("\n", 0, off) + 1  # noqa: E731
     return {"text": final_text, "patches": patches, "unresolved": unresolved,
@@ -858,6 +904,39 @@ def sha256_text(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
+# packages searched for a thrown type javac names by its simple name when the file
+# neither imports nor otherwise sees it (javac prints simple names regardless of imports)
+_THROWN_TYPE_PACKAGES = ("java.io", "java.net", "java.util.concurrent", "java.security", "java.security.cert",
+                         "java.util", "java.text", "java.sql", "java.nio.file", "java.nio.charset", "java.util.zip",
+                         "java.lang.reflect", "javax.security.auth.login", "javax.net.ssl")
+
+
+def _make_qualifier(original: str, package: str, exists):
+    """Map a simple type name javac printed to text that resolves in `original`:
+    the name itself when the file sees it (single-type import, java.lang, the
+    package, or an on-demand import), else its fully qualified name found in
+    _THROWN_TYPE_PACKAGES. `exists(fqn) -> bool`. Unresolvable names stay simple."""
+    single = set(re.findall(r"(?m)^import\s+([\w.]+)\s*;", original))
+    on_demand = re.findall(r"(?m)^import\s+([\w.]+)\.\*\s*;", original)
+    cache: dict[str, str] = {}
+
+    def qualify(name: str) -> str:
+        if "." in name:
+            return name
+        if name not in cache:
+            visible = any(i.endswith("." + name) for i in single)
+            for pkg in ["java.lang", package, *on_demand]:
+                if not visible and pkg and exists(f"{pkg}.{name}"):
+                    visible = True
+            found = None
+            if not visible:
+                found = next((f"{pkg}.{name}" for pkg in _THROWN_TYPE_PACKAGES if exists(f"{pkg}.{name}")), None)
+            cache[name] = name if visible or found is None else found
+        return cache[name]
+
+    return qualify
+
+
 def patch_class(fqcn: str, src_path: Path, extracted_dir: Path, scan: dict, *, classpath: str, fid,
                 javac_bin: str, javap_bin: str, tool_server: bool, max_iterations: int) -> Optional[dict]:
     """Patch one top-level class. Returns the manifest record (with the patched
@@ -886,7 +965,12 @@ def patch_class(fqcn: str, src_path: Path, extracted_dir: Path, scan: dict, *, c
             rc, _o, e = fid._run_jdk_tool("javac", javac_bin, args, 300, tool_server)
             return "" if rc == 0 else (e or "javac failed")
 
-    result = patch_source(original, matched, compile_fn, max_iterations)
+    def exists(fqn: str) -> bool:
+        rc, _o, _e = fid._run_jdk_tool("javap", javap_bin, ["-cp", classpath or ".", fqn], 60, tool_server)
+        return rc == 0
+
+    qualify = _make_qualifier(original, package, exists)
+    result = patch_source(original, matched, compile_fn, max_iterations, qualify=qualify)
     if not result["patches"]:
         amb = [u for u in result["unresolved"]]
         if not amb:
