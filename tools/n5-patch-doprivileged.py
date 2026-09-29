@@ -25,8 +25,10 @@ bound to, so the fix is not a guess:
     inserted cast `(<iface><T[, E...]>) ` in front of the argument. javac feedback
     (at most --max-iterations feedback compiles per class, plus one verification
     compile when the last step changed a cast) advances a site to its next
-    candidate cast: an exception type named by an "unreported exception X" error
-    inside the site, then the raw interface. Every other javac error is left
+    candidate cast: an exception type javac names as thrown inside the site, a
+    type variable javac names as the target of the call's Object result (only
+    when consistent with the bytecode, see _feedback_candidate), then the raw
+    interface. Every other javac error is left
     alone and reported (`residual_errors`): it is a different decompiler defect.
 
 Output: organized/<mod>/<out-tree>/<package>/<Class>.java for patched classes only,
@@ -598,7 +600,46 @@ def parse_javac_errors(stderr: str, text: str) -> list[dict]:
     return out
 
 
-_UNREPORTED_RE = re.compile(r"unreported exception ([\w.$]+); must be caught or declared to be thrown")
+_THROWN_RES = (
+    re.compile(r"unreported exception ([\w.$]+); must be caught or declared to be thrown"),
+    re.compile(r"incompatible thrown types ([\w.$]+) in (?:functional expression|method reference)"),
+)
+_FROM_OBJECT_RE = re.compile(r"incompatible types: (?:java\.lang\.)?Object cannot be converted to (.+)$")
+
+
+def _feedback_candidate(cur: dict, errors: list[dict], b: BytecodeSite, first: Optional[dict] = None) -> Optional[dict]:
+    """The next cast for a patched site from javac errors inside it, or None.
+
+    * an exception type javac names as thrown by the argument ("unreported
+      exception X", "incompatible thrown types X in functional expression")
+      becomes the exception type arguments;
+    * "Object cannot be converted to X" with T = java.lang.Object or with the raw
+      interface (whose unchecked call returns Object) becomes T = X -- keeping
+      the exception arguments of the evidence candidate `first` -- but only when
+      X is consistent with the bytecode: its erasure is the instantiated return
+      type, or X is a type variable (instantiated return Object and no checkcast
+      after the call, i.e. erasure(X) = Object)."""
+    if not cur["type_args"]:
+        base = (first or {}).get("type_args")
+        if not base:
+            return None
+        cur = dict(cur, type_args=["java.lang.Object"] + base[1:])
+    for e in errors:
+        for rx in _THROWN_RES:
+            m = rx.search(e["message"])
+            if m and len(cur["type_args"]) > 1 and m.group(1) not in cur["type_args"][1:]:
+                return dict(cur, type_args=[cur["type_args"][0]] + [m.group(1)] * (len(cur["type_args"]) - 1))
+    for e in errors:
+        m = _FROM_OBJECT_RE.search(e["message"])
+        if not m or cur["type_args"][0] != "java.lang.Object":
+            continue
+        target = m.group(1).strip()
+        ret = descriptor_to_source(b.instantiated_return) if b.instantiated_return else None
+        is_type_var = re.fullmatch(r"[A-Z]\w*", target) is not None and b.checkcast is None
+        if (ret == "java.lang.Object" and is_type_var) or (
+                ret is not None and _simple_erased(target) == _simple_erased(ret) and ret != "java.lang.Object"):
+            return dict(cur, type_args=[target] + cur["type_args"][1:])
+    return None
 
 
 def patch_source(original: str, matched: dict[int, dict], compile_fn, max_iterations: int) -> dict:
@@ -644,13 +685,11 @@ def patch_source(original: str, matched: dict[int, dict], compile_fn, max_iterat
             if not inside:
                 continue
             cur = cand[key][chosen[key]]
-            unrep = next((_UNREPORTED_RE.search(e["message"]) for e in inside if _UNREPORTED_RE.search(e["message"])), None)
-            nxt = None
-            if unrep and cur["type_args"] and len(cur["type_args"]) > 1:
-                exc = unrep.group(1)
-                if exc not in cur["type_args"][1:]:
-                    nxt = dict(cur, type_args=[cur["type_args"][0]] + [exc] * (len(cur["type_args"]) - 1))
-                    cand[key].insert(chosen[key] + 1, nxt)
+            nxt = _feedback_candidate(cur, inside, matched[key]["bytecode"], cand[key][0])
+            if nxt is not None and nxt not in cand[key]:
+                cand[key].insert(chosen[key] + 1, nxt)
+            else:
+                nxt = None
             if nxt is None and chosen[key] + 1 >= len(cand[key]):
                 continue
             chosen[key] += 1

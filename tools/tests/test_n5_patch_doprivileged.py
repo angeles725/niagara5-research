@@ -114,6 +114,14 @@ public class Shipped {{
       }};
    }}
 
+   public String h(java.io.File file) throws IOException {{
+      return SecurityUtil.doPrivileged(({NP}PrivilegedSingleExceptionAction<java.lang.String, java.io.IOException>) file::getCanonicalPath);
+   }}
+
+   public <T> T k(java.util.function.Supplier<T> s) {{
+      return SecurityUtil.doPrivileged(({NP}PrivilegedAction<T>) s::get);
+   }}
+
    static class Inner {{
       static String f() {{
          return SecurityUtil.doPrivileged((java.security.PrivilegedAction<java.lang.String>) () -> "inner");
@@ -121,6 +129,9 @@ public class Shipped {{
    }}
 }}
 """
+
+SHIPPED_AS_PATCHED = SHIPPED.replace("<java.lang.String, java.io.IOException>) file::",
+                                     "<java.lang.String, IOException>) file::")
 
 REFUSED = f"""package demo;
 
@@ -332,10 +343,18 @@ class TestEndToEnd(unittest.TestCase):
         rec = self._patch("Shipped")
         self.assertEqual(rec["refused"], [])
         self.assertTrue(rec["compiles"])
-        self.assertEqual(rec["_text"], SHIPPED)
-        self.assertEqual(len(rec["patches"]), 6)
+        # javac names the thrown type by its simple name (imported here)
+        self.assertEqual(rec["_text"], SHIPPED_AS_PATCHED)
+        self.assertEqual(len(rec["patches"]), 8)
+        tried = {p["line"]: p["candidates_tried"] for p in rec["patches"]}
+        # javac feedback: a method reference's thrown type, and a type variable
+        self.assertIn([f"({NP}PrivilegedSingleExceptionAction<java.lang.String, java.lang.RuntimeException>)",
+                       f"({NP}PrivilegedSingleExceptionAction<java.lang.String, IOException>)"],
+                      tried.values())
+        self.assertIn([f"({NP}PrivilegedAction<java.lang.Object>)", f"({NP}PrivilegedAction)",
+                       f"({NP}PrivilegedAction<T>)"], tried.values())
         self.assertEqual(rec["original_sha256"], self.mod.sha256_text(_strip_casts(SHIPPED)))
-        self.assertEqual(rec["patched_sha256"], self.mod.sha256_text(SHIPPED))
+        self.assertEqual(rec["patched_sha256"], self.mod.sha256_text(SHIPPED_AS_PATCHED))
         by_line = {p["line"]: p for p in rec["patches"]}
         self.assertTrue(all(p["evidence"]["invokestatic_iface"] for p in rec["patches"]))
         self.assertIn("demo/Shipped$1", {p["class"] for p in rec["patches"]})
@@ -364,7 +383,7 @@ class TestEndToEnd(unittest.TestCase):
                                     max_iterations=4)
         out = organized / "mod" / "vineflower2p"
         self.assertEqual(sorted(p.relative_to(out).as_posix() for p in out.rglob("*.java")), ["demo/Shipped.java"])
-        self.assertEqual((out / "demo" / "Shipped.java").read_text(), SHIPPED)
+        self.assertEqual((out / "demo" / "Shipped.java").read_text(), SHIPPED_AS_PATCHED)
         written = json.loads((out / "PATCHES.json").read_text())
         self.assertEqual(written["source_tree"], "vineflower2")
         self.assertEqual(set(written["classes"]), {"demo/Shipped", "demo/Refused"})
