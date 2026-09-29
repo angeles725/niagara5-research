@@ -1,0 +1,6 @@
+PlatformStationManager.createStation compiled  {'createStation(Lniagara/file/BDirectory;Ljava/lang/String;Lniagara/platform/IPlatformOperationListener;Ljava/util/function/Supplier;)Lniagara/platform/RemoteStation;': 'exact'} []
+EntitlementApi.sendRequestMessageAndHandleResponse compiled  {'sendRequestMessageAndHandleResponse(Lcom/tridium/nre/subscription/HttpRequestMessage;)Lorg/json/JSONObject;': 'exact'} []
+Introspector.getModule compiled  {'getModule(Ljava/lang/Class;Ljava/lang/String;)Lcom/tridium/sys/module/NModule;': 'exact'} []
+BWbProfile.dumpMenu compiled  {'dumpMenu(Lniagara/ui/menu/BIMenu;Ljava/lang/String;)V': 'exact'} []
+BBrokerChannel.loadType(type switch) compiled pea {'loadType(Lniagara/io/ValueDocDecoder;Lcom/tridium/sys/module/NModule;Lniagara/util/BTypeSpec;)Lniagara/sys/Type;': 'mismatch'} []
+BJettyWebServer.walkContextHandler compiled pea {'walkContextHandler(Lorg/eclipse/jetty/server/Handler;Ljava/util/Set;)V': 'exact'} []

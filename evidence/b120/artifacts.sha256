@@ -1,0 +1,12 @@
+# out-of-git artifacts under /home/cristian/niagara5-research/organized/_evidence/b120/ (gitignored; reconstructed/decompiled Tridium source is NOT committed)
+7f11146db5a408f81f18063f91336a5994be0f307660042178316484e9f30ba4  ./BBrokerChannel.loadType_type_switch_.java.txt
+c1828b74038acad59dde45b9265d779e0deef9b807170ea0851a48c87e98677e  ./BJettyWebServer.walkContextHandler.java.txt
+bb0eef8990767a12000799ffe4702384ef5a20e269dbe6894efaebe62e126c6f  ./BWbProfile.dumpMenu.java.txt
+7c26a88aeb2149863163276762bea1730cce2b9c57e42cd61675f06292515de2  ./EntitlementApi.sendRequestMessageAndHandleResponse.java.txt
+ffba6cdb4221be03500f8142729689a6c9617b1d4bc34b181f1a92f2f580fb7c  ./Introspector.getModule.java.txt
+368e9a6d07b1bac8f9c8e9acc0d5f2b6ec8033a12627bddf0b8ab0ed98f2da03  ./PlatformStationManager.createStation.java.txt
+42052e0e9886dff1b51f1545f8f722c8c111b364daf82d9f2c3424f46d30ffe0  ./patch-blocks.json
+# dec/ (CFR 0.152 + Procyon 0.6.0 output for the 39 units, 78 files): sha256 of the sorted per-file sha256 list
+239306f82522d640490bca4e5812aebc6281ca82ce375849f7ae2faebf43beda  -
+# recon-src/ (patched full trees behind the 6 reconstructions, 6 files): same aggregate
+75de3464af290bcb46736b7ed14f4f8b6424b92e413db7c36b35319b68f727b4  -

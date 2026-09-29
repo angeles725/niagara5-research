@@ -1,0 +1,86 @@
+[
+ {
+  "name": "PlatformStationManager.createStation",
+  "tree": "vineflower2",
+  "top": "com/tridium/platform/daemon/PlatformStationManager",
+  "variant": null,
+  "compiled": true,
+  "shim": null,
+  "methods": {
+   "createStation(Lniagara/file/BDirectory;Ljava/lang/String;Lniagara/platform/IPlatformOperationListener;Ljava/util/function/Supplier;)Lniagara/platform/RemoteStation;": {
+    "verdict": "exact"
+   }
+  }
+ },
+ {
+  "name": "EntitlementApi.sendRequestMessageAndHandleResponse",
+  "tree": "vineflower2",
+  "top": "com/tridium/nre/subscription/EntitlementApi",
+  "variant": null,
+  "compiled": true,
+  "shim": null,
+  "methods": {
+   "sendRequestMessageAndHandleResponse(Lcom/tridium/nre/subscription/HttpRequestMessage;)Lorg/json/JSONObject;": {
+    "verdict": "exact"
+   }
+  }
+ },
+ {
+  "name": "Introspector.getModule",
+  "tree": "vineflower2",
+  "top": "com/tridium/sys/schema/Introspector",
+  "variant": null,
+  "compiled": true,
+  "shim": null,
+  "methods": {
+   "getModule(Ljava/lang/Class;Ljava/lang/String;)Lcom/tridium/sys/module/NModule;": {
+    "verdict": "exact"
+   }
+  }
+ },
+ {
+  "name": "BWbProfile.dumpMenu",
+  "tree": "vineflower2",
+  "top": "niagara/workbench/BWbProfile",
+  "variant": null,
+  "compiled": true,
+  "shim": null,
+  "methods": {
+   "dumpMenu(Lniagara/ui/menu/BIMenu;Ljava/lang/String;)V": {
+    "verdict": "exact"
+   }
+  }
+ },
+ {
+  "name": "BBrokerChannel.loadType(type switch)",
+  "tree": "vineflower2",
+  "top": "com/tridium/fox/sys/broker/BBrokerChannel",
+  "variant": null,
+  "compiled": true,
+  "shim": "pea",
+  "methods": {
+   "loadType(Lniagara/io/ValueDocDecoder;Lcom/tridium/sys/module/NModule;Lniagara/util/BTypeSpec;)Lniagara/sys/Type;": {
+    "verdict": "mismatch",
+    "kind": "other+labels-equal+effects-equal",
+    "first_diff": [
+     "insn78: astore 6",
+     "insn78: astore 10"
+    ],
+    "effect_diff": []
+   }
+  }
+ },
+ {
+  "name": "BJettyWebServer.walkContextHandler",
+  "tree": "vineflower2",
+  "top": "com/tridium/jetty/BJettyWebServer",
+  "variant": null,
+  "compiled": true,
+  "shim": "pea",
+  "methods": {
+   "walkContextHandler(Lorg/eclipse/jetty/server/Handler;Ljava/util/Set;)V": {
+    "verdict": "exact"
+   }
+  }
+ }
+]

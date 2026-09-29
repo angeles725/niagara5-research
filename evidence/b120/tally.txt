@@ -1,0 +1,20 @@
+
+# tally (rows = methods; typeSwitch rows equal sites, one indy per method)
+MatchException 15 methods
+   v1 {'S': 2, 'X': 13}
+   v2 {'S': 1, 'X': 14}
+   cons {'NC': 2, 'S': 13}
+   cfr {'NC': 4, 'X': 10, 'S': 1}
+   procyon {'S': 1, 'NC': 6, 'X': 8}
+typeSwitch 27 methods
+   v1 {'S': 3, 'X': 17, 'U': 2, 'NC': 3, 'D': 1, 'PSEUDO': 1}
+   v2 {'S': 3, 'X': 17, 'U': 3, 'NC': 2, 'D': 1, 'PSEUDO': 1}
+   cons {'PSEUDO': 27}
+   cfr {'PSEUDO': 27}
+   procyon {'PSEUDO': 21, 'EMPTY': 6}
+enumSwitch 7 methods
+   v1 {'X': 7}
+   v2 {'X': 7}
+   cons {'PSEUDO': 7}
+   cfr {'PSEUDO': 7}
+   procyon {'EMPTY': 7}
