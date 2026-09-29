@@ -35,8 +35,23 @@ tools/n5-fidelity.py + tests (performance only, grading semantics unchanged); or
 - [ ] F4 Report: regenerate docs/decompile-fidelity-report.md + `--compare vineflower,vineflower2`; verify numbers
       independently (recount grade_counts from the JSON files). Route: inline.
 - [ ] F5 Update parent ODD T21, commit, RDD, PR, merge.
+- [x] F6 Sound canonical comparison as SEPARATE labelled grades (`roundtrip-canonical` tier 1, `roundtrip-canonical-t2`
+      tier 2 = boolean 0/1 JLS invariant): port the taxonomy prototype (organized/_evidence/taxonomy/canon.py) into
+      tools/n5_canon.py with per-rule switches + tests (hand javap fixtures AND real javac-25 pairs), ordered exception
+      coverage (catch priority, never sorted), per-class `canonical_rules`, `--regrade-nonclean` writing
+      fidelity.<tree>.canon.json, fail-closed mutation soundness suite, blind-spot fixes (iinc_w/wide slots,
+      mismatched_methods minus allowlist-only). TDD on (user CLAUDE.md, runner `cd tools/tests && python3 -m unittest
+      test_n5_fidelity test_n5_canon` + `make test`). Route: delegated writer (writer trigger: 2+ non-trivial files).
+      Commits: ca164f8, aefb8b0, 29ed173, 1d0bc5c, 8d6f513, 9a70f44, e2ae091, 6c4f15f, cf8b487 (evidence below).
 
 ## Follow-ups
+- F6 schema bump: SCHEMA_VERSION 2 makes every schema-1 fidelity.<tree>.json a stale cache for a plain re-run.
+  Cheapest path after F3: `--regrade-nonclean --all` per tree (non-clean classes only), then decide whether the
+  schema-1 exact grades need a re-check under the tightened normalizer (0 of 359 flipped on 5 modules, see F6).
+- Pre-existing normalizer gap (not fixed in F6): strip_cp_indices also drops `#<digits>` INSIDE a string constant's
+  symbolic comment (`ldc // String a#1` == `// String a#2`); needs a CP-index strip that stops at the `//` comment.
+- `boolmat` on an `instanceof` producer is sound at tier 1 (JVMS: instanceof pushes 0/1) but is labelled tier 2
+  with the Z-typed producers; splitting it would move BOffnormalAlgorithm-like classes to roundtrip-canonical.
 - first_error embeds the random javac temp dir path (/tmp/tmpXXXX/...), so fidelity JSON is not byte-reproducible
   between runs (pre-existing; serial runs differ too). Normalize to the package-relative path.
 
@@ -49,3 +64,25 @@ tools/n5-fidelity.py + tests (performance only, grading semantics unchanged); or
 - F3 launched: scratchpad run-t21.sh (vineflower2 then vineflower), log t21.log.
 - F2b RDD: 5efbc27 under budget (medium); 156c533 review-4db7520f8f538813 raised R4-jvm-leak-per-module-pool (CRITICAL, real: per-module class pools left one JVM per finished thread) → fixed abf1b56 (TDD: RED 2 tests, GREEN 114/114), targeted validation passed, approved + acknowledged; 50ef661 review-60ae58ae9c55861b approved. make test 481 OK before the fix.
 - F3 restarted 2026-09-29T05:48Z with --jobs 3 --class-jobs 4 --tool-server (run 1 stopped after 39 modules; finished modules skipped as up to date).
+- F6 (2026-09-29, worktree t21-compile-server, TDD on): RED then GREEN per step --
+  exact-normalizer soundness 9 tests RED (5 fail + 4 error; real javac `a - b` vs `b - a` graded equal = false exact),
+  n5_canon baseline 14 RED (module absent), control-flow rules 10 RED, data-flow rules 11 RED (the `cov` and `cmp1`
+  tests were written after their code landed with the CFG commit and passed on first run), canonical grades 8 RED,
+  --regrade-nonclean 6 RED, invokedynamic bootstrap args 2 RED (real javac `"a" + x` vs `"b" + x` graded equal =
+  false exact), --force 1 RED, ladder preference 4 RED. GREEN: `make test` 558 tests OK (skipped=4).
+- F6 soundness: mutation suite kill rate 929/929 on 49 shipped methods (7 modules) + 45/45 on the recompiled side of 9
+  javac pairs, 0 unsupported; sabotaged canonicalizers (polarity-blind, order-blind, catch-type-blind) leave survivors
+  (suite can fail). Scratch run on the recompiled side of 40 real canonical classes: 2290/2290 mutants killed (139 methods).
+- F6 real verification: `--regrade-nonclean --tool-server` on haystack/box/batchJob/bql/alarm (vineflower2):
+  non-clean 162 -> 34 (canonical 125, canonical-t2 3); exact/equivalent unchanged (359/1). A forced full re-grade of
+  all 555 classes of those modules with the new code in a scratch organized dir gives identical per-class grades
+  (0 disagreements) and 0 exact->non-exact flips: the tightened normalizer found no false exact there.
+  Prototype (t3_normalizer_class_results.tsv, vf2 rung): 119 resolved / 28 residual on both sides, tier split equal,
+  0 disagreements. Bug found by verification: the ladder stopped at a canonical first rung and cost 57 classes their
+  CFR/Procyon roundtrip-exact -> fixed cf8b487 (ladder stops only at exact/equivalent).
+- F6 hand checks (shipped vs recompiled, n5_canon form): BRefTag.getParentOfType `goto` to a shared `areturn` (tail);
+  BServerSession.<clinit> `aconst_null; checkcast BFacets` overload pick (r1); BFoxBqlResolver.resolve locals shifted
+  by one slot (web); BHisStatusTag.getTag swapped if/else arms (baseline polarity); BBqlInterval `aload_0; aload_0` vs
+  `aload_0; dup`, `istore; iload; ireturn` temp (peep, dse) and BOffnormalAlgorithm.isParentLegal
+  `instanceof ? true : false` (boolmat, tier 2).
+- Next: F3 continues on the schema-1 code in the main checkout; after merge run `--regrade-nonclean` for both trees.
