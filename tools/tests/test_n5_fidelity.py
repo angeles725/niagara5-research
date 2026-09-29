@@ -2279,3 +2279,128 @@ class TestExactNormalizerSoundness(unittest.TestCase):
                     self.mod.run_javap_verbose(os.path.join(d, "P.class"), javap_bin=JDK25_JAVAP)))
             diff = self.mod.diff_normalized_classes(parsed[0], parsed[1])
             self.assertIn(("f", "(II)I"), diff["mismatched_methods"])
+
+
+# ---------------------------------------------------------------------------
+# F6: canonical grades (roundtrip-canonical / roundtrip-canonical-t2)
+# ---------------------------------------------------------------------------
+def _meth(lines, params=1, flags=("ACC_STATIC",), rows=()):
+    return {"flags": list(flags), "code": list(lines), "exceptions": [], "exception_table": [],
+            "has_method_parameters": False, "raw_code": list(lines), "raw_exception_rows": list(rows),
+            "param_slots": params}
+
+
+_TWO_RETURNS = ["0: iload_0", "1: ifeq 6", "4: iconst_1", "5: ireturn", "6: iconst_2", "7: ireturn"]
+_SHARED_RETURN = ["0: iload_0", "1: ifeq 8", "4: iconst_1", "5: goto 9", "8: iconst_2", "9: ireturn"]
+_BOOL_TERNARY = ["0: aload_0", "1: instanceof #7 // class java/lang/String", "4: ifeq 11", "7: iconst_1",
+                 "8: goto 12", "11: iconst_0", "12: ireturn"]
+_BOOL_DIRECT = ["0: aload_0", "1: instanceof #7 // class java/lang/String", "4: ireturn"]
+
+
+def _class_with(methods):
+    return {"class_decl": "public class C", "fields": {}, "methods": methods,
+            "attributes": {"record": False, "permitted_subclasses": None, "nest_members": None,
+                           "inner_classes": None}}
+
+
+class TestCanonicalGrades(unittest.TestCase):
+    def setUp(self):
+        self.mod = _load()
+
+    def _grade(self, a_methods, b_methods):
+        diff = self.mod.diff_normalized_classes(_class_with(a_methods), _class_with(b_methods))
+        return self.mod.grade_class_result(compiled_ok=True, diff=diff, first_error=None)
+
+    def test_grade_rank_and_clean_set(self):
+        r = self.mod._GRADE_RANK
+        self.assertGreater(r["roundtrip-exact"], r["roundtrip-equivalent"])
+        self.assertGreater(r["roundtrip-equivalent"], r["roundtrip-canonical"])
+        self.assertGreater(r["roundtrip-canonical"], r["roundtrip-canonical-t2"])
+        self.assertGreater(r["roundtrip-canonical-t2"], r["compiles-mismatch"])
+        for g in ("roundtrip-exact", "roundtrip-equivalent", "roundtrip-canonical", "roundtrip-canonical-t2"):
+            self.assertTrue(self.mod._is_clean(g))
+        self.assertFalse(self.mod._is_clean("compiles-mismatch"))
+
+    def test_tail_only_difference_grades_roundtrip_canonical(self):
+        key = ("f", "(Z)I")
+        g = self._grade({key: _meth(_TWO_RETURNS)}, {key: _meth(_SHARED_RETURN)})
+        self.assertEqual(g["grade"], "roundtrip-canonical")
+        self.assertEqual(g["canonical_rules"], ["tail"])
+        self.assertEqual(g["canonical_methods"], [key])
+        self.assertEqual(g["mismatched_methods"], [])
+        self.assertEqual(g["raw_mismatched_methods"], [key])
+
+    def test_boolean_ternary_grades_roundtrip_canonical_t2(self):
+        key = ("f", "(Ljava/lang/Object;)Z")
+        g = self._grade({key: _meth(_BOOL_DIRECT)}, {key: _meth(_BOOL_TERNARY)})
+        self.assertEqual(g["grade"], "roundtrip-canonical-t2")
+        self.assertIn("boolmat", g["canonical_rules"])
+
+    def test_genuine_difference_stays_compiles_mismatch_and_lists_only_residual_methods(self):
+        k1, k2 = ("f", "(Z)I"), ("g", "(Z)I")
+        other = [line.replace("iconst_2", "iconst_3") for line in _SHARED_RETURN]
+        g = self._grade({k1: _meth(_TWO_RETURNS), k2: _meth(_TWO_RETURNS)},
+                        {k1: _meth(_SHARED_RETURN), k2: _meth(other)})
+        self.assertEqual(g["grade"], "compiles-mismatch")
+        self.assertEqual(g["mismatched_methods"], [k2])
+        self.assertEqual(g["canonical_methods"], [k1])
+        self.assertEqual(g["raw_mismatched_methods"], [k1, k2])
+
+    def test_flag_difference_is_never_excused_by_canonicalization(self):
+        key = ("f", "(Z)I")
+        g = self._grade({key: _meth(_TWO_RETURNS)}, {key: _meth(_SHARED_RETURN, flags=("ACC_STATIC", "ACC_PUBLIC"))})
+        self.assertEqual(g["grade"], "compiles-mismatch")
+
+    def test_allowlist_only_methods_are_not_listed_as_mismatched(self):
+        key = ("f", "()Ljava/lang/String;")
+        a = _meth(["0: ldc #5 // String x", "2: areturn"], params=0)
+        b = _meth(["0: ldc_w #300 // String x", "3: areturn"], params=0)
+        a["code"] = ["insn0: ldc // String x", "insn1: areturn"]
+        b["code"] = ["insn0: ldc_w // String x", "insn1: areturn"]
+        g = self._grade({key: a}, {key: b})
+        self.assertEqual(g["grade"], "roundtrip-equivalent")
+        self.assertEqual(g["mismatched_methods"], [])
+        self.assertEqual(g["raw_mismatched_methods"], [key])
+
+    def test_report_has_canonical_columns_and_rule_catalog(self):
+        results = [{"module": "m", "class_count": 2, "grade_counts": {"roundtrip-canonical": 1,
+                                                                      "roundtrip-canonical-t2": 1},
+                    "classes": {"p/A": {"grade": "roundtrip-canonical", "canonical_rules": ["tail"]},
+                                "p/B": {"grade": "roundtrip-canonical-t2", "canonical_rules": ["boolmat"]}}}]
+        report = self.mod.generate_report(results)
+        self.assertIn("roundtrip-canonical |", report)
+        self.assertIn("roundtrip-canonical-t2", report)
+        self.assertIn("## Canonical grades", report)
+        self.assertIn("`tail`", report)
+        self.assertIn("asynchronous", report)
+
+    def test_compare_counts_canonical_as_clean(self):
+        a = [{"module": "m", "classes": {"p/A": {"grade": "compiles-mismatch"}}}]
+        b = [{"module": "m", "classes": {"p/A": {"grade": "roundtrip-canonical"}}}]
+        cmp_result = self.mod.compare_tree_grades(a, b, "x", "x.canon")
+        self.assertEqual(len(cmp_result["better"]), 1)
+        self.assertEqual(self.mod._tree_clean_count(cmp_result, "to"), 1)
+
+    @unittest.skipUnless(_jdk_available(), "JDK 25 not installed")
+    def test_end_to_end_recompile_grades_roundtrip_canonical_with_rules_recorded(self):
+        with tempfile.TemporaryDirectory() as td:
+            mod_dir = Path(td) / "fakemod"
+            (mod_dir / "extracted" / "p").mkdir(parents=True)
+            (mod_dir / "vineflower2" / "p").mkdir(parents=True)
+            shipped = ("package p;\npublic class Foo {\n  static String f(long v) { if (v == 0) return \"a\"; "
+                       "return \"b\"; }\n}\n")
+            decompiled = "package p;\npublic class Foo {\n  static String f(long v) { return v == 0 ? \"a\" : \"b\"; }\n}\n"
+            src_dir = Path(td) / "src" / "p"
+            src_dir.mkdir(parents=True)
+            (src_dir / "Foo.java").write_text(shipped)
+            subprocess.run([JDK25_JAVAC, "--release", "25", "-g", "-d", str(Path(td) / "g"), str(src_dir / "Foo.java")],
+                           check=True, capture_output=True)
+            shutil.copy(Path(td) / "g" / "p" / "Foo.class", mod_dir / "extracted" / "p" / "Foo.class")
+            (mod_dir / "vineflower2" / "p" / "Foo.java").write_text(decompiled)
+            result = self.mod.grade_module("fakemod", organized_dir=Path(td), classpath="", primary_tree="vineflower2",
+                                           javac_bin=JDK25_JAVAC, javap_bin=JDK25_JAVAP)
+            rec = result["classes"]["p/Foo"]
+            self.assertEqual(rec["grade"], "roundtrip-canonical")
+            self.assertEqual(rec["canonical_rules"], ["tail"])
+            self.assertEqual(rec["attempted"], [("vineflower2", "roundtrip-canonical")])
+

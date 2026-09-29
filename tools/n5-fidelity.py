@@ -23,7 +23,14 @@ is recorded (`attempted`) so disagreement between engines is visible, and
 
 Grades (worst to best): no-compile, compiles-mismatch, bytecode-only (recorded
 only when redundancy was exhausted and nothing round-tripped — see
-compute_consensus), roundtrip-equivalent, roundtrip-exact.
+compute_consensus), roundtrip-canonical-t2, roundtrip-canonical,
+roundtrip-equivalent, roundtrip-exact. The two canonical grades are separate
+labels: every mismatched method was proven equivalent by the sound CFG
+canonicalization of tools/n5_canon.py (tier 1: unconditionally semantics-
+preserving, `cov` modulo asynchronous exceptions; tier 2 additionally relies on
+the JLS boolean-is-0-or-1 invariant); `canonical_rules` records per class the
+irreducible rule set that was needed. `roundtrip-exact` keeps its meaning:
+equal under the exact normalizer alone.
 
 Usage:
   python3 tools/n5-fidelity.py --modules control,alarm,schedule [--report]
@@ -784,7 +791,16 @@ def diff_normalized_classes(a: dict, b: dict) -> dict:
             or am.get("has_method_parameters", False) != bm.get("has_method_parameters", False)
         ):
             mismatched.append(key)
-            method_bodies[key] = {"a": am["code"], "b": bm["code"]}
+            method_bodies[key] = {
+                "a": am["code"], "b": bm["code"],
+                # the full method records feed the canonical comparison, which
+                # may only ever excuse a Code/exception-table difference:
+                "a_method": am, "b_method": bm,
+                "body_only": (
+                    am["flags"] == bm["flags"] and am["exceptions"] == bm["exceptions"]
+                    and am.get("has_method_parameters", False) == bm.get("has_method_parameters", False)
+                ),
+            }
 
     return {
         "fields_match": fields_match,
@@ -907,54 +923,76 @@ ALLOWLIST: list[AllowlistEntry] = [
 ]
 
 
+def _canonical_resolution(bodies: dict) -> Optional[list[str]]:
+    """Rules (n5_canon) under which one mismatched method's shipped and
+    recompiled bodies are proven equivalent, or None. Tier-1 rules are tried
+    first; tier 2 only when tier 1 alone cannot prove it. Only a body-only
+    difference (flags, throws clause and MethodParameters equal) is eligible."""
+    if not bodies.get("body_only") or "a_method" not in bodies or "b_method" not in bodies:
+        return None
+    a, b = bodies["a_method"], bodies["b_method"]
+    return n5_canon.resolve_rules(a, b) or n5_canon.resolve_rules(a, b, tier2=True)
+
+
 def grade_class_result(compiled_ok: bool, diff: Optional[dict], first_error: Optional[str]) -> dict:
+    """Grade one recompiled class from its structural diff.
+
+    Per mismatched method, in order: the width ALLOWLIST (-> roundtrip-
+    equivalent), then the sound canonical comparison of tools/n5_canon.py
+    (-> roundtrip-canonical, or roundtrip-canonical-t2 when a tier-2 rule was
+    needed). `mismatched_methods` lists only methods neither resolves;
+    `raw_mismatched_methods` lists every method the exact normalizer found
+    different; `canonical_rules` is the sorted union of the irreducible rule
+    sets that resolved `canonical_methods`.
+    """
+    base = {"first_error": None, "mismatched_methods": [], "raw_mismatched_methods": [],
+            "allowlist_matches": [], "canonical_methods": [], "canonical_rules": []}
     if not compiled_ok:
-        return {"grade": "no-compile", "first_error": first_error, "mismatched_methods": [], "allowlist_matches": []}
+        return {**base, "grade": "no-compile", "first_error": first_error}
 
-    if diff["fields_match"] and diff["attrs_match"] and not diff["mismatched_methods"] \
+    raw_mismatched = list(diff["mismatched_methods"])
+    if diff["fields_match"] and diff["attrs_match"] and not raw_mismatched \
             and not diff["missing_methods"] and not diff["extra_methods"]:
-        return {"grade": "roundtrip-exact", "first_error": None, "mismatched_methods": [], "allowlist_matches": []}
+        return {**base, "grade": "roundtrip-exact"}
 
-    # missing/extra members and field/attribute mismatches are never allowlist-eligible:
-    # the allowlist only ever downgrades a *method-body* mismatch, never a structural one.
+    # missing/extra members and field/attribute mismatches are never excused:
+    # the allowlist and the canonical comparison only ever resolve a *method-body* mismatch.
     if not diff["fields_match"] or not diff["attrs_match"] or diff["missing_methods"] or diff["extra_methods"]:
-        return {
-            "grade": "compiles-mismatch",
-            "first_error": None,
-            "mismatched_methods": list(diff["mismatched_methods"]),
-            "allowlist_matches": [],
-        }
+        return {**base, "grade": "compiles-mismatch", "mismatched_methods": raw_mismatched,
+                "raw_mismatched_methods": raw_mismatched}
 
-    allowlist_matches = []
-    all_allowed = True
+    allowlist_matches: list[str] = []
+    canonical_methods: list = []
+    canonical_rules: set = set()
+    residual: list = []
     method_bodies = diff.get("method_bodies", {})
-    for key in diff["mismatched_methods"]:
-        bodies = method_bodies.get(key)
-        matched_this_method = False
-        if bodies:
-            for entry in ALLOWLIST:
-                if entry.predicate(bodies["a"], bodies["b"]):
-                    if entry.name not in allowlist_matches:
-                        allowlist_matches.append(entry.name)
-                    matched_this_method = True
-                    break
-        if not matched_this_method:
-            all_allowed = False
+    for key in raw_mismatched:
+        bodies = method_bodies.get(key) or {}
+        entry_hit = None
+        if "a" in bodies and "b" in bodies:
+            entry_hit = next((e for e in ALLOWLIST if e.predicate(bodies["a"], bodies["b"])), None)
+        if entry_hit is not None:
+            if entry_hit.name not in allowlist_matches:
+                allowlist_matches.append(entry_hit.name)
+            continue
+        rules = _canonical_resolution(bodies)
+        if rules is not None:
+            canonical_methods.append(key)
+            canonical_rules.update(rules)
+            continue
+        residual.append(key)
 
-    if all_allowed and diff["mismatched_methods"]:
-        return {
-            "grade": "roundtrip-equivalent",
-            "first_error": None,
-            "mismatched_methods": list(diff["mismatched_methods"]),
-            "allowlist_matches": allowlist_matches,
-        }
-
-    return {
-        "grade": "compiles-mismatch",
-        "first_error": None,
-        "mismatched_methods": list(diff["mismatched_methods"]),
-        "allowlist_matches": allowlist_matches,
-    }
+    if residual:
+        grade = "compiles-mismatch"
+    elif canonical_rules & set(n5_canon.TIER2_RULES):
+        grade = "roundtrip-canonical-t2"
+    elif canonical_methods:
+        grade = "roundtrip-canonical"
+    else:
+        grade = "roundtrip-equivalent"
+    return {**base, "grade": grade, "mismatched_methods": residual, "raw_mismatched_methods": raw_mismatched,
+            "allowlist_matches": allowlist_matches, "canonical_methods": canonical_methods,
+            "canonical_rules": sorted(canonical_rules)}
 
 
 _GRADE_RANK = {
@@ -963,13 +1001,17 @@ _GRADE_RANK = {
     "harness-error": 0,  # missing ground-truth/source file -- a corpus/setup bug, not a fidelity finding
     "compiles-mismatch": 1,
     "bytecode-only": 1,  # same rank as compiles-mismatch; distinct meaning (see compute_consensus)
-    "roundtrip-equivalent": 2,
-    "roundtrip-exact": 3,
+    "roundtrip-canonical-t2": 2,  # proven equal by n5_canon incl. a tier-2 (boolean 0/1) rule
+    "roundtrip-canonical": 3,  # proven equal by n5_canon tier-1 rules
+    "roundtrip-equivalent": 4,
+    "roundtrip-exact": 5,
 }
+
+CLEAN_GRADES = ("roundtrip-exact", "roundtrip-equivalent", "roundtrip-canonical", "roundtrip-canonical-t2")
 
 
 def _is_clean(grade: str) -> bool:
-    return grade in ("roundtrip-exact", "roundtrip-equivalent")
+    return grade in CLEAN_GRADES
 
 
 # ---------------------------------------------------------------------------
@@ -1554,7 +1596,13 @@ def _grade_one_class(
             "attempted": [(n, r["grade"]) for n, r in attempted],
             "first_error": next((r.get("first_error") for _, r in attempted if r["grade"] == "no-compile"), None),
             "mismatched_methods": [list(k) for k in (attempted[0][1].get("mismatched_methods") or [])],
+            "raw_mismatched_methods": [list(k) for k in (attempted[0][1].get("raw_mismatched_methods") or [])],
             "allowlist_matches": attempted[0][1].get("allowlist_matches", []),
+            # canonical evidence of the engine whose grade IS the class grade
+            # (the first clean rung, else the primary tree): which methods the
+            # sound canonical comparison resolved and the rules it needed
+            "canonical_methods": [list(k) for k in (_grade_source(attempted)[1].get("canonical_methods") or [])],
+            "canonical_rules": list(_grade_source(attempted)[1].get("canonical_rules") or []),
             # per-engine, per-method round-trip data — NOT a merge (an unsound
             # per-method Frankenstein class is never assembled here; see
             # docs/decompile-fidelity-report.md's Meta-decompilation section /
@@ -1567,6 +1615,10 @@ def _grade_one_class(
             "docsource_available": docsource_available,
             "docsource_roundtrip": docsource_roundtrip,
         }
+
+
+def _grade_source(attempted: list[tuple[str, dict]]) -> tuple[str, dict]:
+    return next(((n, r) for n, r in attempted if _is_clean(r["grade"])), attempted[0])
 
 
 def grade_module(
@@ -1800,9 +1852,11 @@ def generate_report(module_results: list[dict], cross_checks: Optional[dict] = N
     mixed_classes = []
 
     failed_modules = [mr for mr in module_results if mr.get("module_error")]
+    canonical_rule_classes: dict[str, int] = {}
 
-    lines.append("| Module | Classes | roundtrip-exact | roundtrip-equivalent | compiles-mismatch | no-compile | bytecode-only |")
-    lines.append("|---|---:|---:|---:|---:|---:|---:|")
+    lines.append("| Module | Classes | roundtrip-exact | roundtrip-equivalent | roundtrip-canonical | "
+                 "roundtrip-canonical-t2 | compiles-mismatch | no-compile | bytecode-only |")
+    lines.append("|---|---:|---:|---:|---:|---:|---:|---:|---:|")
     for mr in sorted(module_results, key=lambda r: r["module"]):
         if mr.get("module_error"):
             # a module that raised during grading must NEVER render as an
@@ -1810,7 +1864,7 @@ def generate_report(module_results: list[dict], cross_checks: Optional[dict] = N
             # clean" — the OPPOSITE of what happened): it is excluded from
             # every count/total below and surfaced in its own row and its own
             # "Module failures" section instead (R4-module-failure-masked).
-            lines.append(f"| {mr['module']} | **GRADING FAILED** — see failure details below | | | | | |")
+            lines.append(f"| {mr['module']} | **GRADING FAILED** — see failure details below | | | | | | | |")
             continue
         counts = mr["grade_counts"]
         for k, v in counts.items():
@@ -1818,10 +1872,13 @@ def generate_report(module_results: list[dict], cross_checks: Optional[dict] = N
         total_classes += mr["class_count"]
         lines.append(
             f"| {mr['module']} | {mr['class_count']} | {counts.get('roundtrip-exact', 0)} | "
-            f"{counts.get('roundtrip-equivalent', 0)} | {counts.get('compiles-mismatch', 0)} | "
+            f"{counts.get('roundtrip-equivalent', 0)} | {counts.get('roundtrip-canonical', 0)} | "
+            f"{counts.get('roundtrip-canonical-t2', 0)} | {counts.get('compiles-mismatch', 0)} | "
             f"{counts.get('no-compile', 0)} | {counts.get('bytecode-only', 0)} |"
         )
         for fqcn, c in mr["classes"].items():
+            for rule in c.get("canonical_rules") or []:
+                canonical_rule_classes[rule] = canonical_rule_classes.get(rule, 0) + 1
             if c.get("docsource_roundtrip") is not None:
                 docsource_checked += 1
                 if c["docsource_roundtrip"]:
@@ -1858,7 +1915,8 @@ def generate_report(module_results: list[dict], cross_checks: Optional[dict] = N
     lines.append("")
     lines.append("## Overall")
     lines.append("")
-    for grade in ("roundtrip-exact", "roundtrip-equivalent", "compiles-mismatch", "no-compile", "bytecode-only"):
+    for grade in ("roundtrip-exact", "roundtrip-equivalent", "roundtrip-canonical", "roundtrip-canonical-t2",
+                  "compiles-mismatch", "no-compile", "bytecode-only"):
         n = total_counts.get(grade, 0)
         pct = (100.0 * n / total_classes) if total_classes else 0.0
         lines.append(f"- {grade}: {n}/{total_classes} ({pct:.1f}%)")
@@ -1926,6 +1984,24 @@ def generate_report(module_results: list[dict], cross_checks: Optional[dict] = N
                       "`tools/n5-fidelity.py`) but no observed mismatch pattern has yet been confirmed "
                       "provably-semantics-preserving; every method-body mismatch currently grades "
                       "`compiles-mismatch`, never `roundtrip-equivalent`.")
+
+    lines.append("")
+    lines.append("## Canonical grades")
+    lines.append("")
+    lines.append(
+        "`roundtrip-canonical` and `roundtrip-canonical-t2` are SEPARATE, labelled grades, never folded into "
+        "`roundtrip-exact`: every mismatched method was proven equivalent by the sound control-flow "
+        "canonicalization of `tools/n5_canon.py` (basic blocks, branch polarity, DFS block order, unreachable "
+        "code dropped, parameter slots pinned, exception coverage kept in catch-priority order) plus the rules "
+        "below. Tier-1 rules are unconditionally semantics-preserving at bytecode level (`cov` modulo "
+        "asynchronous exceptions, JVMS 2.10); `roundtrip-canonical-t2` additionally needed a tier-2 rule, "
+        "which relies on the JLS invariant that a boolean is 0 or 1. Each class records the irreducible rule "
+        "set it needed (`canonical_rules`); the count is classes whose rule set contains the rule."
+    )
+    lines.append("")
+    for rule in n5_canon.ALL_RULES:
+        tier, why = n5_canon.RULES[rule]
+        lines.append(f"- `{rule}` (tier {tier}, {canonical_rule_classes.get(rule, 0)} classes): {why}")
 
     lines.append("")
     lines.append("## Redundancy: independent cross-checks (krak2, niagara_help.py)")
@@ -2028,8 +2104,8 @@ def generate_report(module_results: list[dict], cross_checks: Optional[dict] = N
         "recovered classes no single decompiler handled — 37.6% in their sample): their three-tier vocabulary "
         "(syntactically correct / semantically equivalent modulo inputs / strictly equivalent bytecode) maps "
         "onto this grader's grades roughly as: their \"strictly equivalent bytecode\" ~ `roundtrip-exact`; "
-        "their \"semantically equivalent\" ~ `roundtrip-equivalent` (this grader's allowlist mechanism, "
-        "currently empty — see Allowlist above); their \"syntactically correct\" has no direct equivalent here "
+        "their \"semantically equivalent\" ~ `roundtrip-equivalent` (the width allowlist) and the "
+        "two canonical grades (sound CFG canonicalization — see Canonical grades above); their \"syntactically correct\" has no direct equivalent here "
         "since this grader never accepts syntactic correctness alone as a passing grade (a `compiles-mismatch` "
         "is syntactically correct AND still fails). Per-engine, per-method round-trip data is recorded in "
         "`fidelity.json`'s `per_engine_mismatched_methods` as raw material for a possible future sound "
@@ -2137,7 +2213,7 @@ def compare_tree_grades(results_a: list[dict], results_b: list[dict], label_a: s
 
 
 def _tree_clean_count(comparison: dict, side: str) -> int:
-    """Count of classes graded roundtrip-exact/roundtrip-equivalent on one
+    """Count of classes graded clean (see CLEAN_GRADES) on one
     side (`side` is "from" for tree_a, "to" for tree_b) of every recorded
     transition -- the measured round-trip rate a primary-tree recommendation
     is based on (see generate_compare_report), never a textual/line-count diff.
@@ -2146,7 +2222,7 @@ def _tree_clean_count(comparison: dict, side: str) -> int:
     clean = 0
     for key, n in comparison["transition_counts"].items():
         grade = key.split("->")[idx]
-        if grade in ("roundtrip-exact", "roundtrip-equivalent"):
+        if _is_clean(grade):
             clean += n
     return clean
 
@@ -2243,11 +2319,11 @@ def generate_compare_report(
     lines.append("### Recommendation")
     lines.append("")
     lines.append(
-        f"- `{tree_a}` round-trip rate (roundtrip-exact + roundtrip-equivalent): "
+        f"- `{tree_a}` round-trip rate (exact + equivalent + canonical + canonical-t2): "
         f"{clean_a}/{total} ({rate_a:.1%})"
     )
     lines.append(
-        f"- `{tree_b}` round-trip rate (roundtrip-exact + roundtrip-equivalent): "
+        f"- `{tree_b}` round-trip rate (exact + equivalent + canonical + canonical-t2): "
         f"{clean_b}/{total} ({rate_b:.1%})"
     )
     if worse:
