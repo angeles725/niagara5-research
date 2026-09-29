@@ -44,16 +44,16 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
      Field names use UNDERSCORES on purpose: they must never collide with the prose greps below. -->
 <!-- research-state.v1 -->
 schema: research-state.v1
-covered_blocks: 121
-gaps_closed: 393
-known_gaps: 525
-investigable_open: 29
-requires_execution_open: 27
+covered_blocks: 122
+gaps_closed: 394
+known_gaps: 531
+investigable_open: 31
+requires_execution_open: 30
 blocked_open: 64
 deferred_open: 12
 undocumented_findings: 0
-blocks_since_retro: 6
-last_iteration_ts: 2026-09-29T03:05:40Z
+blocks_since_retro: 7
+last_iteration_ts: 2026-09-29T05:10:46Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
      applies to every corpus (single-focus and campaign alike); the stall-detection instrument reads it
@@ -61,9 +61,9 @@ last_iteration_ts: 2026-09-29T03:05:40Z
 
 ## Coverage
 
-- **Covered blocks**: 121 (B1..B121)
-- **Coverage metric**: 393 / 525 closed
-- **Last iteration**: 2026-09-29 — B121 Kotlin-compiled Tridium jars audit (closes B117-G2); focus: decompile fidelity
+- **Covered blocks**: 122 (B1..B122)
+- **Coverage metric**: 394 / 531 closed
+- **Last iteration**: 2026-09-29 — B122 XProtect .NET bridge and FFmpeg JNI wrapper (closes B117-G4); focus: decompile fidelity
 
 ## Gap-backlog
 
@@ -497,7 +497,7 @@ last_iteration_ts: 2026-09-29T03:05:40Z
 | high | B117-G1 Durable decompile of the 10 out-of-pipeline Tridium jars (etc/m2, lib doclet) and devkit LIB-INF Tridium jars | etc/m2 + devkit | ✅ covered — B121 §121.2 (durable organized/_etc-m2 ×9 + organized/_lib ×1 trees with recon.json, devkit/lib-inf ×2; orchestrator re-listed 10 recon.json 2026-09-29) |
 | medium | B117-G2 Audit corpus claims read from Java decompiles of the 4 Kotlin-compiled Tridium jars | corpus + etc/m2 | ✅ covered — B121 (696/696 classes decode from kotlin.Metadata; corpus trees are Vineflower Kotlin-plugin output, 67 method + 6 class walls; 42 claims audited: 36 SAFE / 4 SUSPECT / 1 CONTRADICTED (B2 §2.5) / 1 ADVANCED (B7-G1 answered); §14 pointers B2/B7/B36/B117) |
 | medium | B117-G3 Tag claims resting on minified JS; check the 86 .map files for original sources | module resources | ✅ covered — B119 (86 maps: 42 carry originals, recovered to organized/_sourcemaps; 0 of the 234 minified files has a map; 132 truly minified + 102 long-line-only; 15 minified citations in 5 blocks, none contradicted) |
-| low | B117-G4 Decompile the 14 .NET assemblies (xprotect) and map the ffmpeg JNI surface | module payloads | pending |
+| low | B117-G4 Decompile the 14 .NET assemblies (xprotect) and map the ffmpeg JNI surface | module payloads | ✅ covered — B122 (exactly 14 CLR files in 271 PE, all in xprotect.jar, 14/14 decompiled and type counts equal metadata; XProtectBridgeService.exe = loopback WCF/SOAP bridge, session key enforced only when XPBS_USE_TLS=true; 24 of 26 FFmpeg natives bind, avcodec_free_context/av_frame_free throw UnsatisfiedLinkError (live probe), 2 orphan ?Java_ C++-mangled exports; FFmpeg n8.1.1 LGPL-2.1+, no gpl/nonfree/external codec; 23 claims audited: 18 SAFE/4 SUSPECT/1 CONTRADICTED B117 §117.3; §14 pointers B117/B13/B1/B102) |
 | medium | B117-G5 Verify Authenticode digests of the Tridium PE binaries | bin/ | ✅ covered — orchestrator (osslsigncode provisioned; 20/20 bin/*.dll,*.exe digest match, evidence/b117/authenticode-verify.txt; B117 counted 21 — 1 PE outside bin/ top level not yet checked) |
 | low | B117-G6 Second parser for B113 Go struct sizes | NCS-Agent binary | pending |
 | high | B117-G7 Wire the extraction census + jarsigner into the pipeline, add a lint rule for native claims (sha256 + VA + two instruments), and harden n5-extract-census per RDD review-49636f53e9119721 (per-module error isolation, exit-code collision, entry-path normalization, sweep tests, MZ check) | tools/ | pending |
@@ -525,6 +525,12 @@ last_iteration_ts: 2026-09-29T03:05:40Z
 | low | B121-G3 Recount B89 §89.8 NativeCommand key sets (17 vs 18 constants; SEVEN cc / NINE ld-ar populated keys) | organized/_etc-m2 n-plugin | pending |
 | low | B121-G4 Audit claims resting on the five third-party Kotlin jars beyond B55/B106; grade okhttp/okio .kt output against upstream sources | corpus + _upstream-sources | pending |
 | low | B121-G5 Root-cause the 45 metadata function names missing from and 90 extra fun names in the Kotlin plugin's .kt output | evidence/b121 | pending |
+| medium | B122-G1 Measure the native-memory effect of the two unbound ffmpeg natives (avcodec_free_context, av_frame_free) over 50 FfmpegVideoDecoder start/stop cycles | station or Windows-JRE harness with a synthetic H.264 stream | requires-execution → §19 |
+| medium | B122-G2 Run XProtectBridgeService.exe elevated in both XPBS_USE_TLS modes: listener scope, off-host reachability, HTTPS cert binding, missing/wrong SessionId, SDK scheme for LoginBasic over http:// | elevated Windows lab host + Milestone test system | requires-execution → §19 |
+| low | B122-G3 Does the missing System.Net.Http.Formatting.dll (shipped, not extracted by the loader) break the IDP/OAuth path? | Windows host, bridge process | requires-execution → §19 |
+| low | B122-G4 Map the browser-side path xprotect.jar!ext/sdk (XPMobileSDK, DiffieHellman.js, VideoConnection) and rc/xprotect.built.min.js | organized/xprotect resources | pending |
+| low | B122-G5 Grade the 8 certificate-validation callback sites of the Milestone SDK trees as strict / probe-only / permissive | organized/_evidence/b122/net | pending |
+| low | B122-G6 Settle whether the FFmpeg DLLs were built from a git checkout (n8.1.1) or the shipped tarball tree (version.sh inputs) | FFmpeg tag vs shipped tarball | pending |
 | low | B104-G5 Live-station confirmation of B104's static driver/sync findings | station | requires-execution → §19 |
 | low | B106-G1 Gradle --info/dependencyInsight trace of which wiring puts the moduleTest jar on compileModuleTestJava | Gradle run | requires-execution → §19 |
 
@@ -653,6 +659,7 @@ last_iteration_ts: 2026-09-29T03:05:40Z
 | 119 | 2026-09-29 | Source-map census + minified-JS audit (B117-G3): 86 JSON maps (42 with originals, all Babel-transpiled driver/workbench JS that already ships readable; 42 LESS; 1 underscore; 1 empty), 0 of 234 minified JS files has a map, 132 truly minified + 102 long-line-only, 15 minified citations in 5 blocks none contradicted; tools/n5-sourcemap-recover.py (RED→GREEN 16 tests) recovered 42 originals; §14 pointer B75 | B119 | yes · sonnet | 5 new — B119-G1..G5 |
 | 120 | 2026-09-29 | Pattern-switch decompile fidelity (B116-G5): census reproduced (27 typeSwitch sites/23 classes, 7 enumSwitch, 15 MatchException methods/10 classes; 0 sites in 3P/etc-m2 roots), 5 trees x 49 methods graded by javac-25 recompile + normalized bytecode with BSM labels injected; v1/v2 faithful for 26/27 typeSwitch sites, createStation pseudo-Java in all trees (reconstruction bytecode-exact), unnamed `case T _` rendered as varN (docSource BWbProfile:598), cons/CFR/Procyon never compilable for typeSwitch but labels 29/29 exact, Procyon NPE empties 10 units | B120 | yes · sonnet | 5 new — B120-G1..G5 |
 | 121 | 2026-09-29 | Kotlin-compiled Tridium jars (B117-G2): census 475 jar entries, Kotlin in 4 Tridium jars (696 classes) + 6 third-party (2,672); 696/696 classes decode from kotlin.Metadata (kotlin-metadata-jvm 2.4.10, sha1-verified) into 774 functions/836 properties/262 constructors; corpus trees are Vineflower Kotlin-plugin output (329 .kt/62 .java) with 67 method + 6 class walls, Java mode 0; fidelity matrix of 15 constructs measured; 3,297 JVM methods mapped (45% compiler-generated); 42 claims audited (36 SAFE/4 SUSPECT/1 CONTRADICTED B2 §2.5/1 ADVANCED); B7-G1 answered from bytecode; §14 pointers B2/B7/B36/B117 | B121 | yes · opus | 5 new — B121-G1..G5 |
+| 122 | 2026-09-29 | XProtect .NET bridge and FFmpeg JNI wrapper (B117-G4): 271 PE censused, exactly 14 CLR files (all xprotect.jar; 5,434 types, 41,290 methods), 14/14 decompiled with ilspycmd 11.0.0.9375 and type counts equal to metadata, raw-PE bridge checks 23/23; bridge = elevated loopback WCF/SOAP service, 10 operations, env-var config, stdout/stdin protocol, SessionId key enforced only under TLS, IncludeExceptionDetailInFaults, telemetry gated by the Milestone server; 13 of 14 files extracted by the loader; N4-4.15.3.28 ships identical image bytes (re-signed); ffmpeg-wrapper.dll exports 26 = 24 bound + 2 C++-mangled orphans, 2 declared natives unbound (live UnsatisfiedLinkError on the N5 JRE, same in 4.15); FFmpeg n8.1.1 (4.15: n7.1.1) configured without gpl/nonfree/external libs, LGPL-2.1+ in 7/7 libs, shipped tarball = upstream; 23 claims audited (18 SAFE/4 SUSPECT/1 CONTRADICTED B117 §117.3); §14 pointers B117/B13/B1/B102 | B122 | yes · sonnet | 6 new — B122-G1..G6 |
 
 ## Blocked gaps (each tagged with what it needs)
 
@@ -723,8 +730,8 @@ last_iteration_ts: 2026-09-29T03:05:40Z
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 29
-- **Open gaps — requires-execution**: 27
+- **Open gaps — read-only investigable**: 31
+- **Open gaps — requires-execution**: 30
 - **Open gaps — blocked**: 64
 - Consecutive iterations with empty backlog (secondary): 0/2
 - Budget cap (default safety net): none

@@ -1,0 +1,23 @@
+PASS	user-string XPBS_WEB_PORT
+PASS	user-string XPBS_USE_TLS
+PASS	user-string XPBS_AUTH_KEY
+PASS	user-string SessionId
+PASS	user-string http://tempuri.org/
+PASS	user-string running: 
+PASS	user-string APP_GUID:
+PASS	user-string dynamic
+PASS	user-string unauthorized user
+PASS	user-string http://localhost:
+PASS	user-string https://localhost:
+PASS	memberref set_IncludeExceptionDetailInFaults
+PASS	memberref set_HttpGetEnabled
+PASS	memberref set_HttpsGetEnabled
+PASS	memberref GetEnvironmentVariable
+PASS	memberref ReadLine
+PASS	memberref Loopback
+PASS	memberref Login
+PASS	memberref AddServer
+PASS	memberref Initialize
+PASS	default port 9117 (ldc.i4 0x239D in IL)
+PASS	Win32 manifest level
+PASS	MIPService operations

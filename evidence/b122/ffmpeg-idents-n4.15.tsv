@@ -1,0 +1,23 @@
+dll	sha256	size	offset	va	string	r2_agrees	strings_agrees	src_version
+avcodec-61.dll	b02f829b2d0eb2d1950d2995d148bcb585292e7248b3f99db9fe12830cc40942	20044872	0xe99e30	0x180e9b630	Lavc61.19.101	True	True	
+avcodec-61.dll	b02f829b2d0eb2d1950d2995d148bcb585292e7248b3f99db9fe12830cc40942	20044872	0x1171660	0x181172e60	FFmpeg version n7.1.1	True	True	
+avcodec-61.dll	b02f829b2d0eb2d1950d2995d148bcb585292e7248b3f99db9fe12830cc40942	20044872	0x1171680	0x181172e80	--prefix=ffmpeg_64/ --enable-shared --yasmexe='C:/c99/yasm-1.3.0-win64.exe' --target-os=win64 --arch=x86_64 --toolchain=msvc	True	True	
+avcodec-61.dll	b02f829b2d0eb2d1950d2995d148bcb585292e7248b3f99db9fe12830cc40942	20044872	0x1171718	0x181172f18	libavcodec license: LGPL version 2.1 or later	True	True	
+avdevice-61.dll	26e2f694049c32bd8b15636d7b58a53e1c204ef6652b34912c3f3b500e91e0ae	934984	0xb2b60	0x1800b4360	FFmpeg version n7.1.1	True	True	
+avdevice-61.dll	26e2f694049c32bd8b15636d7b58a53e1c204ef6652b34912c3f3b500e91e0ae	934984	0xb2b80	0x1800b4380	--prefix=ffmpeg_64/ --enable-shared --yasmexe='C:/c99/yasm-1.3.0-win64.exe' --target-os=win64 --arch=x86_64 --toolchain=msvc	True	True	
+avdevice-61.dll	26e2f694049c32bd8b15636d7b58a53e1c204ef6652b34912c3f3b500e91e0ae	934984	0xb2c18	0x1800b4418	libavdevice license: LGPL version 2.1 or later	True	True	
+avfilter-10.dll	a8578abb21da6298f36ae4a065073044b3109023e56b91e23ec476d42d081706	6189632	0x4d16c8	0x1804d30c8	FFmpeg version n7.1.1	True	True	
+avfilter-10.dll	a8578abb21da6298f36ae4a065073044b3109023e56b91e23ec476d42d081706	6189632	0x4d16f0	0x1804d30f0	--prefix=ffmpeg_64/ --enable-shared --yasmexe='C:/c99/yasm-1.3.0-win64.exe' --target-os=win64 --arch=x86_64 --toolchain=msvc	True	True	
+avfilter-10.dll	a8578abb21da6298f36ae4a065073044b3109023e56b91e23ec476d42d081706	6189632	0x4d1788	0x1804d3188	libavfilter license: LGPL version 2.1 or later	True	True	
+avformat-61.dll	906d4237523c9388a48c3e85080f857e1edd49d703e12df471365480a0e18daf	4237896	0x3143d0	0x1803155d0	Lavf61.7.100	True	True	
+avformat-61.dll	906d4237523c9388a48c3e85080f857e1edd49d703e12df471365480a0e18daf	4237896	0x386170	0x180387370	FFmpeg version n7.1.1	True	True	
+avformat-61.dll	906d4237523c9388a48c3e85080f857e1edd49d703e12df471365480a0e18daf	4237896	0x386190	0x180387390	--prefix=ffmpeg_64/ --enable-shared --yasmexe='C:/c99/yasm-1.3.0-win64.exe' --target-os=win64 --arch=x86_64 --toolchain=msvc	True	True	
+avformat-61.dll	906d4237523c9388a48c3e85080f857e1edd49d703e12df471365480a0e18daf	4237896	0x386228	0x180387428	libavformat license: LGPL version 2.1 or later	True	True	
+avutil-59.dll	9fa7a1afdef03abf1c9b01c0c74f92c4b113de396459cbec333fa2f757d79a81	2201664	0x1c7280	0x1801c7e80	FFmpeg version n7.1.1	True	True	
+avutil-59.dll	9fa7a1afdef03abf1c9b01c0c74f92c4b113de396459cbec333fa2f757d79a81	2201664	0x1c72b0	0x1801c7eb0	--prefix=ffmpeg_64/ --enable-shared --yasmexe='C:/c99/yasm-1.3.0-win64.exe' --target-os=win64 --arch=x86_64 --toolchain=msvc	True	True	
+avutil-59.dll	9fa7a1afdef03abf1c9b01c0c74f92c4b113de396459cbec333fa2f757d79a81	2201664	0x1c7348	0x1801c7f48	libavutil license: LGPL version 2.1 or later	True	True	
+swresample-5.dll	3be4f10bdaee547827898c8d8844fc93429382c29920c1c97ad6825536947101	818752	0xa22d8	0x1800a2ed8	FFmpeg version n7.1.1	True	True	
+swresample-5.dll	3be4f10bdaee547827898c8d8844fc93429382c29920c1c97ad6825536947101	818752	0xa2300	0x1800a2f00	--prefix=ffmpeg_64/ --enable-shared --yasmexe='C:/c99/yasm-1.3.0-win64.exe' --target-os=win64 --arch=x86_64 --toolchain=msvc	True	True	
+swresample-5.dll	3be4f10bdaee547827898c8d8844fc93429382c29920c1c97ad6825536947101	818752	0xa2398	0x1800a2f98	libswresample license: LGPL version 2.1 or later	True	True	
+swscale-8.dll	7df93f9f065a0f29f8c34b7b89177aa1a112bc93bd0f02307e2523a77a6379b2	1555016	0x144180	0x180144f80	--prefix=ffmpeg_64/ --enable-shared --yasmexe='C:/c99/yasm-1.3.0-win64.exe' --target-os=win64 --arch=x86_64 --toolchain=msvc	True	True	
+swscale-8.dll	7df93f9f065a0f29f8c34b7b89177aa1a112bc93bd0f02307e2523a77a6379b2	1555016	0x144218	0x180145018	libswscale license: LGPL version 2.1 or later	True	True	

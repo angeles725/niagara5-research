@@ -119,6 +119,9 @@ Child-element census (full XML-tree walk, path = element chain from `<module>`),
 `<arch name="x64"/><os name="winnt" version="*"/><part name="bin-ext-system" version="*"
 installable="false"/>` — these gate modules that ship native (non-JVM) binaries in `bin-ext`.
 
+> **Correction (added by [Block 122], §122.1, §14 cross-block).** "In `bin-ext`" is right for jxBrowser but not for `ffmpeg` and `xprotect`: their native files sit inside the module jar under `nativeLib/` and are extracted at class-init to `<config-home>/ffmpeg` and `<config-home>/xprotect` (Windows only); `ffmpeg` declares no `part`, and `xprotect`'s `bin-ext-system` part is not its own payload.
+
+
 **No attribute or element anywhere in the 247-module census contains the substrings `profile` or
 `runtime`** `[CERT]` (`census_xml2.py`, dedicated case-insensitive scan: `"any attr/tag containing
 'profile' or 'runtime': NONE FOUND"`). This is the direct, exhaustive answer to whether the schema
