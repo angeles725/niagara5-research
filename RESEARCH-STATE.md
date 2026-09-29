@@ -44,16 +44,16 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
      Field names use UNDERSCORES on purpose: they must never collide with the prose greps below. -->
 <!-- research-state.v1 -->
 schema: research-state.v1
-covered_blocks: 123
-gaps_closed: 395
-known_gaps: 536
-investigable_open: 35
-requires_execution_open: 30
+covered_blocks: 124
+gaps_closed: 396
+known_gaps: 541
+investigable_open: 36
+requires_execution_open: 33
 blocked_open: 64
 deferred_open: 12
 undocumented_findings: 0
-blocks_since_retro: 8
-last_iteration_ts: 2026-09-29T06:55:03Z
+blocks_since_retro: 9
+last_iteration_ts: 2026-09-29T14:16:54Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
      applies to every corpus (single-focus and campaign alike); the stall-detection instrument reads it
@@ -61,9 +61,9 @@ last_iteration_ts: 2026-09-29T06:55:03Z
 
 ## Coverage
 
-- **Covered blocks**: 123 (B1..B123)
-- **Coverage metric**: 395 / 536 closed
-- **Last iteration**: 2026-09-29 — B123 extraction gate mechanization: hardened census, fail-closed pipeline gate, lint rule R9 (closes B117-G7); focus: decompile fidelity
+- **Covered blocks**: 124 (B1..B124)
+- **Coverage metric**: 396 / 541 closed
+- **Last iteration**: 2026-09-29 — B124 bundle-to-readable-source proof for the 72 *.built.min.js files (closes B119-G1); focus: decompile fidelity
 
 ## Gap-backlog
 
@@ -510,7 +510,7 @@ last_iteration_ts: 2026-09-29T06:55:03Z
 | low | B118-G5 Kit jvm-callgraph fails silently on class-file 69 (SootUp 2.0.0 / ASM <= V24) | kit toolbelt | pending (deferred; kit issue via retro) |
 | low | B118-G6 Extend the LineNumberTable discriminator to other resugarings (var, text blocks, switch expressions) | organized/ | pending (deferred to next session by user 2026-09-28) |
 | low | B118-G7 Launcher runtime trace (refused: license gate + config-home writes) | launchers | pending (refused; recorded wall) |
-| medium | B119-G1 Prove bundle membership: match the 71 rc/<module>.built.min.js define ids to shipped readable siblings | module resources | pending |
+| medium | B119-G1 Prove bundle membership: match the 71 rc/<module>.built.min.js define ids to shipped readable siblings | module resources | ✅ covered — B124 (72 bundles, 2,315 define ids all resolve to a readable file; 833 AST-proven + 142 templates recompiled + 1,315 names/literals only; 3.76 MB vendor segments unproven) |
 | low | B119-G2 Hash the 160 upstream underscore 1.13.8 modules and 7 vendor min.js with dangling sourceMappingURL against npm | third-party JS | pending (needs external fetch) |
 | medium | B119-G3 Split is_minified_js into minified (mean >= 250 B) vs long-line-only in n5-extract-census.py; re-run sweep (132/102 not 234) | tools | pending |
 | low | B119-G4 Cite-form audit: file.js:line citations whose file has fewer lines (B21 built.min.js:1-400) | corpus | pending |
@@ -536,6 +536,11 @@ last_iteration_ts: 2026-09-29T06:55:03Z
 | medium | B123-G3 Call osslsigncode verify from a script for the native PE files and record the result in recon-style fields | bin/ + tools/ | pending |
 | low | B123-G4 Triage the 113 R9 audit findings (true gap / waiver / false positive) and decide whether to lower R9's enforcement floor from 123 to 115 | evidence/b123 | pending |
 | low | B123-G5 Run the hermetic bats gate tests in CI (install bats in the workflow) | .github/workflows/ci.yml | pending |
+| medium | B124-G1 Upgrade the 1,315 skeleton-only bundle modules to an AST proof by reproducing the second Babel build (preset targets and helper options inferred by trial) | evidence/b124 + npm Babel | requires-execution → §19 |
+| low | B124-G2 Prove the 3,761,256 B of vendor UMD segments (Babel standalone, video.js, forge, qrcode) are the shipped ext/ files after Babel typeof transform and re-minify | evidence/b124 + npm Babel | requires-execution → §19 |
+| low | B124-G3 Hand-verify the 2 DIFFERS (webChart ChartWidget, webEditors OverrideRelTimeEditor) and the 13 unproven prelude statements | evidence/b124/modules.tsv, segments.tsv | pending |
+| low | B124-G4 Identify the bundle minifier release and options (bisect terser 5.7.2..5.9.0 and uglify-js 3.x by whole-bundle byte reproduction); build config itself blocked-on-source | evidence/b124 | requires-execution → §19 |
+| low | B124-G5 Readable-to-bundle direction: readable rc/*.js files not registered in any define of their bundle | organized/*/extracted/rc | pending |
 | low | B104-G5 Live-station confirmation of B104's static driver/sync findings | station | requires-execution → §19 |
 | low | B106-G1 Gradle --info/dependencyInsight trace of which wiring puts the moduleTest jar on compileModuleTestJava | Gradle run | requires-execution → §19 |
 
@@ -666,6 +671,7 @@ last_iteration_ts: 2026-09-29T06:55:03Z
 | 121 | 2026-09-29 | Kotlin-compiled Tridium jars (B117-G2): census 475 jar entries, Kotlin in 4 Tridium jars (696 classes) + 6 third-party (2,672); 696/696 classes decode from kotlin.Metadata (kotlin-metadata-jvm 2.4.10, sha1-verified) into 774 functions/836 properties/262 constructors; corpus trees are Vineflower Kotlin-plugin output (329 .kt/62 .java) with 67 method + 6 class walls, Java mode 0; fidelity matrix of 15 constructs measured; 3,297 JVM methods mapped (45% compiler-generated); 42 claims audited (36 SAFE/4 SUSPECT/1 CONTRADICTED B2 §2.5/1 ADVANCED); B7-G1 answered from bytecode; §14 pointers B2/B7/B36/B117 | B121 | yes · opus | 5 new — B121-G1..G5 |
 | 122 | 2026-09-29 | XProtect .NET bridge and FFmpeg JNI wrapper (B117-G4): 271 PE censused, exactly 14 CLR files (all xprotect.jar; 5,434 types, 41,290 methods), 14/14 decompiled with ilspycmd 11.0.0.9375 and type counts equal to metadata, raw-PE bridge checks 23/23; bridge = elevated loopback WCF/SOAP service, 10 operations, env-var config, stdout/stdin protocol, SessionId key enforced only under TLS, IncludeExceptionDetailInFaults, telemetry gated by the Milestone server; 13 of 14 files extracted by the loader; N4-4.15.3.28 ships identical image bytes (re-signed); ffmpeg-wrapper.dll exports 26 = 24 bound + 2 C++-mangled orphans, 2 declared natives unbound (live UnsatisfiedLinkError on the N5 JRE, same in 4.15); FFmpeg n8.1.1 (4.15: n7.1.1) configured without gpl/nonfree/external libs, LGPL-2.1+ in 7/7 libs, shipped tarball = upstream; 23 claims audited (18 SAFE/4 SUSPECT/1 CONTRADICTED B117 §117.3); §14 pointers B117/B13/B1/B102 | B122 | yes · sonnet | 6 new — B122-G1..G6 |
 | 123 | 2026-09-29 | Extraction gate mechanization (B117-G7): census hardened (6 defects, each RED->GREEN: exit-code collision where a crash exited 1 like a mismatch, sweep error isolation + missing sweep tests, zip-entry path traversal, 2-letter MZ = PE, silent nested-jar drop; old vs hardened aggregate identical on 246 real modules, 20,723 classes byte-exact); decompile_module fails closed on a census or jarsigner failure (exit 4 accepted only with `jar verified`), records byte_exact/signature_verified/signature_status/jarsigner_exit, `--verify` + `make census`, real run 246/246 byte-exact and verified-with-signer-warnings; lint rule R9 (named R9 because R7/R8 exist): native [CERT] claims need sha256 + 0x anchor + 2 instruments, enforced from block 123 with a per-rule floor, 113 audit findings in 30 old blocks (11 in blocks >= 115); RDD review text not in the repo, defects derived from code | B123 | yes · sonnet | 5 new — B123-G1..G5 |
+| 124 | 2026-09-29 | Bundle-to-readable-source proof (B119-G1): 72 *.built.min.js files (71 Tridium + vendor hbs plugin; 57 with the 2026 banner, not 71), 9,305,969 B, 2,315 named define modules, all resolve to a readable file; tiered oracle validated by controls (a first vacuous-compare bug caught: bare minified function expression is empty) gives 833 AST-equal, 142/142 templates equal to a re-run of the shipped Handlebars 4.7.9, 1,315 names+literals only (two Babel builds differ in class form), 2 DIFFERS; 243,528 of 288,711 prelude B proven, 3,761,256 vendor B not; 19.26% of bytes proven, 39.00% skeleton, 40.42% vendor; minifier terser-family (helper shape: terser <=5.7.2 or uglify-js 3.x); §14 pointers B4/B21/B119/B122 | B124 | yes · sonnet | 5 new — B124-G1..G5 |
 
 ## Blocked gaps (each tagged with what it needs)
 
@@ -736,8 +742,8 @@ last_iteration_ts: 2026-09-29T06:55:03Z
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 35
-- **Open gaps — requires-execution**: 30
+- **Open gaps — read-only investigable**: 36
+- **Open gaps — requires-execution**: 33
 - **Open gaps — blocked**: 64
 - Consecutive iterations with empty backlog (secondary): 0/2
 - Budget cap (default safety net): none
