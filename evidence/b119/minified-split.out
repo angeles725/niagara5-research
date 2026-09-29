@@ -1,0 +1,4 @@
+mean>=250 (truly minified): 132  long-line-only: 102
+truly minified with <=10 lines: 111
+long-line-only median lines: 530  median mean-line: 41.5
+truly-minified by module (top 8): [('js', 32), ('docDeveloper', 20), ('xprotect', 4), ('analytics', 3), ('bajaScript', 2), ('maxpro', 2), ('naxisVideo', 2), ('tagdictionary', 2)]

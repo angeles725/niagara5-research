@@ -1,0 +1,968 @@
+[
+ {
+  "map": "driver/extracted/rc/wb/mgr/DeviceMgr.js.map",
+  "src": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "define([ 'baja!',"
+  ],
+  "src_uses_es2015": false,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/wb/mgr/DeviceMgrModel.js.map",
+  "src": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "define([ 'baja!',"
+  ],
+  "src_uses_es2015": false,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/wb/mgr/DriverMgr.js.map",
+  "src": {
+   "arrow": 1,
+   "class": 0,
+   "const_let": 3,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "define(["
+  ],
+  "src_uses_es2015": true,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/wb/mgr/PointMgr.js.map",
+  "src": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "define([ 'baja!',"
+  ],
+  "src_uses_es2015": false,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/wb/mgr/PointMgrModel.js.map",
+  "src": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "define([ 'baja!',"
+  ],
+  "src_uses_es2015": false,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/wb/mgr/schedule/ScheduleExportCommand.js.map",
+  "src": {
+   "arrow": 3,
+   "class": 1,
+   "const_let": 1,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "define(["
+  ],
+  "src_uses_es2015": true,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/wb/mgr/schedule/ScheduleExportManager.js.map",
+  "src": {
+   "arrow": 3,
+   "class": 1,
+   "const_let": 5,
+   "template": 0,
+   "spread_rest": 1
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "define(["
+  ],
+  "src_uses_es2015": true,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/wb/mgr/schedule/ScheduleExportModel.js.map",
+  "src": {
+   "arrow": 0,
+   "class": 1,
+   "const_let": 7,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "define(["
+  ],
+  "src_uses_es2015": true,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/wb/mgr/schedule/ScheduleImportCommand.js.map",
+  "src": {
+   "arrow": 3,
+   "class": 1,
+   "const_let": 2,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "define(["
+  ],
+  "src_uses_es2015": true,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/wb/mgr/schedule/ScheduleImportManager.js.map",
+  "src": {
+   "arrow": 3,
+   "class": 1,
+   "const_let": 6,
+   "template": 0,
+   "spread_rest": 1
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "define(["
+  ],
+  "src_uses_es2015": true,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/wb/mgr/schedule/ScheduleImportModel.js.map",
+  "src": {
+   "arrow": 2,
+   "class": 1,
+   "const_let": 7,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "define(["
+  ],
+  "src_uses_es2015": true,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/wb/mgr/schedule/scheduleMgrUtils.js.map",
+  "src": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 4,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "define([], function () {"
+  ],
+  "src_uses_es2015": true,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/wb/mgr/schedule/columns/ExtMgrColumn.js.map",
+  "src": {
+   "arrow": 0,
+   "class": 1,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "define(["
+  ],
+  "src_uses_es2015": true,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/wb/mgr/point/PointLearn.js.map",
+  "src": {
+   "arrow": 6,
+   "class": 1,
+   "const_let": 1,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   " define(["
+  ],
+  "src_uses_es2015": true,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/wb/mgr/point/PointLearnModel.js.map",
+  "src": {
+   "arrow": 0,
+   "class": 1,
+   "const_let": 5,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "define(["
+  ],
+  "src_uses_es2015": true,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/wb/mgr/point/PointLearnNode.js.map",
+  "src": {
+   "arrow": 0,
+   "class": 1,
+   "const_let": 2,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   " define(["
+  ],
+  "src_uses_es2015": true,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/wb/mgr/columns/DeviceExtsMgrColumn.js.map",
+  "src": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "define([ 'baja!',"
+  ],
+  "src_uses_es2015": false,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/wb/mgr/history/ArchiveCommand.js.map",
+  "src": {
+   "arrow": 3,
+   "class": 1,
+   "const_let": 2,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "define(["
+  ],
+  "src_uses_es2015": true,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/wb/mgr/history/HistoryExportLearn.js.map",
+  "src": {
+   "arrow": 8,
+   "class": 1,
+   "const_let": 1,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "define(["
+  ],
+  "src_uses_es2015": true,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/wb/mgr/history/HistoryExportLearnModel.js.map",
+  "src": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 4,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "define(["
+  ],
+  "src_uses_es2015": true,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/wb/mgr/history/HistoryExportLearnNode.js.map",
+  "src": {
+   "arrow": 1,
+   "class": 1,
+   "const_let": 7,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "define(["
+  ],
+  "src_uses_es2015": true,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/wb/mgr/history/HistoryExportManager.js.map",
+  "src": {
+   "arrow": 5,
+   "class": 1,
+   "const_let": 8,
+   "template": 0,
+   "spread_rest": 1
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "define(["
+  ],
+  "src_uses_es2015": true,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/wb/mgr/history/HistoryExportModel.js.map",
+  "src": {
+   "arrow": 1,
+   "class": 1,
+   "const_let": 2,
+   "template": 2,
+   "spread_rest": 0
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   " define(["
+  ],
+  "src_uses_es2015": true,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/wb/mgr/history/HistoryImportManager.js.map",
+  "src": {
+   "arrow": 3,
+   "class": 1,
+   "const_let": 4,
+   "template": 0,
+   "spread_rest": 1
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "define(["
+  ],
+  "src_uses_es2015": true,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/wb/mgr/history/HistoryImportModel.js.map",
+  "src": {
+   "arrow": 2,
+   "class": 1,
+   "const_let": 4,
+   "template": 0,
+   "spread_rest": 1
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "define(["
+  ],
+  "src_uses_es2015": true,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/wb/mgr/history/historyMgrUtils.js.map",
+  "src": {
+   "arrow": 4,
+   "class": 0,
+   "const_let": 10,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "define(["
+  ],
+  "src_uses_es2015": true,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/wb/mgr/network/DriverUxManager.js.map",
+  "src": {
+   "arrow": 1,
+   "class": 1,
+   "const_let": 3,
+   "template": 0,
+   "spread_rest": 1
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "define([ 'baja!',"
+  ],
+  "src_uses_es2015": true,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/wb/mgr/network/DriverUxManagerModel.js.map",
+  "src": {
+   "arrow": 1,
+   "class": 1,
+   "const_let": 5,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "define([ 'baja!',"
+  ],
+  "src_uses_es2015": true,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/rpc/driverHistory.js.map",
+  "src": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 1,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "define([ 'baja!', 'Promise' ], function (baja, Promise) {"
+  ],
+  "src_uses_es2015": true,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/fe/BaseTabularConversionEditor.js.map",
+  "src": {
+   "arrow": 1,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "define(["
+  ],
+  "src_uses_es2015": true,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/fe/LinearConversionEditor.js.map",
+  "src": {
+   "arrow": 1,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "define([ 'nmodule/webEditors/rc/fe/baja/BaseEditor',"
+  ],
+  "src_uses_es2015": true,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/fe/LinearWithUnitConversionEditor.js.map",
+  "src": {
+   "arrow": 2,
+   "class": 0,
+   "const_let": 1,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "define([ 'nmodule/webEditors/rc/fe/baja/BaseEditor',"
+  ],
+  "src_uses_es2015": true,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/fe/ProxyConversionEditor.js.map",
+  "src": {
+   "arrow": 2,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "define(["
+  ],
+  "src_uses_es2015": true,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/fe/ProxyConversionMiniEditor.js.map",
+  "src": {
+   "arrow": 1,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "define([ 'baja!',"
+  ],
+  "src_uses_es2015": true,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/fe/TuningPolicyEditor.js.map",
+  "src": {
+   "arrow": 5,
+   "class": 1,
+   "const_let": 4,
+   "template": 0,
+   "spread_rest": 1
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "define(["
+  ],
+  "src_uses_es2015": true,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/fe/XYPointEditor.js.map",
+  "src": {
+   "arrow": 1,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "define(["
+  ],
+  "src_uses_es2015": true,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/baja/LinearConversion.js.map",
+  "src": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 1,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "define(["
+  ],
+  "src_uses_es2015": true,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/baja/LinearWithUnitConversion.js.map",
+  "src": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 1,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "define(["
+  ],
+  "src_uses_es2015": true,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/baja/ProxyExt.js.map",
+  "src": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "define([ 'baja!', 'baja!baja:UnitConversion' ], function ("
+  ],
+  "src_uses_es2015": false,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "driver/extracted/rc/baja/XYPoint.js.map",
+  "src": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "define([], function () {"
+  ],
+  "src_uses_es2015": false,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "workbench/extracted/com/tridium/workbench/web/browser/interop/BroadcastChannel.js.map",
+  "src": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "(function (global) {"
+  ],
+  "src_uses_es2015": false,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ },
+ {
+  "map": "workbench/extracted/rc/find/findCommands.js.map",
+  "src": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "gen": {
+   "arrow": 0,
+   "class": 0,
+   "const_let": 0,
+   "template": 0,
+   "spread_rest": 0
+  },
+  "src_head": [
+   "(function () {"
+  ],
+  "src_uses_es2015": false,
+  "gen_uses_es2015": false,
+  "gen_use_strict": true
+ }
+]

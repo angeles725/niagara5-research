@@ -1,0 +1,16 @@
+jar sha256: cfce7add6a06e75404e90fa6c154a50f04135676ccfc082dfcdbaf7f2830e6f0
+        0  2024-06-14 11:00   rc/
+       69  2024-06-14 11:00   rc/uxBuilder.css
+        0  2024-06-14 10:47   rc/uxBuilder.less
+       64  2024-06-14 11:00   rc/uxBuilder.built.min.js
+        0  2024-06-14 11:00   maps/
+       51  2024-06-14 11:00   maps/uxBuilder.map
+--- maps/uxBuilder.map:
+{"version":3,"sources":[],"names":[],"mappings":""}
+--- rc/uxBuilder.built.min.js (whole file, 64 B):
+/** 
+ * @copyright 2024 Tridium, Inc. All Rights Reserved.
+ */
+
+--- N5 organized/uxBuilder/extracted/maps/uxBuilder.map sources:
+['/module/uxBuilder/rc/uxBuilder.less']
