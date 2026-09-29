@@ -30,6 +30,8 @@ tools/n5-fidelity.py + tests (performance only, grading semantics unchanged); or
 - [x] F2b Opt-in persistent tool server (`--tool-server`, default off): tools/n5-toolserver/ToolServer.java runs javac/javap in-process via ToolProvider
       (one JVM per worker thread, length-prefixed binary protocol, per-request timeout = kill+restart, fallback to subprocess on any server failure).
       Grades identical to the subprocess path; SCHEMA_VERSION and cache key untouched. Route: delegated writer (TDD). Commits: 5efbc27, 156c533, 50ef661.
+- [ ] F7 Classpath completion for missing-lib no-compiles (javafx, bouncycastle): locate the exact jars N5 links at runtime.
+- [ ] F8 Mechanical doPrivileged disambiguation patch tree (vineflower2p), verified by recompile + canonical grade.
 - [ ] F3 Full run, vineflower2 then vineflower, all modules; failures recorded as module_error, never dropped.
       Route: inline background run.
 - [ ] F4 Report: regenerate docs/decompile-fidelity-report.md + `--compare vineflower,vineflower2`; verify numbers
@@ -86,3 +88,5 @@ tools/n5-fidelity.py + tests (performance only, grading semantics unchanged); or
   `aload_0; dup`, `istore; iload; ireturn` temp (peep, dse) and BOffnormalAlgorithm.isParentLegal
   `instanceof ? true : false` (boolmat, tier 2).
 - Next: F3 continues on the schema-1 code in the main checkout; after merge run `--regrade-nonclean` for both trees.
+- F6 RDD: 9 per-commit reviews approved + acknowledged (review-803946ab6daf4636 … review-112d902cf672b79e). Orchestrator reproduced both false-exact cases with the OLD normalizer (b57cabf): `a-b` vs `b-a` and `"a"+x` vs `"b"+x` compared equal. All schema-1 exact grades (incl. the 192-class sample and runs 1-2) are therefore not trustworthy.
+- F3 restarted 2026-09-29T08:02Z on schema 2 (run 2 schema-1 stopped at ~200 modules; log kept as t21-run2-schema1.log).
