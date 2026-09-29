@@ -7,6 +7,8 @@
 #   tools/n5-decompile.sh --docsource     # only extract docSource.jar (original .java sources)
 #   tools/n5-decompile.sh --bin-ext       # decompile the Tridium-owned jars under bin/ext/
 #   tools/n5-decompile.sh --force <name>  # ignore the sha256 cache, redo it
+#   tools/n5-decompile.sh --verify [<name>]  # re-run the extraction gate (byte-exact census +
+#                                          # jarsigner) over already-decompiled modules; `make census`
 #   tools/n5-decompile.sh --prepare-libcache    # v2/cons: build organized/_v2-libcache/ (see below)
 #   tools/n5-decompile.sh --variant v2 <name>   # v2: same module, WITH library context
 #   tools/n5-decompile.sh --variant v2 --all    # v2 over every module jar (see below)
@@ -383,6 +385,14 @@ classify_jarsigner() {
   echo "failed"; return 1
 }
 
+gate_build_json() {
+  GATE_JSON="$(python3 -c 'import json,sys
+a=sys.argv
+print(json.dumps({"byte_exact": a[1]=="true", "signature_verified": a[2]=="true",
+                  "signature_status": a[3], "jarsigner_exit": None if a[4]=="null" else int(a[4])}))' \
+    "$GATE_BYTE_EXACT" "$GATE_SIG_VERIFIED" "$GATE_SIG_STATUS" "$GATE_JARSIGNER_EXIT")"
+}
+
 verify_extraction() {
   local module="$1" jar="$2" moddir="$3"
   local census_out="$LOG_DIR/$module.census.json" sig_out="$LOG_DIR/$module.jarsigner.log"
@@ -392,6 +402,7 @@ verify_extraction() {
   python3 "$SCRIPT_DIR/n5-extract-census.py" module "$jar" "$moddir" --json > "$census_out" 2>> "$LOG_DIR/$module.log" || crc=$?
   if [[ "$crc" -ne 0 ]]; then
     log "$module" "GATE FAILED: byte-exactness census exit=$crc (see $census_out)"
+    gate_build_json
     return 1
   fi
   GATE_BYTE_EXACT="true"
@@ -402,6 +413,7 @@ verify_extraction() {
       GATE_SIG_STATUS="skipped"
       log "$module" "GATE: jarsigner unavailable, skipped by N5_JARSIGNER_SKIP=1"
     else
+      gate_build_json
       log "$module" "GATE FAILED: no executable jarsigner (N5_JARSIGNER='${N5_JARSIGNER:-}', none beside N5_JAVA or on PATH; set N5_JARSIGNER, or N5_JARSIGNER_SKIP=1 to record signature_status=skipped)"
       return 1
     fi
@@ -411,22 +423,51 @@ verify_extraction() {
     GATE_JARSIGNER_EXIT="$src"
     if ! GATE_SIG_STATUS="$(classify_jarsigner "$src" "$sig_out")"; then
       log "$module" "GATE FAILED: jarsigner exit=$src status=$GATE_SIG_STATUS (see $sig_out)"
+      gate_build_json
       return 1
     fi
     if [[ "$GATE_SIG_STATUS" == "unsigned" && "${N5_REQUIRE_SIGNED:-0}" == "1" ]]; then
       log "$module" "GATE FAILED: jar is unsigned and N5_REQUIRE_SIGNED=1"
+      gate_build_json
       return 1
     fi
     [[ "$GATE_SIG_STATUS" == "verified" || "$GATE_SIG_STATUS" == "verified-with-signer-warnings" ]] \
       && GATE_SIG_VERIFIED="true"
     rm -f "$sig_out"
   fi
-  GATE_JSON="$(python3 -c 'import json,sys
-a=sys.argv
-print(json.dumps({"byte_exact": a[1]=="true", "signature_verified": a[2]=="true",
-                  "signature_status": a[3], "jarsigner_exit": None if a[4]=="null" else int(a[4])}))' \
-    "$GATE_BYTE_EXACT" "$GATE_SIG_VERIFIED" "$GATE_SIG_STATUS" "$GATE_JARSIGNER_EXIT")"
+  gate_build_json
   log "$module" "gate ok: $GATE_JSON"
+}
+
+# --verify [<module>]: re-run the extraction gate over ALREADY-decompiled modules (those with an
+# organized/<mod>/recon.json) without touching extracted/, resources/ or any decompile tree, and
+# merge byte_exact/signature_* into their recon.json (a failure records byte_exact=false etc. too).
+# This is what `make census` runs; it backfills recon.json files written before the gate existed.
+run_verify_modules() {
+  local only="${1:-}" jar module moddir ok=0 failed=0
+  while IFS= read -r -d '' jar; do
+    module="$(basename "$jar" .jar)"
+    [[ "$module" == "docSource" ]] && continue
+    [[ -n "$only" && "$module" != "$only" ]] && continue
+    is_tridium_module "$jar" || continue
+    moddir="$N5_OUT_DIR/$module"
+    [[ -f "$moddir/recon.json" ]] || continue
+    if verify_extraction "$module" "$jar" "$moddir"; then ok=$((ok + 1)); else failed=$((failed + 1)); fi
+    RECON_PATH="$moddir/recon.json" RECON_GATE_JSON="$GATE_JSON" python3 -c '
+import json, os
+p = os.environ["RECON_PATH"]
+d = json.load(open(p))
+d.update(json.loads(os.environ["RECON_GATE_JSON"]))
+with open(p, "w") as fh:
+    json.dump(d, fh, indent=2)
+    fh.write("\n")'
+  done < <(find "$N5_MODULES_DIR" -maxdepth 1 -name '*.jar' -print0 | sort -z)
+  echo "verify: ok=$ok failed=$failed"
+  if [[ -n "$only" && $((ok + failed)) -eq 0 ]]; then
+    echo "verify: no decompiled Tridium module named '$only' (needs $N5_OUT_DIR/$only/recon.json)" >&2
+    return 1
+  fi
+  [[ "$failed" -eq 0 ]]
 }
 
 # ---------------------------------------------------------------------------
@@ -2728,6 +2769,10 @@ main() {
         mode="docsource"
         shift
         ;;
+      --verify)
+        mode="verify"
+        shift
+        ;;
       --bin-ext)
         mode="bin-ext"
         shift
@@ -2760,6 +2805,11 @@ main() {
   done
 
   mkdir -p "$N5_OUT_DIR"
+
+  if [[ "$mode" == "verify" ]]; then
+    run_verify_modules "${only%.jar}"
+    exit $?
+  fi
 
   if [[ "$mode" == "extra-tridium" ]]; then
     local rc1=0 rc2=0

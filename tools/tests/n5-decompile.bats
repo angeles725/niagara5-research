@@ -2174,3 +2174,52 @@ SH
   [ ! -f "$gate_dir/out/modB/recon.json" ]
   [[ "$output" == *"1 module(s) failed the extraction gate"* ]]
 }
+
+@test "gate: --verify backfills byte_exact/signature_* into an existing recon.json without re-decompiling" {
+  gate_setup
+  gate_fake_jarsigner 4 "jar verified, with signer errors."
+  run gate_run modA
+  [ "$status" -eq 0 ]
+  python3 - "$gate_dir/out/modA/recon.json" <<'PY'
+import json, sys
+p = sys.argv[1]
+d = json.load(open(p))
+for k in ("byte_exact", "signature_verified", "signature_status", "jarsigner_exit"):
+    d.pop(k)
+json.dump(d, open(p, "w"))
+PY
+  mkdir -p "$gate_dir/out/modA/vineflower"; echo keep > "$gate_dir/out/modA/vineflower/sentinel.txt"
+  run gate_run --verify
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"verify: ok=1 failed=0"* ]]
+  [ "$(gate_field byte_exact)" = "True" ]
+  [ "$(gate_field signature_status)" = "verified-with-signer-warnings" ]
+  [ -f "$gate_dir/out/modA/vineflower/sentinel.txt" ]
+}
+
+@test "gate: --verify exits 1 and records byte_exact=false when an organized/ file was altered after extraction" {
+  gate_setup
+  gate_fake_jarsigner 0 "jar verified."
+  run gate_run modA
+  [ "$status" -eq 0 ]
+  echo tampered >> "$gate_dir/out/modA/resources/marker.txt"
+  run gate_run --verify modA
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"verify: ok=0 failed=1"* ]]
+  [ "$(gate_field byte_exact)" = "False" ]
+  [ "$(gate_field signature_verified)" = "False" ]
+}
+
+@test "gate: --verify skips modules with no recon.json and non-Tridium vendors" {
+  gate_setup
+  gate_fake_jarsigner 0 "jar verified."
+  make_fake_jar "$gate_dir/modules/poc.jar" poc ""
+  make_fake_jar "$gate_dir/modules/norecon.jar" Tridium ""
+  run gate_run modA
+  [ "$status" -eq 0 ]
+  run gate_run --verify
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"verify: ok=1 failed=0"* ]]
+  [ ! -f "$gate_dir/out/poc/recon.json" ]
+  [ ! -f "$gate_dir/out/norecon/recon.json" ]
+}
