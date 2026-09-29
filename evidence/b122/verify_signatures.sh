@@ -15,6 +15,6 @@ for f in "$ORG"/xprotect/resources/nativeLib/*.dll "$ORG"/xprotect/resources/nat
   why="$(grep -m1 -oE 'Verify error: [A-Za-z -]+(certificate in certificate chain|certificate)?' <<<"$o" | head -1)"
   nver="$(grep -m1 'Number of verified signatures' <<<"$o" | awk '{print $NF}')"
   last="$(tail -1 <<<"$o")"
-  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$(basename "$f")" "$alg" "$([ "$cur" = "$cal" ] && echo yes || echo NO)" \
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$(basename "$f")" "$alg" "$([ -n "$cur" ] && [ -n "$cal" ] && [ "$cur" = "$cal" ] && echo yes || echo NO)" \
     "${nver:-0}" "${last:-?}" "$subj" "$ts" "${why:--}"
 done
