@@ -19,7 +19,7 @@ EXTRA = sorted(glob.glob(f"{ORG}/_etc-m2/*/extracted")) + sorted(glob.glob(f"{OR
         + sorted(glob.glob(f"{M2}/**/*.jar", recursive=True))
 CP = ":".join([extracted(j) for j in JARS] + [GRADLE_API] + LIBS + [p for p in EXTRA if p not in [extracted(j) for j in JARS]])
 BUCKETS = [("placeholder-syntax", r"illegal start of|expected"), ("anon-not-implementing", r"is not abstract and does not override"),
-           ("classpath-missing", r"package .* does not exist|cannot access|symbol:\s+class"), ("companion-ctor", r"constructor Companion"),
+           ("classpath-missing", r"package .* does not exist|symbol:\s+class"), ("synthetic-class-reference", r"cannot access"), ("companion-ctor", r"constructor Companion"),
            ("enclosing-instance", r"enclosing instance"), ("synthetic-symbol", r"cannot find symbol|no suitable method"),
            ("incompatible-types", r"incompatible types|cannot be converted")]
 def buckets(stderr):
