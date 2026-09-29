@@ -85,6 +85,7 @@ from typing import Callable, Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import n5_canon  # noqa: E402  (tools/n5_canon.py: parser + sound CFG canonicalization)
+import n5_classfile  # noqa: E402  (tools/n5_classfile.py: class major -> javac --release, kotlin.Metadata)
 
 # 2 (F6): the exact normalizer was tightened -- parameter slots are pinned (a
 # first-use renumbering let `a - b` and `b - a` compare equal), exception-table
@@ -1438,6 +1439,7 @@ def recompile_and_grade(
     javac_timeout: float = DEFAULT_JAVAC_TIMEOUT_SECONDS,
     javap_timeout: float = DEFAULT_JAVAP_TIMEOUT_SECONDS,
     tool_server: bool = False,
+    javac_release: int = 25,
 ) -> dict:
     """Recompile one decompiled .java (top-level class `class_name`, may define
     nested classes too) and grade the top-level class's .class against
@@ -1466,7 +1468,7 @@ def recompile_and_grade(
         }
 
     os.makedirs(out_dir, exist_ok=True)
-    javac_args = ["--release", "25", "-g", "-implicit:none", "-proc:none", "-nowarn", "-d", out_dir]
+    javac_args = ["--release", str(javac_release), "-g", "-implicit:none", "-proc:none", "-nowarn", "-d", out_dir]
     if classpath:
         javac_args += ["-cp", classpath]
     javac_args.append(java_file)
@@ -1727,6 +1729,39 @@ def _decompile_one_class_with(
     return (candidates[0] if candidates else None), None
 
 
+TYPED_KOTLIN = "kotlin-javap-reference"
+TYPED_RELEASE_UNSUPPORTED = "release-unsupported"
+
+
+def third_party_state(classfile: Path) -> tuple[Optional[str], Optional[int], Optional[int]]:
+    """(typed_state, class_major, javac_release) of a shipped third-party class. A class with a
+    class-level kotlin.Metadata annotation is `kotlin-javap-reference` (B125: javap is the verified
+    representation of Kotlin, decompile-grading it would be a false measurement); a class whose
+    major javac 25 cannot target is `release-unsupported` (never a false no-compile). Otherwise
+    the state is None and the release is derived from the shipped major."""
+    data = Path(classfile).read_bytes()
+    major = n5_classfile.class_major_version(data)
+    if n5_classfile.has_kotlin_metadata(data):
+        return TYPED_KOTLIN, major, n5_classfile.javac_release_for_major(major)
+    release = n5_classfile.javac_release_for_major(major)
+    if release is None:
+        return TYPED_RELEASE_UNSUPPORTED, major, None
+    return None, major, release
+
+
+def typed_class_record(state: str, classfile: Path, class_major: Optional[int], release: Optional[int]) -> dict:
+    """A class record for a typed (not decompile-graded) state; nested files carry the same state."""
+    reason = {TYPED_KOTLIN: "Kotlin class (kotlin.Metadata): javap is the reference representation (B125)",
+              TYPED_RELEASE_UNSUPPORTED: f"shipped class-file major {class_major} is not targetable by javac 25 --release"}[state]
+    return {
+        "grade": state, "first_error": reason, "best_decompiler": None, "attempted": [],
+        "mismatched_methods": [], "consensus": {"reaching_roundtrip": [], "count": 0},
+        "docsource_available": False, "docsource_roundtrip": None,
+        "nested": ungraded_nested(str(classfile), state), "fully_proven": False,
+        "class_major": class_major, "javac_release": release,
+    }
+
+
 def _grade_one_class(
     fqcn: str,
     classfile: Path,
@@ -1745,6 +1780,7 @@ def _grade_one_class(
     tool_server: bool = False,
     patch_tree: Optional[str] = None,
     patch_dir: Optional[Path] = None,
+    third_party: bool = False,
 ) -> tuple[str, dict]:
     """Grade one top-level class (the redundancy ladder) and return
     (fqcn, record). Self-contained: uses its own temp dirs, so it is safe to
@@ -1753,6 +1789,23 @@ def _grade_one_class(
     fb_java = fallback_dir / f"{fqcn}.java"
     source_java = vf_java if vf_java.is_file() else (fb_java if fb_java.is_file() else None)
     class_short = fqcn.rsplit("/", 1)[-1]
+
+    # C2b third-party path: the shipped class decides the javac --release (never a global default),
+    # and two states are typed instead of decompile-graded (see third_party_state)
+    rag_kw: dict = {}
+    if third_party:
+        try:
+            state, class_major, release = third_party_state(classfile)
+        except (OSError, ValueError) as exc:
+            return fqcn, {
+                "grade": "harness-error", "first_error": f"shipped class unreadable: {exc}",
+                "best_decompiler": None, "attempted": [], "consensus": {"reaching_roundtrip": [], "count": 0},
+                "docsource_available": False, "docsource_roundtrip": None,
+                "nested": ungraded_nested(str(classfile)), "fully_proven": False,
+            }
+        if state is not None:
+            return fqcn, typed_class_record(state, classfile, class_major, release)
+        rag_kw = {"javac_release": release}
 
     docsource_java = docsource_dir / f"{fqcn}.java"
     docsource_available = docsource_java.is_file()
@@ -1783,7 +1836,7 @@ def _grade_one_class(
                     grade = "timeout" if reason == "timeout" else "no-compile"
                     suffix = " (timeout)" if reason == "timeout" else ""
                     return {"grade": grade, "first_error": f"{engine_label} retry decompile failed{suffix}", "mismatched_methods": [], "allowlist_matches": []}
-                return recompile_and_grade(str(java_src), class_short, classpath, str(classfile), compile_td, javac_bin, javap_bin, tool_server=tool_server)
+                return recompile_and_grade(str(java_src), class_short, classpath, str(classfile), compile_td, javac_bin, javap_bin, tool_server=tool_server, **rag_kw)
 
         def cfr_thunk():
             return _decompile_retry_thunk("cfr", cfr_jar, "CFR")
@@ -1796,7 +1849,7 @@ def _grade_one_class(
         # "vineflower" regardless of `--tree` misattributed a vineflower2
         # (or any other tree's) result to vineflower in `attempted`/
         # `per_engine_mismatched_methods`.
-        first = recompile_and_grade(str(source_java), class_short, classpath, str(classfile), td, javac_bin, javap_bin, tool_server=tool_server)
+        first = recompile_and_grade(str(source_java), class_short, classpath, str(classfile), td, javac_bin, javap_bin, tool_server=tool_server, **rag_kw)
         attempted = [(primary_tree, first)]
         # patch-tree rung (T21/F8): a mechanically patched copy of the primary
         # tree's source (tools/n5-patch-doprivileged.py) is graded right after
@@ -1806,7 +1859,7 @@ def _grade_one_class(
             with tempfile.TemporaryDirectory() as patch_td:
                 attempted.append((patch_tree, recompile_and_grade(
                     str(patch_java), class_short, classpath, str(classfile), patch_td, javac_bin, javap_bin,
-                    tool_server=tool_server)))
+                    tool_server=tool_server, **rag_kw)))
         if attempted[-1][1]["grade"] not in LADDER_STOP_GRADES:
             cfr_result = cfr_thunk()
             attempted.append(("cfr", cfr_result))
@@ -1825,7 +1878,7 @@ def _grade_one_class(
 
         if docsource_available:
             with tempfile.TemporaryDirectory() as ds_td:
-                ds_result = recompile_and_grade(str(docsource_java), class_short, classpath, str(classfile), ds_td, javac_bin, javap_bin, tool_server=tool_server)
+                ds_result = recompile_and_grade(str(docsource_java), class_short, classpath, str(classfile), ds_td, javac_bin, javap_bin, tool_server=tool_server, **rag_kw)
                 docsource_roundtrip = _is_clean(ds_result["grade"])
 
         record = {
@@ -1857,6 +1910,9 @@ def _grade_one_class(
         # first clean rung, else the primary tree); a rung that never compiled
         # produced no nested files to compare, so they are listed as not-graded
         nested = _grade_source(attempted, best)[1].get("nested") or ungraded_nested(str(classfile))
+        if third_party:
+            record["class_major"] = class_major
+            record["javac_release"] = release
         record["nested"] = nested
         record["fully_proven"] = fully_proven(best["grade"], nested)
         if patch_tree:
@@ -1910,6 +1966,9 @@ def grade_module(
     class_jobs: int = 1,
     tool_server: bool = False,
     patch_tree: Optional[str] = None,
+    only_classes: Optional[set] = None,
+    fallback_tree: str = "fallback",
+    third_party: bool = False,
 ) -> dict:
     """`primary_tree` names the decompiled source tree to grade as the FIRST
     rung of the redundancy ladder — normally "vineflower" (tools/n5-decompile.sh's
@@ -1921,10 +1980,12 @@ def grade_module(
     mod_dir = organized_dir / module
     extracted_dir = mod_dir / "extracted"
     vineflower_dir = mod_dir / primary_tree
-    fallback_dir = mod_dir / "fallback"
+    fallback_dir = mod_dir / fallback_tree
     docsource_dir = organized_dir / "docSource" / module
 
     classes = discover_top_level_classes(extracted_dir)
+    if only_classes is not None:
+        classes = [(f, c) for f, c in classes if f in only_classes]
     if limit is not None:
         classes = classes[:limit]
 
@@ -1934,6 +1995,8 @@ def grade_module(
         cfr_jar=cfr_jar, procyon_jar=procyon_jar, jd_cli_jar=jd_cli_jar, primary_tree=primary_tree,
         tool_server=tool_server,
     )
+    if third_party:
+        class_kwargs["third_party"] = True
     if patch_tree:
         class_kwargs.update(patch_tree=patch_tree, patch_dir=mod_dir / patch_tree)
     per_class = {}
@@ -1988,6 +2051,10 @@ def grade_module(
         # reporting the truncated grade_counts as if they were complete
         # (R4-limited-run-cached-as-complete).
         "limit_per_module": limit,
+        # a C2b run grades only the uncovered subset of an artifact's classes; the cache must never
+        # treat that as a full-module run (None = every class was graded)
+        "only_classes_count": len(only_classes) if only_classes is not None else None,
+        **({"third_party": True} if third_party else {}),
     }
 
 
@@ -2043,7 +2110,8 @@ def migrate_legacy_fidelity_json(mod_dir: Path) -> bool:
 
 
 def is_module_up_to_date(
-    mod_dir: Path, primary_tree: str = "vineflower", limit_per_module: Optional[int] = None
+    mod_dir: Path, primary_tree: str = "vineflower", limit_per_module: Optional[int] = None,
+    only_classes_count: Optional[int] = None,
 ) -> bool:
     fidelity_path = fidelity_read_path(mod_dir, primary_tree)
     recon_path = Path(mod_dir) / "recon.json"
@@ -2069,6 +2137,7 @@ def is_module_up_to_date(
         # None for pre-existing files written before this field existed,
         # which were always full (unlimited) runs.
         and fidelity.get("limit_per_module") == limit_per_module
+        and fidelity.get("only_classes_count") == only_classes_count
     )
 
 
@@ -2982,6 +3051,149 @@ def load_bin_ext_results(organized_dir: Path, tree: str = BIN_EXT_DEFAULT_TREE) 
     return load_tree_results(root, bin_ext_tridium_modules(organized_dir), tree)
 
 
+# C2b: third-party classes WITHOUT a proven upstream source (the population is
+# `tools/n5-upstream-sources.py uncovered-population`; classes WITH proven upstream source need no
+# grade, the original source is the reference). Their decompiled trees live in
+# organized/_lib-inf-3p/<jar-stem>-<sha12>/ (and organized/_bin-ext/<jar> when a third-party bin/ext
+# jar was decompiled); they are graded on the uncovered classes only, reported in their own section
+# and never mixed into the module or the Tridium bin/ext totals.
+THIRD_PARTY_TREE_SUBDIRS = ("_lib-inf-3p", "_bin-ext")
+THIRD_PARTY_DEFAULT_TREE = "vineflower2"
+THIRD_PARTY_FALLBACK_TREE = "fallback2"
+THIRD_PARTY_SECTION_TITLE = "third-party without upstream source"
+THIRD_PARTY_POPULATION_REL = Path("_upstream-sources") / "uncovered-population.json"
+
+
+def load_uncovered_population(organized_dir: Path) -> dict:
+    path = Path(organized_dir) / THIRD_PARTY_POPULATION_REL
+    if not path.is_file():
+        raise FileNotFoundError(
+            f"{path} missing: run `python3 tools/n5-upstream-sources.py uncovered-population` first")
+    return json.loads(path.read_text())
+
+
+def third_party_targets(population: dict, organized_dir: Path) -> tuple[list[dict], list[dict]]:
+    """Match every population record to its decompiled tree by the jar's sha256 (the tree's
+    recon.json `jar_sha256`). Returns (targets, gaps): a target is graded with
+    grade_module(module, organized_dir=target["organized_dir"], only_classes=...); a record with no
+    tree is a typed gap (`no-decompiled-tree`), never dropped."""
+    by_sha: dict[str, tuple[Path, str]] = {}
+    for sub in THIRD_PARTY_TREE_SUBDIRS:
+        root = Path(organized_dir) / sub
+        if not root.is_dir():
+            continue
+        for d in sorted(root.iterdir()):
+            recon = d / "recon.json"
+            if not recon.is_file():
+                continue
+            try:
+                sha = json.loads(recon.read_text()).get("jar_sha256")
+            except (json.JSONDecodeError, OSError):
+                continue
+            if sha:
+                by_sha.setdefault(sha, (root, d.name))
+    targets, gaps = [], []
+    for rec in population.get("artifacts", []):
+        hit = by_sha.get(rec.get("jar_sha256"))
+        if hit is None:
+            gaps.append({"key": rec["key"], "reason": "no-decompiled-tree",
+                         "uncovered_top_level": len(rec["uncovered_top_level"]),
+                         "kotlin_top_level": len(rec.get("kotlin_top_level", []))})
+            continue
+        targets.append({"key": rec["key"], "module": hit[1], "organized_dir": hit[0],
+                        "only_classes": set(rec["uncovered_top_level"])})
+    return targets, gaps
+
+
+def generate_third_party_section(results: list[dict], gaps: list[dict]) -> str:
+    """Body of the separately labelled `## third-party without upstream source` section (heading
+    NOT included). Own totals; typed states (Kotlin javap reference, release-unsupported) are
+    counted separately and excluded from the decompile-gradable share."""
+    order = ("roundtrip-exact", "roundtrip-equivalent", "roundtrip-canonical", "roundtrip-canonical-t2",
+             "compiles-mismatch", "no-compile", "bytecode-only", TYPED_KOTLIN, TYPED_RELEASE_UNSUPPORTED)
+    lines = ["Third-party classes that have NO byte-matching upstream source, graded from the decompiled "
+             "trees of `organized/_lib-inf-3p` (and `_bin-ext` when a tree exists) with the same ladder as "
+             "the modules, each class recompiled with the `--release` of its shipped class-file major version. "
+             "Kotlin classes (`kotlin.Metadata`) are not decompile-graded: javap is their reference "
+             "representation (B125). These numbers are NOT part of the module or Tridium bin/ext totals.", "",
+             "| Artifact | Classes | roundtrip-exact | roundtrip-equivalent | roundtrip-canonical | "
+             "roundtrip-canonical-t2 | compiles-mismatch | no-compile | bytecode-only | kotlin-javap-reference | "
+             "release-unsupported | other |",
+             "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|"]
+    total = proven = full = 0
+    totals = {g: 0 for g in order}
+    other_total = 0
+    nested_rows = []
+    for mr in sorted(results, key=lambda r: r["module"]):
+        if mr.get("module_error"):
+            lines.append(f"| {mr['module']} | **GRADING FAILED** — {mr['module_error']} | | | | | | | | | | |")
+            continue
+        counts = mr["grade_counts"]
+        other = sum(v for g, v in counts.items() if g not in order)
+        total += mr["class_count"]
+        proven += sum(v for g, v in counts.items() if _is_clean(g))
+        full += mr.get("fully_proven_count", 0)
+        for g in order:
+            totals[g] += counts.get(g, 0)
+        other_total += other
+        lines.append(f"| {mr['module']} | {mr['class_count']} | " + " | ".join(str(counts.get(g, 0)) for g in order)
+                     + f" | {other} |")
+        if mr.get("nested_schema_version") == NESTED_SCHEMA_VERSION:
+            nested_rows.append(mr)
+    gradable = total - totals[TYPED_KOTLIN] - totals[TYPED_RELEASE_UNSUPPORTED]
+    pct = lambda n, d: (100.0 * n / d) if d else 0.0  # noqa: E731
+    lines += ["", f"- graded classes: {total}",
+              f"- {TYPED_KOTLIN}: {totals[TYPED_KOTLIN]}",
+              f"- {TYPED_RELEASE_UNSUPPORTED}: {totals[TYPED_RELEASE_UNSUPPORTED]}",
+              f"- proven (any tier): {proven}/{total} ({pct(proven, total):.1f}%)",
+              f"- proven of decompile-gradable (excluding {TYPED_KOTLIN} / {TYPED_RELEASE_UNSUPPORTED}): "
+              f"{proven}/{gradable} ({pct(proven, gradable):.1f}%)",
+              f"- fully proven (outer + nested): {full}/{total} ({pct(full, total):.1f}%)"]
+    if nested_rows:
+        lines += ["", "| Artifact | Nested files | Proven | Unproven | Extra (recompile only) | Classes fully proven |",
+                  "|---|---:|---:|---:|---:|---:|"]
+        for mr in nested_rows:
+            n_proven = sum(v for g, v in mr["nested_grade_counts"].items() if _is_clean(g))
+            lines.append(f"| {mr['module']} | {mr['nested_file_count']} | {n_proven} | {mr['nested_file_count'] - n_proven} | "
+                         f"{mr['extra_nested_count']} | {mr['fully_proven_count']} |")
+    if gaps:
+        lines += ["", "Not graded (typed gaps): uncovered classes of artifacts with no decompiled tree.", "",
+                  "| Artifact | Uncovered classes (top-level) | of which Kotlin | Reason |", "|---|---:|---:|---|"]
+        for g in sorted(gaps, key=lambda g: g["key"]):
+            lines.append(f"| {g['key']} | {g['uncovered_top_level']} | {g['kotlin_top_level']} | {g['reason']} |")
+        lines += ["", f"- top-level classes not graded (no tree): {sum(g['uncovered_top_level'] for g in gaps)} "
+                      f"(Kotlin among them: {sum(g['kotlin_top_level'] for g in gaps)})"]
+    return "\n".join(lines)
+
+
+def _upsert_third_party_section(report_path: Path, results: list[dict], gaps: list[dict]) -> None:
+    existing = report_path.read_text() if report_path.is_file() else "# Decompile fidelity report\n"
+    report_path.write_text(upsert_markdown_section(
+        existing, f"## {THIRD_PARTY_SECTION_TITLE}", generate_third_party_section(results, gaps)))
+
+
+def load_third_party_results(organized_dir: Path, tree: str = THIRD_PARTY_DEFAULT_TREE) -> tuple[list[dict], list[dict]]:
+    """Already-graded third-party results (no grading) and the typed gaps of the recorded
+    population; ([], []) when no population exists."""
+    try:
+        population = load_uncovered_population(organized_dir)
+    except FileNotFoundError:
+        return [], []
+    targets, gaps = third_party_targets(population, organized_dir)
+    results = []
+    for t in targets:
+        p = fidelity_read_path(t["organized_dir"] / t["module"], tree)
+        if p is None:
+            continue
+        try:
+            data = json.loads(p.read_text())
+        except (json.JSONDecodeError, OSError):
+            continue
+        if data.get("third_party"):
+            results.append(data)
+    return results, gaps
+
+
 def _list_all_modules(organized_dir: Path) -> list[str]:
     out = []
     for p in sorted(organized_dir.iterdir()):
@@ -3026,6 +3238,64 @@ def _main_regrade_nonclean(args, modules: list[str], organized_dir: Path, classp
     return 0
 
 
+def _cli_classpath(args) -> str:
+    cache_dir = Path(args.classpath_cache_dir) if args.classpath_cache_dir else Path(tempfile.gettempdir()) / "n5-fidelity-classpath-cache"
+    return build_classpath(cache_dir, Path(args.modules_dir), Path(args.bin_ext_dir),
+                           bc_variant=args.bc_variant, jre_dir=Path(args.jre_dir) if args.jre_dir else None)
+
+
+def _main_third_party(args, organized_dir: Path, population: dict) -> int:
+    """C2b driver: grade each artifact's uncovered classes on its own tree. The classpath is the
+    N5 classpath every module uses (each artifact's own jar is on it through its host module, and the
+    source under compile overrides its own class -- the same way a module is graded). Artifacts
+    without a decompiled tree are reported as typed gaps."""
+    targets, gaps = third_party_targets(population, organized_dir)
+    classpath = _cli_classpath(args)
+    jd_cli_jar = Path(args.jd_cli_jar) if args.jd_cli_jar else None
+    failed: list[str] = []
+
+    def _run_one(t: dict) -> Optional[dict]:
+        mod_dir = t["organized_dir"] / t["module"]
+        migrate_legacy_fidelity_json(mod_dir)
+        if not args.force and is_module_up_to_date(mod_dir, primary_tree=args.tree, limit_per_module=args.limit_per_module,
+                                                    only_classes_count=len(t["only_classes"])):
+            print(f"[{t['module']}] up to date, skipping", file=sys.stderr)
+            fp = fidelity_read_path(mod_dir, args.tree)
+            return json.loads(fp.read_text()) if fp else None
+        try:
+            result = grade_module(
+                t["module"], organized_dir=t["organized_dir"], classpath=classpath, limit=args.limit_per_module,
+                jd_cli_jar=jd_cli_jar, primary_tree=args.tree, class_jobs=args.class_jobs, tool_server=args.tool_server,
+                only_classes=t["only_classes"], fallback_tree=THIRD_PARTY_FALLBACK_TREE, third_party=True)
+            fidelity_output_path(mod_dir, args.tree).write_text(json.dumps(result, indent=2, default=list) + "\n")
+            print(f"[{t['module']}] {result['grade_counts']}", file=sys.stderr)
+            return result
+        except Exception as exc:  # noqa: BLE001 -- one artifact must not abort the batch
+            print(f"[{t['module']}] FAILED: {exc!r}", file=sys.stderr)
+            failed.append(t["module"])
+            return {"module": t["module"], "schema_version": SCHEMA_VERSION, "class_count": 0, "grade_counts": {},
+                    "classes": {}, "module_error": repr(exc), "third_party": True}
+
+    if args.jobs > 1 and len(targets) > 1:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=args.jobs) as pool:
+            results = list(pool.map(_run_one, targets))
+    else:
+        results = [_run_one(t) for t in targets]
+    shutdown_tool_servers()
+    results = [r for r in results if r is not None]
+    for g in gaps:
+        print(f"[gap] {g['key']}: {g['uncovered_top_level']} uncovered top-level classes, no decompiled tree "
+              f"({g['kotlin_top_level']} Kotlin)", file=sys.stderr)
+    if args.report:
+        report_path = REPO_ROOT / "docs" / "decompile-fidelity-report.md"
+        _upsert_third_party_section(report_path, results, gaps)
+        print(f"wrote {report_path}", file=sys.stderr)
+    if failed:
+        print(f"FAILED: {len(failed)} artifact(s) raised during grading: {failed}", file=sys.stderr)
+        return 1
+    return 0
+
+
 def main(argv: Optional[list[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--modules", help="comma-separated module names")
@@ -3057,6 +3327,13 @@ def main(argv: Optional[list[str]] = None) -> int:
                          help="grade the 6 Tridium bin/ext jars under <organized-dir>/_bin-ext (allowlist + NIAGARA4.SF "
                               "marker; see BIN_EXT_TRIDIUM_JARS) instead of modules; default --tree vineflower2; with "
                               "--report upserts a separate '## bin/ext (Tridium)' section, never module totals")
+    parser.add_argument("--third-party-uncovered", action="store_true",
+                         help="C2b: grade the third-party classes WITHOUT a proven upstream source (population: "
+                              "<organized-dir>/_upstream-sources/uncovered-population.json from `n5-upstream-sources.py "
+                              "uncovered-population`) on their decompiled trees in _lib-inf-3p/_bin-ext; per-class "
+                              "javac --release from the shipped class-file major, Kotlin = kotlin-javap-reference; "
+                              "default --tree vineflower2; with --report upserts a separate "
+                              "'## third-party without upstream source' section")
     parser.add_argument("--tree", default=None,
                          help="decompiled source tree to grade, e.g. vineflower (default) or vineflower2 — "
                               "see grade_module docstring. Output is organized/<mod>/fidelity.<tree>.json — "
@@ -3089,7 +3366,8 @@ def main(argv: Optional[list[str]] = None) -> int:
                               "output (repeatable) — e.g. classpath/jar provenance for this run, or a fixed "
                               "methodology caveat. Never invented by this tool; the caller supplies the facts.")
     args = parser.parse_args(argv)
-    args.tree = args.tree or (BIN_EXT_DEFAULT_TREE if args.bin_ext_tridium else "vineflower")
+    args.tree = args.tree or (BIN_EXT_DEFAULT_TREE if args.bin_ext_tridium else
+                              THIRD_PARTY_DEFAULT_TREE if args.third_party_uncovered else "vineflower")
 
     if args.bin_ext_tridium and (args.all or args.modules or args.compare):
         parser.error("--bin-ext-tridium cannot be combined with --all, --modules or --compare")
@@ -3099,6 +3377,17 @@ def main(argv: Optional[list[str]] = None) -> int:
         parser.error("--patch-tree requires --regrade-nonclean (output: fidelity.<tree>.patched.json)")
         return 2
     organized_dir = Path(args.organized_dir)
+    if args.third_party_uncovered:
+        if args.all or args.modules or args.compare or args.bin_ext_tridium or args.regrade_nonclean:
+            parser.error("--third-party-uncovered cannot be combined with --all, --modules, --compare, "
+                         "--bin-ext-tridium or --regrade-nonclean")
+            return 2
+        try:
+            population = load_uncovered_population(organized_dir)
+        except FileNotFoundError as exc:
+            parser.error(str(exc))
+            return 2
+        return _main_third_party(args, organized_dir, population)
     bin_ext_mode = args.bin_ext_tridium
     if bin_ext_mode:
         modules = bin_ext_tridium_modules(organized_dir)
@@ -3144,10 +3433,7 @@ def main(argv: Optional[list[str]] = None) -> int:
             print(f"wrote '{title}' section into {report_path}", file=sys.stderr)
         return 0
 
-    cache_dir = Path(args.classpath_cache_dir) if args.classpath_cache_dir else Path(tempfile.gettempdir()) / "n5-fidelity-classpath-cache"
-    classpath = build_classpath(cache_dir, Path(args.modules_dir), Path(args.bin_ext_dir),
-                                bc_variant=args.bc_variant, jre_dir=Path(args.jre_dir) if args.jre_dir else None)
-
+    classpath = _cli_classpath(args)
     jd_cli_jar = Path(args.jd_cli_jar) if args.jd_cli_jar else None
 
     if args.regrade_nonclean:
@@ -3229,6 +3515,9 @@ def main(argv: Optional[list[str]] = None) -> int:
             bin_ext_results = load_bin_ext_results(organized_dir)
             if bin_ext_results:
                 _upsert_bin_ext_section(report_path, bin_ext_results)
+            tp_results, tp_gaps = load_third_party_results(organized_dir)
+            if tp_results:
+                _upsert_third_party_section(report_path, tp_results, tp_gaps)
         print(f"wrote {report_path}", file=sys.stderr)
 
     if failed_modules:

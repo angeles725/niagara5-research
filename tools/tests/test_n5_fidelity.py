@@ -2133,6 +2133,304 @@ class TestLoadTreeResultsReportsSkippedModules(unittest.TestCase):
 
 
 
+KOTLIN_METADATA_SRC = ("package kotlin; import java.lang.annotation.*; "
+                       "@Retention(RetentionPolicy.RUNTIME) public @interface Metadata { int k() default 1; }")
+
+
+class TestJavacReleaseThreading(unittest.TestCase):
+    """C2b: recompile_and_grade takes the javac --release; a class shipped at Java 8 is graded
+    against a Java 8 recompile (string concatenation is StringBuilder there, invokedynamic at 9+)."""
+
+    def setUp(self):
+        if not _jdk_available():
+            self.skipTest("JDK 25 (javac/javap) not installed at the pinned brew path")
+        self.mod = _load()
+        self.tmpdir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmpdir, ignore_errors=True)
+
+    def _grade(self, release_used):
+        source = "public class Cat { public String f(int x) { return \"a\" + x; } }\n"
+        java = os.path.join(self.tmpdir, "Cat.java")
+        with open(java, "w") as f:
+            f.write(source)
+        ground = os.path.join(self.tmpdir, "ground")
+        os.makedirs(ground)
+        subprocess.run([JDK25_JAVAC, "--release", "8", "-g", "-proc:none", "-nowarn", "-d", ground, java],
+                       check=True, capture_output=True)
+        kw = {} if release_used is None else {"javac_release": release_used}
+        return self.mod.recompile_and_grade(java, "Cat", "", os.path.join(ground, "Cat.class"),
+                                            os.path.join(self.tmpdir, f"re{release_used}"),
+                                            JDK25_JAVAC, JDK25_JAVAP, **kw)["grade"]
+
+    def test_matching_release_round_trips_exactly(self):
+        self.assertEqual(self._grade(8), "roundtrip-exact")
+
+    def test_default_release_stays_25_and_does_not_match_a_java8_class(self):
+        self.assertNotIn(self._grade(None), ("roundtrip-exact", "roundtrip-equivalent"))
+
+
+class TestThirdPartyClassStates(unittest.TestCase):
+    """C2b: per-class typed states of the third-party path: Kotlin classes are graded by the
+    javap reference (never decompile-graded), classes javac 25 cannot target are release-unsupported
+    (never a false no-compile), everything else compiles with the release of its shipped major."""
+
+    def setUp(self):
+        if not _jdk_available():
+            self.skipTest("JDK 25 (javac/javap) not installed at the pinned brew path")
+        self.mod = _load()
+        self.tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmp, ignore_errors=True)
+        self.organized = Path(self.tmp)
+
+    def _javac(self, out, name, source, release, extra_cp=None):
+        src_dir = Path(self.tmp) / "src"
+        src_dir.mkdir(exist_ok=True)
+        f = src_dir / f"{name}.java"
+        f.write_text(source)
+        cmd = [JDK25_JAVAC, "--release", str(release), "-proc:none", "-nowarn", "-d", str(out)]
+        if extra_cp:
+            cmd += ["-cp", extra_cp]
+        subprocess.run(cmd + [str(f)], check=True, capture_output=True)
+
+    def _artifact(self):
+        """organized/art with: p/Plain (Java 8), p/Old (major patched to 51), p/K (kotlin.Metadata),
+        p/Miss (no decompiled source anywhere), all with a vineflower2 source except Miss."""
+        art = self.organized / "art"
+        ext = art / "extracted"
+        (ext / "p").mkdir(parents=True)
+        meta = Path(self.tmp) / "meta"
+        meta.mkdir()
+        (Path(self.tmp) / "msrc").mkdir()
+        (Path(self.tmp) / "msrc" / "Metadata.java").write_text(KOTLIN_METADATA_SRC)
+        subprocess.run([JDK25_JAVAC, "--release", "8", "-proc:none", "-nowarn", "-d", str(meta),
+                        str(Path(self.tmp) / "msrc" / "Metadata.java")], check=True, capture_output=True)
+        self._javac(ext, "Plain", "package p; public class Plain { public int f() { return 1; } }", 8)
+        self._javac(ext, "K", "package p; @kotlin.Metadata public class K { }", 8, extra_cp=str(meta))
+        self._javac(ext, "Old", "package p; public class Old { }", 8)
+        old = ext / "p" / "Old.class"
+        data = bytearray(old.read_bytes())
+        data[6:8] = (51).to_bytes(2, "big")
+        old.write_bytes(bytes(data))
+        self._javac(ext, "Miss", "package p; public class Miss { }", 8)
+        (ext / "p" / "Plain$1.class").write_bytes(b"x")
+        (ext / "p" / "K$1.class").write_bytes(b"x")
+        for n in ("Plain", "Old", "K"):
+            (art / "vineflower2" / "p").mkdir(parents=True, exist_ok=True)
+            (art / "vineflower2" / "p" / f"{n}.java").write_text("class X {}")
+        (art / "fallback2" / "p").mkdir(parents=True)
+        (art / "fallback2" / "p" / "Miss.java").write_text("class X {}")
+        (art / "recon.json").write_text(json.dumps({"jar_sha256": "j"}))
+        return art
+
+    def _fake_rag(self, java_file, class_name, classpath, ground_truth, out_dir, *a, **kw):
+        self.calls.append((class_name, kw.get("javac_release")))
+        return {"grade": "roundtrip-exact", "first_error": None, "mismatched_methods": [], "allowlist_matches": [],
+                "nested": {"files": {}, "missing": [], "extra": [], "drift_suspected": False}}
+
+    def _grade(self, **kw):
+        self.calls = []
+        with mock.patch.object(self.mod, "recompile_and_grade", side_effect=self._fake_rag):
+            return self.mod.grade_module("art", organized_dir=self.organized, primary_tree="vineflower2",
+                                         third_party=True, fallback_tree="fallback2", **kw)
+
+    def test_kotlin_class_is_typed_and_never_decompile_graded(self):
+        self._artifact()
+        res = self._grade()
+        rec = res["classes"]["p/K"]
+        self.assertEqual(rec["grade"], "kotlin-javap-reference")
+        self.assertNotIn("K", [c for c, _ in self.calls])
+        self.assertEqual(rec["nested"]["files"], {"K$1.class": {"grade": "kotlin-javap-reference", "mismatched_methods": []}})
+        self.assertIs(rec["fully_proven"], False)
+
+    def test_release_javac_cannot_target_is_typed_release_unsupported_not_no_compile(self):
+        self._artifact()
+        res = self._grade()
+        rec = res["classes"]["p/Old"]
+        self.assertEqual(rec["grade"], "release-unsupported")
+        self.assertEqual(rec["class_major"], 51)
+        self.assertIsNone(rec["javac_release"])
+        self.assertNotIn("Old", [c for c, _ in self.calls])
+
+    def test_plain_class_compiles_with_the_release_of_its_shipped_major(self):
+        self._artifact()
+        res = self._grade()
+        self.assertIn(("Plain", 8), self.calls)
+        self.assertEqual(res["classes"]["p/Plain"]["javac_release"], 8)
+        self.assertEqual(res["classes"]["p/Plain"]["class_major"], 52)
+        self.assertEqual(res["classes"]["p/Plain"]["grade"], "roundtrip-exact")
+
+    def test_fallback_tree_source_is_used_when_the_primary_tree_lacks_the_class(self):
+        self._artifact()
+        res = self._grade()
+        self.assertIn(("Miss", 8), self.calls)
+        self.assertEqual(res["classes"]["p/Miss"]["grade"], "roundtrip-exact")
+
+    def test_only_classes_restricts_the_graded_population(self):
+        self._artifact()
+        res = self._grade(only_classes={"p/Plain", "p/K"})
+        self.assertEqual(sorted(res["classes"]), ["p/K", "p/Plain"])
+        self.assertEqual(res["class_count"], 2)
+        self.assertEqual(res["only_classes_count"], 2)
+        self.assertEqual(res["grade_counts"], {"kotlin-javap-reference": 1, "roundtrip-exact": 1})
+
+    def test_unreadable_shipped_class_is_a_harness_error_not_a_module_crash(self):
+        self._artifact()
+        (self.organized / "art" / "extracted" / "p" / "Plain.class").write_bytes(b"garbage")
+        res = self._grade()
+        self.assertEqual(res["classes"]["p/Plain"]["grade"], "harness-error")
+        self.assertIn("shipped class", res["classes"]["p/Plain"]["first_error"])
+        self.assertEqual(res["classes"]["p/K"]["grade"], "kotlin-javap-reference")
+
+    def test_default_module_path_is_unchanged(self):
+        # not third_party: no release kwarg is passed and no typed states are derived
+        self._artifact()
+        self.calls = []
+        with mock.patch.object(self.mod, "recompile_and_grade", side_effect=self._fake_rag):
+            res = self.mod.grade_module("art", organized_dir=self.organized, primary_tree="vineflower2")
+        self.assertEqual(res["classes"]["p/K"]["grade"], "roundtrip-exact")
+        self.assertEqual({r for _, r in self.calls}, {None})
+        self.assertIsNone(res["only_classes_count"])
+
+    def test_cache_is_keyed_on_the_class_filter(self):
+        art = self._artifact()
+        res = self._grade(only_classes={"p/Plain"})
+        (art / "fidelity.vineflower2.json").write_text(json.dumps(res))
+        self.assertTrue(self.mod.is_module_up_to_date(art, "vineflower2", only_classes_count=1))
+        self.assertFalse(self.mod.is_module_up_to_date(art, "vineflower2", only_classes_count=2))
+        self.assertFalse(self.mod.is_module_up_to_date(art, "vineflower2"))
+
+
+class TestThirdPartyTargets(unittest.TestCase):
+    def setUp(self):
+        self.mod = _load()
+
+    def _tree(self, organized, sub, name, sha):
+        d = organized / sub / name
+        d.mkdir(parents=True)
+        (d / "recon.json").write_text(json.dumps({"jar_sha256": sha}))
+        return d
+
+    def test_records_are_matched_to_trees_by_jar_sha256_and_the_rest_are_gaps(self):
+        with tempfile.TemporaryDirectory() as td:
+            org = Path(td)
+            self._tree(org, "_lib-inf-3p", "woodstox-7-aaaaaaaaaaaa", "a" * 64)
+            self._tree(org, "_bin-ext", "kot", "b" * 64)
+            pop = {"artifacts": [
+                {"key": "g:woodstox:7", "jar_sha256": "a" * 64, "uncovered_top_level": ["w/A", "w/B"], "kotlin_top_level": []},
+                {"key": "g:kot:1", "jar_sha256": "b" * 64, "uncovered_top_level": ["k/A"], "kotlin_top_level": ["k/A"]},
+                {"key": "unidentified:jx.jar", "jar_sha256": "c" * 64, "uncovered_top_level": ["j/A", "j/B", "j/C"],
+                 "kotlin_top_level": ["j/C"]},
+            ]}
+            targets, gaps = self.mod.third_party_targets(pop, org)
+        self.assertEqual([(t["key"], t["module"], sorted(t["only_classes"])) for t in targets],
+                         [("g:woodstox:7", "woodstox-7-aaaaaaaaaaaa", ["w/A", "w/B"]), ("g:kot:1", "kot", ["k/A"])])
+        self.assertEqual(targets[0]["organized_dir"], org / "_lib-inf-3p")
+        self.assertEqual(targets[1]["organized_dir"], org / "_bin-ext")
+        self.assertEqual(gaps, [{"key": "unidentified:jx.jar", "reason": "no-decompiled-tree",
+                                 "uncovered_top_level": 3, "kotlin_top_level": 1}])
+
+
+class TestGenerateThirdPartySection(unittest.TestCase):
+    def setUp(self):
+        self.mod = _load()
+
+    def _result(self, module, counts, key=None):
+        return {"module": module, "key": key or module, "class_count": sum(counts.values()), "grade_counts": counts,
+                "nested_schema_version": 1, "nested_file_count": 0, "nested_grade_counts": {}, "extra_nested_count": 0,
+                "fully_proven_count": counts.get("roundtrip-exact", 0), "classes": {}}
+
+    def test_section_has_own_totals_typed_states_gaps_and_never_tridium_wording_totals(self):
+        rows = [self._result("woodstox-7", {"roundtrip-exact": 6, "roundtrip-canonical": 2, "compiles-mismatch": 1,
+                                           "no-compile": 1}),
+                self._result("kotlin-stdlib-2", {"kotlin-javap-reference": 4}),
+                self._result("old-1", {"release-unsupported": 2, "harness-error": 1})]
+        gaps = [{"key": "unidentified:jx.jar", "reason": "no-decompiled-tree", "uncovered_top_level": 3, "kotlin_top_level": 1}]
+        text = self.mod.generate_third_party_section(rows, gaps)
+        self.assertIn("| woodstox-7 | 10 | 6 | 0 | 2 | 0 | 1 | 1 | 0 | 0 | 0 | 0 |", text)
+        self.assertIn("| kotlin-stdlib-2 | 4 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 4 | 0 | 0 |", text)
+        self.assertIn("| old-1 | 3 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 2 | 1 |", text)
+        self.assertIn("graded classes: 17", text)
+        self.assertIn("kotlin-javap-reference: 4", text)
+        self.assertIn("release-unsupported: 2", text)
+        self.assertIn("proven (any tier): 8/17 (47.1%)", text)
+        self.assertIn("proven of decompile-gradable (excluding kotlin-javap-reference / release-unsupported): 8/11 (72.7%)", text)
+        self.assertIn("| unidentified:jx.jar | 3 | 1 | no-decompiled-tree |", text)
+
+    def test_failed_artifact_is_flagged(self):
+        text = self.mod.generate_third_party_section(
+            [{"module": "x", "module_error": "boom", "class_count": 0, "grade_counts": {}, "classes": {}}], [])
+        self.assertIn("GRADING FAILED", text)
+
+
+class TestThirdPartyCLI(unittest.TestCase):
+    def setUp(self):
+        self.mod = _load()
+
+    def _organized(self, td):
+        org = Path(td) / "organized"
+        d = org / "_lib-inf-3p" / "wood-1-aaaaaaaaaaaa"
+        (d / "extracted" / "p").mkdir(parents=True)
+        (d / "vineflower2" / "p").mkdir(parents=True)
+        for n in ("A", "B"):
+            (d / "extracted" / "p" / f"{n}.class").write_bytes(bytes.fromhex("cafebabe00000034") + b"\x00\x01")
+            (d / "vineflower2" / "p" / f"{n}.java").write_text("class X {}")
+        (d / "recon.json").write_text(json.dumps({"jar_sha256": "a" * 64}))
+        up = org / "_upstream-sources"
+        up.mkdir()
+        (up / "uncovered-population.json").write_text(json.dumps({"artifacts": [
+            {"key": "g:wood:1", "jar_sha256": "a" * 64, "uncovered_top_level": ["p/A"], "kotlin_top_level": []},
+            {"key": "unidentified:jx.jar", "jar_sha256": "c" * 64, "uncovered_top_level": ["j/A"], "kotlin_top_level": []}]}))
+        return org
+
+    def _fake_rag(self, java_file, class_name, *a, **kw):
+        return {"grade": "roundtrip-exact", "first_error": None, "mismatched_methods": [], "allowlist_matches": [],
+                "nested": {"files": {}, "missing": [], "extra": [], "drift_suspected": False}}
+
+    def _run(self, td, org, extra=()):
+        (Path(td) / "docs").mkdir(exist_ok=True)
+        with mock.patch.object(self.mod, "recompile_and_grade", side_effect=self._fake_rag), \
+             mock.patch.object(self.mod, "build_classpath", return_value=""), \
+             mock.patch.object(self.mod, "REPO_ROOT", Path(td)):
+            return self.mod.main(["--third-party-uncovered", "--organized-dir", str(org),
+                                  "--classpath-cache-dir", str(Path(td) / "cp"), *extra])
+
+    def test_grades_only_the_uncovered_classes_into_the_artifacts_own_json(self):
+        with tempfile.TemporaryDirectory() as td:
+            org = self._organized(td)
+            self.assertEqual(self._run(td, org), 0)
+            out = json.loads((org / "_lib-inf-3p" / "wood-1-aaaaaaaaaaaa" / "fidelity.vineflower2.json").read_text())
+            self.assertEqual(sorted(out["classes"]), ["p/A"])
+            self.assertEqual(out["only_classes_count"], 1)
+            self.assertEqual(out["primary_tree"], "vineflower2")
+
+    def test_report_gets_a_separate_section_and_keeps_the_rest(self):
+        with tempfile.TemporaryDirectory() as td:
+            org = self._organized(td)
+            report = Path(td) / "docs" / "decompile-fidelity-report.md"
+            report.parent.mkdir()
+            report.write_text("# Decompile fidelity report\n\n## Overall\n\n- roundtrip-exact: 1/1\n")
+            self.assertEqual(self._run(td, org, ["--report"]), 0)
+            text = report.read_text()
+            self.assertIn("## Overall", text)
+            self.assertEqual(text.count("## third-party without upstream source"), 1)
+            self.assertIn("| wood-1-aaaaaaaaaaaa | 1 | 1 |", text)
+            self.assertIn("| unidentified:jx.jar | 1 | 0 | no-decompiled-tree |", text)
+
+    def test_flag_conflicts_with_all_modules_and_bin_ext(self):
+        with tempfile.TemporaryDirectory() as td:
+            org = self._organized(td)
+            for extra in (["--all"], ["--modules", "x"], ["--bin-ext-tridium"]):
+                with self.assertRaises(SystemExit):
+                    self.mod.main(["--third-party-uncovered", "--organized-dir", str(org)] + extra)
+
+    def test_missing_population_is_an_error_not_an_empty_success(self):
+        with tempfile.TemporaryDirectory() as td:
+            org = self._organized(td)
+            (org / "_upstream-sources" / "uncovered-population.json").unlink()
+            with self.assertRaises(SystemExit):
+                self._run(td, org)
+
+
 if __name__ == "__main__":
     unittest.main()
 
