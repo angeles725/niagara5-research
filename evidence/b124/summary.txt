@@ -1,0 +1,20 @@
+bundles 72
+bytes 9305969
+modules 2315
+proven_js_modules 833
+skeleton_modules 1315
+def_bytes_skeleton 3629455
+hbs 142
+stub 23
+other_class 2
+def_bytes_proven 1548258
+prelude_proven 243528
+prelude_unproven 45183
+other_proven 779
+other_unproven 3761256
+proven 1792565
+pct_bytes_proven 19.26
+pct_bytes_proven_or_skeleton 58.26
+skeleton ordered-equal: 813 of 1315
+module classes {'SEMANTIC-MATCH': 831, 'SKELETON-MATCH': 1315, 'HBS-RECOMPILE-MATCH': 142, 'STUB-OR-VENDOR-WRAPPER': 19, 'IDENTICAL-AFTER-MINIFY': 2, 'EMPTY-STUB': 4, 'DIFFERS': 2}
+deps_equal false among matched: 2
