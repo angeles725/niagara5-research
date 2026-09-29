@@ -5,6 +5,7 @@ n-conv-plugin	bc:extension-receiver-lvt($this$)	14	15
 n-conv-plugin	bc:indy-lambda(LambdaMetafactory)	1	1
 n-conv-plugin	bc:inlined-lambda-marker($i$a$)	4	4
 n-conv-plugin	bc:object-INSTANCE-field	6	6
+n-conv-plugin	bc:same-name-overload-of-declared-fun	4	4
 n-conv-plugin	decl:constructors	4	4
 n-conv-plugin	decl:functions	4	4
 n-conv-plugin	kind:class	4	4
@@ -37,6 +38,7 @@ n-plugin	bc:kotlin-stdlib-Kt-static-call(ext fun)	116	459
 n-plugin	bc:lazy-delegate-call	7	17
 n-plugin	bc:object-INSTANCE-field	116	116
 n-plugin	bc:read-only-collection-mutator-stub(throws UnsupportedOperationException)	1	16
+n-plugin	bc:same-name-overload-of-declared-fun	56	95
 n-plugin	bc:static-method-in-companion	2	2
 n-plugin	decl:constructors	237	240
 n-plugin	decl:functions	217	697
@@ -99,6 +101,7 @@ settings	bc:inlined-fun-callsite-marker($i$f$)	4	6
 settings	bc:inlined-lambda-marker($i$a$)	8	16
 settings	bc:kotlin-stdlib-Kt-static-call(ext fun)	4	12
 settings	bc:object-INSTANCE-field	1	1
+settings	bc:same-name-overload-of-declared-fun	5	5
 settings	decl:constructors	14	14
 settings	decl:functions	14	36
 settings	decl:properties	10	64
