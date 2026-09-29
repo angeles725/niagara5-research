@@ -2184,3 +2184,98 @@ class TestToolServerReaping(unittest.TestCase):
         self.mod.grade_module("m", organized_dir=org, class_jobs=3, tool_server=True)
         self.assertEqual(self.mod._tool_servers, [])
         self.assertGreaterEqual(len(self.closed), 1)
+
+
+# ---------------------------------------------------------------------------
+# F6: exact-normalizer soundness fixes (parameter slots pinned, wide slot
+# forms, exception-table row order = catch priority)
+# ---------------------------------------------------------------------------
+class TestExactNormalizerSoundness(unittest.TestCase):
+    def setUp(self):
+        self.mod = _load()
+
+    def test_schema_version_bumped_for_tightened_exact_semantics(self):
+        self.assertEqual(self.mod.SCHEMA_VERSION, 2)
+
+    def test_param_slot_count_from_descriptor(self):
+        f = self.mod.param_slot_count
+        self.assertEqual(f("(II)I", is_static=True), 2)
+        self.assertEqual(f("(JI)I", is_static=True), 3)
+        self.assertEqual(f("(DLjava/lang/Object;)I", is_static=False), 4)
+        self.assertEqual(f("([J[[Ljava/lang/String;Z)V", is_static=False), 4)
+        self.assertEqual(f("()V", is_static=True), 0)
+
+    def test_swapped_parameter_reads_are_not_normalized_equal(self):
+        # f(int a, int b) { return a - b; } vs { return b - a; }: first-use
+        # renumbering maps both to "load 0; load 1; isub" -- a false exact.
+        a = ["0: iload_0", "1: iload_1", "2: isub", "3: ireturn"]
+        b = ["0: iload_1", "1: iload_0", "2: isub", "3: ireturn"]
+        self.assertNotEqual(self.mod.normalize_method_instructions(a, param_slots=2),
+                            self.mod.normalize_method_instructions(b, param_slots=2))
+
+    def test_non_parameter_slots_still_renumbered_by_first_use(self):
+        a = ["0: aload_0", "1: astore_3", "2: aload_3", "3: areturn"]
+        b = ["0: aload_0", "1: astore        7", "3: aload         7", "5: areturn"]
+        self.assertEqual(self.mod.normalize_method_instructions(a, param_slots=1),
+                         self.mod.normalize_method_instructions(b, param_slots=1))
+
+    def test_wide_slot_forms_are_slot_canonicalized(self):
+        a = ["0: iload_w       302", "4: ireturn"]
+        b = ["0: iload         9", "2: ireturn"]
+        self.assertEqual(self.mod.normalize_method_instructions(a),
+                         self.mod.normalize_method_instructions(b))
+
+    def test_iinc_w_slot_canonicalized_and_width_allowlisted(self):
+        a = self.mod.normalize_method_instructions(["0: iinc_w        302, 1", "6: return"])
+        b = self.mod.normalize_method_instructions(["0: iinc          9, 1", "3: return"])
+        self.assertEqual(a[0], "insn0: iinc_w 0 1")
+        names = {e.name: e for e in self.mod.ALLOWLIST}
+        self.assertIn("iinc-vs-iinc_w-width", names)
+        self.assertTrue(names["iinc-vs-iinc_w-width"].predicate(a, b))
+        c = self.mod.normalize_method_instructions(["0: iinc_w        302, 2", "6: return"])
+        self.assertFalse(names["iinc-vs-iinc_w-width"].predicate(c, b))
+
+    def test_exception_rows_keep_catch_priority_order(self):
+        raw = ["0: aload_0", "1: invokevirtual #2 // Method f:()V", "4: return",
+               "5: astore_1", "6: return", "7: astore_1", "8: return"]
+        rows = [(0, 4, 5, "Class java/io/IOException"), (0, 4, 7, "Class java/lang/Exception")]
+        self.assertNotEqual(self.mod.normalize_exception_table(raw, rows),
+                            self.mod.normalize_exception_table(raw, list(reversed(rows))))
+
+    def test_parse_javap_verbose_keeps_raw_code_rows_and_param_slots(self):
+        text = (
+            "public class Foo\n  minor version: 0\n{\n"
+            "  public int compute(int);\n"
+            "    descriptor: (I)I\n"
+            "    flags: (0x0001) ACC_PUBLIC\n"
+            "    Code:\n"
+            "      stack=2, locals=3, args_size=2\n"
+            "         0: iload_1\n"
+            "         1: ireturn\n"
+            "         2: astore_2\n"
+            "         3: iconst_m1\n"
+            "         4: ireturn\n"
+            "      Exception table:\n"
+            "         from    to  target type\n"
+            "             0     1     2   any\n"
+            "}\n"
+        )
+        m = self.mod.parse_javap_verbose(text)["methods"][("compute", "(I)I")]
+        self.assertEqual(m["param_slots"], 2)
+        self.assertEqual(m["raw_code"][0], "0: iload_1")
+        self.assertEqual(m["raw_exception_rows"], [(0, 1, 2, "any")])
+
+    @unittest.skipUnless(_jdk_available(), "JDK 25 not installed")
+    def test_real_javac_swapped_parameters_do_not_compare_equal(self):
+        with tempfile.TemporaryDirectory() as td:
+            parsed = []
+            for i, body in enumerate(("return a - b;", "return b - a;")):
+                d = os.path.join(td, str(i))
+                os.makedirs(d)
+                src = os.path.join(d, "P.java")
+                Path(src).write_text(f"public class P {{ static int f(int a, int b) {{ {body} }} }}\n")
+                subprocess.run([JDK25_JAVAC, "--release", "25", "-g", "-d", d, src], check=True, capture_output=True)
+                parsed.append(self.mod.parse_javap_verbose(
+                    self.mod.run_javap_verbose(os.path.join(d, "P.class"), javap_bin=JDK25_JAVAP)))
+            diff = self.mod.diff_normalized_classes(parsed[0], parsed[1])
+            self.assertIn(("f", "(II)I"), diff["mismatched_methods"])

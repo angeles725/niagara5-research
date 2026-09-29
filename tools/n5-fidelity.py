@@ -54,7 +54,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Optional
 
-SCHEMA_VERSION = 1
+# 2 (F6): the exact normalizer was tightened -- parameter slots are pinned (a
+# first-use renumbering let `a - b` and `b - a` compare equal), exception-table
+# rows keep their order (row order is catch priority), wide slot forms
+# (iload_w/istore_w/iinc_w) are slot-canonicalized -- and the canonical grades
+# were added. A schema-1 file can hold a false `roundtrip-exact` and has no
+# canonical grades, so it is not an up-to-date cache of this grader.
+SCHEMA_VERSION = 2
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_ORGANIZED_DIR = REPO_ROOT / "organized"
@@ -113,6 +119,12 @@ _SLOT_SHORTFORM_RE = re.compile(
 _SLOT_LONGFORM_RE = re.compile(
     r"^(aload|astore|iload|istore|lload|lstore|fload|fstore|dload|dstore|ret)$"
 )
+# the `wide`-prefixed forms javap prints as e.g. "iload_w 302" (verified against
+# a real javac 25 compile of a method with >256 locals): same operation as the
+# long form, only the slot operand is 2 bytes wide.
+_SLOT_WIDEFORM_RE = re.compile(
+    r"^(aload|astore|iload|istore|lload|lstore|fload|fstore|dload|dstore)_w$"
+)
 _IINC_RE = re.compile(r"^\s*iinc\s+(\d+)\s*,?\s*(-?\d+)\s*$")
 
 _INSTR_LINE_RE = re.compile(r"^\s*(\d+):\s*(\S+)(.*)$")
@@ -132,11 +144,35 @@ def strip_cp_indices(line: str) -> str:
     return out
 
 
+def param_slot_count(descriptor: str, is_static: bool) -> int:
+    """Number of local-variable slots the JVM pre-loads with `this` + the
+    arguments (JVMS 2.6.1): long/double take two slots. javap's own
+    `args_size` counts ARGUMENTS, not slots, so it cannot be used for this."""
+    slots = 0 if is_static else 1
+    params = descriptor[1:descriptor.index(")")] if descriptor.startswith("(") and ")" in descriptor else ""
+    i = 0
+    while i < len(params):
+        c = params[i]
+        if c == "[":
+            while params[i] == "[":
+                i += 1
+            if params[i] == "L":
+                i = params.index(";", i)
+            slots += 1
+        elif c == "L":
+            i = params.index(";", i)
+            slots += 1
+        else:
+            slots += 2 if c in "JD" else 1
+        i += 1
+    return slots
+
+
 def _slot_of(mnemonic: str, operand: str) -> Optional[int]:
     m = _SLOT_SHORTFORM_RE.match(mnemonic)
     if m:
         return int(m.group(2))
-    if _SLOT_LONGFORM_RE.match(mnemonic):
+    if _SLOT_LONGFORM_RE.match(mnemonic) or _SLOT_WIDEFORM_RE.match(mnemonic):
         operand = operand.strip().split()[0] if operand.strip() else ""
         if operand.isdigit():
             return int(operand)
@@ -215,7 +251,7 @@ def _offset_to_pos_map(records: list[dict]) -> dict[int, int]:
     return {r["offset"]: i for i, r in enumerate(records)}
 
 
-def normalize_method_instructions(raw_lines: list[str]) -> list[str]:
+def normalize_method_instructions(raw_lines: list[str], param_slots: int = 0) -> list[str]:
     """Canonicalize one method's disassembled instruction stream.
 
     ``raw_lines`` are the ``<offset>: <mnemonic> [operand] [// comment]`` lines
@@ -231,7 +267,12 @@ def normalize_method_instructions(raw_lines: list[str]) -> list[str]:
     1. constant-pool indices dropped (``strip_cp_indices``);
     2. local-variable slot numbers renumbered by FIRST USE order, so two
        methods that reference the same locals in the same order compare equal
-       regardless of which raw slot number either compiler happened to pick;
+       regardless of which raw slot number either compiler happened to pick --
+       EXCEPT the first ``param_slots`` slots (``this`` + arguments, see
+       ``param_slot_count``), which keep their number: their entry values are
+       fixed by the caller, so renumbering them would let ``a - b`` and
+       ``b - a`` compare equal. Wide forms (``iload_w``/``iinc_w``) are
+       canonicalized like the long form;
     3. branch targets (goto/if*/jsr) rewritten as a position *relative to the
        branching instruction's own position in the instruction sequence*, so a
        shift in absolute byte offsets (e.g. from a wide/narrow instruction
@@ -247,8 +288,10 @@ def normalize_method_instructions(raw_lines: list[str]) -> list[str]:
     slot_map: dict[int, int] = {}
 
     def canonical_slot(raw_slot: int) -> int:
+        if raw_slot < param_slots:
+            return raw_slot
         if raw_slot not in slot_map:
-            slot_map[raw_slot] = len(slot_map)
+            slot_map[raw_slot] = param_slots + len(slot_map)
         return slot_map[raw_slot]
 
     def _relabel(target_offset: Optional[int], pos: int) -> str:
@@ -280,7 +323,7 @@ def normalize_method_instructions(raw_lines: list[str]) -> list[str]:
         slot = _slot_of(mnemonic, rest)
         if slot is not None:
             canon = canonical_slot(slot)
-            shortform_m = _SLOT_SHORTFORM_RE.match(mnemonic)
+            shortform_m = _SLOT_SHORTFORM_RE.match(mnemonic) or _SLOT_WIDEFORM_RE.match(mnemonic)
             base = shortform_m.group(1) if shortform_m else mnemonic
             if canon <= 3:
                 mnemonic = f"{base}_{canon}"
@@ -288,7 +331,7 @@ def normalize_method_instructions(raw_lines: list[str]) -> list[str]:
             else:
                 mnemonic = base
                 rest = f" {canon}"
-        elif mnemonic == "iinc":
+        elif mnemonic in ("iinc", "iinc_w"):
             # javap prints "iinc          2, 3" (comma-separated, verified
             # against a real javac 25 compile) -- a plain-whitespace-only
             # pattern never matched, so the slot leaked through uncanonicalized.
@@ -319,6 +362,10 @@ def normalize_exception_table(raw_lines: list[str], rows: list[tuple[int, int, i
     exception a range is protected against is semantic), and the from/to/target
     offsets are relativized to instruction position the same way branch
     targets are, so a byte-offset shift elsewhere doesn't spuriously differ.
+
+    Row ORDER is kept, never sorted: when two rows cover the same instruction
+    the JVM dispatches to the first matching one (JVMS 2.10), so swapping
+    `catch (IOException)` and `catch (Exception)` rows changes behaviour.
     """
     records = _parse_code_stream(raw_lines)
     offset_to_pos = _offset_to_pos_map(records)
@@ -328,7 +375,7 @@ def normalize_exception_table(raw_lines: list[str], rows: list[tuple[int, int, i
         return f"insn{p}" if p is not None else f"abs{offset}"
 
     out = [f"[{pos_of(frm)}-{pos_of(to)}) -> {pos_of(target)}: {etype}" for frm, to, target, etype in rows]
-    return sorted(out)
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -631,6 +678,9 @@ def _parse_member_block(block: list[str], fields: dict, methods: dict) -> None:
         exceptions: list[str] = []
         code: list[str] = []
         exception_table: list[str] = []
+        raw_instr_lines: list[str] = []
+        raw_exception_rows: list[tuple[int, int, int, str]] = []
+        param_slots = param_slot_count(descriptor, "ACC_STATIC" in flags)
         has_method_parameters = False
         j = idx
         while j < len(block):
@@ -672,7 +722,7 @@ def _parse_member_block(block: list[str], fields: dict, methods: dict) -> None:
                         continue
                     raw_instr_lines.append(inner_stripped)
                     j += 1
-                code = normalize_method_instructions(raw_instr_lines)
+                code = normalize_method_instructions(raw_instr_lines, param_slots=param_slots)
                 exception_table = normalize_exception_table(raw_instr_lines, raw_exception_rows)
             elif indent == 4 and stripped == "Exceptions:":
                 j += 1
@@ -700,6 +750,10 @@ def _parse_member_block(block: list[str], fields: dict, methods: dict) -> None:
             "exceptions": sorted(exceptions),
             "exception_table": exception_table,
             "has_method_parameters": has_method_parameters,
+            # uncompared inputs of the canonical comparison (tools/n5_canon.py)
+            "raw_code": raw_instr_lines,
+            "raw_exception_rows": raw_exception_rows,
+            "param_slots": param_slots,
         }
     else:
         constant_value = None
@@ -826,6 +880,8 @@ class AllowlistEntry:
 #   - jsr / jsr_w:   both push a return address and jump to a subroutine (the
 #     instruction is deprecated/never emitted since Java 7, but the JVMS
 #     equivalence argument is identical to goto/goto_w).
+#   - iinc / iinc_w: both add the same signed constant to the same local; the
+#     `wide` form only widens the slot index and constant to 16 bits.
 #
 # Recompiling ONE decompiled class standalone (this grader's method — see
 # recompile_and_grade) gives javac a SMALLER classpath-local constant pool
@@ -836,7 +892,7 @@ class AllowlistEntry:
 # See docs/decompile-fidelity-report.md "Allowlist" for the measured effect.
 # ---------------------------------------------------------------------------
 
-_WIDE_VARIANT_PAIRS = (("ldc", "ldc_w"), ("goto", "goto_w"), ("jsr", "jsr_w"))
+_WIDE_VARIANT_PAIRS = (("ldc", "ldc_w"), ("goto", "goto_w"), ("jsr", "jsr_w"), ("iinc", "iinc_w"))
 
 
 def _make_wide_variant_collapser(narrow: str, wide: str) -> Callable[[str], str]:
