@@ -35,6 +35,16 @@ class TestPure(unittest.TestCase):
     def setUp(self):
         self.mod = _load()
 
+    def test_donors_prefer_exact_then_engine_order(self):
+        m = ("f", "(I)I")
+        verdicts = {"cfr": {m: {"verdict": "canonical", "rules": ["tail"]}},
+                    "procyon": {m: {"verdict": "exact", "rules": []}}}
+        self.assertEqual([d for d, _v in self.mod.donor_candidates(m, verdicts)], ["procyon", "cfr"])
+        verdicts["procyon"][m] = {"verdict": "mismatch", "rules": []}
+        self.assertEqual([d for d, _v in self.mod.donor_candidates(m, verdicts)], ["cfr"])
+        verdicts["cfr"][m] = {"verdict": "missing", "rules": []}
+        self.assertEqual(self.mod.donor_candidates(m, verdicts), [])
+
     def test_import_planning(self):
         plan = self.mod.plan_type_import
         primary = {"package": "p", "imports": [{"static": False, "name": "q.List"},
@@ -140,6 +150,43 @@ class TestEndToEnd(unittest.TestCase):
         self.assertIn(("<init>", "(Ljava/lang/String;II)V"), {(m["name"], m["desc"]) for m in e["methods"]})
         self.assertIn("p/E|values|()[Lp/E;", e["members"])
 
+    def test_splice_replaces_only_the_mismatched_method_and_grades_exact(self):
+        mod_dir, man = self._splice("ok", SHIPPED, PRIMARY, CFR, PROCYON)
+        rec = man["classes"]["p/Foo"]
+        self.assertEqual([(m["name"], m["descriptor"], m["donor"], m["reason"]) for m in rec["methods"]],
+                         [("f", "(II)I", "cfr", "exact")])
+        self.assertEqual(rec["self_grade"], "roundtrip-exact")
+        out = (mod_dir / "vineflower2s" / "p" / "Foo.java").read_text()
+        # only f(int,int) changed: every other byte of the primary is kept
+        self.assertEqual(out, PRIMARY.replace("static int f(int a, int b) { return b - a; }",
+                                              "static int f(int x, int y) {\n    return x - y;\n  }"))
+        self.assertEqual(rec["original_sha256"], self.mod.sha256_text(PRIMARY))
+        self.assertEqual(rec["spliced_sha256"], self.mod.sha256_text(out))
+        self.assertEqual(rec["methods"][0]["donor_sha256"], self.mod.sha256_text(CFR))
+        self.assertTrue((mod_dir / "vineflower2s" / "SPLICES.json").is_file())
+
+    def test_wrong_donor_is_never_graded_clean(self):
+        # soundness: force the mismatching Procyon f(int,int) into the primary
+        mod_dir, fake = self._module("wrong", SHIPPED, PRIMARY, CFR, PROCYON)
+        d = self.root / "wrongscan"
+        for eng, text in (("primary", PRIMARY), ("procyon", PROCYON)):
+            (d / eng / "p").mkdir(parents=True)
+            (d / eng / "p" / "Foo.java").write_text(text)
+        scans = self.mod.scan_spans([d / "primary/p/Foo.java", d / "procyon/p/Foo.java"], self.helper,
+                                    f"{JDK}/java", "")
+        text, _imports = self.mod.plan_splice(
+            PRIMARY, scans[str(d / "primary/p/Foo.java")],
+            {"procyon": (PROCYON, scans[str(d / "procyon/p/Foo.java")])},
+            {("f", "(II)I"): "procyon"}, {("f", "(II)I"): False}, "Foo")
+        self.assertIn("return a + b;", text)
+        grade = self.mod.grade_text(text, "Foo", mod_dir / "extracted" / "p" / "Foo.class", "",
+                                    f"{JDK}/javac", f"{JDK}/javap", False)
+        self.assertEqual(grade["grade"], "compiles-mismatch")
+        # and the module run never picks it: with no faithful donor nothing is written
+        mod_dir, man = self._splice("nodonor", SHIPPED, PRIMARY, PROCYON, PROCYON)
+        self.assertEqual(man["refused"]["p/Foo"]["reason"], "no-donor")
+        self.assertFalse((mod_dir / "vineflower2s" / "p" / "Foo.java").exists())
+
     def test_splice_needing_a_missing_synthetic_member_is_refused(self):
         shipped = SHIPPED.replace("int h() { return k + 1; }", "int h() { return k + 1; }\n  class In { }")
         primary = shipped.replace("return a - b;", "return b - a;")
@@ -173,6 +220,24 @@ class TestEndToEnd(unittest.TestCase):
                                  {("f", "(II)I"): "cfr"}, {("f", "(II)I"): False}, "Foo")
         self.assertEqual(cm.exception.reason, "local-class")
 
+    def test_this_and_super_are_not_nest_members(self):
+        shipped = SHIPPED.replace("return k + 1;", "return this.k + super.hashCode();")
+        primary = shipped.replace("this.k + super", "this.k - super")
+        mod_dir, man = self._splice("this", shipped, primary, shipped, None)
+        self.assertEqual(man["refused"], {})
+        self.assertEqual(man["classes"]["p/Foo"]["methods"][0]["name"], "h")
+
+    def test_donor_import_is_added_to_the_spliced_source(self):
+        shipped = SHIPPED.replace("static int f(String s) { return s.length() * 3; }",
+                                  "static int f(String s) { return new java.util.ArrayList<String>().size(); }")
+        primary = shipped.replace("new java.util.ArrayList<String>().size()", "0")
+        donor = ("package p;\nimport java.util.ArrayList;\n"
+                 + shipped.split("\n", 1)[1].replace("new java.util.ArrayList<String>()", "new ArrayList<String>()"))
+        mod_dir, man = self._splice("imp", shipped, primary, donor, None)
+        rec = man["classes"]["p/Foo"]
+        self.assertEqual(rec["imports_added"], ["java.util.ArrayList"])
+        self.assertEqual(rec["self_grade"], "roundtrip-exact")
+        self.assertIn("import java.util.ArrayList;", (mod_dir / "vineflower2s" / "p" / "Foo.java").read_text())
 
 
 if __name__ == "__main__":

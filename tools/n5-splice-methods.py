@@ -51,8 +51,11 @@ Usage:
 """
 from __future__ import annotations
 
+import argparse
+import concurrent.futures
 import hashlib
 import importlib.util
+import itertools
 import json
 import subprocess
 import sys
@@ -64,6 +67,9 @@ TOOLS_DIR = Path(__file__).resolve().parent
 HELPER_SRC = TOOLS_DIR / "n5-splice-methods" / "MethodSpans.java"
 MANIFEST_NAME = "SPLICES.json"
 MANIFEST_SCHEMA = 1
+DONOR_ENGINES = ("cfr", "procyon")
+MAX_COMBOS = 8
+_VERDICT_RANK = {"exact": 0, "allowlist": 1, "canonical": 2}
 
 
 def _load_fidelity():
@@ -90,6 +96,52 @@ def sha256_text(text: str) -> str:
 
 def _is_synthetic_name(name: str) -> bool:
     return "$" in name
+
+
+# ---------------------------------------------------------------------------
+# per-method verdicts (the grader's own comparison, one method at a time)
+# ---------------------------------------------------------------------------
+
+def per_method_verdicts(shipped: dict, recompiled: dict) -> tuple[dict, dict]:
+    """({method key: {"verdict", "rules"}} for every shipped method, structure).
+    verdict: exact | allowlist | canonical (n5_canon, rules listed) | mismatch |
+    missing (not in the recompiled class)."""
+    diff = FID.diff_normalized_classes(shipped, recompiled)
+    out = {}
+    for key in shipped["methods"]:
+        if key not in recompiled["methods"]:
+            out[key] = {"verdict": "missing", "rules": []}
+        elif key not in diff["mismatched_methods"]:
+            out[key] = {"verdict": "exact", "rules": []}
+        else:
+            bodies = diff["method_bodies"][key]
+            hit = next((e for e in FID.ALLOWLIST if e.predicate(bodies["a"], bodies["b"])), None)
+            if hit is not None:
+                out[key] = {"verdict": "allowlist", "rules": [hit.name]}
+                continue
+            rules = FID._canonical_resolution(bodies)
+            if rules is not None:
+                out[key] = {"verdict": "canonical", "rules": sorted(rules)}
+            else:
+                out[key] = {"verdict": "mismatch", "rules": [], "body_only": bodies["body_only"]}
+    structure = {"fields_match": diff["fields_match"], "attrs_match": diff["attrs_match"],
+                 "missing": diff["missing_methods"], "extra": diff["extra_methods"]}
+    return out, structure
+
+
+def donor_candidates(key, donor_verdicts: dict) -> list:
+    """[(engine, verdict)] of the donors whose `key` matches the shipped method,
+    best evidence first (exact, allowlist, canonical), DONOR_ENGINES order on a tie."""
+    found = []
+    for i, eng in enumerate(DONOR_ENGINES):
+        v = (donor_verdicts.get(eng) or {}).get(key)
+        if v and v["verdict"] in _VERDICT_RANK:
+            found.append((_VERDICT_RANK[v["verdict"]], i, eng, v))
+    return [(eng, v) for _r, _i, eng, v in sorted(found)]
+
+
+def _reason(v: dict) -> str:
+    return v["verdict"] if not v["rules"] else f"{v['verdict']}:{','.join(v['rules'])}"
 
 
 # ---------------------------------------------------------------------------
@@ -225,3 +277,231 @@ def plan_splice(primary_text: str, primary: dict, donors: dict, assignment: dict
                         break
         replacements.append((pm[mode], pm["end"], dtext[d0:d1]))
     return render_splice(primary_text, replacements, imports, primary), imports
+
+
+# ---------------------------------------------------------------------------
+# compile + grade helpers (same javac flags as n5-fidelity.recompile_and_grade)
+# ---------------------------------------------------------------------------
+
+def compile_parse(java_file: Path, class_short: str, classpath: str, javac_bin: str, javap_bin: str,
+                  tool_server: bool) -> Optional[dict]:
+    with tempfile.TemporaryDirectory(prefix=f"n5sp-{class_short}-") as td:
+        args = ["--release", "25", "-g", "-implicit:none", "-proc:none", "-nowarn", "-d", td]
+        if classpath:
+            args += ["-cp", classpath]
+        args.append(str(java_file))
+        rc, _o, _e = FID._run_jdk_tool("javac", javac_bin, args, FID.DEFAULT_JAVAC_TIMEOUT_SECONDS, tool_server)
+        found = list(Path(td).rglob(f"{class_short}.class"))
+        if rc != 0 or not found:
+            return None
+        return FID.parse_javap_verbose(FID.run_javap_verbose(str(found[0]), javap_bin=javap_bin,
+                                                             tool_server=tool_server))
+
+
+def grade_text(text: str, class_short: str, shipped_class: Path, classpath: str, javac_bin: str,
+               javap_bin: str, tool_server: bool) -> dict:
+    """The grader's own single-rung grade of a source text (fresh temp dirs)."""
+    with tempfile.TemporaryDirectory(prefix=f"n5sg-{class_short}-") as td:
+        src = Path(td) / "src" / f"{class_short}.java"
+        src.parent.mkdir()
+        src.write_text(text, encoding="utf-8")
+        return FID.recompile_and_grade(str(src), class_short, classpath, str(shipped_class), str(Path(td) / "out"),
+                                       javac_bin, javap_bin, tool_server=tool_server)
+
+
+# ---------------------------------------------------------------------------
+# one class, one module
+# ---------------------------------------------------------------------------
+
+def splice_class(fqcn: str, mod_dir: Path, tree: str, *, classpath: str, helper_dir: Path, javac_bin: str,
+                 javap_bin: str, java_bin: str, tool_server: bool) -> dict:
+    """{"status": "spliced", ...record, "_text": spliced} or
+    {"status": "refused"|"not-candidate", "reason", "detail"}."""
+    class_short = fqcn.rsplit("/", 1)[-1]
+    shipped_class = mod_dir / "extracted" / f"{fqcn}.class"
+    primary_tree = f"{tree}p" if (mod_dir / f"{tree}p" / f"{fqcn}.java").is_file() else tree
+    primary_path = mod_dir / primary_tree / f"{fqcn}.java"
+    if not primary_path.is_file() or not shipped_class.is_file():
+        return {"status": "not-candidate", "reason": "no-source", "detail": str(primary_path)}
+    primary_text = primary_path.read_text(encoding="utf-8")
+    if any(ord(ch) > 0xFFFF for ch in primary_text):
+        return {"status": "refused", "reason": "non-bmp", "detail": "javac offsets are UTF-16"}
+    shipped = FID.parse_javap_verbose(FID.run_javap_verbose(str(shipped_class), javap_bin=javap_bin,
+                                                            tool_server=tool_server))
+    primary_parsed = compile_parse(primary_path, class_short, classpath, javac_bin, javap_bin, tool_server)
+    if primary_parsed is None:
+        return {"status": "not-candidate", "reason": "primary-no-compile", "detail": primary_tree}
+    verdicts, structure = per_method_verdicts(shipped, primary_parsed)
+    base = {"primary_tree": primary_tree}
+    non_synth = [k for k in structure["missing"] + structure["extra"] if not _is_synthetic_name(k[0])]
+    if not structure["fields_match"] or not structure["attrs_match"] or non_synth:
+        return {**base, "status": "refused", "reason": "structural-mismatch",
+                "detail": f"fields={structure['fields_match']} attrs={structure['attrs_match']} "
+                          f"members={[list(k) for k in non_synth][:4]}"}
+    todo = sorted(k for k, v in verdicts.items() if v["verdict"] == "mismatch")
+    if not todo and not structure["missing"] and not structure["extra"]:
+        return {**base, "status": "not-candidate", "reason": "already-clean", "detail": ""}
+    for k in todo:
+        if k[0] == "<clinit>":
+            return {**base, "status": "refused", "reason": "clinit", "detail": f"{k[0]}{k[1]}"}
+        if _is_synthetic_name(k[0]):
+            return {**base, "status": "refused", "reason": "synthetic-method", "detail": f"{k[0]}{k[1]}"}
+    if not todo:
+        return {**base, "status": "refused", "reason": "structural-mismatch", "detail": "synthetic members only"}
+
+    with tempfile.TemporaryDirectory(prefix=f"n5sd-{class_short}-") as td:
+        donor_texts, donor_files, donor_verdicts = {}, {}, {}
+        for eng in DONOR_ENGINES:
+            jar = FID.DEFAULT_CFR_JAR if eng == "cfr" else FID.DEFAULT_PROCYON_JAR
+            src, _reason_ = FID._decompile_one_class_with(java_bin, eng, jar, shipped_class, Path(td) / eng)
+            if src is None:
+                continue
+            parsed = compile_parse(Path(src), class_short, classpath, javac_bin, javap_bin, tool_server)
+            if parsed is None:
+                continue
+            donor_texts[eng] = Path(src).read_text(encoding="utf-8")
+            donor_files[eng] = Path(src)
+            donor_verdicts[eng] = per_method_verdicts(shipped, parsed)[0]
+        options = {k: donor_candidates(k, donor_verdicts) for k in todo}
+        lacking = [k for k, v in options.items() if not v]
+        if lacking:
+            return {**base, "status": "refused", "reason": "no-donor", "donors_compiled": sorted(donor_verdicts),
+                    "detail": ", ".join(f"{k[0]}{k[1]}" for k in lacking[:4])}
+        used = sorted({eng for v in options.values() for eng, _ in v})
+        try:
+            scans = scan_spans([primary_path] + [donor_files[e] for e in used], helper_dir, java_bin, classpath)
+        except Refusal as r:
+            return {**base, "status": "refused", "reason": r.reason, "detail": r.detail}
+        primary_scan = scans[str(primary_path)]
+        donors = {e: (donor_texts[e], scans[str(donor_files[e])]) for e in used}
+        full_decl = {k: not verdicts[k].get("body_only", True) for k in todo}
+        last = None
+        for combo in itertools.islice(itertools.product(*(options[k] for k in todo)), MAX_COMBOS):
+            assignment = {k: eng for k, (eng, _v) in zip(todo, combo)}
+            try:
+                text, imports = plan_splice(primary_text, primary_scan, donors, assignment, full_decl, class_short)
+            except Refusal as r:
+                last = (r.reason, r.detail)
+                continue
+            grade = grade_text(text, class_short, shipped_class, classpath, javac_bin, javap_bin, tool_server)
+            if grade["grade"] == "no-compile":
+                last = ("splice-no-compile", grade.get("first_error") or "")
+                continue
+            if not FID._is_clean(grade["grade"]):
+                last = ("splice-not-clean", ", ".join(f"{m[0]}{m[1]}" for m in grade["mismatched_methods"][:4]))
+                continue
+            return {**base, "status": "spliced",
+                    "original_sha256": sha256_text(primary_text), "spliced_sha256": sha256_text(text),
+                    "methods": [{"name": k[0], "descriptor": k[1], "donor": eng, "reason": _reason(v),
+                                 "donor_sha256": sha256_text(donor_texts[eng]),
+                                 "span": "declaration" if full_decl[k] else "after-modifiers"}
+                                for k, (eng, v) in zip(todo, combo)],
+                    "imports_added": imports, "self_grade": grade["grade"],
+                    "canonical_rules": grade.get("canonical_rules", []), "_text": text}
+        return {**base, "status": "refused", "reason": last[0], "detail": last[1][:300]}
+
+
+def splice_module(module: str, organized_dir: Path, tree: str, out_tree: str, targets: list, *, classpath: str,
+                  helper_dir: Path, javac_bin: str, javap_bin: str, java_bin: str, tool_server: bool,
+                  class_jobs: int = 1) -> dict:
+    mod_dir = Path(organized_dir) / module
+    out_dir = mod_dir / out_tree
+
+    def one(fqcn: str):
+        try:
+            return fqcn, splice_class(fqcn, mod_dir, tree, classpath=classpath, helper_dir=helper_dir,
+                                      javac_bin=javac_bin, javap_bin=javap_bin, java_bin=java_bin,
+                                      tool_server=tool_server)
+        except Exception as exc:  # noqa: BLE001 -- one class must not abort the module
+            return fqcn, {"status": "refused", "reason": "tool-error", "detail": repr(exc)[:300]}
+
+    if class_jobs > 1 and len(targets) > 1:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=class_jobs) as pool:
+            results = list(pool.map(one, targets))
+    else:
+        results = [one(f) for f in targets]
+    if out_dir.is_dir():
+        for old in out_dir.rglob("*.java"):
+            old.unlink()
+    classes, refused, skipped = {}, {}, {}
+    for fqcn, rec in sorted(results):
+        status = rec.pop("status")
+        if status == "spliced":
+            text = rec.pop("_text")
+            dest = out_dir / f"{fqcn}.java"
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_text(text, encoding="utf-8")
+            classes[fqcn] = rec
+        elif status == "refused":
+            refused[fqcn] = rec
+        else:
+            skipped[fqcn] = rec
+    manifest = {"schema": MANIFEST_SCHEMA, "module": module, "source_tree": tree,
+                "tool": "tools/n5-splice-methods.py",
+                "helper_sha256": hashlib.sha256(HELPER_SRC.read_bytes()).hexdigest(),
+                "donor_engines": list(DONOR_ENGINES), "classes": classes, "refused": refused,
+                "not_candidates": skipped}
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / MANIFEST_NAME).write_text(json.dumps(manifest, indent=1, sort_keys=True) + "\n")
+    return manifest
+
+
+def main(argv: Optional[list] = None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--targets", required=True, help="JSON file: [[module, fqcn], ...]")
+    ap.add_argument("--modules", default=None, help="restrict --targets to these modules")
+    ap.add_argument("--organized-dir", default=str(FID.DEFAULT_ORGANIZED_DIR))
+    ap.add_argument("--tree", default="vineflower2")
+    ap.add_argument("--out-tree", default=None, help="default: <tree>s")
+    ap.add_argument("--modules-dir", default=str(FID.DEFAULT_MODULES_DIR))
+    ap.add_argument("--bin-ext-dir", default=str(FID.DEFAULT_BIN_EXT_DIR))
+    ap.add_argument("--jre-dir", default=str(FID.DEFAULT_JRE_DIR))
+    ap.add_argument("--bc-variant", choices=FID.BC_VARIANTS, default=FID.DEFAULT_BC_VARIANT)
+    ap.add_argument("--classpath-cache-dir", default=None)
+    ap.add_argument("--helper-cache-dir", default=None)
+    ap.add_argument("--jobs", type=int, default=1)
+    ap.add_argument("--class-jobs", type=int, default=1)
+    ap.add_argument("--tool-server", action="store_true")
+    args = ap.parse_args(argv)
+    by_module: dict = {}
+    for module, fqcn in json.loads(Path(args.targets).read_text()):
+        by_module.setdefault(module, []).append(fqcn)
+    if args.modules:
+        keep = {m.strip() for m in args.modules.split(",")}
+        by_module = {m: v for m, v in by_module.items() if m in keep}
+    tmp = Path(tempfile.gettempdir())
+    cache = Path(args.classpath_cache_dir) if args.classpath_cache_dir else tmp / "n5-fidelity-classpath-cache"
+    classpath = FID.build_classpath(cache, Path(args.modules_dir), Path(args.bin_ext_dir), bc_variant=args.bc_variant,
+                                    jre_dir=Path(args.jre_dir) if args.jre_dir else None)
+    helper = compile_helper(Path(args.helper_cache_dir) if args.helper_cache_dir else tmp / "n5-splice-methods",
+                            FID.DEFAULT_JAVAC)
+    out_tree = args.out_tree or args.tree + "s"
+    failed = []
+
+    def run(module: str):
+        try:
+            man = splice_module(module, Path(args.organized_dir), args.tree, out_tree, sorted(by_module[module]),
+                                classpath=classpath, helper_dir=helper, javac_bin=FID.DEFAULT_JAVAC,
+                                javap_bin=FID.DEFAULT_JAVAP, java_bin=FID.DEFAULT_JAVA,
+                                tool_server=args.tool_server, class_jobs=args.class_jobs)
+            reasons: dict = {}
+            for r in man["refused"].values():
+                reasons[r["reason"]] = reasons.get(r["reason"], 0) + 1
+            print(f"[{module}] spliced {len(man['classes'])} refused {reasons} "
+                  f"not-candidates {len(man['not_candidates'])}", file=sys.stderr, flush=True)
+        except Exception as exc:  # noqa: BLE001 -- one module must not abort the batch
+            print(f"[{module}] FAILED: {exc!r}", file=sys.stderr, flush=True)
+            failed.append(module)
+
+    if args.jobs > 1 and len(by_module) > 1:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=args.jobs) as pool:
+            list(pool.map(run, sorted(by_module)))
+    else:
+        for m in sorted(by_module):
+            run(m)
+    FID.shutdown_tool_servers()
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
