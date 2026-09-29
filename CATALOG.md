@@ -2,7 +2,7 @@
 
 # Block catalog
 
-Total: **121 blocks**
+Total: **122 blocks**
 
 | Block | File | Title |
 |-------|------|-------|
@@ -127,3 +127,4 @@ Total: **121 blocks**
 | 119 | [niagara5-block119.md](niagara5-block119.md) | Source-map census and minified-JS audit: 86 JSON source maps ship, only 42 carry originals (all Babel-transpiled driver/workbench code that already ships readable), none of the 234 minified JS files has a map, and the 42 originals are now recovered |
 | 120 | [niagara5-block120.md](niagara5-block120.md) | Pattern-switch decompile fidelity: 26 of 27 `typeSwitch` sites render as valid, faithful Java in Vineflower, one site (`PlatformStationManager.createStation`) is pseudo-Java in every tree and now has a bytecode-verified reconstruction |
 | 121 | [niagara5-block121.md](niagara5-block121.md) | The four Kotlin-compiled Tridium jars: 696 classes all decode from `kotlin.Metadata`, the corpus trees for them are already Vineflower Kotlin-plugin output (not a Java decompile), 73 sites are unreadable in them, and 1 of 42 audited corpus claims is contradicted |
+| 122 | [niagara5-block122.md](niagara5-block122.md) | The XProtect .NET bridge and the FFmpeg JNI wrapper: 14 of 14 CLR assemblies decompiled, a loopback SOAP bridge whose session key is enforced only under TLS, 24 of 26 FFmpeg natives bound (2 throw `UnsatisfiedLinkError`), and LGPL-2.1 FFmpeg 8.1.1 |
