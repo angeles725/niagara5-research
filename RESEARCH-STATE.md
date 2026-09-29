@@ -44,16 +44,16 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
      Field names use UNDERSCORES on purpose: they must never collide with the prose greps below. -->
 <!-- research-state.v1 -->
 schema: research-state.v1
-covered_blocks: 119
-gaps_closed: 390
-known_gaps: 515
-investigable_open: 25
-requires_execution_open: 24
+covered_blocks: 120
+gaps_closed: 391
+known_gaps: 520
+investigable_open: 27
+requires_execution_open: 26
 blocked_open: 64
 deferred_open: 12
 undocumented_findings: 0
-blocks_since_retro: 4
-last_iteration_ts: 2026-09-29T01:20:00Z
+blocks_since_retro: 5
+last_iteration_ts: 2026-09-29T02:31:00Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
      applies to every corpus (single-focus and campaign alike); the stall-detection instrument reads it
@@ -61,9 +61,9 @@ last_iteration_ts: 2026-09-29T01:20:00Z
 
 ## Coverage
 
-- **Covered blocks**: 119 (B1..B119)
-- **Coverage metric**: 390 / 515 closed
-- **Last iteration**: 2026-09-29 — B119 source-map census + minified-JS audit (closes B117-G3); focus: decompile fidelity
+- **Covered blocks**: 120 (B1..B120)
+- **Coverage metric**: 391 / 520 closed
+- **Last iteration**: 2026-09-29 — B120 pattern-switch decompile fidelity (closes B116-G5); focus: decompile fidelity
 
 ## Gap-backlog
 
@@ -492,7 +492,7 @@ last_iteration_ts: 2026-09-29T01:20:00Z
 | high | B116-G2 Audit corpus quotes of the D1-D11 semantically-wrong methods | corpus | ✅ covered — orchestrator (rg over niagara5-block*.md: only B35 §35 cites BNrioNetwork for class hierarchy, unaffected) |
 | medium | B116-G3 Classify the 152 docSource-covered decompiled files that do not recompile | organized/docSource | requires-execution → §19 |
 | medium | B116-G4 Measure a whole-tree Vineflower re-run with library context (-e) against D1-D11 | n5-decompile v2 | requires-execution → §19 |
-| medium | B116-G5 Review the 27 typeSwitch / 10 MatchException classes decompiled as pseudo-Java | organized/ | pending |
+| medium | B116-G5 Review the 27 typeSwitch / 10 MatchException classes decompiled as pseudo-Java | organized/ | ✅ covered — B120 (27 sites/23 classes and 15 MatchException methods/10 classes reproduced; v1/v2 render 26 of 27 typeSwitch sites faithfully, createStation is pseudo-Java in all 5 trees and has a bytecode-exact reconstruction; unnamed `case T _` rendered as varN; no wrong order/guard/default/record loss found) |
 | low | B116-G6 Independent second review of the 113 benign SEM? verdicts | evidence/b116 | pending |
 | high | B117-G1 Durable decompile of the 10 out-of-pipeline Tridium jars (etc/m2, lib doclet) and devkit LIB-INF Tridium jars | etc/m2 + devkit | pending |
 | medium | B117-G2 Audit corpus claims read from Java decompiles of the 4 Kotlin-compiled Tridium jars | corpus + etc/m2 | pending |
@@ -515,6 +515,11 @@ last_iteration_ts: 2026-09-29T01:20:00Z
 | medium | B119-G3 Split is_minified_js into minified (mean >= 250 B) vs long-line-only in n5-extract-census.py; re-run sweep (132/102 not 234) | tools | pending |
 | low | B119-G4 Cite-form audit: file.js:line citations whose file has fewer lines (B21 built.min.js:1-400) | corpus | pending |
 | low | B119-G5 Compile the shipped .less and compare to shipped .css through the 42 LESS maps | module resources | requires-execution → §19 |
+| medium | B120-G1 Promote the 7 layout-only pattern-switch rows (S/D) to exact bytecode; decide if BStationCopier arm swap + duplicated exits are behaviour-preserving | evidence/b120 | pending |
+| medium | B120-G2 Root cause of Vineflower resugar failure at PlatformStationManager.createStation only (bisect minimal class; -e / pattern flags) | n5-decompile v2 | requires-execution → §19 |
+| low | B120-G3 Machine-check `when` guards (restart-index assignments) of pseudo-Java trees at the 9 guard-loop sites | evidence/b120 | pending |
+| low | B120-G4 Census the Procyon 0.6.0 InvokeDynamicRewriter NPE (empty files) across all indy classes | decompilers | requires-execution → §19 |
+| low | B120-G5 Reconcile _lib-inf-3p (33,713) / _etc-m2 (945) class counts with B117's 24,896 / 958 | organized/ | pending |
 | low | B104-G5 Live-station confirmation of B104's static driver/sync findings | station | requires-execution → §19 |
 | low | B106-G1 Gradle --info/dependencyInsight trace of which wiring puts the moduleTest jar on compileModuleTestJava | Gradle run | requires-execution → §19 |
 
@@ -641,6 +646,7 @@ last_iteration_ts: 2026-09-29T01:20:00Z
 | 117 | 2026-09-28 | Extraction + native fidelity: 21,751 classes byte-exact, 356 signed jars verified, 0 obfuscation (ZKM positive control), 24,896 nested-jar + 958 out-of-pipeline Tridium classes never decompiled, 45/46 single-instrument native claims corroborated; §14 pointers B30/B43/B61/B63/B87/B94/B113 | B117 | yes · opus | 9 new — B117-G1..G9 |
 | 118 | 2026-09-28 | Logic-recovery method ladder: conservative line-mapped Vineflower (669/669 lines match docSource), LineNumberTable pattern discriminator, SootUp/Joern bytecode call graphs on class-file 69, differential execution + jqwik + JaCoCo, CodeQL traced vs Joern dataflow, krak2 -r 20,724/20,724 byte-identical; §14 pointers B107, B115 | B118 | yes · opus | 7 new — B118-G1..G7 |
 | 119 | 2026-09-29 | Source-map census + minified-JS audit (B117-G3): 86 JSON maps (42 with originals, all Babel-transpiled driver/workbench JS that already ships readable; 42 LESS; 1 underscore; 1 empty), 0 of 234 minified JS files has a map, 132 truly minified + 102 long-line-only, 15 minified citations in 5 blocks none contradicted; tools/n5-sourcemap-recover.py (RED→GREEN 16 tests) recovered 42 originals; §14 pointer B75 | B119 | yes · sonnet | 5 new — B119-G1..G5 |
+| 120 | 2026-09-29 | Pattern-switch decompile fidelity (B116-G5): census reproduced (27 typeSwitch sites/23 classes, 7 enumSwitch, 15 MatchException methods/10 classes; 0 sites in 3P/etc-m2 roots), 5 trees x 49 methods graded by javac-25 recompile + normalized bytecode with BSM labels injected; v1/v2 faithful for 26/27 typeSwitch sites, createStation pseudo-Java in all trees (reconstruction bytecode-exact), unnamed `case T _` rendered as varN (docSource BWbProfile:598), cons/CFR/Procyon never compilable for typeSwitch but labels 29/29 exact, Procyon NPE empties 10 units | B120 | yes · sonnet | 5 new — B120-G1..G5 |
 
 ## Blocked gaps (each tagged with what it needs)
 

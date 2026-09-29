@@ -1,0 +1,3447 @@
+[
+ {
+  "unit": {
+   "mod": "_bin-ext/niagarad",
+   "top_rel": "com/tridium/niagarad/servlet/WiFiServlet",
+   "targets": [
+    "com/tridium/niagarad/servlet/WiFiServlet$CcInfo"
+   ],
+   "groups": [
+    "matchexception"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": true,
+    "shim": "pea",
+    "methods": {
+     "com/tridium/niagarad/servlet/WiFiServlet$CcInfo": {
+      "equals(Ljava/lang/Object;)Z": {
+       "verdict": "mismatch",
+       "kind": "other+labels-equal+effects-equal",
+       "first_diff": [
+        "insn2: ifeq rel+15",
+        "insn2: ifeq rel+28"
+       ],
+       "effect_diff": []
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": true,
+    "shim": "pea",
+    "methods": {
+     "com/tridium/niagarad/servlet/WiFiServlet$CcInfo": {
+      "equals(Ljava/lang/Object;)Z": {
+       "verdict": "mismatch",
+       "kind": "other+labels-equal+effects-equal",
+       "first_diff": [
+        "insn2: ifeq rel+15",
+        "insn2: ifeq rel+28"
+       ],
+       "effect_diff": []
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cons": {
+    "pseudo": [],
+    "compiled": false,
+    "shim": "failed",
+    "errors": [
+     "organized/_bin-ext/niagarad/vineflower-cons/com/tridium/niagarad/servlet/WiFiServlet.java:1111: error: reference to doPrivileged is ambiguous",
+     "organized/_bin-ext/niagarad/vineflower-cons/com/tridium/niagarad/servlet/WiFiServlet.java:1362: error: cannot find symbol",
+     "organized/_bin-ext/niagarad/vineflower-cons/com/tridium/niagarad/servlet/WiFiServlet.java:1367: error: cannot find symbol",
+     "organized/_bin-ext/niagarad/vineflower-cons/com/tridium/niagarad/servlet/WiFiServlet.java:1372: error: cannot find symbol",
+     "organized/_bin-ext/niagarad/vineflower-cons/com/tridium/niagarad/servlet/WiFiServlet.java:1377: error: cannot find symbol"
+    ],
+    "status": "no-compile"
+   },
+   "cfr": {
+    "pseudo": [],
+    "compiled": false,
+    "shim": "failed",
+    "errors": [
+     "<scratch>/dec/cfr/_bin-ext_niagarad/com/tridium/niagarad/servlet/WiFiServlet.java:1010: error: reference to doPrivileged is ambiguous"
+    ],
+    "status": "no-compile"
+   },
+   "procyon": {
+    "pseudo": [],
+    "compiled": true,
+    "shim": "pea",
+    "methods": {
+     "com/tridium/niagarad/servlet/WiFiServlet$CcInfo": {
+      "equals(Ljava/lang/Object;)Z": {
+       "verdict": "mismatch",
+       "kind": "other+labels-equal+effects-equal",
+       "first_diff": [
+        "insn2: ifeq rel+15",
+        "insn2: ifne rel+3"
+       ],
+       "effect_diff": []
+      }
+     }
+    },
+    "status": "compiled"
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "_bin-ext/nre",
+   "top_rel": "com/tridium/crypto/core/cert/CertUtils",
+   "targets": [
+    "com/tridium/crypto/core/cert/CertUtils"
+   ],
+   "groups": [
+    "typeSwitch_sites"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": true,
+    "shim": "pea",
+    "methods": {
+     "com/tridium/crypto/core/cert/CertUtils": {
+      "signCertificate(Lorg/bouncycastle/pkcs/jcajce/JcaPKCS10CertificationRequest;Ljava/security/cert/X509Certificate;Ljava/security/PrivateKey;Lcom/tridium/crypto/core/cert/NSigningParameters;Z)Ljava/security/cert/X509Certificate;": {
+       "verdict": "exact"
+      },
+      "getPrivateKeyFromObject(Ljava/lang/Object;Ljava/lang/String;)Ljava/security/PrivateKey;": {
+       "verdict": "mismatch",
+       "kind": "other+labels-equal+effects-equal",
+       "first_diff": [
+        "insn7: tableswitch {-1:rel+127, 0:rel+1, 1:rel+22, 2:rel+44, 3:rel+86, default:rel+127}",
+        "insn7: tableswitch {-1:rel+131, 0:rel+1, 1:rel+23, 2:rel+46, 3:rel+89, default:rel+131}"
+       ],
+       "effect_diff": []
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": true,
+    "shim": "pea",
+    "methods": {
+     "com/tridium/crypto/core/cert/CertUtils": {
+      "signCertificate(Lorg/bouncycastle/pkcs/jcajce/JcaPKCS10CertificationRequest;Ljava/security/cert/X509Certificate;Ljava/security/PrivateKey;Lcom/tridium/crypto/core/cert/NSigningParameters;Z)Ljava/security/cert/X509Certificate;": {
+       "verdict": "exact"
+      },
+      "getPrivateKeyFromObject(Ljava/lang/Object;Ljava/lang/String;)Ljava/security/PrivateKey;": {
+       "verdict": "mismatch",
+       "kind": "other+labels-equal+effects-equal",
+       "first_diff": [
+        "insn7: tableswitch {-1:rel+127, 0:rel+1, 1:rel+22, 2:rel+44, 3:rel+86, default:rel+127}",
+        "insn7: tableswitch {-1:rel+131, 0:rel+1, 1:rel+23, 2:rel+46, 3:rel+89, default:rel+131}"
+       ],
+       "effect_diff": []
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cons": {
+    "pseudo": [
+     "SwitchBootstraps",
+     "typeSwitch<"
+    ],
+    "compiled": false,
+    "errors": [
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/crypto/core/cert/CertUtils.java:284: error: ')' expected",
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/crypto/core/cert/CertUtils.java:284: error: case, default, or '}' expected",
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/crypto/core/cert/CertUtils.java:284: error: case, default, or '}' expected",
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/crypto/core/cert/CertUtils.java:284: error: case, default, or '}' expected",
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/crypto/core/cert/CertUtils.java:284: error: case, default, or '}' expected",
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/crypto/core/cert/CertUtils.java:284: error: case, default, or '}' expected",
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/crypto/core/cert/CertUtils.java:284: error: case, default, or '}' expected",
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/crypto/core/cert/CertUtils.java:284: error: case, default, or '}' expected"
+    ],
+    "status": "no-compile"
+   },
+   "cfr": {
+    "pseudo": [
+     "SwitchBootstraps"
+    ],
+    "compiled": false,
+    "shim": "failed",
+    "errors": [
+     "<scratch>/dec/cfr/_bin-ext_nre/com/tridium/crypto/core/cert/CertUtils.java:329: error: incompatible types: String cannot be converted to Lookup",
+     "<scratch>/dec/cfr/_bin-ext_nre/com/tridium/crypto/core/cert/CertUtils.java:342: error: switch has both boolean values and a default label",
+     "<scratch>/dec/cfr/_bin-ext_nre/com/tridium/crypto/core/cert/CertUtils.java:582: error: reference to doPrivileged is ambiguous",
+     "<scratch>/dec/cfr/_bin-ext_nre/com/tridium/crypto/core/cert/CertUtils.java:772: error: incompatible types: Object cannot be converted to String",
+     "<scratch>/dec/cfr/_bin-ext_nre/com/tridium/crypto/core/cert/CertUtils.java:862: error: incompatible types: String cannot be converted to Lookup",
+     "<scratch>/dec/cfr/_bin-ext_nre/com/tridium/crypto/core/cert/CertUtils.java:911: error: switch has both boolean values and a default label",
+     "<scratch>/dec/cfr/_bin-ext_nre/com/tridium/crypto/core/cert/CertUtils.java:1320: error: reference to doPrivileged is ambiguous"
+    ],
+    "status": "no-compile"
+   },
+   "procyon": {
+    "pseudo": [
+     "ProcyonInvokeDynamic",
+     "SwitchBootstraps",
+     "invokedynamic(!)"
+    ],
+    "compiled": false,
+    "shim": "failed",
+    "errors": [
+     "<scratch>/dec/procyon/_bin-ext_nre/com/tridium/crypto/core/cert/CertUtils.java:281: error: incompatible types: boolean cannot be converted to int",
+     "<scratch>/dec/procyon/_bin-ext_nre/com/tridium/crypto/core/cert/CertUtils.java:294: error: switch has both boolean values and a default label",
+     "<scratch>/dec/procyon/_bin-ext_nre/com/tridium/crypto/core/cert/CertUtils.java:333: error: incompatible types: Certificate cannot be converted to X509Certificate",
+     "<scratch>/dec/procyon/_bin-ext_nre/com/tridium/crypto/core/cert/CertUtils.java:350: error: cannot find symbol",
+     "<scratch>/dec/procyon/_bin-ext_nre/com/tridium/crypto/core/cert/CertUtils.java:524: error: reference to doPrivileged is ambiguous",
+     "<scratch>/dec/procyon/_bin-ext_nre/com/tridium/crypto/core/cert/CertUtils.java:800: error: incompatible types: boolean cannot be converted to int",
+     "<scratch>/dec/procyon/_bin-ext_nre/com/tridium/crypto/core/cert/CertUtils.java:1083: error: reference to doPrivileged is ambiguous",
+     "<scratch>/dec/procyon/_bin-ext_nre/com/tridium/crypto/core/cert/CertUtils.java:1313: error: incompatible types: Object cannot be converted to int"
+    ],
+    "status": "no-compile"
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "_bin-ext/nre",
+   "top_rel": "com/tridium/crypto/core/io/CoreCryptoManager",
+   "targets": [
+    "com/tridium/crypto/core/io/CoreCryptoManager"
+   ],
+   "groups": [
+    "typeSwitch_sites"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": true,
+    "shim": "pea",
+    "methods": {
+     "com/tridium/crypto/core/io/CoreCryptoManager": {
+      "getPublicKeyType(Ljava/lang/String;)Ljava/lang/String;": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": true,
+    "shim": "pea",
+    "methods": {
+     "com/tridium/crypto/core/io/CoreCryptoManager": {
+      "getPublicKeyType(Ljava/lang/String;)Ljava/lang/String;": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cons": {
+    "pseudo": [
+     "SwitchBootstraps",
+     "typeSwitch<"
+    ],
+    "compiled": false,
+    "errors": [
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/crypto/core/io/CoreCryptoManager.java:710: error: ')' expected",
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/crypto/core/io/CoreCryptoManager.java:710: error: case, default, or '}' expected",
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/crypto/core/io/CoreCryptoManager.java:710: error: case, default, or '}' expected",
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/crypto/core/io/CoreCryptoManager.java:710: error: case, default, or '}' expected",
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/crypto/core/io/CoreCryptoManager.java:710: error: case, default, or '}' expected",
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/crypto/core/io/CoreCryptoManager.java:710: error: case, default, or '}' expected",
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/crypto/core/io/CoreCryptoManager.java:710: error: case, default, or '}' expected",
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/crypto/core/io/CoreCryptoManager.java:710: error: case, default, or '}' expected"
+    ],
+    "status": "no-compile"
+   },
+   "cfr": {
+    "pseudo": [
+     "SwitchBootstraps"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/cfr/_bin-ext_nre/com/tridium/crypto/core/io/CoreCryptoManager.java:389: error: 'catch' without 'try'",
+     "<scratch>/dec/cfr/_bin-ext_nre/com/tridium/crypto/core/io/CoreCryptoManager.java:487: error: 'catch' without 'try'",
+     "<scratch>/dec/cfr/_bin-ext_nre/com/tridium/crypto/core/io/CoreCryptoManager.java:737: error: 'finally' without 'try'",
+     "<scratch>/dec/cfr/_bin-ext_nre/com/tridium/crypto/core/io/CoreCryptoManager.java:1487: error: illegal start of type",
+     "<scratch>/dec/cfr/_bin-ext_nre/com/tridium/crypto/core/io/CoreCryptoManager.java:1487: error: '.' expected",
+     "<scratch>/dec/cfr/_bin-ext_nre/com/tridium/crypto/core/io/CoreCryptoManager.java:1487: error: : expected",
+     "<scratch>/dec/cfr/_bin-ext_nre/com/tridium/crypto/core/io/CoreCryptoManager.java:1487: error: ';' expected",
+     "<scratch>/dec/cfr/_bin-ext_nre/com/tridium/crypto/core/io/CoreCryptoManager.java:1487: error: ';' expected"
+    ],
+    "status": "no-compile"
+   },
+   "procyon": {
+    "pseudo": [
+     "ProcyonInvokeDynamic",
+     "SwitchBootstraps",
+     "invokedynamic(!)"
+    ],
+    "compiled": false,
+    "shim": "failed",
+    "errors": [
+     "<scratch>/dec/procyon/_bin-ext_nre/com/tridium/crypto/core/io/CoreCryptoManager.java:288: error: reference to doPrivileged is ambiguous",
+     "<scratch>/dec/procyon/_bin-ext_nre/com/tridium/crypto/core/io/CoreCryptoManager.java:371: error: reference to doPrivileged is ambiguous",
+     "<scratch>/dec/procyon/_bin-ext_nre/com/tridium/crypto/core/io/CoreCryptoManager.java:477: error: reference to doPrivileged is ambiguous",
+     "<scratch>/dec/procyon/_bin-ext_nre/com/tridium/crypto/core/io/CoreCryptoManager.java:639: error: reference to doPrivileged is ambiguous",
+     "<scratch>/dec/procyon/_bin-ext_nre/com/tridium/crypto/core/io/CoreCryptoManager.java:672: error: reference to doPrivileged is ambiguous",
+     "<scratch>/dec/procyon/_bin-ext_nre/com/tridium/crypto/core/io/CoreCryptoManager.java:732: error: incompatible types: boolean cannot be converted to int",
+     "<scratch>/dec/procyon/_bin-ext_nre/com/tridium/crypto/core/io/CoreCryptoManager.java:748: error: switch has both boolean values and a default label",
+     "<scratch>/dec/procyon/_bin-ext_nre/com/tridium/crypto/core/io/CoreCryptoManager.java:810: error: reference to doPrivileged is ambiguous"
+    ],
+    "status": "no-compile"
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "_bin-ext/nre",
+   "top_rel": "com/tridium/nre/security/UserLoginHistoryStore",
+   "targets": [
+    "com/tridium/nre/security/UserLoginHistoryStore$EventThread"
+   ],
+   "groups": [
+    "typeSwitch_sites"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/nre/security/UserLoginHistoryStore$EventThread": {
+      "serviceEvent(Lcom/tridium/nre/security/AbstractUserLoginEvent;)V": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/nre/security/UserLoginHistoryStore$EventThread": {
+      "serviceEvent(Lcom/tridium/nre/security/AbstractUserLoginEvent;)V": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cons": {
+    "pseudo": [
+     "SwitchBootstraps",
+     "typeSwitch<"
+    ],
+    "compiled": false,
+    "errors": [
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/nre/security/UserLoginHistoryStore.java:409: error: ')' expected",
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/nre/security/UserLoginHistoryStore.java:409: error: case, default, or '}' expected",
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/nre/security/UserLoginHistoryStore.java:409: error: case, default, or '}' expected",
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/nre/security/UserLoginHistoryStore.java:409: error: case, default, or '}' expected",
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/nre/security/UserLoginHistoryStore.java:409: error: case, default, or '}' expected",
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/nre/security/UserLoginHistoryStore.java:409: error: case, default, or '}' expected",
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/nre/security/UserLoginHistoryStore.java:409: error: case, default, or '}' expected",
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/nre/security/UserLoginHistoryStore.java:409: error: case, default, or '}' expected"
+    ],
+    "status": "no-compile"
+   },
+   "cfr": {
+    "pseudo": [
+     "SwitchBootstraps"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/cfr/_bin-ext_nre/com/tridium/nre/security/UserLoginHistoryStore.java:350: error: cannot find symbol",
+     "<scratch>/dec/cfr/_bin-ext_nre/com/tridium/nre/security/UserLoginHistoryStore.java:360: error: incompatible types: invalid method reference",
+     "<scratch>/dec/cfr/_bin-ext_nre/com/tridium/nre/security/UserLoginHistoryStore.java:350: error: explicit constructor invocation may only appear within a constructor body",
+     "<scratch>/dec/cfr/_bin-ext_nre/com/tridium/nre/security/UserLoginHistoryStore.java:406: error: incompatible types: String cannot be converted to Lookup",
+     "<scratch>/dec/cfr/_bin-ext_nre/com/tridium/nre/security/UserLoginHistoryStore.java:422: error: switch has both boolean values and a default label"
+    ],
+    "status": "no-compile"
+   },
+   "procyon": {
+    "pseudo": [
+     "ProcyonInvokeDynamic",
+     "SwitchBootstraps",
+     "invokedynamic(!)"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/procyon/_bin-ext_nre/com/tridium/nre/security/UserLoginHistoryStore.java:417: error: incompatible types: boolean cannot be converted to int",
+     "<scratch>/dec/procyon/_bin-ext_nre/com/tridium/nre/security/UserLoginHistoryStore.java:433: error: switch has both boolean values and a default label",
+     "<scratch>/dec/procyon/_bin-ext_nre/com/tridium/nre/security/UserLoginHistoryStore.java:480: error: incompatible types: Object cannot be converted to int"
+    ],
+    "status": "no-compile"
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "_bin-ext/nre",
+   "top_rel": "com/tridium/nre/security/permissions/PermissionFactory",
+   "targets": [
+    "com/tridium/nre/security/permissions/PermissionFactory"
+   ],
+   "groups": [
+    "typeSwitch_sites"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/nre/security/permissions/PermissionFactory": {
+      "makeNiagaraPermission(Ljava/lang/annotation/Annotation;)Lcom/tridium/nre/security/permissions/NiagaraPermission;": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/nre/security/permissions/PermissionFactory": {
+      "makeNiagaraPermission(Ljava/lang/annotation/Annotation;)Lcom/tridium/nre/security/permissions/NiagaraPermission;": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cons": {
+    "pseudo": [
+     "SwitchBootstraps",
+     "typeSwitch<"
+    ],
+    "compiled": false,
+    "errors": [
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/nre/security/permissions/PermissionFactory.java:31: error: ')' expected",
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/nre/security/permissions/PermissionFactory.java:31: error: case, default, or '}' expected",
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/nre/security/permissions/PermissionFactory.java:31: error: case, default, or '}' expected",
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/nre/security/permissions/PermissionFactory.java:31: error: case, default, or '}' expected",
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/nre/security/permissions/PermissionFactory.java:31: error: case, default, or '}' expected",
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/nre/security/permissions/PermissionFactory.java:31: error: case, default, or '}' expected",
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/nre/security/permissions/PermissionFactory.java:31: error: case, default, or '}' expected",
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/nre/security/permissions/PermissionFactory.java:31: error: case, default, or '}' expected"
+    ],
+    "status": "no-compile"
+   },
+   "cfr": {
+    "pseudo": [
+     "SwitchBootstraps"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/cfr/_bin-ext_nre/com/tridium/nre/security/permissions/PermissionFactory.java:49: error: incompatible types: String cannot be converted to Lookup",
+     "<scratch>/dec/cfr/_bin-ext_nre/com/tridium/nre/security/permissions/PermissionFactory.java:78: error: switch has both boolean values and a default label"
+    ],
+    "status": "no-compile"
+   },
+   "procyon": {
+    "pseudo": [
+     "ProcyonInvokeDynamic",
+     "SwitchBootstraps",
+     "invokedynamic(!)"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/procyon/_bin-ext_nre/com/tridium/nre/security/permissions/PermissionFactory.java:40: error: incompatible types: boolean cannot be converted to int",
+     "<scratch>/dec/procyon/_bin-ext_nre/com/tridium/nre/security/permissions/PermissionFactory.java:69: error: switch has both boolean values and a default label",
+     "<scratch>/dec/procyon/_bin-ext_nre/com/tridium/nre/security/permissions/PermissionFactory.java:123: error: incompatible types: Object cannot be converted to int"
+    ],
+    "status": "no-compile"
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "_bin-ext/nre",
+   "top_rel": "com/tridium/nre/security/permissions/PermissionManager",
+   "targets": [
+    "com/tridium/nre/security/permissions/PermissionManager"
+   ],
+   "groups": [
+    "matchexception"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": true,
+    "shim": "pa",
+    "methods": {
+     "com/tridium/nre/security/permissions/PermissionManager": {
+      "isPermissionValidForEnvironment(Lcom/tridium/nre/security/permissions/NiagaraPermission;)Z": {
+       "verdict": "mismatch",
+       "kind": "other+labels-equal+effects-DIFFER",
+       "first_diff": [
+        "insn5: tableswitch {1:rel+7, 2:rel+9, 3:rel+19, default:rel+1}",
+        "insn5: tableswitch {1:rel+1, 2:rel+3, 3:rel+13, default:rel+23}"
+       ],
+       "effect_diff": [
+        "PERMUTED: same effect multiset in a different order (arm/branch layout)"
+       ]
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": true,
+    "shim": "pa",
+    "methods": {
+     "com/tridium/nre/security/permissions/PermissionManager": {
+      "isPermissionValidForEnvironment(Lcom/tridium/nre/security/permissions/NiagaraPermission;)Z": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cons": {
+    "pseudo": [],
+    "compiled": true,
+    "shim": "pa",
+    "methods": {
+     "com/tridium/nre/security/permissions/PermissionManager": {
+      "isPermissionValidForEnvironment(Lcom/tridium/nre/security/permissions/NiagaraPermission;)Z": {
+       "verdict": "mismatch",
+       "kind": "other+labels-equal+effects-DIFFER",
+       "first_diff": [
+        "insn5: tableswitch {1:rel+7, 2:rel+9, 3:rel+19, default:rel+1}",
+        "insn5: tableswitch {1:rel+1, 2:rel+4, 3:rel+15, default:rel+26}"
+       ],
+       "effect_diff": [
+        "PERMUTED: same effect multiset in a different order (arm/branch layout)"
+       ]
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cfr": {
+    "pseudo": [],
+    "compiled": false,
+    "shim": "failed",
+    "errors": [
+     "<scratch>/dec/cfr/_bin-ext_nre/com/tridium/nre/security/permissions/PermissionManager.java:201: error: cannot find symbol",
+     "<scratch>/dec/cfr/_bin-ext_nre/com/tridium/nre/security/permissions/PermissionManager.java:306: error: reference to doPrivileged is ambiguous",
+     "<scratch>/dec/cfr/_bin-ext_nre/com/tridium/nre/security/permissions/PermissionManager.java:339: error: incompatible types: bad return type in lambda expression"
+    ],
+    "status": "no-compile"
+   },
+   "procyon": {
+    "pseudo": [],
+    "compiled": false,
+    "shim": "failed",
+    "errors": [
+     "<scratch>/dec/procyon/_bin-ext_nre/com/tridium/nre/security/permissions/PermissionManager.java:192: error: cannot find symbol",
+     "<scratch>/dec/procyon/_bin-ext_nre/com/tridium/nre/security/permissions/PermissionManager.java:277: error: incompatible types: invalid method reference",
+     "<scratch>/dec/procyon/_bin-ext_nre/com/tridium/nre/security/permissions/PermissionManager.java:279: error: cannot find symbol",
+     "<scratch>/dec/procyon/_bin-ext_nre/com/tridium/nre/security/permissions/PermissionManager.java:280: error: cannot find symbol",
+     "<scratch>/dec/procyon/_bin-ext_nre/com/tridium/nre/security/permissions/PermissionManager.java:298: error: reference to doPrivileged is ambiguous",
+     "<scratch>/dec/procyon/_bin-ext_nre/com/tridium/nre/security/permissions/PermissionManager.java:340: error: incompatible types: Object cannot be converted to Set<NiagaraPermission>"
+    ],
+    "status": "no-compile"
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "_bin-ext/nre",
+   "top_rel": "com/tridium/nre/subscription/EntitlementApi",
+   "targets": [
+    "com/tridium/nre/subscription/EntitlementApi"
+   ],
+   "groups": [
+    "typeSwitch_sites"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/nre/subscription/EntitlementApi": {
+      "sendRequestMessageAndHandleResponse(Lcom/tridium/nre/subscription/HttpRequestMessage;)Lorg/json/JSONObject;": {
+       "verdict": "mismatch",
+       "kind": "other+labels-equal+effects-DIFFER",
+       "first_diff": [
+        "insn64: tableswitch {-1:rel+146, 0:rel+1, 1:rel+41, 2:rel+76, 3:rel+111, default:rel+146}",
+        "insn64: tableswitch {-1:rel+155, 0:rel+1, 1:rel+41, 2:rel+79, 3:rel+117, default:rel+155}"
+       ],
+       "effect_diff": [
+        "+checkcast // class java/net/SocketTimeoutException",
+        "+checkcast // class java/net/NoRouteToHostException",
+        "+checkcast // class java/net/UnknownHostException"
+       ]
+      },
+      "sanitizeMessage(Lorg/json/JSONObject;)Lorg/json/JSONObject;": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/nre/subscription/EntitlementApi": {
+      "sendRequestMessageAndHandleResponse(Lcom/tridium/nre/subscription/HttpRequestMessage;)Lorg/json/JSONObject;": {
+       "verdict": "mismatch",
+       "kind": "other+labels-equal+effects-DIFFER",
+       "first_diff": [
+        "insn64: tableswitch {-1:rel+146, 0:rel+1, 1:rel+41, 2:rel+76, 3:rel+111, default:rel+146}",
+        "insn64: tableswitch {-1:rel+155, 0:rel+1, 1:rel+41, 2:rel+79, 3:rel+117, default:rel+155}"
+       ],
+       "effect_diff": [
+        "+checkcast // class java/net/SocketTimeoutException",
+        "+checkcast // class java/net/NoRouteToHostException",
+        "+checkcast // class java/net/UnknownHostException"
+       ]
+      },
+      "sanitizeMessage(Lorg/json/JSONObject;)Lorg/json/JSONObject;": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cons": {
+    "pseudo": [
+     "SwitchBootstraps",
+     "typeSwitch<"
+    ],
+    "compiled": false,
+    "errors": [
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/nre/subscription/EntitlementApi.java:111: error: ')' expected",
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/nre/subscription/EntitlementApi.java:111: error: case, default, or '}' expected",
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/nre/subscription/EntitlementApi.java:111: error: case, default, or '}' expected",
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/nre/subscription/EntitlementApi.java:111: error: case, default, or '}' expected",
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/nre/subscription/EntitlementApi.java:111: error: case, default, or '}' expected",
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/nre/subscription/EntitlementApi.java:111: error: case, default, or '}' expected",
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/nre/subscription/EntitlementApi.java:111: error: case, default, or '}' expected",
+     "organized/_bin-ext/nre/vineflower-cons/com/tridium/nre/subscription/EntitlementApi.java:111: error: case, default, or '}' expected"
+    ],
+    "status": "no-compile"
+   },
+   "cfr": {
+    "pseudo": [
+     "SwitchBootstraps"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/cfr/_bin-ext_nre/com/tridium/nre/subscription/EntitlementApi.java:123: error: incompatible types: String cannot be converted to Lookup",
+     "<scratch>/dec/cfr/_bin-ext_nre/com/tridium/nre/subscription/EntitlementApi.java:265: error: incompatible types: String cannot be converted to Lookup"
+    ],
+    "status": "no-compile"
+   },
+   "procyon": {
+    "status": "empty-output",
+    "pseudo": [],
+    "compiled": false
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "baja",
+   "top_rel": "com/tridium/sys/module/ModuleManager",
+   "targets": [
+    "com/tridium/sys/module/ModuleManager$NiagaraJPMSAccessModifier"
+   ],
+   "groups": [
+    "matchexception"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": true,
+    "shim": "pea",
+    "methods": {
+     "com/tridium/sys/module/ModuleManager$NiagaraJPMSAccessModifier": {
+      "toString()Ljava/lang/String;": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": true,
+    "shim": "pea",
+    "methods": {
+     "com/tridium/sys/module/ModuleManager$NiagaraJPMSAccessModifier": {
+      "toString()Ljava/lang/String;": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cons": {
+    "pseudo": [],
+    "compiled": true,
+    "shim": "pea",
+    "methods": {
+     "com/tridium/sys/module/ModuleManager$NiagaraJPMSAccessModifier": {
+      "toString()Ljava/lang/String;": {
+       "verdict": "mismatch",
+       "kind": "other+labels-equal+effects-DIFFER",
+       "first_diff": [
+        "insn3: tableswitch {0:rel+7, 1:rel+10, 2:rel+23, 3:rel+23, default:rel+1}",
+        "insn3: tableswitch {0:rel+1, 1:rel+5, 2:rel+19, 3:rel+19, default:rel+35}"
+       ],
+       "effect_diff": [
+        "PERMUTED: same effect multiset in a different order (arm/branch layout)"
+       ]
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cfr": {
+    "pseudo": [],
+    "compiled": false,
+    "shim": "failed",
+    "errors": [
+     "<scratch>/dec/cfr/baja/com/tridium/sys/module/ModuleManager.java:698: error: reference to doPrivileged is ambiguous",
+     "<scratch>/dec/cfr/baja/com/tridium/sys/module/ModuleManager.java:1067: error: reference to doPrivileged is ambiguous"
+    ],
+    "status": "no-compile"
+   },
+   "procyon": {
+    "pseudo": [],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/procyon/baja/com/tridium/sys/module/ModuleManager.java:783: error: illegal start of expression"
+    ],
+    "status": "no-compile"
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "baja",
+   "top_rel": "com/tridium/sys/schema/Introspector",
+   "targets": [
+    "com/tridium/sys/schema/Introspector"
+   ],
+   "groups": [
+    "typeSwitch_sites"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/sys/schema/Introspector": {
+      "getModule(Ljava/lang/Class;Ljava/lang/String;)Lcom/tridium/sys/module/NModule;": {
+       "verdict": "mismatch",
+       "kind": "other+labels-equal+effects-DIFFER",
+       "first_diff": [
+        "insn11: lookupswitch {0:rel+1, 1:rel+9, default:rel+13}",
+        "insn11: lookupswitch {0:rel+1, 1:rel+9, default:rel+16}"
+       ],
+       "effect_diff": [
+        "+checkcast // class com/tridium/nre/bootstrap/BootstrapClassLoader"
+       ]
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/sys/schema/Introspector": {
+      "getModule(Ljava/lang/Class;Ljava/lang/String;)Lcom/tridium/sys/module/NModule;": {
+       "verdict": "mismatch",
+       "kind": "other+labels-equal+effects-DIFFER",
+       "first_diff": [
+        "insn11: lookupswitch {0:rel+1, 1:rel+9, default:rel+13}",
+        "insn11: lookupswitch {0:rel+1, 1:rel+9, default:rel+16}"
+       ],
+       "effect_diff": [
+        "+checkcast // class com/tridium/nre/bootstrap/BootstrapClassLoader"
+       ]
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cons": {
+    "pseudo": [
+     "SwitchBootstraps",
+     "typeSwitch<"
+    ],
+    "compiled": false,
+    "errors": [
+     "organized/baja/vineflower-cons/com/tridium/sys/schema/Introspector.java:134: error: ')' expected",
+     "organized/baja/vineflower-cons/com/tridium/sys/schema/Introspector.java:134: error: case, default, or '}' expected",
+     "organized/baja/vineflower-cons/com/tridium/sys/schema/Introspector.java:134: error: case, default, or '}' expected",
+     "organized/baja/vineflower-cons/com/tridium/sys/schema/Introspector.java:134: error: case, default, or '}' expected",
+     "organized/baja/vineflower-cons/com/tridium/sys/schema/Introspector.java:134: error: case, default, or '}' expected",
+     "organized/baja/vineflower-cons/com/tridium/sys/schema/Introspector.java:134: error: case, default, or '}' expected",
+     "organized/baja/vineflower-cons/com/tridium/sys/schema/Introspector.java:134: error: case, default, or '}' expected",
+     "organized/baja/vineflower-cons/com/tridium/sys/schema/Introspector.java:134: error: case, default, or '}' expected"
+    ],
+    "status": "no-compile"
+   },
+   "cfr": {
+    "pseudo": [
+     "SwitchBootstraps"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/cfr/baja/com/tridium/sys/schema/Introspector.java:153: error: incompatible types: String cannot be converted to Lookup",
+     "<scratch>/dec/cfr/baja/com/tridium/sys/schema/Introspector.java:159: error: switch has both boolean values and a default label",
+     "<scratch>/dec/cfr/baja/com/tridium/sys/schema/Introspector.java:236: error: incompatible types: Object cannot be converted to String"
+    ],
+    "status": "no-compile"
+   },
+   "procyon": {
+    "pseudo": [
+     "ProcyonInvokeDynamic",
+     "SwitchBootstraps",
+     "invokedynamic(!)"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/procyon/baja/com/tridium/sys/schema/Introspector.java:152: error: incompatible types: boolean cannot be converted to int",
+     "<scratch>/dec/procyon/baja/com/tridium/sys/schema/Introspector.java:158: error: switch has both boolean values and a default label",
+     "<scratch>/dec/procyon/baja/com/tridium/sys/schema/Introspector.java:279: error: incompatible types: Object cannot be converted to int"
+    ],
+    "status": "no-compile"
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "baja",
+   "top_rel": "niagara/timezone/DstRule",
+   "targets": [
+    "niagara/timezone/DstRule"
+   ],
+   "groups": [
+    "matchexception"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "niagara/timezone/DstRule": {
+      "convertJavaWeekdayToNiagaraWeekday(Ljava/time/DayOfWeek;)Lniagara/sys/BWeekday;": {
+       "verdict": "exact"
+      },
+      "convertJavaTimeModeToNiagaraTimeMode(Ljava/time/zone/ZoneOffsetTransitionRule$TimeDefinition;)I": {
+       "verdict": "exact"
+      },
+      "convertJavaMonthToNiagaraMonth(Ljava/time/Month;)Lniagara/sys/BMonth;": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "niagara/timezone/DstRule": {
+      "convertJavaWeekdayToNiagaraWeekday(Ljava/time/DayOfWeek;)Lniagara/sys/BWeekday;": {
+       "verdict": "exact"
+      },
+      "convertJavaTimeModeToNiagaraTimeMode(Ljava/time/zone/ZoneOffsetTransitionRule$TimeDefinition;)I": {
+       "verdict": "exact"
+      },
+      "convertJavaMonthToNiagaraMonth(Ljava/time/Month;)Lniagara/sys/BMonth;": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cons": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "niagara/timezone/DstRule": {
+      "convertJavaWeekdayToNiagaraWeekday(Ljava/time/DayOfWeek;)Lniagara/sys/BWeekday;": {
+       "verdict": "mismatch",
+       "kind": "other+labels-equal+effects-DIFFER",
+       "first_diff": [
+        "insn4: tableswitch {1:rel+7, 2:rel+9, 3:rel+11, 4:rel+13, 5:rel+15, 6:rel+17, 7:rel+19, default:rel+1}",
+        "insn4: tableswitch {1:rel+1, 2:rel+4, 3:rel+7, 4:rel+10, 5:rel+13, 6:rel+16, 7:rel+19, default:rel+22}"
+       ],
+       "effect_diff": [
+        "PERMUTED: same effect multiset in a different order (arm/branch layout)"
+       ]
+      },
+      "convertJavaTimeModeToNiagaraTimeMode(Ljava/time/zone/ZoneOffsetTransitionRule$TimeDefinition;)I": {
+       "verdict": "mismatch",
+       "kind": "other+labels-equal+effects-equal",
+       "first_diff": [
+        "insn4: tableswitch {1:rel+7, 2:rel+9, 3:rel+11, default:rel+1}",
+        "insn4: tableswitch {1:rel+1, 2:rel+4, 3:rel+7, default:rel+10}"
+       ],
+       "effect_diff": []
+      },
+      "convertJavaMonthToNiagaraMonth(Ljava/time/Month;)Lniagara/sys/BMonth;": {
+       "verdict": "mismatch",
+       "kind": "other+labels-equal+effects-DIFFER",
+       "first_diff": [
+        "insn4: tableswitch {1:rel+7, 2:rel+9, 3:rel+11, 4:rel+13, 5:rel+15, 6:rel+17, 7:rel+19, 8:rel+21, 9:rel+23, 10:rel+25, 11:rel+27, 12:rel+29, default:rel+1}",
+        "insn4: tableswitch {1:rel+1, 2:rel+4, 3:rel+7, 4:rel+10, 5:rel+13, 6:rel+16, 7:rel+19, 8:rel+22, 9:rel+25, 10:rel+28, 11:rel+31, 12:rel+34, default:rel+37}"
+       ],
+       "effect_diff": [
+        "PERMUTED: same effect multiset in a different order (arm/branch layout)"
+       ]
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cfr": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "niagara/timezone/DstRule": {
+      "convertJavaWeekdayToNiagaraWeekday(Ljava/time/DayOfWeek;)Lniagara/sys/BWeekday;": {
+       "verdict": "exact"
+      },
+      "convertJavaTimeModeToNiagaraTimeMode(Ljava/time/zone/ZoneOffsetTransitionRule$TimeDefinition;)I": {
+       "verdict": "exact"
+      },
+      "convertJavaMonthToNiagaraMonth(Ljava/time/Month;)Lniagara/sys/BMonth;": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "procyon": {
+    "pseudo": [],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/procyon/baja/niagara/timezone/DstRule.java:906: error: incompatible types: possible lossy conversion from float to int",
+     "<scratch>/dec/procyon/baja/niagara/timezone/DstRule.java:906: error: cannot find symbol"
+    ],
+    "status": "no-compile"
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "bajaui",
+   "top_rel": "com/tridium/ui/layout/AbstractBoxLayoutStrategy",
+   "targets": [
+    "com/tridium/ui/layout/AbstractBoxLayoutStrategy"
+   ],
+   "groups": [
+    "matchexception"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/ui/layout/AbstractBoxLayoutStrategy": {
+      "computeCrossPosition(Lniagara/ui/layout/IHasLayout;Lniagara/gx/ISize;DLniagara/ui/IRenderContext;)D": {
+       "verdict": "exact"
+      },
+      "computeCrossLength(Lniagara/ui/layout/IHasLayout;Lniagara/gx/ISize;DLniagara/ui/IRenderContext;)D": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/ui/layout/AbstractBoxLayoutStrategy": {
+      "computeCrossPosition(Lniagara/ui/layout/IHasLayout;Lniagara/gx/ISize;DLniagara/ui/IRenderContext;)D": {
+       "verdict": "exact"
+      },
+      "computeCrossLength(Lniagara/ui/layout/IHasLayout;Lniagara/gx/ISize;DLniagara/ui/IRenderContext;)D": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cons": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/ui/layout/AbstractBoxLayoutStrategy": {
+      "computeCrossPosition(Lniagara/ui/layout/IHasLayout;Lniagara/gx/ISize;DLniagara/ui/IRenderContext;)D": {
+       "verdict": "mismatch",
+       "kind": "other+labels-equal+effects-DIFFER",
+       "first_diff": [
+        "insn7: tableswitch {1:rel+7, 2:rel+9, 3:rel+17, 4:rel+7, default:rel+1}",
+        "insn7: tableswitch {1:rel+1, 2:rel+4, 3:rel+13, 4:rel+1, default:rel+20}"
+       ],
+       "effect_diff": [
+        "PERMUTED: same effect multiset in a different order (arm/branch layout)"
+       ]
+      },
+      "computeCrossLength(Lniagara/ui/layout/IHasLayout;Lniagara/gx/ISize;DLniagara/ui/IRenderContext;)D": {
+       "verdict": "mismatch",
+       "kind": "other+labels-equal+effects-DIFFER",
+       "first_diff": [
+        "insn7: tableswitch {1:rel+7, 2:rel+7, 3:rel+7, 4:rel+11, default:rel+1}",
+        "insn7: tableswitch {1:rel+1, 2:rel+1, 3:rel+1, 4:rel+6, default:rel+9}"
+       ],
+       "effect_diff": [
+        "PERMUTED: same effect multiset in a different order (arm/branch layout)"
+       ]
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cfr": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/ui/layout/AbstractBoxLayoutStrategy": {
+      "computeCrossPosition(Lniagara/ui/layout/IHasLayout;Lniagara/gx/ISize;DLniagara/ui/IRenderContext;)D": {
+       "verdict": "exact"
+      },
+      "computeCrossLength(Lniagara/ui/layout/IHasLayout;Lniagara/gx/ISize;DLniagara/ui/IRenderContext;)D": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "procyon": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/ui/layout/AbstractBoxLayoutStrategy": {
+      "computeCrossPosition(Lniagara/ui/layout/IHasLayout;Lniagara/gx/ISize;DLniagara/ui/IRenderContext;)D": {
+       "verdict": "exact"
+      },
+      "computeCrossLength(Lniagara/ui/layout/IHasLayout;Lniagara/gx/ISize;DLniagara/ui/IRenderContext;)D": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "bajaui",
+   "top_rel": "com/tridium/ui/layout/AbstractLayoutStrategy",
+   "targets": [
+    "com/tridium/ui/layout/AbstractLayoutStrategy"
+   ],
+   "groups": [
+    "matchexception"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/ui/layout/AbstractLayoutStrategy": {
+      "isIncludedInLayout(Lniagara/ui/layout/IHasLayout;)Z": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/ui/layout/AbstractLayoutStrategy": {
+      "isIncludedInLayout(Lniagara/ui/layout/IHasLayout;)Z": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cons": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/ui/layout/AbstractLayoutStrategy": {
+      "isIncludedInLayout(Lniagara/ui/layout/IHasLayout;)Z": {
+       "verdict": "mismatch",
+       "kind": "other+labels-equal+effects-DIFFER",
+       "first_diff": [
+        "insn9: lookupswitch {1:rel+7, 2:rel+9, default:rel+1}",
+        "insn9: lookupswitch {1:rel+1, 2:rel+4, default:rel+8}"
+       ],
+       "effect_diff": [
+        "PERMUTED: same effect multiset in a different order (arm/branch layout)"
+       ]
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cfr": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/ui/layout/AbstractLayoutStrategy": {
+      "isIncludedInLayout(Lniagara/ui/layout/IHasLayout;)Z": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "procyon": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/ui/layout/AbstractLayoutStrategy": {
+      "isIncludedInLayout(Lniagara/ui/layout/IHasLayout;)Z": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "bajaui",
+   "top_rel": "com/tridium/ui/layout/FlexBoxLayoutStrategy",
+   "targets": [
+    "com/tridium/ui/layout/FlexBoxLayoutStrategy"
+   ],
+   "groups": [
+    "matchexception"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/ui/layout/FlexBoxLayoutStrategy": {
+      "computeCrossPosition(Lniagara/ui/layout/IHasLayout;Lniagara/gx/ISize;DLniagara/ui/IRenderContext;)D": {
+       "verdict": "exact"
+      },
+      "computeCrossLength(Lniagara/ui/layout/IHasLayout;Lniagara/gx/ISize;DLniagara/ui/IRenderContext;)D": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/ui/layout/FlexBoxLayoutStrategy": {
+      "computeCrossPosition(Lniagara/ui/layout/IHasLayout;Lniagara/gx/ISize;DLniagara/ui/IRenderContext;)D": {
+       "verdict": "exact"
+      },
+      "computeCrossLength(Lniagara/ui/layout/IHasLayout;Lniagara/gx/ISize;DLniagara/ui/IRenderContext;)D": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cons": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/ui/layout/FlexBoxLayoutStrategy": {
+      "computeCrossPosition(Lniagara/ui/layout/IHasLayout;Lniagara/gx/ISize;DLniagara/ui/IRenderContext;)D": {
+       "verdict": "mismatch",
+       "kind": "other+labels-equal+effects-DIFFER",
+       "first_diff": [
+        "insn7: tableswitch {1:rel+7, 2:rel+9, 3:rel+17, 4:rel+7, default:rel+1}",
+        "insn7: tableswitch {1:rel+1, 2:rel+4, 3:rel+13, 4:rel+1, default:rel+20}"
+       ],
+       "effect_diff": [
+        "PERMUTED: same effect multiset in a different order (arm/branch layout)"
+       ]
+      },
+      "computeCrossLength(Lniagara/ui/layout/IHasLayout;Lniagara/gx/ISize;DLniagara/ui/IRenderContext;)D": {
+       "verdict": "mismatch",
+       "kind": "other+labels-equal+effects-DIFFER",
+       "first_diff": [
+        "insn7: tableswitch {1:rel+7, 2:rel+7, 3:rel+7, 4:rel+11, default:rel+1}",
+        "insn7: tableswitch {1:rel+1, 2:rel+1, 3:rel+1, 4:rel+6, default:rel+9}"
+       ],
+       "effect_diff": [
+        "PERMUTED: same effect multiset in a different order (arm/branch layout)"
+       ]
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cfr": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/ui/layout/FlexBoxLayoutStrategy": {
+      "computeCrossPosition(Lniagara/ui/layout/IHasLayout;Lniagara/gx/ISize;DLniagara/ui/IRenderContext;)D": {
+       "verdict": "exact"
+      },
+      "computeCrossLength(Lniagara/ui/layout/IHasLayout;Lniagara/gx/ISize;DLniagara/ui/IRenderContext;)D": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "procyon": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/ui/layout/FlexBoxLayoutStrategy": {
+      "computeCrossPosition(Lniagara/ui/layout/IHasLayout;Lniagara/gx/ISize;DLniagara/ui/IRenderContext;)D": {
+       "verdict": "exact"
+      },
+      "computeCrossLength(Lniagara/ui/layout/IHasLayout;Lniagara/gx/ISize;DLniagara/ui/IRenderContext;)D": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "bajaui",
+   "top_rel": "com/tridium/ui/theme/custom/nss/query/DerivedSelectionResult",
+   "targets": [
+    "com/tridium/ui/theme/custom/nss/query/DerivedSelectionResult"
+   ],
+   "groups": [
+    "enumSwitch_sites"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/ui/theme/custom/nss/query/DerivedSelectionResult": {
+      "invalidate(Lniagara/ui/style/IStylable;Lniagara/ui/style/IStyleCache$InvalidationReason;)V": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/ui/theme/custom/nss/query/DerivedSelectionResult": {
+      "invalidate(Lniagara/ui/style/IStylable;Lniagara/ui/style/IStyleCache$InvalidationReason;)V": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cons": {
+    "pseudo": [
+     "SwitchBootstraps"
+    ],
+    "compiled": false,
+    "errors": [
+     "organized/bajaui/vineflower-cons/com/tridium/ui/theme/custom/nss/query/DerivedSelectionResult.java:59: error: ')' expected",
+     "organized/bajaui/vineflower-cons/com/tridium/ui/theme/custom/nss/query/DerivedSelectionResult.java:59: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/com/tridium/ui/theme/custom/nss/query/DerivedSelectionResult.java:59: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/com/tridium/ui/theme/custom/nss/query/DerivedSelectionResult.java:59: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/com/tridium/ui/theme/custom/nss/query/DerivedSelectionResult.java:59: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/com/tridium/ui/theme/custom/nss/query/DerivedSelectionResult.java:59: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/com/tridium/ui/theme/custom/nss/query/DerivedSelectionResult.java:59: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/com/tridium/ui/theme/custom/nss/query/DerivedSelectionResult.java:59: error: case, default, or '}' expected"
+    ],
+    "status": "no-compile"
+   },
+   "cfr": {
+    "pseudo": [
+     "SwitchBootstraps"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/cfr/bajaui/com/tridium/ui/theme/custom/nss/query/DerivedSelectionResult.java:66: error: incompatible types: String cannot be converted to Lookup"
+    ],
+    "status": "no-compile"
+   },
+   "procyon": {
+    "status": "empty-output",
+    "pseudo": [],
+    "compiled": false
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "bajaui",
+   "top_rel": "com/tridium/ui/theme/custom/nss/query/NSSTupleAdvice",
+   "targets": [
+    "com/tridium/ui/theme/custom/nss/query/NSSTupleAdvice"
+   ],
+   "groups": [
+    "matchexception"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/ui/theme/custom/nss/query/NSSTupleAdvice": {
+      "compareTo(Lcom/tridium/ui/theme/custom/nss/query/IStyleAdvice;)I": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/ui/theme/custom/nss/query/NSSTupleAdvice": {
+      "compareTo(Lcom/tridium/ui/theme/custom/nss/query/IStyleAdvice;)I": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cons": {
+    "pseudo": [],
+    "compiled": false,
+    "errors": [
+     "organized/bajaui/vineflower-cons/com/tridium/ui/theme/custom/nss/query/NSSTupleAdvice.java:32: error: cannot find symbol",
+     "organized/bajaui/vineflower-cons/com/tridium/ui/theme/custom/nss/query/NSSTupleAdvice.java:37: error: cannot find symbol",
+     "organized/bajaui/vineflower-cons/com/tridium/ui/theme/custom/nss/query/NSSTupleAdvice.java:42: error: cannot find symbol",
+     "organized/bajaui/vineflower-cons/com/tridium/ui/theme/custom/nss/query/NSSTupleAdvice.java:47: error: cannot find symbol"
+    ],
+    "status": "no-compile"
+   },
+   "cfr": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/ui/theme/custom/nss/query/NSSTupleAdvice": {
+      "compareTo(Lcom/tridium/ui/theme/custom/nss/query/IStyleAdvice;)I": {
+       "verdict": "mismatch",
+       "kind": "other+labels-equal+effects-DIFFER",
+       "first_diff": [
+        "insn12: ifeq rel+46",
+        "insn12: ifeq rel+53"
+       ],
+       "effect_diff": [
+        "PERMUTED: same effect multiset in a different order (arm/branch layout)"
+       ]
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "procyon": {
+    "pseudo": [],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/procyon/bajaui/com/tridium/ui/theme/custom/nss/query/NSSTupleAdvice.java:57: error: missing return statement"
+    ],
+    "status": "no-compile"
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "bajaui",
+   "top_rel": "niagara/ui/BAbstractButton",
+   "targets": [
+    "niagara/ui/BAbstractButton$1",
+    "niagara/ui/BAbstractButton"
+   ],
+   "groups": [
+    "typeSwitch_sites"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "niagara/ui/BAbstractButton$1": {
+      "hasPseudoClass(Ljava/lang/String;)Z": {
+       "verdict": "exact"
+      }
+     },
+     "niagara/ui/BAbstractButton": {
+      "hasPseudoClass(Ljava/lang/String;)Z": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "niagara/ui/BAbstractButton$1": {
+      "hasPseudoClass(Ljava/lang/String;)Z": {
+       "verdict": "exact"
+      }
+     },
+     "niagara/ui/BAbstractButton": {
+      "hasPseudoClass(Ljava/lang/String;)Z": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cons": {
+    "pseudo": [
+     "SwitchBootstraps",
+     "typeSwitch<"
+    ],
+    "compiled": false,
+    "errors": [
+     "organized/bajaui/vineflower-cons/niagara/ui/BAbstractButton.java:56: error: ')' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/BAbstractButton.java:56: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/BAbstractButton.java:56: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/BAbstractButton.java:56: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/BAbstractButton.java:56: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/BAbstractButton.java:56: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/BAbstractButton.java:56: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/BAbstractButton.java:56: error: case, default, or '}' expected"
+    ],
+    "status": "no-compile"
+   },
+   "cfr": {
+    "pseudo": [
+     "SwitchBootstraps"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/cfr/bajaui/niagara/ui/BAbstractButton.java:79: error: constructor PaintableImageAdapter in class PaintableImageAdapter cannot be applied to given types;",
+     "<scratch>/dec/cfr/bajaui/niagara/ui/BAbstractButton.java:85: error: cannot find symbol",
+     "<scratch>/dec/cfr/bajaui/niagara/ui/BAbstractButton.java:85: error: parent has private access in StylableAdapter",
+     "<scratch>/dec/cfr/bajaui/niagara/ui/BAbstractButton.java:92: error: incompatible types: String cannot be converted to Lookup",
+     "<scratch>/dec/cfr/bajaui/niagara/ui/BAbstractButton.java:85: error: explicit constructor invocation may only appear within a constructor body",
+     "<scratch>/dec/cfr/bajaui/niagara/ui/BAbstractButton.java:365: error: incompatible types: String cannot be converted to Lookup"
+    ],
+    "status": "no-compile"
+   },
+   "procyon": {
+    "status": "empty-output",
+    "pseudo": [],
+    "compiled": false
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "bajaui",
+   "top_rel": "niagara/ui/BToggleButton",
+   "targets": [
+    "niagara/ui/BToggleButton"
+   ],
+   "groups": [
+    "enumSwitch_sites"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "niagara/ui/BToggleButton": {
+      "hasPseudoClass(Ljava/lang/String;)Z": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "niagara/ui/BToggleButton": {
+      "hasPseudoClass(Ljava/lang/String;)Z": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cons": {
+    "pseudo": [
+     "SwitchBootstraps"
+    ],
+    "compiled": false,
+    "errors": [
+     "organized/bajaui/vineflower-cons/niagara/ui/BToggleButton.java:86: error: ')' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/BToggleButton.java:86: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/BToggleButton.java:86: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/BToggleButton.java:86: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/BToggleButton.java:86: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/BToggleButton.java:86: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/BToggleButton.java:86: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/BToggleButton.java:86: error: case, default, or '}' expected"
+    ],
+    "status": "no-compile"
+   },
+   "cfr": {
+    "pseudo": [
+     "SwitchBootstraps"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/cfr/bajaui/niagara/ui/BToggleButton.java:103: error: incompatible types: String cannot be converted to Lookup"
+    ],
+    "status": "no-compile"
+   },
+   "procyon": {
+    "status": "empty-output",
+    "pseudo": [],
+    "compiled": false
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "bajaui",
+   "top_rel": "niagara/ui/BToggleMenuItem",
+   "targets": [
+    "niagara/ui/BToggleMenuItem"
+   ],
+   "groups": [
+    "enumSwitch_sites"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "niagara/ui/BToggleMenuItem": {
+      "hasPseudoClass(Ljava/lang/String;)Z": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "niagara/ui/BToggleMenuItem": {
+      "hasPseudoClass(Ljava/lang/String;)Z": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cons": {
+    "pseudo": [
+     "SwitchBootstraps"
+    ],
+    "compiled": false,
+    "errors": [
+     "organized/bajaui/vineflower-cons/niagara/ui/BToggleMenuItem.java:84: error: ')' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/BToggleMenuItem.java:84: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/BToggleMenuItem.java:84: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/BToggleMenuItem.java:84: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/BToggleMenuItem.java:84: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/BToggleMenuItem.java:84: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/BToggleMenuItem.java:84: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/BToggleMenuItem.java:84: error: case, default, or '}' expected"
+    ],
+    "status": "no-compile"
+   },
+   "cfr": {
+    "pseudo": [
+     "SwitchBootstraps"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/cfr/bajaui/niagara/ui/BToggleMenuItem.java:103: error: incompatible types: String cannot be converted to Lookup"
+    ],
+    "status": "no-compile"
+   },
+   "procyon": {
+    "status": "empty-output",
+    "pseudo": [],
+    "compiled": false
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "bajaui",
+   "top_rel": "niagara/ui/BWidget",
+   "targets": [
+    "niagara/ui/BWidget$DefaultPseudoClassChecker"
+   ],
+   "groups": [
+    "enumSwitch_sites"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "niagara/ui/BWidget$DefaultPseudoClassChecker": {
+      "test(Ljava/lang/String;)Z": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "niagara/ui/BWidget$DefaultPseudoClassChecker": {
+      "test(Ljava/lang/String;)Z": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cons": {
+    "pseudo": [
+     "SwitchBootstraps"
+    ],
+    "compiled": false,
+    "errors": [
+     "organized/bajaui/vineflower-cons/niagara/ui/BWidget.java:1374: error: ')' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/BWidget.java:1374: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/BWidget.java:1374: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/BWidget.java:1374: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/BWidget.java:1374: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/BWidget.java:1374: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/BWidget.java:1374: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/BWidget.java:1374: error: case, default, or '}' expected"
+    ],
+    "status": "no-compile"
+   },
+   "cfr": {
+    "pseudo": [
+     "SwitchBootstraps"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/cfr/bajaui/niagara/ui/BWidget.java:414: error: incompatible types: IStylable cannot be converted to BWidget",
+     "<scratch>/dec/cfr/bajaui/niagara/ui/BWidget.java:1368: error: incompatible types: String cannot be converted to Lookup",
+     "<scratch>/dec/cfr/bajaui/niagara/ui/BWidget.java:1382: error: switch has both boolean values and a default label"
+    ],
+    "status": "no-compile"
+   },
+   "procyon": {
+    "status": "empty-output",
+    "pseudo": [],
+    "compiled": false
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "bajaui",
+   "top_rel": "niagara/ui/list/Item",
+   "targets": [
+    "niagara/ui/list/Item"
+   ],
+   "groups": [
+    "enumSwitch_sites"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "niagara/ui/list/Item": {
+      "hasPseudoClass(Ljava/lang/String;)Z": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "niagara/ui/list/Item": {
+      "hasPseudoClass(Ljava/lang/String;)Z": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cons": {
+    "pseudo": [
+     "SwitchBootstraps"
+    ],
+    "compiled": false,
+    "errors": [
+     "organized/bajaui/vineflower-cons/niagara/ui/list/Item.java:93: error: ')' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/list/Item.java:93: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/list/Item.java:93: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/list/Item.java:93: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/list/Item.java:93: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/list/Item.java:93: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/list/Item.java:93: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/list/Item.java:93: error: case, default, or '}' expected"
+    ],
+    "status": "no-compile"
+   },
+   "cfr": {
+    "pseudo": [
+     "SwitchBootstraps"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/cfr/bajaui/niagara/ui/list/Item.java:101: error: incompatible types: String cannot be converted to Lookup",
+     "<scratch>/dec/cfr/bajaui/niagara/ui/list/Item.java:115: error: switch has both boolean values and a default label"
+    ],
+    "status": "no-compile"
+   },
+   "procyon": {
+    "status": "empty-output",
+    "pseudo": [],
+    "compiled": false
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "bajaui",
+   "top_rel": "niagara/ui/pane/BLabelPane",
+   "targets": [
+    "niagara/ui/pane/BLabelPane"
+   ],
+   "groups": [
+    "enumSwitch_sites"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "niagara/ui/pane/BLabelPane": {
+      "hasPseudoClass(Ljava/lang/String;)Z": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "niagara/ui/pane/BLabelPane": {
+      "hasPseudoClass(Ljava/lang/String;)Z": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cons": {
+    "pseudo": [
+     "SwitchBootstraps"
+    ],
+    "compiled": false,
+    "errors": [
+     "organized/bajaui/vineflower-cons/niagara/ui/pane/BLabelPane.java:201: error: ')' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/pane/BLabelPane.java:201: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/pane/BLabelPane.java:201: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/pane/BLabelPane.java:201: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/pane/BLabelPane.java:201: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/pane/BLabelPane.java:201: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/pane/BLabelPane.java:201: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/pane/BLabelPane.java:201: error: case, default, or '}' expected"
+    ],
+    "status": "no-compile"
+   },
+   "cfr": {
+    "pseudo": [
+     "SwitchBootstraps"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/cfr/bajaui/niagara/ui/pane/BLabelPane.java:154: error: no suitable constructor found for Command(BLabelPane,BLabelPane,String,BImage,<null>,String)",
+     "<scratch>/dec/cfr/bajaui/niagara/ui/pane/BLabelPane.java:156: error: cannot find symbol",
+     "<scratch>/dec/cfr/bajaui/niagara/ui/pane/BLabelPane.java:157: error: owner has private access in Command",
+     "<scratch>/dec/cfr/bajaui/niagara/ui/pane/BLabelPane.java:157: error: cannot find symbol",
+     "<scratch>/dec/cfr/bajaui/niagara/ui/pane/BLabelPane.java:157: error: explicit constructor invocation may only appear within a constructor body",
+     "<scratch>/dec/cfr/bajaui/niagara/ui/pane/BLabelPane.java:216: error: incompatible types: String cannot be converted to Lookup"
+    ],
+    "status": "no-compile"
+   },
+   "procyon": {
+    "status": "empty-output",
+    "pseudo": [],
+    "compiled": false
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "bajaui",
+   "top_rel": "niagara/ui/style/IStyle",
+   "targets": [
+    "niagara/ui/style/IStyle"
+   ],
+   "groups": [
+    "typeSwitch_sites"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "niagara/ui/style/IStyle": {
+      "toSimple(Ljava/lang/Object;)Lniagara/sys/BSimple;": {
+       "verdict": "exact"
+      },
+      "toStyleValue(Lniagara/sys/BObject;)Ljava/lang/Object;": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "niagara/ui/style/IStyle": {
+      "toSimple(Ljava/lang/Object;)Lniagara/sys/BSimple;": {
+       "verdict": "exact"
+      },
+      "toStyleValue(Lniagara/sys/BObject;)Ljava/lang/Object;": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cons": {
+    "pseudo": [
+     "SwitchBootstraps",
+     "typeSwitch<"
+    ],
+    "compiled": false,
+    "errors": [
+     "organized/bajaui/vineflower-cons/niagara/ui/style/IStyle.java:128: error: ')' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/style/IStyle.java:128: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/style/IStyle.java:128: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/style/IStyle.java:128: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/style/IStyle.java:128: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/style/IStyle.java:128: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/style/IStyle.java:128: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/style/IStyle.java:128: error: case, default, or '}' expected"
+    ],
+    "status": "no-compile"
+   },
+   "cfr": {
+    "pseudo": [
+     "SwitchBootstraps"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/cfr/bajaui/niagara/ui/style/IStyle.java:110: error: incompatible types: String cannot be converted to Lookup",
+     "<scratch>/dec/cfr/bajaui/niagara/ui/style/IStyle.java:139: error: switch has both boolean values and a default label",
+     "<scratch>/dec/cfr/bajaui/niagara/ui/style/IStyle.java:151: error: incompatible types: String cannot be converted to Lookup",
+     "<scratch>/dec/cfr/bajaui/niagara/ui/style/IStyle.java:176: error: switch has both boolean values and a default label"
+    ],
+    "status": "no-compile"
+   },
+   "procyon": {
+    "pseudo": [
+     "ProcyonInvokeDynamic",
+     "SwitchBootstraps",
+     "invokedynamic(!)"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/procyon/bajaui/niagara/ui/style/IStyle.java:180: error: illegal combination of modifiers: public and private",
+     "<scratch>/dec/procyon/bajaui/niagara/ui/style/IStyle.java:223: error: illegal combination of modifiers: public and private",
+     "<scratch>/dec/procyon/bajaui/niagara/ui/style/IStyle.java:98: error: incompatible types: boolean cannot be converted to int",
+     "<scratch>/dec/procyon/bajaui/niagara/ui/style/IStyle.java:133: error: switch has both boolean values and a default label",
+     "<scratch>/dec/procyon/bajaui/niagara/ui/style/IStyle.java:145: error: incompatible types: boolean cannot be converted to int",
+     "<scratch>/dec/procyon/bajaui/niagara/ui/style/IStyle.java:170: error: switch has both boolean values and a default label",
+     "<scratch>/dec/procyon/bajaui/niagara/ui/style/IStyle.java:213: error: incompatible types: Object cannot be converted to int",
+     "<scratch>/dec/procyon/bajaui/niagara/ui/style/IStyle.java:256: error: incompatible types: Object cannot be converted to int"
+    ],
+    "status": "no-compile"
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "bajaui",
+   "top_rel": "niagara/ui/style/StylableAdapter",
+   "targets": [
+    "niagara/ui/style/StylableAdapter"
+   ],
+   "groups": [
+    "typeSwitch_sites"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "niagara/ui/style/StylableAdapter": {
+      "makeChildOf(Lniagara/ui/style/IStylable;Ljava/lang/String;)Lniagara/ui/style/StylableAdapter;": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "niagara/ui/style/StylableAdapter": {
+      "makeChildOf(Lniagara/ui/style/IStylable;Ljava/lang/String;)Lniagara/ui/style/StylableAdapter;": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cons": {
+    "pseudo": [
+     "SwitchBootstraps",
+     "typeSwitch<"
+    ],
+    "compiled": false,
+    "errors": [
+     "organized/bajaui/vineflower-cons/niagara/ui/style/StylableAdapter.java:67: error: ')' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/style/StylableAdapter.java:67: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/style/StylableAdapter.java:67: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/style/StylableAdapter.java:67: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/style/StylableAdapter.java:67: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/style/StylableAdapter.java:67: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/style/StylableAdapter.java:67: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/style/StylableAdapter.java:67: error: case, default, or '}' expected"
+    ],
+    "status": "no-compile"
+   },
+   "cfr": {
+    "pseudo": [
+     "SwitchBootstraps"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/cfr/bajaui/niagara/ui/style/StylableAdapter.java:79: error: incompatible types: String cannot be converted to Lookup",
+     "<scratch>/dec/cfr/bajaui/niagara/ui/style/StylableAdapter.java:237: error: incompatible types: bad return type in lambda expression"
+    ],
+    "status": "no-compile"
+   },
+   "procyon": {
+    "pseudo": [
+     "ProcyonInvokeDynamic",
+     "SwitchBootstraps",
+     "invokedynamic(!)"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/procyon/bajaui/niagara/ui/style/StylableAdapter.java:90: error: incompatible types: boolean cannot be converted to int",
+     "<scratch>/dec/procyon/bajaui/niagara/ui/style/StylableAdapter.java:92: error: incompatible types: IsTag cannot be converted to HasId",
+     "<scratch>/dec/procyon/bajaui/niagara/ui/style/StylableAdapter.java:100: error: incompatible types: IsTag cannot be converted to HasClass",
+     "<scratch>/dec/procyon/bajaui/niagara/ui/style/StylableAdapter.java:105: error: incompatible types: IsTag cannot be converted to HasPseudoClass",
+     "<scratch>/dec/procyon/bajaui/niagara/ui/style/StylableAdapter.java:110: error: incompatible types: IsTag cannot be converted to HasAttribute",
+     "<scratch>/dec/procyon/bajaui/niagara/ui/style/StylableAdapter.java:204: error: cannot find symbol",
+     "<scratch>/dec/procyon/bajaui/niagara/ui/style/StylableAdapter.java:251: error: incompatible types: bad return type in lambda expression",
+     "<scratch>/dec/procyon/bajaui/niagara/ui/style/StylableAdapter.java:254: error: incompatible types: bad return type in lambda expression"
+    ],
+    "status": "no-compile"
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "bajaui",
+   "top_rel": "niagara/ui/tree/TreeNode",
+   "targets": [
+    "niagara/ui/tree/TreeNode"
+   ],
+   "groups": [
+    "enumSwitch_sites"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "niagara/ui/tree/TreeNode": {
+      "hasPseudoClass(Ljava/lang/String;)Z": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "niagara/ui/tree/TreeNode": {
+      "hasPseudoClass(Ljava/lang/String;)Z": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cons": {
+    "pseudo": [
+     "SwitchBootstraps"
+    ],
+    "compiled": false,
+    "errors": [
+     "organized/bajaui/vineflower-cons/niagara/ui/tree/TreeNode.java:79: error: ')' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/tree/TreeNode.java:79: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/tree/TreeNode.java:79: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/tree/TreeNode.java:79: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/tree/TreeNode.java:79: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/tree/TreeNode.java:79: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/tree/TreeNode.java:79: error: case, default, or '}' expected",
+     "organized/bajaui/vineflower-cons/niagara/ui/tree/TreeNode.java:79: error: case, default, or '}' expected"
+    ],
+    "status": "no-compile"
+   },
+   "cfr": {
+    "pseudo": [
+     "SwitchBootstraps"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/cfr/bajaui/niagara/ui/tree/TreeNode.java:93: error: incompatible types: String cannot be converted to Lookup",
+     "<scratch>/dec/cfr/bajaui/niagara/ui/tree/TreeNode.java:96: error: switch has both boolean values and a default label"
+    ],
+    "status": "no-compile"
+   },
+   "procyon": {
+    "status": "empty-output",
+    "pseudo": [],
+    "compiled": false
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "control",
+   "top_rel": "niagara/control/BBooleanWritable",
+   "targets": [
+    "niagara/control/BBooleanWritable"
+   ],
+   "groups": [
+    "typeSwitch_sites"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "niagara/control/BBooleanWritable": {
+      "getOldValueForPendingActionAuditEvent(Lniagara/sys/Action;Lniagara/sys/BValue;Lniagara/sys/Context;)Ljava/lang/String;": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "niagara/control/BBooleanWritable": {
+      "getOldValueForPendingActionAuditEvent(Lniagara/sys/Action;Lniagara/sys/BValue;Lniagara/sys/Context;)Ljava/lang/String;": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cons": {
+    "pseudo": [
+     "SwitchBootstraps",
+     "typeSwitch<"
+    ],
+    "compiled": false,
+    "errors": [
+     "organized/control/vineflower-cons/niagara/control/BBooleanWritable.java:543: error: ')' expected",
+     "organized/control/vineflower-cons/niagara/control/BBooleanWritable.java:543: error: case, default, or '}' expected",
+     "organized/control/vineflower-cons/niagara/control/BBooleanWritable.java:543: error: case, default, or '}' expected",
+     "organized/control/vineflower-cons/niagara/control/BBooleanWritable.java:543: error: case, default, or '}' expected",
+     "organized/control/vineflower-cons/niagara/control/BBooleanWritable.java:543: error: case, default, or '}' expected",
+     "organized/control/vineflower-cons/niagara/control/BBooleanWritable.java:543: error: case, default, or '}' expected",
+     "organized/control/vineflower-cons/niagara/control/BBooleanWritable.java:543: error: case, default, or '}' expected",
+     "organized/control/vineflower-cons/niagara/control/BBooleanWritable.java:543: error: case, default, or '}' expected"
+    ],
+    "status": "no-compile"
+   },
+   "cfr": {
+    "pseudo": [
+     "SwitchBootstraps"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/cfr/control/niagara/control/BBooleanWritable.java:542: error: incompatible types: String cannot be converted to Lookup",
+     "<scratch>/dec/cfr/control/niagara/control/BBooleanWritable.java:570: error: switch has both boolean values and a default label"
+    ],
+    "status": "no-compile"
+   },
+   "procyon": {
+    "pseudo": [
+     "ProcyonInvokeDynamic",
+     "SwitchBootstraps",
+     "invokedynamic(!)"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/procyon/control/niagara/control/BBooleanWritable.java:741: error: incompatible types: Object cannot be converted to int"
+    ],
+    "status": "no-compile"
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "control",
+   "top_rel": "niagara/control/BEnumWritable",
+   "targets": [
+    "niagara/control/BEnumWritable"
+   ],
+   "groups": [
+    "typeSwitch_sites"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "niagara/control/BEnumWritable": {
+      "getOldValueForPendingActionAuditEvent(Lniagara/sys/Action;Lniagara/sys/BValue;Lniagara/sys/Context;)Ljava/lang/String;": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "niagara/control/BEnumWritable": {
+      "getOldValueForPendingActionAuditEvent(Lniagara/sys/Action;Lniagara/sys/BValue;Lniagara/sys/Context;)Ljava/lang/String;": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cons": {
+    "pseudo": [
+     "SwitchBootstraps",
+     "typeSwitch<"
+    ],
+    "compiled": false,
+    "errors": [
+     "organized/control/vineflower-cons/niagara/control/BEnumWritable.java:454: error: ')' expected",
+     "organized/control/vineflower-cons/niagara/control/BEnumWritable.java:454: error: case, default, or '}' expected",
+     "organized/control/vineflower-cons/niagara/control/BEnumWritable.java:454: error: case, default, or '}' expected",
+     "organized/control/vineflower-cons/niagara/control/BEnumWritable.java:454: error: case, default, or '}' expected",
+     "organized/control/vineflower-cons/niagara/control/BEnumWritable.java:454: error: case, default, or '}' expected",
+     "organized/control/vineflower-cons/niagara/control/BEnumWritable.java:454: error: case, default, or '}' expected",
+     "organized/control/vineflower-cons/niagara/control/BEnumWritable.java:454: error: case, default, or '}' expected",
+     "organized/control/vineflower-cons/niagara/control/BEnumWritable.java:454: error: case, default, or '}' expected"
+    ],
+    "status": "no-compile"
+   },
+   "cfr": {
+    "pseudo": [
+     "SwitchBootstraps"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/cfr/control/niagara/control/BEnumWritable.java:467: error: incompatible types: String cannot be converted to Lookup",
+     "<scratch>/dec/cfr/control/niagara/control/BEnumWritable.java:495: error: switch has both boolean values and a default label"
+    ],
+    "status": "no-compile"
+   },
+   "procyon": {
+    "pseudo": [
+     "ProcyonInvokeDynamic",
+     "SwitchBootstraps",
+     "invokedynamic(!)"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/procyon/control/niagara/control/BEnumWritable.java:655: error: incompatible types: Object cannot be converted to int"
+    ],
+    "status": "no-compile"
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "control",
+   "top_rel": "niagara/control/BNumericWritable",
+   "targets": [
+    "niagara/control/BNumericWritable"
+   ],
+   "groups": [
+    "typeSwitch_sites"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "niagara/control/BNumericWritable": {
+      "getOldValueForPendingActionAuditEvent(Lniagara/sys/Action;Lniagara/sys/BValue;Lniagara/sys/Context;)Ljava/lang/String;": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "niagara/control/BNumericWritable": {
+      "getOldValueForPendingActionAuditEvent(Lniagara/sys/Action;Lniagara/sys/BValue;Lniagara/sys/Context;)Ljava/lang/String;": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cons": {
+    "pseudo": [
+     "SwitchBootstraps",
+     "typeSwitch<"
+    ],
+    "compiled": false,
+    "errors": [
+     "organized/control/vineflower-cons/niagara/control/BNumericWritable.java:452: error: ')' expected",
+     "organized/control/vineflower-cons/niagara/control/BNumericWritable.java:452: error: case, default, or '}' expected",
+     "organized/control/vineflower-cons/niagara/control/BNumericWritable.java:452: error: case, default, or '}' expected",
+     "organized/control/vineflower-cons/niagara/control/BNumericWritable.java:452: error: case, default, or '}' expected",
+     "organized/control/vineflower-cons/niagara/control/BNumericWritable.java:452: error: case, default, or '}' expected",
+     "organized/control/vineflower-cons/niagara/control/BNumericWritable.java:452: error: case, default, or '}' expected",
+     "organized/control/vineflower-cons/niagara/control/BNumericWritable.java:452: error: case, default, or '}' expected",
+     "organized/control/vineflower-cons/niagara/control/BNumericWritable.java:452: error: case, default, or '}' expected"
+    ],
+    "status": "no-compile"
+   },
+   "cfr": {
+    "pseudo": [
+     "SwitchBootstraps"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/cfr/control/niagara/control/BNumericWritable.java:458: error: incompatible types: String cannot be converted to Lookup",
+     "<scratch>/dec/cfr/control/niagara/control/BNumericWritable.java:486: error: switch has both boolean values and a default label"
+    ],
+    "status": "no-compile"
+   },
+   "procyon": {
+    "pseudo": [
+     "ProcyonInvokeDynamic",
+     "SwitchBootstraps",
+     "invokedynamic(!)"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/procyon/control/niagara/control/BNumericWritable.java:644: error: incompatible types: Object cannot be converted to int"
+    ],
+    "status": "no-compile"
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "control",
+   "top_rel": "niagara/control/BStringWritable",
+   "targets": [
+    "niagara/control/BStringWritable"
+   ],
+   "groups": [
+    "typeSwitch_sites"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "niagara/control/BStringWritable": {
+      "getOldValueForPendingActionAuditEvent(Lniagara/sys/Action;Lniagara/sys/BValue;Lniagara/sys/Context;)Ljava/lang/String;": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "niagara/control/BStringWritable": {
+      "getOldValueForPendingActionAuditEvent(Lniagara/sys/Action;Lniagara/sys/BValue;Lniagara/sys/Context;)Ljava/lang/String;": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cons": {
+    "pseudo": [
+     "SwitchBootstraps",
+     "typeSwitch<"
+    ],
+    "compiled": false,
+    "errors": [
+     "organized/control/vineflower-cons/niagara/control/BStringWritable.java:424: error: ')' expected",
+     "organized/control/vineflower-cons/niagara/control/BStringWritable.java:424: error: case, default, or '}' expected",
+     "organized/control/vineflower-cons/niagara/control/BStringWritable.java:424: error: case, default, or '}' expected",
+     "organized/control/vineflower-cons/niagara/control/BStringWritable.java:424: error: case, default, or '}' expected",
+     "organized/control/vineflower-cons/niagara/control/BStringWritable.java:424: error: case, default, or '}' expected",
+     "organized/control/vineflower-cons/niagara/control/BStringWritable.java:424: error: case, default, or '}' expected",
+     "organized/control/vineflower-cons/niagara/control/BStringWritable.java:424: error: case, default, or '}' expected",
+     "organized/control/vineflower-cons/niagara/control/BStringWritable.java:424: error: case, default, or '}' expected"
+    ],
+    "status": "no-compile"
+   },
+   "cfr": {
+    "pseudo": [
+     "SwitchBootstraps"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/cfr/control/niagara/control/BStringWritable.java:434: error: incompatible types: String cannot be converted to Lookup",
+     "<scratch>/dec/cfr/control/niagara/control/BStringWritable.java:462: error: switch has both boolean values and a default label"
+    ],
+    "status": "no-compile"
+   },
+   "procyon": {
+    "pseudo": [
+     "ProcyonInvokeDynamic",
+     "SwitchBootstraps",
+     "invokedynamic(!)"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/procyon/control/niagara/control/BStringWritable.java:619: error: incompatible types: Object cannot be converted to int"
+    ],
+    "status": "no-compile"
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "email",
+   "top_rel": "com/tridium/email/EmailUtil",
+   "targets": [
+    "com/tridium/email/EmailUtil"
+   ],
+   "groups": [
+    "typeSwitch_sites"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": true,
+    "shim": "pea",
+    "methods": {
+     "com/tridium/email/EmailUtil": {
+      "extractContent(Ljava/util/List;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;Z)V": {
+       "verdict": "mismatch",
+       "kind": "other+labels-equal+effects-equal",
+       "first_diff": [
+        "insn1: ifeq rel+5",
+        "insn1: ifeq rel+4"
+       ],
+       "effect_diff": []
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": true,
+    "shim": "pea",
+    "methods": {
+     "com/tridium/email/EmailUtil": {
+      "extractContent(Ljava/util/List;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;Z)V": {
+       "verdict": "mismatch",
+       "kind": "other+labels-equal+effects-equal",
+       "first_diff": [
+        "insn1: ifeq rel+5",
+        "insn1: ifeq rel+4"
+       ],
+       "effect_diff": []
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cons": {
+    "pseudo": [
+     "SwitchBootstraps",
+     "typeSwitch<"
+    ],
+    "compiled": false,
+    "errors": [
+     "organized/email/vineflower-cons/com/tridium/email/EmailUtil.java:211: error: ')' expected",
+     "organized/email/vineflower-cons/com/tridium/email/EmailUtil.java:211: error: case, default, or '}' expected",
+     "organized/email/vineflower-cons/com/tridium/email/EmailUtil.java:211: error: case, default, or '}' expected",
+     "organized/email/vineflower-cons/com/tridium/email/EmailUtil.java:211: error: case, default, or '}' expected",
+     "organized/email/vineflower-cons/com/tridium/email/EmailUtil.java:211: error: case, default, or '}' expected",
+     "organized/email/vineflower-cons/com/tridium/email/EmailUtil.java:211: error: case, default, or '}' expected",
+     "organized/email/vineflower-cons/com/tridium/email/EmailUtil.java:211: error: case, default, or '}' expected",
+     "organized/email/vineflower-cons/com/tridium/email/EmailUtil.java:211: error: case, default, or '}' expected"
+    ],
+    "status": "no-compile"
+   },
+   "cfr": {
+    "pseudo": [
+     "SwitchBootstraps"
+    ],
+    "compiled": false,
+    "shim": "failed",
+    "errors": [
+     "<scratch>/dec/cfr/email/com/tridium/email/EmailUtil.java:219: error: incompatible types: String cannot be converted to Lookup",
+     "<scratch>/dec/cfr/email/com/tridium/email/EmailUtil.java:254: error: switch has both boolean values and a default label",
+     "<scratch>/dec/cfr/email/com/tridium/email/EmailUtil.java:296: error: reference to doPrivileged is ambiguous"
+    ],
+    "status": "no-compile"
+   },
+   "procyon": {
+    "pseudo": [
+     "ProcyonInvokeDynamic",
+     "SwitchBootstraps",
+     "invokedynamic(!)"
+    ],
+    "compiled": false,
+    "shim": "failed",
+    "errors": [
+     "<scratch>/dec/procyon/email/com/tridium/email/EmailUtil.java:212: error: incompatible types: boolean cannot be converted to int",
+     "<scratch>/dec/procyon/email/com/tridium/email/EmailUtil.java:246: error: switch has both boolean values and a default label",
+     "<scratch>/dec/procyon/email/com/tridium/email/EmailUtil.java:288: error: reference to doPrivileged is ambiguous",
+     "<scratch>/dec/procyon/email/com/tridium/email/EmailUtil.java:416: error: incompatible types: Object cannot be converted to int"
+    ],
+    "status": "no-compile"
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "fox",
+   "top_rel": "com/tridium/fox/sys/broker/BBrokerChannel",
+   "targets": [
+    "com/tridium/fox/sys/broker/BBrokerChannel"
+   ],
+   "groups": [
+    "typeSwitch_sites"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": false,
+    "shim": "failed",
+    "errors": [
+     "organized/fox/vineflower/com/tridium/fox/sys/broker/BBrokerChannel.java:26: error: LoadedModule has protected access in ModuleSetClassLoader",
+     "organized/fox/vineflower/com/tridium/fox/sys/broker/BBrokerChannel.java:548: error: variable defaultValue is already defined in method loadType(ValueDocDecoder,NModule,BTypeSpec)",
+     "organized/fox/vineflower/com/tridium/fox/sys/broker/BBrokerChannel.java:550: error: variable defaultValueDecoder is already defined in method loadType(ValueDocDecoder,NModule,BTypeSpec)",
+     "organized/fox/vineflower/com/tridium/fox/sys/broker/BBrokerChannel.java:1673: error: reference to doPrivileged is ambiguous"
+    ],
+    "status": "no-compile"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": false,
+    "shim": "failed",
+    "errors": [
+     "organized/fox/vineflower2/com/tridium/fox/sys/broker/BBrokerChannel.java:26: error: LoadedModule has protected access in ModuleSetClassLoader",
+     "organized/fox/vineflower2/com/tridium/fox/sys/broker/BBrokerChannel.java:550: error: variable defaultValue is already defined in method loadType(ValueDocDecoder,NModule,BTypeSpec)",
+     "organized/fox/vineflower2/com/tridium/fox/sys/broker/BBrokerChannel.java:552: error: variable defaultValueDecoder is already defined in method loadType(ValueDocDecoder,NModule,BTypeSpec)",
+     "organized/fox/vineflower2/com/tridium/fox/sys/broker/BBrokerChannel.java:1660: error: reference to doPrivileged is ambiguous"
+    ],
+    "status": "no-compile"
+   },
+   "cons": {
+    "pseudo": [
+     "SwitchBootstraps",
+     "typeSwitch<"
+    ],
+    "compiled": false,
+    "errors": [
+     "organized/fox/vineflower-cons/com/tridium/fox/sys/broker/BBrokerChannel.java:550: error: ')' expected",
+     "organized/fox/vineflower-cons/com/tridium/fox/sys/broker/BBrokerChannel.java:550: error: case, default, or '}' expected",
+     "organized/fox/vineflower-cons/com/tridium/fox/sys/broker/BBrokerChannel.java:550: error: case, default, or '}' expected",
+     "organized/fox/vineflower-cons/com/tridium/fox/sys/broker/BBrokerChannel.java:550: error: case, default, or '}' expected",
+     "organized/fox/vineflower-cons/com/tridium/fox/sys/broker/BBrokerChannel.java:550: error: case, default, or '}' expected",
+     "organized/fox/vineflower-cons/com/tridium/fox/sys/broker/BBrokerChannel.java:550: error: case, default, or '}' expected",
+     "organized/fox/vineflower-cons/com/tridium/fox/sys/broker/BBrokerChannel.java:550: error: case, default, or '}' expected",
+     "organized/fox/vineflower-cons/com/tridium/fox/sys/broker/BBrokerChannel.java:550: error: case, default, or '}' expected"
+    ],
+    "status": "no-compile"
+   },
+   "cfr": {
+    "pseudo": [
+     "SwitchBootstraps"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/cfr/fox/com/tridium/fox/sys/broker/BBrokerChannel.java:423: error: constructor NModule in class NModule cannot be applied to given types;",
+     "<scratch>/dec/cfr/fox/com/tridium/fox/sys/broker/BBrokerChannel.java:564: error: incompatible types: String cannot be converted to Lookup",
+     "<scratch>/dec/cfr/fox/com/tridium/fox/sys/broker/BBrokerChannel.java:631: error: switch has both boolean values and a default label",
+     "<scratch>/dec/cfr/fox/com/tridium/fox/sys/broker/BBrokerChannel.java:655: error: cannot find symbol",
+     "<scratch>/dec/cfr/fox/com/tridium/fox/sys/broker/BBrokerChannel.java:656: error: cannot find symbol",
+     "<scratch>/dec/cfr/fox/com/tridium/fox/sys/broker/BBrokerChannel.java:657: error: cannot find symbol",
+     "<scratch>/dec/cfr/fox/com/tridium/fox/sys/broker/BBrokerChannel.java:658: error: cannot find symbol",
+     "<scratch>/dec/cfr/fox/com/tridium/fox/sys/broker/BBrokerChannel.java:659: error: incompatible types: Object cannot be converted to int"
+    ],
+    "status": "no-compile"
+   },
+   "procyon": {
+    "pseudo": [
+     "ProcyonInvokeDynamic",
+     "SwitchBootstraps",
+     "invokedynamic(!)"
+    ],
+    "compiled": false,
+    "shim": "failed",
+    "errors": [
+     "<scratch>/dec/procyon/fox/com/tridium/fox/sys/broker/BBrokerChannel.java:496: error: incompatible types: boolean cannot be converted to int",
+     "<scratch>/dec/procyon/fox/com/tridium/fox/sys/broker/BBrokerChannel.java:498: error: incompatible types: SyntheticComplexType cannot be converted to SyntheticEnumType",
+     "<scratch>/dec/procyon/fox/com/tridium/fox/sys/broker/BBrokerChannel.java:569: error: switch has both boolean values and a default label",
+     "<scratch>/dec/procyon/fox/com/tridium/fox/sys/broker/BBrokerChannel.java:1287: error: incompatible types: Object cannot be converted to BValue",
+     "<scratch>/dec/procyon/fox/com/tridium/fox/sys/broker/BBrokerChannel.java:1290: error: incompatible types: Object cannot be converted to BValue",
+     "<scratch>/dec/procyon/fox/com/tridium/fox/sys/broker/BBrokerChannel.java:1446: error: cannot find symbol",
+     "<scratch>/dec/procyon/fox/com/tridium/fox/sys/broker/BBrokerChannel.java:1579: error: reference to doPrivileged is ambiguous",
+     "<scratch>/dec/procyon/fox/com/tridium/fox/sys/broker/BBrokerChannel.java:2047: error: incompatible types: Object cannot be converted to int"
+    ],
+    "status": "no-compile"
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "jetty",
+   "top_rel": "com/tridium/jetty/BJettyWebServer",
+   "targets": [
+    "com/tridium/jetty/BJettyWebServer"
+   ],
+   "groups": [
+    "typeSwitch_sites"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": false,
+    "shim": "failed",
+    "errors": [
+     "organized/jetty/vineflower/com/tridium/jetty/BJettyWebServer.java:120: error: ServerState has protected access in BWebServer",
+     "organized/jetty/vineflower/com/tridium/jetty/BJettyWebServer.java:180: error: ServerConnector.ServerConnectorManager has protected access in ServerConnector",
+     "organized/jetty/vineflower/com/tridium/jetty/BJettyWebServer.java:555: error: reference to doPrivileged is ambiguous",
+     "organized/jetty/vineflower/com/tridium/jetty/BJettyWebServer.java:618: error: reference to doPrivileged is ambiguous",
+     "organized/jetty/vineflower/com/tridium/jetty/BJettyWebServer.java:637: error: reference to doPrivileged is ambiguous",
+     "organized/jetty/vineflower/com/tridium/jetty/BJettyWebServer.java:1069: error: reference to doPrivileged is ambiguous",
+     "organized/jetty/vineflower/com/tridium/jetty/BJettyWebServer.java:1126: error: reference to doPrivileged is ambiguous",
+     "organized/jetty/vineflower/com/tridium/jetty/BJettyWebServer.java:1414: error: incompatible types: Object cannot be converted to int"
+    ],
+    "status": "no-compile"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": false,
+    "shim": "failed",
+    "errors": [
+     "organized/jetty/vineflower2/com/tridium/jetty/BJettyWebServer.java:120: error: ServerState has protected access in BWebServer",
+     "organized/jetty/vineflower2/com/tridium/jetty/BJettyWebServer.java:180: error: ServerConnector.ServerConnectorManager has protected access in ServerConnector",
+     "organized/jetty/vineflower2/com/tridium/jetty/BJettyWebServer.java:560: error: reference to doPrivileged is ambiguous",
+     "organized/jetty/vineflower2/com/tridium/jetty/BJettyWebServer.java:623: error: reference to doPrivileged is ambiguous",
+     "organized/jetty/vineflower2/com/tridium/jetty/BJettyWebServer.java:642: error: reference to doPrivileged is ambiguous",
+     "organized/jetty/vineflower2/com/tridium/jetty/BJettyWebServer.java:1072: error: reference to doPrivileged is ambiguous",
+     "organized/jetty/vineflower2/com/tridium/jetty/BJettyWebServer.java:1129: error: reference to doPrivileged is ambiguous"
+    ],
+    "status": "no-compile"
+   },
+   "cons": {
+    "pseudo": [
+     "SwitchBootstraps",
+     "typeSwitch<"
+    ],
+    "compiled": false,
+    "errors": [
+     "organized/jetty/vineflower-cons/com/tridium/jetty/BJettyWebServer.java:1539: error: ')' expected",
+     "organized/jetty/vineflower-cons/com/tridium/jetty/BJettyWebServer.java:1539: error: case, default, or '}' expected",
+     "organized/jetty/vineflower-cons/com/tridium/jetty/BJettyWebServer.java:1539: error: case, default, or '}' expected",
+     "organized/jetty/vineflower-cons/com/tridium/jetty/BJettyWebServer.java:1539: error: case, default, or '}' expected",
+     "organized/jetty/vineflower-cons/com/tridium/jetty/BJettyWebServer.java:1539: error: case, default, or '}' expected",
+     "organized/jetty/vineflower-cons/com/tridium/jetty/BJettyWebServer.java:1539: error: case, default, or '}' expected",
+     "organized/jetty/vineflower-cons/com/tridium/jetty/BJettyWebServer.java:1539: error: case, default, or '}' expected",
+     "organized/jetty/vineflower-cons/com/tridium/jetty/BJettyWebServer.java:1539: error: case, default, or '}' expected"
+    ],
+    "status": "no-compile"
+   },
+   "cfr": {
+    "pseudo": [
+     "SwitchBootstraps"
+    ],
+    "compiled": false,
+    "shim": "failed",
+    "errors": [
+     "<scratch>/dec/cfr/jetty/com/tridium/jetty/BJettyWebServer.java:686: error: reference to doPrivileged is ambiguous",
+     "<scratch>/dec/cfr/jetty/com/tridium/jetty/BJettyWebServer.java:732: error: reference to doPrivileged is ambiguous",
+     "<scratch>/dec/cfr/jetty/com/tridium/jetty/BJettyWebServer.java:748: error: reference to doPrivileged is ambiguous",
+     "<scratch>/dec/cfr/jetty/com/tridium/jetty/BJettyWebServer.java:753: error: cannot find symbol",
+     "<scratch>/dec/cfr/jetty/com/tridium/jetty/BJettyWebServer.java:754: error: cannot find symbol",
+     "<scratch>/dec/cfr/jetty/com/tridium/jetty/BJettyWebServer.java:755: error: cannot find symbol",
+     "<scratch>/dec/cfr/jetty/com/tridium/jetty/BJettyWebServer.java:760: error: cannot find symbol",
+     "<scratch>/dec/cfr/jetty/com/tridium/jetty/BJettyWebServer.java:761: error: cannot find symbol"
+    ],
+    "status": "no-compile"
+   },
+   "procyon": {
+    "pseudo": [
+     "ProcyonInvokeDynamic",
+     "SwitchBootstraps",
+     "invokedynamic(!)"
+    ],
+    "compiled": false,
+    "shim": "failed",
+    "errors": [
+     "<scratch>/dec/procyon/jetty/com/tridium/jetty/BJettyWebServer.java:498: error: reference to doPrivileged is ambiguous",
+     "<scratch>/dec/procyon/jetty/com/tridium/jetty/BJettyWebServer.java:527: error: incompatible types: Server cannot be converted to BJettyWebServer",
+     "<scratch>/dec/procyon/jetty/com/tridium/jetty/BJettyWebServer.java:542: error: reference to doPrivileged is ambiguous",
+     "<scratch>/dec/procyon/jetty/com/tridium/jetty/BJettyWebServer.java:560: error: reference to doPrivileged is ambiguous",
+     "<scratch>/dec/procyon/jetty/com/tridium/jetty/BJettyWebServer.java:636: error: incompatible types: Server cannot be converted to BJettyWebServer",
+     "<scratch>/dec/procyon/jetty/com/tridium/jetty/BJettyWebServer.java:854: error: reference to doPrivileged is ambiguous",
+     "<scratch>/dec/procyon/jetty/com/tridium/jetty/BJettyWebServer.java:910: error: reference to doPrivileged is ambiguous",
+     "<scratch>/dec/procyon/jetty/com/tridium/jetty/BJettyWebServer.java:1004: error: incompatible types: Object cannot be converted to NiagaraWebSession"
+    ],
+    "status": "no-compile"
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "platDaemon",
+   "top_rel": "com/tridium/platDaemon/ui/stationtransfer/BStationCopier",
+   "targets": [
+    "com/tridium/platDaemon/ui/stationtransfer/BStationCopier$WizardCommand"
+   ],
+   "groups": [
+    "typeSwitch_sites"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": true,
+    "shim": "pea",
+    "methods": {
+     "com/tridium/platDaemon/ui/stationtransfer/BStationCopier$WizardCommand": {
+      "doInvokeAsync()V": {
+       "verdict": "mismatch",
+       "kind": "other+labels-equal+effects-DIFFER",
+       "first_diff": [
+        "insn17: iflt rel+251",
+        "insn17: ifge rel+125"
+       ],
+       "effect_diff": [
+        "+getfield // Field this$0:Lcom/tridium/platDaemon/ui/stationtransfer/BStationCopier;",
+        "+getfield // Field com/tridium/platDaemon/ui/stationtransfer/BStationCopier.remoteStations:Lcom/tridium/platDaemon/ui/stationtransfer/BStationCopier$StationListModel;",
+        "+getfield // Field this$0:Lcom/tridium/platDaemon/ui/stationtransfer/BStationCopier;",
+        "+getfield // Field com/tridium/platDaemon/ui/stationtransfer/BStationCopier.remoteList:Lniagara/ui/list/BList;",
+        "+invokevirtual // Method niagara/ui/list/BList.getSelectedIndex:()I",
+        "+invokevirtual // Method com/tridium/platDaemon/ui/stationtransfer/BStationCopier$StationListModel.getDirectoryAt:(I)Lniagara/file/BDirectory;",
+        "+ldc // String config.bog",
+        "+invokevirtual // Method niagara/file/BDirectory.getNavChild:(Ljava/lang/String;)Lniagara/nav/BINavNode;"
+       ]
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": true,
+    "shim": "pea",
+    "methods": {
+     "com/tridium/platDaemon/ui/stationtransfer/BStationCopier$WizardCommand": {
+      "doInvokeAsync()V": {
+       "verdict": "mismatch",
+       "kind": "other+labels-equal+effects-DIFFER",
+       "first_diff": [
+        "insn17: iflt rel+251",
+        "insn17: ifge rel+125"
+       ],
+       "effect_diff": [
+        "+getfield // Field this$0:Lcom/tridium/platDaemon/ui/stationtransfer/BStationCopier;",
+        "+getfield // Field com/tridium/platDaemon/ui/stationtransfer/BStationCopier.remoteStations:Lcom/tridium/platDaemon/ui/stationtransfer/BStationCopier$StationListModel;",
+        "+getfield // Field this$0:Lcom/tridium/platDaemon/ui/stationtransfer/BStationCopier;",
+        "+getfield // Field com/tridium/platDaemon/ui/stationtransfer/BStationCopier.remoteList:Lniagara/ui/list/BList;",
+        "+invokevirtual // Method niagara/ui/list/BList.getSelectedIndex:()I",
+        "+invokevirtual // Method com/tridium/platDaemon/ui/stationtransfer/BStationCopier$StationListModel.getDirectoryAt:(I)Lniagara/file/BDirectory;",
+        "+ldc // String config.bog",
+        "+invokevirtual // Method niagara/file/BDirectory.getNavChild:(Ljava/lang/String;)Lniagara/nav/BINavNode;"
+       ]
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cons": {
+    "pseudo": [
+     "SwitchBootstraps",
+     "typeSwitch<"
+    ],
+    "compiled": false,
+    "errors": [
+     "organized/platDaemon/vineflower-cons/com/tridium/platDaemon/ui/stationtransfer/BStationCopier.java:654: error: ')' expected",
+     "organized/platDaemon/vineflower-cons/com/tridium/platDaemon/ui/stationtransfer/BStationCopier.java:654: error: case, default, or '}' expected",
+     "organized/platDaemon/vineflower-cons/com/tridium/platDaemon/ui/stationtransfer/BStationCopier.java:654: error: case, default, or '}' expected",
+     "organized/platDaemon/vineflower-cons/com/tridium/platDaemon/ui/stationtransfer/BStationCopier.java:654: error: case, default, or '}' expected",
+     "organized/platDaemon/vineflower-cons/com/tridium/platDaemon/ui/stationtransfer/BStationCopier.java:654: error: case, default, or '}' expected",
+     "organized/platDaemon/vineflower-cons/com/tridium/platDaemon/ui/stationtransfer/BStationCopier.java:654: error: case, default, or '}' expected",
+     "organized/platDaemon/vineflower-cons/com/tridium/platDaemon/ui/stationtransfer/BStationCopier.java:654: error: case, default, or '}' expected",
+     "organized/platDaemon/vineflower-cons/com/tridium/platDaemon/ui/stationtransfer/BStationCopier.java:654: error: case, default, or '}' expected"
+    ],
+    "status": "no-compile"
+   },
+   "cfr": {
+    "pseudo": [
+     "SwitchBootstraps"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/cfr/platDaemon/com/tridium/platDaemon/ui/stationtransfer/BStationCopier.java:435: error: no suitable method found for add(Object)",
+     "<scratch>/dec/cfr/platDaemon/com/tridium/platDaemon/ui/stationtransfer/BStationCopier.java:482: error: cannot find symbol",
+     "<scratch>/dec/cfr/platDaemon/com/tridium/platDaemon/ui/stationtransfer/BStationCopier.java:483: error: cannot find symbol",
+     "<scratch>/dec/cfr/platDaemon/com/tridium/platDaemon/ui/stationtransfer/BStationCopier.java:487: error: cannot find symbol",
+     "<scratch>/dec/cfr/platDaemon/com/tridium/platDaemon/ui/stationtransfer/BStationCopier.java:494: error: incompatible types: String cannot be converted to Lookup",
+     "<scratch>/dec/cfr/platDaemon/com/tridium/platDaemon/ui/stationtransfer/BStationCopier.java:528: error: switch has both boolean values and a default label",
+     "<scratch>/dec/cfr/platDaemon/com/tridium/platDaemon/ui/stationtransfer/BStationCopier.java:538: error: cannot find symbol",
+     "<scratch>/dec/cfr/platDaemon/com/tridium/platDaemon/ui/stationtransfer/BStationCopier.java:539: error: cannot find symbol"
+    ],
+    "status": "no-compile"
+   },
+   "procyon": {
+    "pseudo": [
+     "ProcyonInvokeDynamic",
+     "SwitchBootstraps",
+     "invokedynamic(!)"
+    ],
+    "compiled": false,
+    "shim": "failed",
+    "errors": [
+     "<scratch>/dec/procyon/platDaemon/com/tridium/platDaemon/ui/stationtransfer/BStationCopier.java:571: error: reference to doPrivileged is ambiguous",
+     "<scratch>/dec/procyon/platDaemon/com/tridium/platDaemon/ui/stationtransfer/BStationCopier.java:634: error: no suitable method found for add(Object)",
+     "<scratch>/dec/procyon/platDaemon/com/tridium/platDaemon/ui/stationtransfer/BStationCopier.java:695: error: incompatible types: Object cannot be converted to int"
+    ],
+    "status": "no-compile"
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "platform",
+   "top_rel": "com/tridium/install/SignatureDispositionEnum",
+   "targets": [
+    "com/tridium/install/SignatureDispositionEnum"
+   ],
+   "groups": [
+    "matchexception"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/install/SignatureDispositionEnum": {
+      "getDispositionIcon()Lniagara/gx/BImage;": {
+       "verdict": "exact"
+      },
+      "getDispositionMessage()Ljava/lang/String;": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/install/SignatureDispositionEnum": {
+      "getDispositionIcon()Lniagara/gx/BImage;": {
+       "verdict": "exact"
+      },
+      "getDispositionMessage()Ljava/lang/String;": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cons": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/install/SignatureDispositionEnum": {
+      "getDispositionIcon()Lniagara/gx/BImage;": {
+       "verdict": "mismatch",
+       "kind": "other+labels-equal+effects-DIFFER",
+       "first_diff": [
+        "insn2: tableswitch {0:rel+7, 1:rel+9, 2:rel+11, default:rel+1}",
+        "insn2: tableswitch {0:rel+1, 1:rel+4, 2:rel+7, default:rel+10}"
+       ],
+       "effect_diff": [
+        "PERMUTED: same effect multiset in a different order (arm/branch layout)"
+       ]
+      },
+      "getDispositionMessage()Ljava/lang/String;": {
+       "verdict": "mismatch",
+       "kind": "other+labels-equal+effects-DIFFER",
+       "first_diff": [
+        "insn2: tableswitch {0:rel+7, 1:rel+11, 2:rel+15, default:rel+1}",
+        "insn2: tableswitch {0:rel+1, 1:rel+6, 2:rel+11, default:rel+16}"
+       ],
+       "effect_diff": [
+        "PERMUTED: same effect multiset in a different order (arm/branch layout)"
+       ]
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cfr": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/install/SignatureDispositionEnum": {
+      "getDispositionIcon()Lniagara/gx/BImage;": {
+       "verdict": "exact"
+      },
+      "getDispositionMessage()Ljava/lang/String;": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "procyon": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/install/SignatureDispositionEnum": {
+      "getDispositionIcon()Lniagara/gx/BImage;": {
+       "verdict": "exact"
+      },
+      "getDispositionMessage()Ljava/lang/String;": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "platform",
+   "top_rel": "com/tridium/install/SignatureStatusEnum",
+   "targets": [
+    "com/tridium/install/SignatureStatusEnum"
+   ],
+   "groups": [
+    "matchexception"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/install/SignatureStatusEnum": {
+      "getStatusIcon()Lniagara/gx/BImage;": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/install/SignatureStatusEnum": {
+      "getStatusIcon()Lniagara/gx/BImage;": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cons": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/install/SignatureStatusEnum": {
+      "getStatusIcon()Lniagara/gx/BImage;": {
+       "verdict": "mismatch",
+       "kind": "other+labels-equal+effects-DIFFER",
+       "first_diff": [
+        "insn2: tableswitch {0:rel+7, 1:rel+9, 2:rel+11, 3:rel+13, 4:rel+15, 5:rel+17, 6:rel+19, default:rel+1}",
+        "insn2: tableswitch {0:rel+1, 1:rel+4, 2:rel+7, 3:rel+10, 4:rel+13, 5:rel+16, 6:rel+19, default:rel+22}"
+       ],
+       "effect_diff": [
+        "PERMUTED: same effect multiset in a different order (arm/branch layout)"
+       ]
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cfr": {
+    "pseudo": [],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/cfr/platform/com/tridium/install/SignatureStatusEnum.java:88: error: incompatible types: Object cannot be converted to SignatureStatusEnum"
+    ],
+    "status": "no-compile"
+   },
+   "procyon": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/install/SignatureStatusEnum": {
+      "getStatusIcon()Lniagara/gx/BImage;": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "platform",
+   "top_rel": "com/tridium/install/installable/BDistribution",
+   "targets": [
+    "com/tridium/install/installable/BDistribution"
+   ],
+   "groups": [
+    "typeSwitch_sites"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": true,
+    "shim": "pa",
+    "methods": {
+     "com/tridium/install/installable/BDistribution": {
+      "getEntryDestPath(Lniagara/file/FilePath;)Lniagara/file/FilePath;": {
+       "verdict": "exact"
+      },
+      "getEntryDestPath(Ljava/lang/String;)Lniagara/file/FilePath;": {
+       "verdict": "mismatch",
+       "kind": "other+labels-equal+effects-equal",
+       "first_diff": [
+        "insn12: areturn",
+        "insn12: goto rel+6"
+       ],
+       "effect_diff": []
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": true,
+    "shim": "pa",
+    "methods": {
+     "com/tridium/install/installable/BDistribution": {
+      "getEntryDestPath(Lniagara/file/FilePath;)Lniagara/file/FilePath;": {
+       "verdict": "exact"
+      },
+      "getEntryDestPath(Ljava/lang/String;)Lniagara/file/FilePath;": {
+       "verdict": "mismatch",
+       "kind": "other+labels-equal+effects-equal",
+       "first_diff": [
+        "insn12: areturn",
+        "insn12: goto rel+6"
+       ],
+       "effect_diff": []
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cons": {
+    "pseudo": [
+     "SwitchBootstraps",
+     "typeSwitch<"
+    ],
+    "compiled": false,
+    "errors": [
+     "organized/platform/vineflower-cons/com/tridium/install/installable/BDistribution.java:857: error: ')' expected",
+     "organized/platform/vineflower-cons/com/tridium/install/installable/BDistribution.java:857: error: case, default, or '}' expected",
+     "organized/platform/vineflower-cons/com/tridium/install/installable/BDistribution.java:857: error: case, default, or '}' expected",
+     "organized/platform/vineflower-cons/com/tridium/install/installable/BDistribution.java:857: error: case, default, or '}' expected",
+     "organized/platform/vineflower-cons/com/tridium/install/installable/BDistribution.java:857: error: case, default, or '}' expected",
+     "organized/platform/vineflower-cons/com/tridium/install/installable/BDistribution.java:857: error: case, default, or '}' expected",
+     "organized/platform/vineflower-cons/com/tridium/install/installable/BDistribution.java:857: error: case, default, or '}' expected",
+     "organized/platform/vineflower-cons/com/tridium/install/installable/BDistribution.java:857: error: case, default, or '}' expected"
+    ],
+    "status": "no-compile"
+   },
+   "cfr": {
+    "pseudo": [
+     "SwitchBootstraps"
+    ],
+    "compiled": false,
+    "shim": "failed",
+    "errors": [
+     "<scratch>/dec/cfr/platform/com/tridium/install/installable/BDistribution.java:242: error: anonymous class implements interface; cannot have arguments",
+     "<scratch>/dec/cfr/platform/com/tridium/install/installable/BDistribution.java:491: error: reference to doPrivileged is ambiguous",
+     "<scratch>/dec/cfr/platform/com/tridium/install/installable/BDistribution.java:504: error: reference to doPrivileged is ambiguous",
+     "<scratch>/dec/cfr/platform/com/tridium/install/installable/BDistribution.java:758: error: reference to doPrivileged is ambiguous",
+     "<scratch>/dec/cfr/platform/com/tridium/install/installable/BDistribution.java:763: error: reference to doPrivileged is ambiguous",
+     "<scratch>/dec/cfr/platform/com/tridium/install/installable/BDistribution.java:835: error: incompatible types: String cannot be converted to Lookup",
+     "<scratch>/dec/cfr/platform/com/tridium/install/installable/BDistribution.java:848: error: switch has both boolean values and a default label",
+     "<scratch>/dec/cfr/platform/com/tridium/install/installable/BDistribution.java:875: error: incompatible types: String cannot be converted to Lookup"
+    ],
+    "status": "no-compile"
+   },
+   "procyon": {
+    "status": "empty-output",
+    "pseudo": [],
+    "compiled": false
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "platform",
+   "top_rel": "com/tridium/platform/daemon/PlatformStationManager",
+   "targets": [
+    "com/tridium/platform/daemon/PlatformStationManager"
+   ],
+   "groups": [
+    "typeSwitch_sites"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [
+     "SwitchBootstraps",
+     "typeSwitch<"
+    ],
+    "compiled": false,
+    "errors": [
+     "organized/platform/vineflower/com/tridium/platform/daemon/PlatformStationManager.java:69: error: ')' expected",
+     "organized/platform/vineflower/com/tridium/platform/daemon/PlatformStationManager.java:69: error: case, default, or '}' expected",
+     "organized/platform/vineflower/com/tridium/platform/daemon/PlatformStationManager.java:69: error: case, default, or '}' expected",
+     "organized/platform/vineflower/com/tridium/platform/daemon/PlatformStationManager.java:69: error: case, default, or '}' expected",
+     "organized/platform/vineflower/com/tridium/platform/daemon/PlatformStationManager.java:69: error: case, default, or '}' expected",
+     "organized/platform/vineflower/com/tridium/platform/daemon/PlatformStationManager.java:69: error: case, default, or '}' expected",
+     "organized/platform/vineflower/com/tridium/platform/daemon/PlatformStationManager.java:69: error: case, default, or '}' expected",
+     "organized/platform/vineflower/com/tridium/platform/daemon/PlatformStationManager.java:69: error: case, default, or '}' expected"
+    ],
+    "status": "no-compile"
+   },
+   "v2": {
+    "pseudo": [
+     "SwitchBootstraps",
+     "typeSwitch<"
+    ],
+    "compiled": false,
+    "errors": [
+     "organized/platform/vineflower2/com/tridium/platform/daemon/PlatformStationManager.java:69: error: ')' expected",
+     "organized/platform/vineflower2/com/tridium/platform/daemon/PlatformStationManager.java:69: error: case, default, or '}' expected",
+     "organized/platform/vineflower2/com/tridium/platform/daemon/PlatformStationManager.java:69: error: case, default, or '}' expected",
+     "organized/platform/vineflower2/com/tridium/platform/daemon/PlatformStationManager.java:69: error: case, default, or '}' expected",
+     "organized/platform/vineflower2/com/tridium/platform/daemon/PlatformStationManager.java:69: error: case, default, or '}' expected",
+     "organized/platform/vineflower2/com/tridium/platform/daemon/PlatformStationManager.java:69: error: case, default, or '}' expected",
+     "organized/platform/vineflower2/com/tridium/platform/daemon/PlatformStationManager.java:69: error: case, default, or '}' expected",
+     "organized/platform/vineflower2/com/tridium/platform/daemon/PlatformStationManager.java:69: error: case, default, or '}' expected"
+    ],
+    "status": "no-compile"
+   },
+   "cons": {
+    "pseudo": [
+     "SwitchBootstraps",
+     "typeSwitch<"
+    ],
+    "compiled": false,
+    "errors": [
+     "organized/platform/vineflower-cons/com/tridium/platform/daemon/PlatformStationManager.java:68: error: ')' expected",
+     "organized/platform/vineflower-cons/com/tridium/platform/daemon/PlatformStationManager.java:68: error: case, default, or '}' expected",
+     "organized/platform/vineflower-cons/com/tridium/platform/daemon/PlatformStationManager.java:68: error: case, default, or '}' expected",
+     "organized/platform/vineflower-cons/com/tridium/platform/daemon/PlatformStationManager.java:68: error: case, default, or '}' expected",
+     "organized/platform/vineflower-cons/com/tridium/platform/daemon/PlatformStationManager.java:68: error: case, default, or '}' expected",
+     "organized/platform/vineflower-cons/com/tridium/platform/daemon/PlatformStationManager.java:68: error: case, default, or '}' expected",
+     "organized/platform/vineflower-cons/com/tridium/platform/daemon/PlatformStationManager.java:68: error: case, default, or '}' expected",
+     "organized/platform/vineflower-cons/com/tridium/platform/daemon/PlatformStationManager.java:68: error: case, default, or '}' expected"
+    ],
+    "status": "no-compile"
+   },
+   "cfr": {
+    "pseudo": [
+     "SwitchBootstraps"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/cfr/platform/com/tridium/platform/daemon/PlatformStationManager.java:87: error: incompatible types: String cannot be converted to Lookup",
+     "<scratch>/dec/cfr/platform/com/tridium/platform/daemon/PlatformStationManager.java:117: error: switch has both boolean values and a default label"
+    ],
+    "status": "no-compile"
+   },
+   "procyon": {
+    "pseudo": [
+     "ProcyonInvokeDynamic",
+     "SwitchBootstraps",
+     "invokedynamic(!)"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/procyon/platform/com/tridium/platform/daemon/PlatformStationManager.java:231: error: incompatible types: Object cannot be converted to int"
+    ],
+    "status": "no-compile"
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "schedule",
+   "top_rel": "com/tridium/schedule/ui/BScheduleFE",
+   "targets": [
+    "com/tridium/schedule/ui/BScheduleFE"
+   ],
+   "groups": [
+    "typeSwitch_sites"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/schedule/ui/BScheduleFE": {
+      "makeFor(Lniagara/schedule/BAbstractSchedule;)Lcom/tridium/schedule/ui/BAbstractScheduleWidget;": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "com/tridium/schedule/ui/BScheduleFE": {
+      "makeFor(Lniagara/schedule/BAbstractSchedule;)Lcom/tridium/schedule/ui/BAbstractScheduleWidget;": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cons": {
+    "pseudo": [
+     "SwitchBootstraps",
+     "typeSwitch<"
+    ],
+    "compiled": false,
+    "errors": [
+     "organized/schedule/vineflower-cons/com/tridium/schedule/ui/BScheduleFE.java:61: error: ')' expected",
+     "organized/schedule/vineflower-cons/com/tridium/schedule/ui/BScheduleFE.java:61: error: case, default, or '}' expected",
+     "organized/schedule/vineflower-cons/com/tridium/schedule/ui/BScheduleFE.java:61: error: case, default, or '}' expected",
+     "organized/schedule/vineflower-cons/com/tridium/schedule/ui/BScheduleFE.java:61: error: case, default, or '}' expected",
+     "organized/schedule/vineflower-cons/com/tridium/schedule/ui/BScheduleFE.java:61: error: case, default, or '}' expected",
+     "organized/schedule/vineflower-cons/com/tridium/schedule/ui/BScheduleFE.java:61: error: case, default, or '}' expected",
+     "organized/schedule/vineflower-cons/com/tridium/schedule/ui/BScheduleFE.java:61: error: case, default, or '}' expected",
+     "organized/schedule/vineflower-cons/com/tridium/schedule/ui/BScheduleFE.java:61: error: case, default, or '}' expected"
+    ],
+    "status": "no-compile"
+   },
+   "cfr": {
+    "pseudo": [
+     "SwitchBootstraps"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/cfr/schedule/com/tridium/schedule/ui/BScheduleFE.java:91: error: incompatible types: String cannot be converted to Lookup"
+    ],
+    "status": "no-compile"
+   },
+   "procyon": {
+    "pseudo": [
+     "ProcyonInvokeDynamic",
+     "SwitchBootstraps",
+     "invokedynamic(!)"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/procyon/schedule/com/tridium/schedule/ui/BScheduleFE.java:73: error: incompatible types: boolean cannot be converted to int",
+     "<scratch>/dec/procyon/schedule/com/tridium/schedule/ui/BScheduleFE.java:134: error: switch has both boolean values and a default label",
+     "<scratch>/dec/procyon/schedule/com/tridium/schedule/ui/BScheduleFE.java:194: error: incompatible types: Object cannot be converted to int"
+    ],
+    "status": "no-compile"
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "test",
+   "top_rel": "niagara/test/TestHelper",
+   "targets": [
+    "niagara/test/TestHelper"
+   ],
+   "groups": [
+    "typeSwitch_sites"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "niagara/test/TestHelper": {
+      "toNumber(Ljava/lang/Object;)Lniagara/sys/BNumber;": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": true,
+    "methods": {
+     "niagara/test/TestHelper": {
+      "toNumber(Ljava/lang/Object;)Lniagara/sys/BNumber;": {
+       "verdict": "exact"
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cons": {
+    "pseudo": [
+     "SwitchBootstraps",
+     "typeSwitch<"
+    ],
+    "compiled": false,
+    "errors": [
+     "organized/test/vineflower-cons/niagara/test/TestHelper.java:324: error: ')' expected",
+     "organized/test/vineflower-cons/niagara/test/TestHelper.java:324: error: case, default, or '}' expected",
+     "organized/test/vineflower-cons/niagara/test/TestHelper.java:324: error: case, default, or '}' expected",
+     "organized/test/vineflower-cons/niagara/test/TestHelper.java:324: error: case, default, or '}' expected",
+     "organized/test/vineflower-cons/niagara/test/TestHelper.java:324: error: case, default, or '}' expected",
+     "organized/test/vineflower-cons/niagara/test/TestHelper.java:324: error: case, default, or '}' expected",
+     "organized/test/vineflower-cons/niagara/test/TestHelper.java:324: error: case, default, or '}' expected",
+     "organized/test/vineflower-cons/niagara/test/TestHelper.java:324: error: case, default, or '}' expected"
+    ],
+    "status": "no-compile"
+   },
+   "cfr": {
+    "pseudo": [
+     "SwitchBootstraps"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/cfr/test/niagara/test/TestHelper.java:346: error: incompatible types: String cannot be converted to Lookup",
+     "<scratch>/dec/cfr/test/niagara/test/TestHelper.java:367: error: switch has both boolean values and a default label",
+     "<scratch>/dec/cfr/test/niagara/test/TestHelper.java:701: error: cannot find symbol"
+    ],
+    "status": "no-compile"
+   },
+   "procyon": {
+    "pseudo": [
+     "ProcyonInvokeDynamic",
+     "SwitchBootstraps",
+     "invokedynamic(!)"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/procyon/test/niagara/test/TestHelper.java:345: error: incompatible types: boolean cannot be converted to int",
+     "<scratch>/dec/procyon/test/niagara/test/TestHelper.java:366: error: switch has both boolean values and a default label",
+     "<scratch>/dec/procyon/test/niagara/test/TestHelper.java:851: error: incompatible types: Object cannot be converted to int"
+    ],
+    "status": "no-compile"
+   }
+  }
+ },
+ {
+  "unit": {
+   "mod": "workbench",
+   "top_rel": "niagara/workbench/BWbProfile",
+   "targets": [
+    "niagara/workbench/BWbProfile"
+   ],
+   "groups": [
+    "typeSwitch_sites"
+   ]
+  },
+  "trees": {
+   "v1": {
+    "pseudo": [],
+    "compiled": false,
+    "errors": [
+     "organized/workbench/vineflower/niagara/workbench/BWbProfile.java:13: error: package javafx.application does not exist",
+     "organized/workbench/vineflower/niagara/workbench/BWbProfile.java:56: error: incompatible types: Class<CAP#1> cannot be converted to Class<BWbProfile>",
+     "organized/workbench/vineflower/niagara/workbench/BWbProfile.java:207: error: cannot find symbol"
+    ],
+    "status": "no-compile"
+   },
+   "v2": {
+    "pseudo": [],
+    "compiled": true,
+    "system": "/mnt/c/Program Files/Niagara/5.0.0.28/jre",
+    "methods": {
+     "niagara/workbench/BWbProfile": {
+      "dumpMenu(Lniagara/ui/menu/BIMenu;Ljava/lang/String;)V": {
+       "verdict": "mismatch",
+       "kind": "other+labels-equal+effects-DIFFER",
+       "first_diff": [
+        "insn20: if_icmpge rel+66",
+        "insn20: if_icmpge rel+67"
+       ],
+       "effect_diff": [
+        "+checkcast // class niagara/ui/BSeparator"
+       ]
+      }
+     }
+    },
+    "status": "compiled"
+   },
+   "cons": {
+    "pseudo": [
+     "SwitchBootstraps",
+     "typeSwitch<"
+    ],
+    "compiled": false,
+    "errors": [
+     "organized/workbench/vineflower-cons/niagara/workbench/BWbProfile.java:269: error: ')' expected",
+     "organized/workbench/vineflower-cons/niagara/workbench/BWbProfile.java:269: error: case, default, or '}' expected",
+     "organized/workbench/vineflower-cons/niagara/workbench/BWbProfile.java:269: error: case, default, or '}' expected",
+     "organized/workbench/vineflower-cons/niagara/workbench/BWbProfile.java:269: error: case, default, or '}' expected",
+     "organized/workbench/vineflower-cons/niagara/workbench/BWbProfile.java:269: error: case, default, or '}' expected",
+     "organized/workbench/vineflower-cons/niagara/workbench/BWbProfile.java:269: error: case, default, or '}' expected",
+     "organized/workbench/vineflower-cons/niagara/workbench/BWbProfile.java:269: error: case, default, or '}' expected",
+     "organized/workbench/vineflower-cons/niagara/workbench/BWbProfile.java:269: error: case, default, or '}' expected"
+    ],
+    "status": "no-compile"
+   },
+   "cfr": {
+    "pseudo": [
+     "SwitchBootstraps"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/cfr/workbench/niagara/workbench/BWbProfile.java:46: error: package javafx.application does not exist",
+     "<scratch>/dec/cfr/workbench/niagara/workbench/BWbProfile.java:214: error: incompatible types: Object cannot be converted to String",
+     "<scratch>/dec/cfr/workbench/niagara/workbench/BWbProfile.java:243: error: cannot find symbol",
+     "<scratch>/dec/cfr/workbench/niagara/workbench/BWbProfile.java:293: error: incompatible types: String cannot be converted to Lookup",
+     "<scratch>/dec/cfr/workbench/niagara/workbench/BWbProfile.java:310: error: switch has both boolean values and a default label"
+    ],
+    "status": "no-compile"
+   },
+   "procyon": {
+    "pseudo": [
+     "ProcyonInvokeDynamic",
+     "SwitchBootstraps",
+     "invokedynamic(!)"
+    ],
+    "compiled": false,
+    "errors": [
+     "<scratch>/dec/procyon/workbench/niagara/workbench/BWbProfile.java:24: error: package javafx.application does not exist",
+     "<scratch>/dec/procyon/workbench/niagara/workbench/BWbProfile.java:69: error: incompatible types: Class<CAP#1> cannot be converted to Class<BWbProfile>",
+     "<scratch>/dec/procyon/workbench/niagara/workbench/BWbProfile.java:220: error: cannot find symbol",
+     "<scratch>/dec/procyon/workbench/niagara/workbench/BWbProfile.java:283: error: incompatible types: boolean cannot be converted to int",
+     "<scratch>/dec/procyon/workbench/niagara/workbench/BWbProfile.java:305: error: switch has both boolean values and a default label",
+     "<scratch>/dec/procyon/workbench/niagara/workbench/BWbProfile.java:353: error: incompatible types: Object cannot be converted to int"
+    ],
+    "status": "no-compile"
+   }
+  }
+ }
+]

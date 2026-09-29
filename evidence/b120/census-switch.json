@@ -1,0 +1,273 @@
+{
+ "classes_scanned": 21751,
+ "typeSwitch_sites": [
+  {
+   "class": "_bin-ext/nre/extracted/com/tridium/nre/subscription/EntitlementApi.class",
+   "method": "protected org.json.JSONObject sendRequestMessageAndHandleResponse(com.tridium.nre.subscription.HttpRequestMessage);",
+   "bsm": 9,
+   "indy": "typeSwitch:(Ljava/lang/Throwable;I)I"
+  },
+  {
+   "class": "_bin-ext/nre/extracted/com/tridium/nre/subscription/EntitlementApi.class",
+   "method": "private static org.json.JSONObject sanitizeMessage(org.json.JSONObject);",
+   "bsm": 19,
+   "indy": "typeSwitch:(Ljava/lang/String;I)I"
+  },
+  {
+   "class": "_bin-ext/nre/extracted/com/tridium/nre/security/UserLoginHistoryStore$EventThread.class",
+   "method": "private void serviceEvent(com.tridium.nre.security.AbstractUserLoginEvent);",
+   "bsm": 3,
+   "indy": "typeSwitch:(Lcom/tridium/nre/security/AbstractUserLoginEvent;I)I"
+  },
+  {
+   "class": "_bin-ext/nre/extracted/com/tridium/nre/security/permissions/PermissionFactory.class",
+   "method": "static com.tridium.nre.security.permissions.NiagaraPermission makeNiagaraPermission(java.lang.annotation.Annotation);",
+   "bsm": 0,
+   "indy": "typeSwitch:(Ljava/lang/annotation/Annotation;I)I"
+  },
+  {
+   "class": "_bin-ext/nre/extracted/com/tridium/crypto/core/io/CoreCryptoManager.class",
+   "method": "private java.lang.String getPublicKeyType(java.lang.String) throws java.security.KeyStoreException;",
+   "bsm": 15,
+   "indy": "typeSwitch:(Ljava/security/PublicKey;I)I"
+  },
+  {
+   "class": "_bin-ext/nre/extracted/com/tridium/crypto/core/cert/CertUtils.class",
+   "method": "public static java.security.cert.X509Certificate signCertificate(org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequest, java.security.cert.X509Certificate, java.security.PrivateKey, com.tridium.crypto.core.cert.NSigningParameters, boolean) throws java.lang.Exception;",
+   "bsm": 1,
+   "indy": "typeSwitch:(Ljava/security/PrivateKey;I)I"
+  },
+  {
+   "class": "_bin-ext/nre/extracted/com/tridium/crypto/core/cert/CertUtils.class",
+   "method": "public static java.security.PrivateKey getPrivateKeyFromObject(java.lang.Object, java.lang.String) throws com.tridium.crypto.core.cert.PrivateKeyDecryptionException;",
+   "bsm": 7,
+   "indy": "typeSwitch:(Ljava/lang/Object;I)I"
+  },
+  {
+   "class": "baja/extracted/com/tridium/sys/schema/Introspector.class",
+   "method": "static com.tridium.sys.module.NModule getModule(java.lang.Class<?>, java.lang.String);",
+   "bsm": 5,
+   "indy": "typeSwitch:(Ljava/lang/ClassLoader;I)I"
+  },
+  {
+   "class": "bajaui/extracted/niagara/ui/BAbstractButton$1.class",
+   "method": "public boolean hasPseudoClass(java.lang.String);",
+   "bsm": 0,
+   "indy": "typeSwitch:(Ljava/lang/String;I)I"
+  },
+  {
+   "class": "bajaui/extracted/niagara/ui/BAbstractButton.class",
+   "method": "public boolean hasPseudoClass(java.lang.String);",
+   "bsm": 0,
+   "indy": "typeSwitch:(Ljava/lang/String;I)I"
+  },
+  {
+   "class": "bajaui/extracted/niagara/ui/style/IStyle.class",
+   "method": "public static niagara.sys.BSimple toSimple(java.lang.Object);",
+   "bsm": 0,
+   "indy": "typeSwitch:(Ljava/lang/Object;I)I"
+  },
+  {
+   "class": "bajaui/extracted/niagara/ui/style/IStyle.class",
+   "method": "public static java.lang.Object toStyleValue(niagara.sys.BObject);",
+   "bsm": 2,
+   "indy": "typeSwitch:(Lniagara/sys/BObject;I)I"
+  },
+  {
+   "class": "bajaui/extracted/niagara/ui/style/StylableAdapter.class",
+   "method": "public static niagara.ui.style.StylableAdapter makeChildOf(niagara.ui.style.IStylable, java.lang.String);",
+   "bsm": 0,
+   "indy": "typeSwitch:(Lcom/tridium/ui/theme/custom/nss/selector/AbstractSimpleSelector;I)I"
+  },
+  {
+   "class": "control/extracted/niagara/control/BBooleanWritable.class",
+   "method": "public final java.lang.String getOldValueForPendingActionAuditEvent(niagara.sys.Action, niagara.sys.BValue, niagara.sys.Context);",
+   "bsm": 0,
+   "indy": "typeSwitch:(Lniagara/sys/Action;I)I"
+  },
+  {
+   "class": "control/extracted/niagara/control/BEnumWritable.class",
+   "method": "public final java.lang.String getOldValueForPendingActionAuditEvent(niagara.sys.Action, niagara.sys.BValue, niagara.sys.Context);",
+   "bsm": 1,
+   "indy": "typeSwitch:(Lniagara/sys/Action;I)I"
+  },
+  {
+   "class": "control/extracted/niagara/control/BNumericWritable.class",
+   "method": "public final java.lang.String getOldValueForPendingActionAuditEvent(niagara.sys.Action, niagara.sys.BValue, niagara.sys.Context);",
+   "bsm": 0,
+   "indy": "typeSwitch:(Lniagara/sys/Action;I)I"
+  },
+  {
+   "class": "control/extracted/niagara/control/BStringWritable.class",
+   "method": "public final java.lang.String getOldValueForPendingActionAuditEvent(niagara.sys.Action, niagara.sys.BValue, niagara.sys.Context);",
+   "bsm": 0,
+   "indy": "typeSwitch:(Lniagara/sys/Action;I)I"
+  },
+  {
+   "class": "email/extracted/com/tridium/email/EmailUtil.class",
+   "method": "private static void extractContent(java.util.List<niagara.email.BEmailPart>, java.lang.Object, java.lang.String, java.lang.String, boolean) throws java.lang.Exception;",
+   "bsm": 2,
+   "indy": "typeSwitch:(Ljava/lang/Object;I)I"
+  },
+  {
+   "class": "fox/extracted/com/tridium/fox/sys/broker/BBrokerChannel.class",
+   "method": "niagara.sys.Type loadType(niagara.io.ValueDocDecoder, com.tridium.sys.module.NModule, niagara.util.BTypeSpec) throws java.lang.Exception;",
+   "bsm": 7,
+   "indy": "typeSwitch:(Lniagara/sys/Type;I)I"
+  },
+  {
+   "class": "jetty/extracted/com/tridium/jetty/BJettyWebServer.class",
+   "method": "private static void walkContextHandler(org.eclipse.jetty.server.Handler, java.util.Set<java.lang.String>);",
+   "bsm": 40,
+   "indy": "typeSwitch:(Lorg/eclipse/jetty/server/Handler;I)I"
+  },
+  {
+   "class": "platDaemon/extracted/com/tridium/platDaemon/ui/stationtransfer/BStationCopier$WizardCommand.class",
+   "method": "public void doInvokeAsync();",
+   "bsm": 0,
+   "indy": "typeSwitch:(Lniagara/util/Version;I)I"
+  },
+  {
+   "class": "platform/extracted/com/tridium/install/installable/BDistribution.class",
+   "method": "private niagara.file.FilePath getEntryDestPath(niagara.file.FilePath);",
+   "bsm": 18,
+   "indy": "typeSwitch:(Ljava/lang/String;I)I"
+  },
+  {
+   "class": "platform/extracted/com/tridium/install/installable/BDistribution.class",
+   "method": "private niagara.file.FilePath getEntryDestPath(java.lang.String);",
+   "bsm": 18,
+   "indy": "typeSwitch:(Ljava/lang/String;I)I"
+  },
+  {
+   "class": "platform/extracted/com/tridium/platform/daemon/PlatformStationManager.class",
+   "method": "public niagara.platform.RemoteStation createStation(niagara.file.BDirectory, java.lang.String, niagara.platform.IPlatformOperationListener, java.util.function.Supplier<char[]>) throws java.lang.Exception;",
+   "bsm": 0,
+   "indy": "typeSwitch:(Lniagara/util/Version;I)I"
+  },
+  {
+   "class": "schedule/extracted/com/tridium/schedule/ui/BScheduleFE.class",
+   "method": "private com.tridium.schedule.ui.BAbstractScheduleWidget makeFor(niagara.schedule.BAbstractSchedule);",
+   "bsm": 0,
+   "indy": "typeSwitch:(Lniagara/schedule/BAbstractSchedule;I)I"
+  },
+  {
+   "class": "test/extracted/niagara/test/TestHelper.class",
+   "method": "private static niagara.sys.BNumber toNumber(java.lang.Object);",
+   "bsm": 10,
+   "indy": "typeSwitch:(Ljava/lang/Object;I)I"
+  },
+  {
+   "class": "workbench/extracted/niagara/workbench/BWbProfile.class",
+   "method": "private static void dumpMenu(niagara.ui.menu.BIMenu, java.lang.String);",
+   "bsm": 5,
+   "indy": "typeSwitch:(Lniagara/sys/BComponent;I)I"
+  }
+ ],
+ "enumSwitch_sites": [
+  {
+   "class": "bajaui/extracted/niagara/ui/BToggleButton.class",
+   "method": "public boolean hasPseudoClass(java.lang.String);",
+   "bsm": 0,
+   "indy": "enumSwitch:(Lniagara/ui/style/PseudoClass;I)I"
+  },
+  {
+   "class": "bajaui/extracted/niagara/ui/BToggleMenuItem.class",
+   "method": "public boolean hasPseudoClass(java.lang.String);",
+   "bsm": 0,
+   "indy": "enumSwitch:(Lniagara/ui/style/PseudoClass;I)I"
+  },
+  {
+   "class": "bajaui/extracted/niagara/ui/BWidget$DefaultPseudoClassChecker.class",
+   "method": "public boolean test(java.lang.String);",
+   "bsm": 0,
+   "indy": "enumSwitch:(Lniagara/ui/style/PseudoClass;I)I"
+  },
+  {
+   "class": "bajaui/extracted/niagara/ui/list/Item.class",
+   "method": "public boolean hasPseudoClass(java.lang.String);",
+   "bsm": 2,
+   "indy": "enumSwitch:(Lniagara/ui/style/PseudoClass;I)I"
+  },
+  {
+   "class": "bajaui/extracted/niagara/ui/pane/BLabelPane.class",
+   "method": "public boolean hasPseudoClass(java.lang.String);",
+   "bsm": 0,
+   "indy": "enumSwitch:(Lniagara/ui/style/PseudoClass;I)I"
+  },
+  {
+   "class": "bajaui/extracted/niagara/ui/tree/TreeNode.class",
+   "method": "public boolean hasPseudoClass(java.lang.String);",
+   "bsm": 0,
+   "indy": "enumSwitch:(Lniagara/ui/style/PseudoClass;I)I"
+  },
+  {
+   "class": "bajaui/extracted/com/tridium/ui/theme/custom/nss/query/DerivedSelectionResult.class",
+   "method": "public void invalidate(niagara.ui.style.IStylable, niagara.ui.style.IStyleCache$InvalidationReason);",
+   "bsm": 0,
+   "indy": "enumSwitch:(Lniagara/ui/style/IStyleCache$InvalidationReason;I)I"
+  }
+ ],
+ "matchexception_classes": [
+  {
+   "class": "_bin-ext/niagarad/extracted/com/tridium/niagarad/servlet/WiFiServlet$CcInfo.class",
+   "new_executed": true,
+   "typeSwitch_sites": 0,
+   "enumSwitch_sites": 0
+  },
+  {
+   "class": "_bin-ext/nre/extracted/com/tridium/nre/security/permissions/PermissionManager.class",
+   "new_executed": true,
+   "typeSwitch_sites": 0,
+   "enumSwitch_sites": 0
+  },
+  {
+   "class": "baja/extracted/niagara/timezone/DstRule.class",
+   "new_executed": true,
+   "typeSwitch_sites": 0,
+   "enumSwitch_sites": 0
+  },
+  {
+   "class": "baja/extracted/com/tridium/sys/module/ModuleManager$NiagaraJPMSAccessModifier.class",
+   "new_executed": true,
+   "typeSwitch_sites": 0,
+   "enumSwitch_sites": 0
+  },
+  {
+   "class": "bajaui/extracted/com/tridium/ui/layout/AbstractBoxLayoutStrategy.class",
+   "new_executed": true,
+   "typeSwitch_sites": 0,
+   "enumSwitch_sites": 0
+  },
+  {
+   "class": "bajaui/extracted/com/tridium/ui/layout/AbstractLayoutStrategy.class",
+   "new_executed": true,
+   "typeSwitch_sites": 0,
+   "enumSwitch_sites": 0
+  },
+  {
+   "class": "bajaui/extracted/com/tridium/ui/layout/FlexBoxLayoutStrategy.class",
+   "new_executed": true,
+   "typeSwitch_sites": 0,
+   "enumSwitch_sites": 0
+  },
+  {
+   "class": "bajaui/extracted/com/tridium/ui/theme/custom/nss/query/NSSTupleAdvice.class",
+   "new_executed": true,
+   "typeSwitch_sites": 0,
+   "enumSwitch_sites": 0
+  },
+  {
+   "class": "platform/extracted/com/tridium/install/SignatureDispositionEnum.class",
+   "new_executed": true,
+   "typeSwitch_sites": 0,
+   "enumSwitch_sites": 0
+  },
+  {
+   "class": "platform/extracted/com/tridium/install/SignatureStatusEnum.class",
+   "new_executed": true,
+   "typeSwitch_sites": 0,
+   "enumSwitch_sites": 0
+  }
+ ]
+}

@@ -1,0 +1,8 @@
+vineflower files-with-switch-bootstrap-pseudo-java 1
+  e.g. platform/vineflower/com/tridium/platform/daemon/PlatformStationManager.java
+vineflower2 files-with-switch-bootstrap-pseudo-java 1
+  e.g. platform/vineflower2/com/tridium/platform/daemon/PlatformStationManager.java
+vineflower-cons files-with-switch-bootstrap-pseudo-java 29
+  e.g. _bin-ext/nre/vineflower-cons/com/tridium/nre/subscription/EntitlementApi.java
+  e.g. _bin-ext/nre/vineflower-cons/com/tridium/nre/security/UserLoginHistoryStore.java
+  e.g. _bin-ext/nre/vineflower-cons/com/tridium/nre/security/permissions/PermissionFactory.java

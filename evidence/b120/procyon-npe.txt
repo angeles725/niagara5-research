@@ -1,0 +1,6 @@
+$ java -jar procyon-decompiler-0.6.0.jar -o OUT organized/bajaui/extracted/niagara/ui/BToggleButton.class   (enumSwitch site)
+Decompiling organized/bajaui/extracted/niagara/ui/BToggleButton.class...
+java.lang.NullPointerException: Cannot invoke "com.strobel.decompiler.languages.java.ast.InvocationExpression.cast(com.strobel.decompiler.languages.java.ast.AstType)" because "this.bootstrapCall" is null
+	at com.strobel.decompiler.languages.java.ast.transforms.InvokeDynamicRewriter$IndyHelperBuilder.buildEnsureHandleMethod(InvokeDynamicRewriter.java:285)
+	at com.strobel.decompiler.languages.java.ast.transforms.InvokeDynamicRewriter$IndyHelperBuilder.build(InvokeDynamicRewriter.java:170)
+output file size: 0 bytes

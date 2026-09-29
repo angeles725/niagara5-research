@@ -2,7 +2,7 @@
 
 # Block catalog
 
-Total: **119 blocks**
+Total: **120 blocks**
 
 | Block | File | Title |
 |-------|------|-------|
@@ -125,3 +125,4 @@ Total: **119 blocks**
 | 117 | [niagara5-block117.md](niagara5-block117.md) | Extraction and native-binary fidelity audit: the analysed Java bytes are the vendor's (21,751 classes byte-exact, 356 signed jars verified), but 24,896 nested-jar classes and 958 out-of-pipeline Tridium classes were never decompiled; 45 of 46 single-instrument native claims confirmed by a second instrument, 3 details refuted |
 | 118 | [niagara5-block118.md](niagara5-block118.md) | Logic-recovery method ladder for N5: what each instrument proves (line-mapped Vineflower, a LineNumberTable pattern discriminator, SootUp/Joern/bytecode-xref call graphs, sandboxed differential execution, an ASM trace agent, CodeQL vs Joern dataflow, and a krak2 round-trip of all 20,724 module classes) |
 | 119 | [niagara5-block119.md](niagara5-block119.md) | Source-map census and minified-JS audit: 86 JSON source maps ship, only 42 carry originals (all Babel-transpiled driver/workbench code that already ships readable), none of the 234 minified JS files has a map, and the 42 originals are now recovered |
+| 120 | [niagara5-block120.md](niagara5-block120.md) | Pattern-switch decompile fidelity: 26 of 27 `typeSwitch` sites render as valid, faithful Java in Vineflower, one site (`PlatformStationManager.createStation`) is pseudo-Java in every tree and now has a bytecode-verified reconstruction |
