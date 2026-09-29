@@ -672,7 +672,8 @@ def _peephole(body: list[dict], rules: frozenset) -> list[dict]:
                 kind = d["op"][0]
                 width = 2 if kind in "ld" else 1
                 dup = _insn("dup2" if width == 2 else "dup")
-                if (d["op"].endswith("store") and n1["op"] == kind + "load" and d["slot"] == n1["slot"]):
+                if (d["op"].endswith("store") and d.get("slot") is not None and n1["op"] == kind + "load"
+                        and d["slot"] == n1["slot"]):
                     new.extend((dup, d))
                     i += 2
                     changed = True
