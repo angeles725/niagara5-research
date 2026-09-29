@@ -2581,3 +2581,24 @@ class TestInvokedynamicBootstrapArguments(unittest.TestCase):
                     self.mod.run_javap_verbose(os.path.join(d, "P.class"), javap_bin=JDK25_JAVAP)))
             diff = self.mod.diff_normalized_classes(parsed[0], parsed[1])
             self.assertIn(("f", "(I)Ljava/lang/String;"), diff["mismatched_methods"])
+
+
+class TestRegradeNoncleanForce(unittest.TestCase):
+    def setUp(self):
+        self.mod = _load()
+
+    def test_force_regrades_even_a_complete_up_to_date_canon_file(self):
+        with tempfile.TemporaryDirectory() as td:
+            mod_dir = Path(td) / "m"
+            mod_dir.mkdir()
+            (mod_dir / "fidelity.vineflower2.json").write_text(json.dumps(
+                {"module": "m", "classes": {"p/B": {"grade": "compiles-mismatch"}}}))
+            calls = []
+
+            def grade(fqcn, classfile, **kwargs):
+                calls.append(fqcn)
+                return fqcn, {"grade": "compiles-mismatch"}
+            for force in (False, False, True):
+                self.mod.regrade_nonclean_module("m", organized_dir=Path(td), tree="vineflower2", grade_fn=grade,
+                                                 force=force)
+            self.assertEqual(calls, ["p/B", "p/B"])

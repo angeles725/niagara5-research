@@ -1856,6 +1856,7 @@ def regrade_nonclean_module(
     class_jobs: int = 1,
     grade_fn: Optional[Callable[..., tuple[str, dict]]] = None,
     checkpoint_every: int = REGRADE_CHECKPOINT_EVERY,
+    force: bool = False,
     **grade_kwargs,
 ) -> dict:
     """Re-grade (recompile, full redundancy ladder, current grader) ONLY the
@@ -1868,7 +1869,8 @@ def regrade_nonclean_module(
     current source file and whose schema is current is returned untouched.
     Resumable: a partial one (checkpointed every `checkpoint_every` classes)
     keeps its already re-graded classes and grades only the rest. A changed
-    source file or schema starts over. `grade_fn` defaults to _grade_one_class
+    source file or schema, or `force` (the grader itself changed), starts
+    over. `grade_fn` defaults to _grade_one_class
     (tests inject a fake); `grade_kwargs` are its keyword arguments minus the
     per-module directories, which are derived here.
     """
@@ -1881,7 +1883,7 @@ def regrade_nonclean_module(
     out_path = canon_output_path(mod_dir, tree)
 
     previous = None
-    if out_path.is_file():
+    if out_path.is_file() and not force:
         try:
             previous = json.loads(out_path.read_text())
         except (json.JSONDecodeError, OSError):
@@ -2605,7 +2607,7 @@ def _main_regrade_nonclean(args, modules: list[str], organized_dir: Path, classp
     def _one(module: str) -> None:
         try:
             result = regrade_nonclean_module(
-                module, organized_dir=organized_dir, tree=args.tree, class_jobs=args.class_jobs,
+                module, organized_dir=organized_dir, tree=args.tree, class_jobs=args.class_jobs, force=args.force,
                 classpath=classpath, javac_bin=DEFAULT_JAVAC, javap_bin=DEFAULT_JAVAP, java_bin=DEFAULT_JAVA,
                 cfr_jar=DEFAULT_CFR_JAR, procyon_jar=DEFAULT_PROCYON_JAR, jd_cli_jar=jd_cli_jar,
                 tool_server=args.tool_server,
