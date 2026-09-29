@@ -2,7 +2,7 @@
 
 # Block catalog
 
-Total: **124 blocks**
+Total: **125 blocks**
 
 | Block | File | Title |
 |-------|------|-------|
@@ -130,3 +130,4 @@ Total: **124 blocks**
 | 122 | [niagara5-block122.md](niagara5-block122.md) | The XProtect .NET bridge and the FFmpeg JNI wrapper: 14 of 14 CLR assemblies decompiled, a loopback SOAP bridge whose session key is enforced only under TLS, 24 of 26 FFmpeg natives bound (2 throw `UnsatisfiedLinkError`), and LGPL-2.1 FFmpeg 8.1.1 |
 | 123 | [niagara5-block123.md](niagara5-block123.md) | Mechanizing the extraction gate: a hardened byte-exactness census, a fail-closed extraction and signature gate in the decompile pipeline, and lint rule R9 for native-binary claims |
 | 124 | [niagara5-block124.md](niagara5-block124.md) | Tracing the 72 `*.built.min.js` bundles to readable source: every one of 2,315 `define()` modules has a shipped readable counterpart, 975 are proven equal by an AST or compiler oracle, 1,315 match by names and literals only |
+| 125 | [niagara5-block125.md](niagara5-block125.md) | Durable counterpart for the 73 Kotlin-plugin wall sites: the Java-mode decompile reads 56 of 67 wall methods but none of their classes recompile, so `javap -c` is the only verified representation and every wall traces to one plugin failure |

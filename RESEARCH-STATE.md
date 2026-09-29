@@ -44,16 +44,16 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
      Field names use UNDERSCORES on purpose: they must never collide with the prose greps below. -->
 <!-- research-state.v1 -->
 schema: research-state.v1
-covered_blocks: 124
-gaps_closed: 396
-known_gaps: 541
-investigable_open: 36
-requires_execution_open: 33
+covered_blocks: 125
+gaps_closed: 397
+known_gaps: 546
+investigable_open: 39
+requires_execution_open: 34
 blocked_open: 64
 deferred_open: 12
 undocumented_findings: 0
-blocks_since_retro: 9
-last_iteration_ts: 2026-09-29T14:16:54Z
+blocks_since_retro: 10
+last_iteration_ts: 2026-09-29T15:48:43Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
      applies to every corpus (single-focus and campaign alike); the stall-detection instrument reads it
@@ -61,9 +61,9 @@ last_iteration_ts: 2026-09-29T14:16:54Z
 
 ## Coverage
 
-- **Covered blocks**: 124 (B1..B124)
-- **Coverage metric**: 396 / 541 closed
-- **Last iteration**: 2026-09-29 — B124 bundle-to-readable-source proof for the 72 *.built.min.js files (closes B119-G1); focus: decompile fidelity
+- **Covered blocks**: 125 (B1..B125)
+- **Coverage metric**: 397 / 546 closed
+- **Last iteration**: 2026-09-29 — B125 Kotlin-plugin wall sites: Java-mode counterpart and its measured fidelity (closes B121-G1); focus: decompile fidelity
 
 ## Gap-backlog
 
@@ -520,7 +520,7 @@ last_iteration_ts: 2026-09-29T14:16:54Z
 | low | B120-G3 Machine-check `when` guards (restart-index assignments) of pseudo-Java trees at the 9 guard-loop sites | evidence/b120 | pending |
 | low | B120-G4 Census the Procyon 0.6.0 InvokeDynamicRewriter NPE (empty files) across all indy classes | decompilers | requires-execution → §19 |
 | low | B120-G5 Reconcile _lib-inf-3p (33,713) / _etc-m2 (945) class counts with B117's 24,896 / 958 | organized/ | pending |
-| medium | B121-G1 Durable Java-mode companion (or wall index) for the 73 Kotlin-plugin wall sites (67 methods + 6 classes) in the four Kotlin jars' trees | organized/_etc-m2 + n5-decompile | pending |
+| medium | B121-G1 Durable Java-mode companion (or wall index) for the 73 Kotlin-plugin wall sites (67 methods + 6 classes) in the four Kotlin jars' trees | organized/_etc-m2 + n5-decompile | ✅ covered — B125 (Java-mode trees reproduced; 0 of 67 method-wall classes recompile, 2 of 6 class walls do; javap is the verified representation; index evidence/b125/wall-sites.tsv) |
 | medium | B121-G2 Recompile the Kotlin-plugin .kt output with kotlinc 2.2.x and compare normalized bytecode with the shipped classes | kotlinc + Gradle API classpath | requires-execution → §19 |
 | low | B121-G3 Recount B89 §89.8 NativeCommand key sets (17 vs 18 constants; SEVEN cc / NINE ld-ar populated keys) | organized/_etc-m2 n-plugin | pending |
 | low | B121-G4 Audit claims resting on the five third-party Kotlin jars beyond B55/B106; grade okhttp/okio .kt output against upstream sources | corpus + _upstream-sources | pending |
@@ -541,6 +541,11 @@ last_iteration_ts: 2026-09-29T14:16:54Z
 | low | B124-G3 Hand-verify the 2 DIFFERS (webChart ChartWidget, webEditors OverrideRelTimeEditor) and the 13 unproven prelude statements | evidence/b124/modules.tsv, segments.tsv | pending |
 | low | B124-G4 Identify the bundle minifier release and options (bisect terser 5.7.2..5.9.0 and uglify-js 3.x by whole-bundle byte reproduction); build config itself blocked-on-source | evidence/b124 | requires-execution → §19 |
 | low | B124-G5 Readable-to-bundle direction: readable rc/*.js files not registered in any define of their bundle | organized/*/extracted/rc | pending |
+| medium | B125-G1 Resolve each `<unrepresentable>` and non-implementing anonymous class in the Java-mode text to its shipped synthetic class and re-print the lambda so the wall classes recompile (baseline 2 of 50 files) | evidence/b125 + javap | pending |
+| low | B125-G2 Decide and implement a Java-mode companion tree and wall count in recon.json for Kotlin jars in tools/n5-decompile.sh | tools/n5-decompile.sh | pending |
+| low | B125-G3 Compile the 18 files stopped by missing bouncycastle and commons-configuration2 classes with the jars fetched at the plugin POM versions | Maven Central + evidence/b125 | requires-execution → §19 |
+| low | B125-G4 Fix the 2 plugin-dump count mismatches and the 11 unlocated Java-mode bodies by pairing overloads on descriptor | evidence/b125 | pending |
+| low | B125-G5 Explain the 4 mismatching declared methods and 2 bridge mismatches of GruntOptions/KarmaConfig by normalized-bytecode diff | evidence/b125 | pending |
 | low | B104-G5 Live-station confirmation of B104's static driver/sync findings | station | requires-execution → §19 |
 | low | B106-G1 Gradle --info/dependencyInsight trace of which wiring puts the moduleTest jar on compileModuleTestJava | Gradle run | requires-execution → §19 |
 
@@ -672,6 +677,7 @@ last_iteration_ts: 2026-09-29T14:16:54Z
 | 122 | 2026-09-29 | XProtect .NET bridge and FFmpeg JNI wrapper (B117-G4): 271 PE censused, exactly 14 CLR files (all xprotect.jar; 5,434 types, 41,290 methods), 14/14 decompiled with ilspycmd 11.0.0.9375 and type counts equal to metadata, raw-PE bridge checks 23/23; bridge = elevated loopback WCF/SOAP service, 10 operations, env-var config, stdout/stdin protocol, SessionId key enforced only under TLS, IncludeExceptionDetailInFaults, telemetry gated by the Milestone server; 13 of 14 files extracted by the loader; N4-4.15.3.28 ships identical image bytes (re-signed); ffmpeg-wrapper.dll exports 26 = 24 bound + 2 C++-mangled orphans, 2 declared natives unbound (live UnsatisfiedLinkError on the N5 JRE, same in 4.15); FFmpeg n8.1.1 (4.15: n7.1.1) configured without gpl/nonfree/external libs, LGPL-2.1+ in 7/7 libs, shipped tarball = upstream; 23 claims audited (18 SAFE/4 SUSPECT/1 CONTRADICTED B117 §117.3); §14 pointers B117/B13/B1/B102 | B122 | yes · sonnet | 6 new — B122-G1..G6 |
 | 123 | 2026-09-29 | Extraction gate mechanization (B117-G7): census hardened (6 defects, each RED->GREEN: exit-code collision where a crash exited 1 like a mismatch, sweep error isolation + missing sweep tests, zip-entry path traversal, 2-letter MZ = PE, silent nested-jar drop; old vs hardened aggregate identical on 246 real modules, 20,723 classes byte-exact); decompile_module fails closed on a census or jarsigner failure (exit 4 accepted only with `jar verified`), records byte_exact/signature_verified/signature_status/jarsigner_exit, `--verify` + `make census`, real run 246/246 byte-exact and verified-with-signer-warnings; lint rule R9 (named R9 because R7/R8 exist): native [CERT] claims need sha256 + 0x anchor + 2 instruments, enforced from block 123 with a per-rule floor, 113 audit findings in 30 old blocks (11 in blocks >= 115); RDD review text not in the repo, defects derived from code | B123 | yes · sonnet | 5 new — B123-G1..G5 |
 | 124 | 2026-09-29 | Bundle-to-readable-source proof (B119-G1): 72 *.built.min.js files (71 Tridium + vendor hbs plugin; 57 with the 2026 banner, not 71), 9,305,969 B, 2,315 named define modules, all resolve to a readable file; tiered oracle validated by controls (a first vacuous-compare bug caught: bare minified function expression is empty) gives 833 AST-equal, 142/142 templates equal to a re-run of the shipped Handlebars 4.7.9, 1,315 names+literals only (two Babel builds differ in class form), 2 DIFFERS; 243,528 of 288,711 prelude B proven, 3,761,256 vendor B not; 19.26% of bytes proven, 39.00% skeleton, 40.42% vendor; minifier terser-family (helper shape: terser <=5.7.2 or uglify-js 3.x); §14 pointers B4/B21/B119/B122 | B124 | yes · sonnet | 5 new — B124-G1..G5 |
+| 125 | 2026-09-29 | Kotlin-plugin wall sites (B121-G1): Java-mode Vineflower trees reproduced byte-identically (391 files); 73 wall ids map to 75 JVM rows, index evidence/b125/wall-sites.tsv; javac recompile of Java-mode text: 0 of 67 method-wall classes compile (26 placeholder syntax, 13 anonymous class not implementing Action first errors), 2 of 6 class walls compile (18 methods: 4 exact, 4 canonical, 4 mismatch, 4 missing, 2 bridge mismatch); Java-mode text carries 251 of 255 constants and 418 of 434 call names in 56 located bodies; plugin `// Bytecode:` listing complete for 65 of 67; plugin failure tally 67 anonymous-class-without-metadata + 4 AIOOBE + 2 NPE, all 67 method walls instantiate a synthetic class, 0 coroutines; 13 corpus claims re-checked against javap -v, 13 SAFE, no §14 pointer; focus: decompile fidelity |
 
 ## Blocked gaps (each tagged with what it needs)
 
@@ -742,8 +748,8 @@ last_iteration_ts: 2026-09-29T14:16:54Z
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 36
-- **Open gaps — requires-execution**: 33
+- **Open gaps — read-only investigable**: 39
+- **Open gaps — requires-execution**: 34
 - **Open gaps — blocked**: 64
 - Consecutive iterations with empty backlog (secondary): 0/2
 - Budget cap (default safety net): none
