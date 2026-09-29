@@ -239,7 +239,7 @@ make the decompile complete and as faithful as possible.
 - [x] T20 (grader fixes T15b included; 46-module/192-class sample on the local mirror: v1 124/192 exact, v2 125/192, 0 worse, 1 better; ldc/ldc_w allowlist moved 1 class; orchestrator diffed v1 before/after: 191/192 unchanged, 0 exact→non-exact, so no false exacts from the negative-switch bug in this sample; decision: vineflower2 = recommended tree, precedence recorded in docs/writer-prompt.md) Per-tree fidelity files (fidelity.<tree>.json) and grade vineflower2 vs vineflower on the identical 43-module sample;
       choose the primary tree by measured round-trip rate, not by text diff. Note: v2's +139% @Override is decompiler inference
       (B116: @Override never survives compilation), not recovered information. Route: delegated writer (TDD).
-- [ ] T21 Full-corpus grading run (all ~15k top-level classes, both trees) — closes B116-G1; long run, forecast first. Route: delegated.
+- [x] T21 (done 2026-09-29, see odd/tasks/n5-full-grading.md: 95.79% proven over 14,307 classes, schema 2; earlier schema-1 grades retracted) Full-corpus grading run (all ~15k top-level classes, both trees) — closes B116-G1; long run, forecast first. Route: delegated.
 - [x] T25 (4745a3e, worktree t25-best-source off feat/n5-wave14@2a08063; integrated into feat/n5-wave14 as 0e6b21c, follow-up fix as acee2d0) Per-class "best available representation"
       index tools/n5-best-source.py (TDD, 17/17 tests GREEN) + `--materialize` browsable relative-symlink tree, so a
       reader never has to re-derive the docs/writer-prompt.md precedence rule by hand. Structural discovery found one

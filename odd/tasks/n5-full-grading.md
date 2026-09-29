@@ -37,9 +37,9 @@ tools/n5-fidelity.py + tests (performance only, grading semantics unchanged); or
 - [x] F9 Per-method splice (meta-decompilation) tree vineflower2s, graded as its own rung; a splice counts only when
       the whole class grades clean. Route: delegated writer (worktree t21-f7f8, TDD on; writer trigger: 2+ non-trivial
       files). Commits 89ab294, d8e0942, 97c6ac0, faedc62. Evidence under "F9 evidence" below.
-- [ ] F3 Full run, vineflower2 then vineflower, all modules; failures recorded as module_error, never dropped.
+- [x] F3 (done 2026-09-29: v2 12:09-13:23Z run 3 + regrade/patched; v1 15:26-19:43Z; 0 module errors) Full run, vineflower2 then vineflower, all modules; failures recorded as module_error, never dropped.
       Route: inline background run.
-- [ ] F4 Report: regenerate docs/decompile-fidelity-report.md + `--compare vineflower,vineflower2`; verify numbers
+- [x] F4 (docs/decompile-fidelity-report.md: combined section + v1/v2, F8, F9 compare sections; orchestrator recount 13,705/14,307 = 95.79%) Report: regenerate docs/decompile-fidelity-report.md + `--compare vineflower,vineflower2`; verify numbers
       independently (recount grade_counts from the JSON files). Route: inline.
 - [ ] F5 Update parent ODD T21, commit, RDD, PR, merge.
 - [x] F6 Sound canonical comparison as SEPARATE labelled grades (`roundtrip-canonical` tier 1, `roundtrip-canonical-t2`
@@ -190,3 +190,8 @@ tools/n5-fidelity.py + tests (performance only, grading semantics unchanged); or
   `peep`: operand order of an unboxing, proven by n5_canon).
 - Evidence copies: organized/_evidence/t21-f9/ (gitignored). Spliced sources: organized/<mod>/vineflower2s/ (gitignored).
 - Next: in the report, count vineflower2s as its own labelled source (per-method meta-decompilation, Harrand et al.).
+- Final combined (best of v2 base/canon/patched/spliced + v1): exact 10,306, equivalent 24, canonical 3,305, t2 70, bytecode-only 602 → 95.79%.
+  v1 vs v2: v2 better 93, worse 125, same 14,089 (clean 92.00% vs 92.28%) — v2 not uniformly better; keep both.
+- Open for next session (in order): N1 grade nested/inner/anonymous class files (only top-level compared today);
+  N2 grade third-party LIB-INF without upstream proof + bin/ext; N3 remaining 602 per-method reconstructions on demand;
+  N4 port the toolchain to Niagara N4 (user decision: after N5; JDK 8 at /usr/lib/jvm/java-8-openjdk-amd64, 16 ZKM modules apart).
