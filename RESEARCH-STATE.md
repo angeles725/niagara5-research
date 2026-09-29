@@ -45,9 +45,9 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
 <!-- research-state.v1 -->
 schema: research-state.v1
 covered_blocks: 121
-gaps_closed: 392
+gaps_closed: 393
 known_gaps: 525
-investigable_open: 30
+investigable_open: 29
 requires_execution_open: 27
 blocked_open: 64
 deferred_open: 12
@@ -62,7 +62,7 @@ last_iteration_ts: 2026-09-29T03:05:40Z
 ## Coverage
 
 - **Covered blocks**: 121 (B1..B121)
-- **Coverage metric**: 392 / 525 closed
+- **Coverage metric**: 393 / 525 closed
 - **Last iteration**: 2026-09-29 — B121 Kotlin-compiled Tridium jars audit (closes B117-G2); focus: decompile fidelity
 
 ## Gap-backlog
@@ -494,7 +494,7 @@ last_iteration_ts: 2026-09-29T03:05:40Z
 | medium | B116-G4 Measure a whole-tree Vineflower re-run with library context (-e) against D1-D11 | n5-decompile v2 | requires-execution → §19 |
 | medium | B116-G5 Review the 27 typeSwitch / 10 MatchException classes decompiled as pseudo-Java | organized/ | ✅ covered — B120 (27 sites/23 classes and 15 MatchException methods/10 classes reproduced; v1/v2 render 26 of 27 typeSwitch sites faithfully, createStation is pseudo-Java in all 5 trees and has a bytecode-exact reconstruction; unnamed `case T _` rendered as varN; no wrong order/guard/default/record loss found) |
 | low | B116-G6 Independent second review of the 113 benign SEM? verdicts | evidence/b116 | pending |
-| high | B117-G1 Durable decompile of the 10 out-of-pipeline Tridium jars (etc/m2, lib doclet) and devkit LIB-INF Tridium jars | etc/m2 + devkit | pending |
+| high | B117-G1 Durable decompile of the 10 out-of-pipeline Tridium jars (etc/m2, lib doclet) and devkit LIB-INF Tridium jars | etc/m2 + devkit | ✅ covered — B121 §121.2 (durable organized/_etc-m2 ×9 + organized/_lib ×1 trees with recon.json, devkit/lib-inf ×2; orchestrator re-listed 10 recon.json 2026-09-29) |
 | medium | B117-G2 Audit corpus claims read from Java decompiles of the 4 Kotlin-compiled Tridium jars | corpus + etc/m2 | ✅ covered — B121 (696/696 classes decode from kotlin.Metadata; corpus trees are Vineflower Kotlin-plugin output, 67 method + 6 class walls; 42 claims audited: 36 SAFE / 4 SUSPECT / 1 CONTRADICTED (B2 §2.5) / 1 ADVANCED (B7-G1 answered); §14 pointers B2/B7/B36/B117) |
 | medium | B117-G3 Tag claims resting on minified JS; check the 86 .map files for original sources | module resources | ✅ covered — B119 (86 maps: 42 carry originals, recovered to organized/_sourcemaps; 0 of the 234 minified files has a map; 132 truly minified + 102 long-line-only; 15 minified citations in 5 blocks, none contradicted) |
 | low | B117-G4 Decompile the 14 .NET assemblies (xprotect) and map the ffmpeg JNI surface | module payloads | pending |
@@ -723,7 +723,7 @@ last_iteration_ts: 2026-09-29T03:05:40Z
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 30
+- **Open gaps — read-only investigable**: 29
 - **Open gaps — requires-execution**: 27
 - **Open gaps — blocked**: 64
 - Consecutive iterations with empty backlog (secondary): 0/2
