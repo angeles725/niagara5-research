@@ -30,8 +30,10 @@ tools/n5-fidelity.py + tests (performance only, grading semantics unchanged); or
 - [x] F2b Opt-in persistent tool server (`--tool-server`, default off): tools/n5-toolserver/ToolServer.java runs javac/javap in-process via ToolProvider
       (one JVM per worker thread, length-prefixed binary protocol, per-request timeout = kill+restart, fallback to subprocess on any server failure).
       Grades identical to the subprocess path; SCHEMA_VERSION and cache key untouched. Route: delegated writer (TDD). Commits: 5efbc27, 156c533, 50ef661.
-- [ ] F7 Classpath completion for missing-lib no-compiles (javafx, bouncycastle): locate the exact jars N5 links at runtime.
-- [ ] F8 Mechanical doPrivileged disambiguation patch tree (vineflower2p), verified by recompile + canonical grade.
+- [x] F7 Classpath completion for missing-lib no-compiles (javafx, bouncycastle): locate the exact jars N5 links at runtime.
+      Route: delegated writer (worktree t21-f7f8, TDD on). Commit 4eeaafb. Evidence under "F7 evidence" below.
+- [x] F8 Mechanical doPrivileged disambiguation patch tree (vineflower2p), verified by recompile + canonical grade.
+      Route: delegated writer (worktree t21-f7f8, TDD on). Commits 7d9cb2d, 9ba04f9, 11136c8. Evidence under "F8 evidence" below.
 - [ ] F3 Full run, vineflower2 then vineflower, all modules; failures recorded as module_error, never dropped.
       Route: inline background run.
 - [ ] F4 Report: regenerate docs/decompile-fidelity-report.md + `--compare vineflower,vineflower2`; verify numbers
@@ -90,3 +92,54 @@ tools/n5-fidelity.py + tests (performance only, grading semantics unchanged); or
 - Next: F3 continues on the schema-1 code in the main checkout; after merge run `--regrade-nonclean` for both trees.
 - F6 RDD: 9 per-commit reviews approved + acknowledged (review-803946ab6daf4636 … review-112d902cf672b79e). Orchestrator reproduced both false-exact cases with the OLD normalizer (b57cabf): `a-b` vs `b-a` and `"a"+x` vs `"b"+x` compared equal. All schema-1 exact grades (incl. the 192-class sample and runs 1-2) are therefore not trustworthy.
 - F3 restarted 2026-09-29T08:02Z on schema 2 (run 2 schema-1 stopped at ~200 modules; log kept as t21-run2-schema1.log).
+
+## F7 evidence (2026-09-29, worktree t21-f7f8)
+- Cause: `build_classpath` globbed only `bin/ext/*.jar` (non-recursive) and the grader JDK has no JavaFX. nre.dll's
+  launcher strings (`strings -a bin/nre.dll`, initPaths()) are `%s\bin\ext`, `%s\bin\ext\%s` (bcfips|bcstd, chosen by
+  initFips()), `%s\bin\ext\jxbrowser`, `%s\bin\ext\system`, separate `%s\bin\ext\securityBridge`; the JVM is
+  `<niagaraHome>\jre` whose `release` MODULES list javafx.base/controls/fxml/graphics/media/swing/web + jfx.incubator.*.
+- Search method (package content, not names): zip index of every .jar/.zip (recursively into nested jars) under the
+  jar mirror, `/mnt/c/Program Files/Niagara/5.0.0.28` and the config home; plus `jimage list jre/lib/modules`.
+  | missing package (vf2 no-compile) | N5 artifact (mirror path, sha256 from bin-ext.sha256, re-verified `sha256sum -c` rc=0) |
+  |---|---|
+  | org.bouncycastle.{asn1,cert,openssl,pkcs,tls,util} | bin-ext/bcstd/bcprov-jdk18on-1.85.2.jar 5b16c2ba…, bcpkix-jdk18on-1.85.jar e3f24cfc…, bctls-jdk18on-1.85.jar d5174c51…, bcutil-jdk18on-1.85.jar c05bdcc1… (FIPS twin bin-ext/bcfips/*, `--bc-variant bcfips`) |
+  | com.teamdev.jxbrowser.* | bin-ext/jxbrowser/jxbrowser-9.5.0.jar e20a7f71… (+ -javafx 9267055b…, -swing 3ed7d5ff…, -swt 64f8e52f…, -win64 43ee02e4…) |
+  | com.orientechnologies.* | bin-ext/system/orientdb-core-3.2.55.jar 8caa1c60…, -client 11fe880c…, -server f3295116…, -tools 8a87fd85… |
+  | javafx.* | N5 JRE `jre/lib/modules` (JAVA_VERSION 25.0.4) sha256 2eaeb1d398f53c5d3c14e4b36f3dd224c611cf81e608f927ba04bb751c98281e, extracted with `jimage extract --include regex:/(javafx|jfx)\..*` (5,863 classes) |
+  Nothing needed is absent from N5, so no --extra-classpath / foreign jar was introduced.
+- TDD: tools/tests/test_n5_fidelity_classpath.py RED 8/8 (TypeError: unexpected keyword 'jre_dir'), GREEN 8/8;
+  `test_n5_fidelity` + classpath 153 OK.
+- Real check: the 74 vf2 no-compile classes whose first error or source references those packages, graded with the
+  new classpath (tool server, 4 class jobs, read-only on organized/): 0 remain missing-lib; grade 18 roundtrip-exact +
+  24 roundtrip-canonical + 32 bytecode-only; the 27 vf2 rungs still no-compile all fail on `doPrivileged is ambiguous` (F8).
+
+## F8 evidence (2026-09-29, worktree t21-f7f8)
+- Tool: tools/n5-patch-doprivileged.py + tools/n5-patch-doprivileged/DoPrivilegedSites.java (javac Tree API, parse
+  only). Cast = shipped `invokestatic SecurityUtil.doPrivileged:(L<iface>;)` + LambdaMetafactory instantiated return
+  (T) + same-class lambda `throws` (E); source/bytecode sites matched in order per method, lambda pools only with
+  uniform evidence; javac feedback (<= 4 compiles + 1 verification) only for thrown types and type variables.
+  Grading: `n5-fidelity.py --regrade-nonclean --patch-tree vineflower2p` -> fidelity.<tree>.patched.json, rung label
+  `vineflower2p`, `patched: true` + `patch: {tree, manifest, patched_sha256}` only when that rung is the class grade.
+- TDD: test_n5_patch_doprivileged RED 10 errors (module absent) -> GREEN 13; test_n5_fidelity_patch_rung RED 8/8 ->
+  GREEN 8; regressions found by the real run, each RED first: javap offsets >= 100 dropped (1 FAIL), no-arg
+  constructor vs overloads (1 FAIL), thrown-type/type-variable feedback (2 FAIL). The CLI guard test was written with
+  its code. `make test` 590 OK (skipped=4) before the feedback fix; patcher suite 15 OK after it.
+- Real run (all 259 organized dirs, vineflower2 tree, classpath of F7): 522 files contain `doPrivileged(`; 504 classes
+  patched, 1,469 sites (PrivilegedAction 894, PrivilegedExceptionAction 489, SingleException 83, DoubleException 3),
+  1,452 sites on the first (pure-evidence) cast, 17 needed javac feedback; 467 patched classes compile, 37 still fail on
+  other decompiler defects (unreachable statement, variable scoping, generics). Refused 10 sites in 5 classes:
+  lambda-pool-mixed-evidence 4 (BForgeCertificateAuthenticator), instance-initializer 3 (AwtSeEnv, BSnmpDevice,
+  NiagaraLocalPlatform), overload-unresolved 2 (LocalInstallableRegistry), count-mismatch 1 (BSnmpDevice); 1 extra
+  ambiguous site is `AccessController.doPrivileged` (OrdTargetFilter), out of scope.
+- Soundness: all 467 compiling patched classes, recompiled: per class file and method, the sequence of
+  (doPrivileged descriptor interface, instantiated return) equals the shipped bytecode in 467/467.
+- Grades (scratch organized dir of symlinks + SNAPSHOT copies of fidelity.vineflower2.json, 91 modules; web/workbench
+  have no fidelity file yet and were graded class by class with the same rung): baseline compile of the unpatched
+  source: 476 of the 504 fail ONLY on `doPrivileged is ambiguous` (full-corpus counterpart of the taxonomy's 88).
+  Of those 476: 88 roundtrip-exact, 291 roundtrip-canonical, 3 roundtrip-canonical-t2 (all via vineflower2p),
+  91 still bytecode-only (vineflower2p rung 82 compiles-mismatch, 9 no-compile), 3 already clean in the snapshot.
+  The 28 classes with other errors too stay bytecode-only.
+- Evidence copies: organized/_evidence/t21-f7f8/ (gitignored): f7.list, f7-results.json, baseline-errs.json,
+  f8-final-grades.json, descr-diffs.json, patch/regrade logs, scratch-patched/*.fidelity.vineflower2.patched.json, scripts.
+- Next: after F3, run the patcher over the final tree and `--regrade-nonclean --patch-tree vineflower2p --all` for the
+  published numbers; the vineflower2p rung counts as a separate, labelled source in the report.
