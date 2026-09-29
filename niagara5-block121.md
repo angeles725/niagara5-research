@@ -254,6 +254,6 @@ For the orchestrator's §14 pointers (added in this commit): **[Block 2] §2.5**
 | 18 | Behaviour claims at the 73 wall sites rest on Java mode or `javap`, not metadata | [INFER] | metadata has no bodies (§121.5); B121-G1/G2 |
 | 19 | The plugin's control-flow output is faithful beyond function names | [INFER] | not round-tripped; B121-G2 |
 
-**Tally (literal `verify-block.sh` output):** `[CERT-hw]` 31 (adj 30) · `[CERT]` 5 (adj 4) · `[INFER]` 6 (adj 5) · `[INFER]`/`[CERT*]` = 5/34 = 0.15; by table row: 17 rows `[CERT-hw]`/`[CERT]`, 2 rows `[INFER]` (both explicitly gapped).
+**Tally (literal `verify-block.sh` output):** `[CERT-hw]` 32 (adj 31) · `[CERT]` 6 (adj 5) · `[INFER]` 8 (adj 7) · `[INFER]`/`[CERT*]` = 7/36 = 0.19; by table row: 17 rows `[CERT-hw]`/`[CERT]`, 2 rows `[INFER]` (both explicitly gapped).
 
 **Artifacts:** `evidence/b121/` (scripts, tables, README, `claim-audit.tsv`; no binaries, no decompiled or reconstructed source beyond the 3-class sample of declarations); out of git under `organized/_evidence/b121/`: 696 Kotlin declaration listings, fresh Vineflower `vf-kt/` and `vf-java/` trees, the `kotlin-metadata-jvm` jar, sha256 lists in `evidence/b121/`. No new `tools/` code (evidence scripts only).
