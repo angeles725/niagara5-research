@@ -1,6 +1,6 @@
 # evidence/b122 - .NET assemblies in xprotect.jar and the ffmpeg.jar JNI surface
 
-Block 122 (closes B117-G4). Nothing here is decompiled or vendor source. The ilspycmd output (14 C# trees, 5,800+ files) and the
+Block 122 (closes B117-G4). Nothing here is decompiled or vendor source. The ilspycmd output (14 C# trees, 4,005 files) and the
 extracted FFmpeg source files live in the gitignored `organized/_evidence/b122/`; `net-decompile.tsv` identifies each C# tree by
 sha256 (decompile-net.sh is deterministic: a re-run of the bridge exe gives the same hash). Binaries are identified by sha256 only.
 
