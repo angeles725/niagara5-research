@@ -283,6 +283,35 @@ class SweepTest(unittest.TestCase):
         self.assertEqual(run().returncode, 1)  # a real mismatch outranks the read error
 
 
+class EntryPathTest(unittest.TestCase):
+    def test_safe_entry_path_normalizes_and_rejects_escapes(self):
+        m = _load()
+        self.assertEqual(m.safe_entry_path("a/b/C.class"), "a/b/C.class")
+        self.assertEqual(m.safe_entry_path("a/./b//C.class"), "a/b/C.class")
+        self.assertEqual(m.safe_entry_path("a/x/../C.class"), "a/C.class")
+        for bad in ("../evil.class", "a/../../evil.class", "/abs/E.class", "a\\b.class",
+                    "a/b\x00.class", "..", ""):
+            self.assertIsNone(m.safe_entry_path(bad), bad)
+
+    def test_traversal_entry_is_unsafe_and_never_read_outside_moddir(self):
+        m = _load()
+        tmp = tempfile.mkdtemp()
+        # A file OUTSIDE the module dir whose bytes equal the hostile entry's bytes: the old
+        # os.path.join(ext_dir, "../../decoy.class") would have "matched" it byte-exactly.
+        _write(os.path.join(tmp, "decoy.class"), CLASS_MAGIC + b"E")
+        moddir = os.path.join(tmp, "org", "mod")
+        os.makedirs(os.path.join(moddir, "extracted"))
+        jar = os.path.join(tmp, "m.jar")
+        _write(jar, _jar_bytes({"../../decoy.class": CLASS_MAGIC + b"E",
+                                "a/./A.class": CLASS_MAGIC + b"A"}))
+        _write(os.path.join(moddir, "extracted/a/A.class"), CLASS_MAGIC + b"A")
+        r = m.census_module(jar, moddir)
+        self.assertEqual(r["unsafe_entries"], ["../../decoy.class"])
+        self.assertEqual(r["classes"]["mismatched"], [])
+        self.assertEqual(r["classes"]["missing"], [])  # a/./A.class resolved to a/A.class
+        self.assertFalse(m.is_clean(r))
+
+
 @unittest.skipUnless(os.path.isfile(os.path.join(N5_MODULES_DIR, "control.jar"))
                      and os.path.isdir(os.path.join(N5_ORGANIZED, "control")),
                      "real N5 install / organized tree not present")

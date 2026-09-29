@@ -20,6 +20,9 @@ Subcommands:
       that cannot be read is isolated into errored_modules and the sweep continues; it makes
       the exit code 3 unless a real mismatch (1) was also found. Same exit convention (1 if any module is not clean).
 
+Entry names are normalized (safe_entry_path); an entry that would escape the module directory
+is reported under unsafe_entries and makes the module unclean.
+
 Rules (each pinned by tools/tests/test_n5_extract_census.py):
   * Byte-exactness: sha256 of each jar entry vs the file at extracted/<entry>
     (classes) and resources/<entry> (every non-.class file).
@@ -39,6 +42,7 @@ import hashlib
 import io
 import json
 import os
+import posixpath
 import re
 import sys
 import zipfile
@@ -139,6 +143,19 @@ def nested_jar_census(name, data, release):
     }
 
 
+def safe_entry_path(name):
+    """Normalize a zip entry name to the relative POSIX path an extractor would create, or None
+    when it cannot be mapped safely under the module directory (absolute, `..` escape, backslash,
+    NUL, empty). Without this, os.path.join(extracted, "../../x") reads a file outside the tree
+    and can report a bogus byte-exact match."""
+    if not name or "\\" in name or "\x00" in name or name.startswith("/"):
+        return None
+    rel = posixpath.normpath(name)
+    if rel in (".", "") or rel == ".." or rel.startswith("../") or rel.startswith("/"):
+        return None
+    return rel
+
+
 def _read_file(path):
     try:
         with open(path, "rb") as fh:
@@ -153,6 +170,7 @@ def census_module(jar, moddir, release=25):
         "jar": jar,
         "jar_sha256": sha256(_read_file(jar)),
         "moddir": moddir,
+        "unsafe_entries": [],
         "classes": {"checked": 0, "mismatched": [], "missing": []},
         "resources": {"expected": 0, "present_exact": 0, "mismatched": [], "missing": []},
         "nested": [],
@@ -169,17 +187,21 @@ def census_module(jar, moddir, release=25):
         name = info.filename
         if name.endswith("/"):
             continue
-        data = zf.read(name)
+        rel = safe_entry_path(name)
+        if rel is None:
+            result["unsafe_entries"].append(name)
+            continue
+        data = zf.read(info)
         if name.endswith(".class"):
             result["classes"]["checked"] += 1
-            got = _read_file(os.path.join(ext_dir, name))
+            got = _read_file(os.path.join(ext_dir, rel))
             if got is None:
                 result["classes"]["missing"].append(name)
             elif sha256(got) != sha256(data):
                 result["classes"]["mismatched"].append(name)
             continue
         result["resources"]["expected"] += 1
-        got = _read_file(os.path.join(res_dir, name))
+        got = _read_file(os.path.join(res_dir, rel))
         if got is None:
             result["resources"]["missing"].append(name)
         elif sha256(got) != sha256(data):
@@ -218,7 +240,7 @@ def census_module(jar, moddir, release=25):
 
 
 def is_clean(r):
-    return not (r["classes"]["mismatched"] or r["classes"]["missing"]
+    return not (r["unsafe_entries"] or r["classes"]["mismatched"] or r["classes"]["missing"]
                 or r["resources"]["mismatched"] or r["resources"]["missing"])
 
 
@@ -248,6 +270,7 @@ def sweep(jar_dir, organized, release=25):
         "resources_expected": sum(m["resources"]["expected"] for m in modules),
         "resource_mismatches": sum(len(m["resources"]["mismatched"]) for m in modules),
         "resource_missing": sum(len(m["resources"]["missing"]) for m in modules),
+        "unsafe_entries": sum(len(m["unsafe_entries"]) for m in modules),
         "nested_jars": sum(len(m["nested"]) for m in modules),
         "nested_classes_total": sum(m["nested_classes_total"] for m in modules),
         "nested_top_level_decompiled": sum(m["nested_classes_decompiled"] for m in modules),
