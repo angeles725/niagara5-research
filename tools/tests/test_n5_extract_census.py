@@ -42,6 +42,15 @@ def _jar_bytes(entries, manifest=None):
     return buf.getvalue()
 
 
+def _pe_bytes():
+    """Minimal DOS header + PE signature: e_lfanew (0x3c) -> 0x80, "PE\\0\\0" there."""
+    buf = bytearray(0x100)
+    buf[0:2] = b"MZ"
+    buf[0x3c:0x40] = (0x80).to_bytes(4, "little")
+    buf[0x80:0x84] = b"PE\x00\x00"
+    return bytes(buf)
+
+
 def _write(path, data):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "wb") as fh:
@@ -144,10 +153,33 @@ class ByteExactTest(unittest.TestCase):
 class PayloadClassifierTest(unittest.TestCase):
     def test_native_magic(self):
         m = _load()
-        self.assertEqual(m.native_format(b"MZ\x90\x00" + b"\x00" * 60), "PE")
+        self.assertEqual(m.native_format(_pe_bytes()), "PE")
         self.assertEqual(m.native_format(b"\x7fELF\x02\x01"), "ELF")
         self.assertEqual(m.native_format(b"\xcf\xfa\xed\xfe"), "Mach-O")
         self.assertIsNone(m.native_format(b"PK\x03\x04"))
+
+    def test_mz_alone_is_not_a_pe(self):
+        # "MZ" is two ASCII letters: plain text, a CSV or a resource can start with it. A PE needs
+        # the e_lfanew pointer at 0x3c to land on the "PE\\0\\0" signature.
+        m = _load()
+        self.assertIsNone(m.native_format(b"MZ marks the spot\n" + b"x" * 100))
+        self.assertIsNone(m.native_format(b"MZ\x90\x00" + b"\x00" * 60))  # e_lfanew = 0
+        self.assertIsNone(m.native_format(b"MZ" + b"\x00" * 0x3a + b"\xff\xff\x00\x00"))  # points past EOF
+        self.assertIsNone(m.native_format(b"MZ"))
+        wrong_sig = bytearray(_pe_bytes())
+        wrong_sig[0x80:0x84] = b"NE\x00\x00"
+        self.assertIsNone(m.native_format(bytes(wrong_sig)))
+
+    def test_census_does_not_report_mz_text_resource_as_native(self):
+        m = _load()
+        tmp = tempfile.mkdtemp()
+        jar = os.path.join(tmp, "m.jar")
+        _write(jar, _jar_bytes({"a/A.class": CLASS_MAGIC, "a/notes.txt": b"MZ text file " * 20,
+                                "a/real.dll": _pe_bytes()}))
+        moddir = os.path.join(tmp, "m")
+        _write(os.path.join(moddir, "extracted/a/A.class"), CLASS_MAGIC)
+        r = m.census_module(jar, moddir)
+        self.assertEqual([n["name"] for n in r["natives"]], ["a/real.dll"])
 
     def test_minified_js(self):
         m = _load()

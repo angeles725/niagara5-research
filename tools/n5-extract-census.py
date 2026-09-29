@@ -34,7 +34,7 @@ Rules (each pinned by tools/tests/test_n5_extract_census.py):
   * Multi-Release: honoured only when the jar MANIFEST says `Multi-Release: true`
     (JarFile semantics); for release N the JVM loads the highest
     META-INF/versions/<v>/ entry with v <= N, else the base entry.
-  * Native payloads: detected by magic bytes (PE "MZ", ELF, Mach-O), not by name.
+  * Native payloads: detected by magic bytes (PE = MZ + e_lfanew -> "PE\\0\\0", ELF, Mach-O), not by name.
   * Minified JS: longest line >= 1000 bytes or mean line length >= 250 bytes.
 """
 import argparse
@@ -62,8 +62,18 @@ def tridium_share(names):
     return trid, len(classes)
 
 
+def _is_pe(data):
+    """DOS "MZ" header whose e_lfanew (u32 at 0x3c) points at the "PE\\0\\0" signature.
+    "MZ" alone is two ASCII letters and matches plain text; the pointer check is what makes
+    this a PE. Needs the whole (or at least the first e_lfanew+4) bytes, not an 8-byte prefix."""
+    if data[:2] != b"MZ" or len(data) < 0x40:
+        return False
+    lfanew = int.from_bytes(data[0x3c:0x40], "little")
+    return lfanew + 4 <= len(data) and data[lfanew:lfanew + 4] == b"PE\x00\x00"
+
+
 def native_format(data):
-    if data[:2] == b"MZ":
+    if _is_pe(data):
         return "PE"
     if data[:4] == b"\x7fELF":
         return "ELF"
@@ -124,7 +134,7 @@ def nested_jar_census(name, data, release):
     versions, selected = mr_resolution(zf, release)
     natives = []
     for n in names:
-        fmt = native_format(zf.read(n)[:8])
+        fmt = native_format(zf.read(n))
         if fmt:
             natives.append({"name": n, "format": fmt, "sha256": sha256(zf.read(n))})
     return {
@@ -215,7 +225,7 @@ def census_module(jar, moddir, release=25):
                 result["js"]["minified"] += 1
         elif lower.endswith(".map"):
             result["js"]["source_maps"] += 1
-        fmt = native_format(data[:8])
+        fmt = native_format(data)
         if fmt:
             result["natives"].append({"name": name, "format": fmt, "sha256": sha256(data),
                                       "size": len(data)})
