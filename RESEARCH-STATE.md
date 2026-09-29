@@ -44,16 +44,16 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
      Field names use UNDERSCORES on purpose: they must never collide with the prose greps below. -->
 <!-- research-state.v1 -->
 schema: research-state.v1
-covered_blocks: 122
-gaps_closed: 394
-known_gaps: 531
-investigable_open: 31
+covered_blocks: 123
+gaps_closed: 395
+known_gaps: 536
+investigable_open: 35
 requires_execution_open: 30
 blocked_open: 64
 deferred_open: 12
 undocumented_findings: 0
-blocks_since_retro: 7
-last_iteration_ts: 2026-09-29T05:10:46Z
+blocks_since_retro: 8
+last_iteration_ts: 2026-09-29T06:55:03Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
      applies to every corpus (single-focus and campaign alike); the stall-detection instrument reads it
@@ -61,9 +61,9 @@ last_iteration_ts: 2026-09-29T05:10:46Z
 
 ## Coverage
 
-- **Covered blocks**: 122 (B1..B122)
-- **Coverage metric**: 394 / 531 closed
-- **Last iteration**: 2026-09-29 — B122 XProtect .NET bridge and FFmpeg JNI wrapper (closes B117-G4); focus: decompile fidelity
+- **Covered blocks**: 123 (B1..B123)
+- **Coverage metric**: 395 / 536 closed
+- **Last iteration**: 2026-09-29 — B123 extraction gate mechanization: hardened census, fail-closed pipeline gate, lint rule R9 (closes B117-G7); focus: decompile fidelity
 
 ## Gap-backlog
 
@@ -500,7 +500,7 @@ last_iteration_ts: 2026-09-29T05:10:46Z
 | low | B117-G4 Decompile the 14 .NET assemblies (xprotect) and map the ffmpeg JNI surface | module payloads | ✅ covered — B122 (exactly 14 CLR files in 271 PE, all in xprotect.jar, 14/14 decompiled and type counts equal metadata; XProtectBridgeService.exe = loopback WCF/SOAP bridge, session key enforced only when XPBS_USE_TLS=true; 24 of 26 FFmpeg natives bind, avcodec_free_context/av_frame_free throw UnsatisfiedLinkError (live probe), 2 orphan ?Java_ C++-mangled exports; FFmpeg n8.1.1 LGPL-2.1+, no gpl/nonfree/external codec; 23 claims audited: 18 SAFE/4 SUSPECT/1 CONTRADICTED B117 §117.3; §14 pointers B117/B13/B1/B102) |
 | medium | B117-G5 Verify Authenticode digests of the Tridium PE binaries | bin/ | ✅ covered — orchestrator (osslsigncode provisioned; 20/20 bin/*.dll,*.exe digest match, evidence/b117/authenticode-verify.txt; B117 counted 21 — 1 PE outside bin/ top level not yet checked) |
 | low | B117-G6 Second parser for B113 Go struct sizes | NCS-Agent binary | pending |
-| high | B117-G7 Wire the extraction census + jarsigner into the pipeline, add a lint rule for native claims (sha256 + VA + two instruments), and harden n5-extract-census per RDD review-49636f53e9119721 (per-module error isolation, exit-code collision, entry-path normalization, sweep tests, MZ check) | tools/ | pending |
+| high | B117-G7 Wire the extraction census + jarsigner into the pipeline, add a lint rule for native claims (sha256 + VA + two instruments), and harden n5-extract-census per RDD review-49636f53e9119721 (per-module error isolation, exit-code collision, entry-path normalization, sweep tests, MZ check) | tools/ | ✅ covered — B123 (6 census defects each RED->GREEN: exit-code collision incl. crash-exits-1, sweep error isolation + tests, entry-path traversal, 2-letter MZ, silent nested-jar drop; pipeline gate in decompile_module fails closed on census/jarsigner failure and records byte_exact/signature_* in recon.json, `--verify` + `make census`, real run 246/246 byte-exact and verified-with-signer-warnings exit 4; lint rule is R9 not R7 (R7/R8 taken): sha256 + 0x anchor + 2 instruments, enforced from block 123, 113 audit findings in 30 old blocks; gate not yet on extra-tridium/third-party LIB-INF paths, shared organized/ recon.json not yet backfilled) |
 | medium | B117-G8 Move B117 evidence into the repo | evidence/ | ✅ covered — orchestrator (evidence/b117/, 4.4 MB, secrets-scanned) |
 | low | B117-G9 Provenance of paho mqttv3 1.2.5 rebuild and the 44 unidentified third-party jars | bin/ext + LIB-INF | pending |
 | high | B118-G1 Triage the 66 BHistorySpace.getNavChildren call sites (null-Context folder filter on station-side spaces) — defensive | history + callers | pending (deferred to next session by user 2026-09-28) |
@@ -531,6 +531,11 @@ last_iteration_ts: 2026-09-29T05:10:46Z
 | low | B122-G4 Map the browser-side path xprotect.jar!ext/sdk (XPMobileSDK, DiffieHellman.js, VideoConnection) and rc/xprotect.built.min.js | organized/xprotect resources | pending |
 | low | B122-G5 Grade the 8 certificate-validation callback sites of the Milestone SDK trees as strict / probe-only / permissive | organized/_evidence/b122/net | pending |
 | low | B122-G6 Settle whether the FFmpeg DLLs were built from a git checkout (n8.1.1) or the shipped tarball tree (version.sh inputs) | FFmpeg tag vs shipped tarball | pending |
+| high | B123-G1 Run `make census` on the main checkout so the 246 module recon.json files carry byte_exact/signature_verified/signature_status/jarsigner_exit | organized/ recon.json (needs write access) | pending |
+| medium | B123-G2 Extend the extraction gate to --extra-tridium, nested LIB-INF and --third-party-libinf populations (byte-exact + sha256 vs upstream where jarsigner is meaningless) | tools/n5-decompile.sh | pending |
+| medium | B123-G3 Call osslsigncode verify from a script for the native PE files and record the result in recon-style fields | bin/ + tools/ | pending |
+| low | B123-G4 Triage the 113 R9 audit findings (true gap / waiver / false positive) and decide whether to lower R9's enforcement floor from 123 to 115 | evidence/b123 | pending |
+| low | B123-G5 Run the hermetic bats gate tests in CI (install bats in the workflow) | .github/workflows/ci.yml | pending |
 | low | B104-G5 Live-station confirmation of B104's static driver/sync findings | station | requires-execution → §19 |
 | low | B106-G1 Gradle --info/dependencyInsight trace of which wiring puts the moduleTest jar on compileModuleTestJava | Gradle run | requires-execution → §19 |
 
@@ -660,6 +665,7 @@ last_iteration_ts: 2026-09-29T05:10:46Z
 | 120 | 2026-09-29 | Pattern-switch decompile fidelity (B116-G5): census reproduced (27 typeSwitch sites/23 classes, 7 enumSwitch, 15 MatchException methods/10 classes; 0 sites in 3P/etc-m2 roots), 5 trees x 49 methods graded by javac-25 recompile + normalized bytecode with BSM labels injected; v1/v2 faithful for 26/27 typeSwitch sites, createStation pseudo-Java in all trees (reconstruction bytecode-exact), unnamed `case T _` rendered as varN (docSource BWbProfile:598), cons/CFR/Procyon never compilable for typeSwitch but labels 29/29 exact, Procyon NPE empties 10 units | B120 | yes · sonnet | 5 new — B120-G1..G5 |
 | 121 | 2026-09-29 | Kotlin-compiled Tridium jars (B117-G2): census 475 jar entries, Kotlin in 4 Tridium jars (696 classes) + 6 third-party (2,672); 696/696 classes decode from kotlin.Metadata (kotlin-metadata-jvm 2.4.10, sha1-verified) into 774 functions/836 properties/262 constructors; corpus trees are Vineflower Kotlin-plugin output (329 .kt/62 .java) with 67 method + 6 class walls, Java mode 0; fidelity matrix of 15 constructs measured; 3,297 JVM methods mapped (45% compiler-generated); 42 claims audited (36 SAFE/4 SUSPECT/1 CONTRADICTED B2 §2.5/1 ADVANCED); B7-G1 answered from bytecode; §14 pointers B2/B7/B36/B117 | B121 | yes · opus | 5 new — B121-G1..G5 |
 | 122 | 2026-09-29 | XProtect .NET bridge and FFmpeg JNI wrapper (B117-G4): 271 PE censused, exactly 14 CLR files (all xprotect.jar; 5,434 types, 41,290 methods), 14/14 decompiled with ilspycmd 11.0.0.9375 and type counts equal to metadata, raw-PE bridge checks 23/23; bridge = elevated loopback WCF/SOAP service, 10 operations, env-var config, stdout/stdin protocol, SessionId key enforced only under TLS, IncludeExceptionDetailInFaults, telemetry gated by the Milestone server; 13 of 14 files extracted by the loader; N4-4.15.3.28 ships identical image bytes (re-signed); ffmpeg-wrapper.dll exports 26 = 24 bound + 2 C++-mangled orphans, 2 declared natives unbound (live UnsatisfiedLinkError on the N5 JRE, same in 4.15); FFmpeg n8.1.1 (4.15: n7.1.1) configured without gpl/nonfree/external libs, LGPL-2.1+ in 7/7 libs, shipped tarball = upstream; 23 claims audited (18 SAFE/4 SUSPECT/1 CONTRADICTED B117 §117.3); §14 pointers B117/B13/B1/B102 | B122 | yes · sonnet | 6 new — B122-G1..G6 |
+| 123 | 2026-09-29 | Extraction gate mechanization (B117-G7): census hardened (6 defects, each RED->GREEN: exit-code collision where a crash exited 1 like a mismatch, sweep error isolation + missing sweep tests, zip-entry path traversal, 2-letter MZ = PE, silent nested-jar drop; old vs hardened aggregate identical on 246 real modules, 20,723 classes byte-exact); decompile_module fails closed on a census or jarsigner failure (exit 4 accepted only with `jar verified`), records byte_exact/signature_verified/signature_status/jarsigner_exit, `--verify` + `make census`, real run 246/246 byte-exact and verified-with-signer-warnings; lint rule R9 (named R9 because R7/R8 exist): native [CERT] claims need sha256 + 0x anchor + 2 instruments, enforced from block 123 with a per-rule floor, 113 audit findings in 30 old blocks (11 in blocks >= 115); RDD review text not in the repo, defects derived from code | B123 | yes · sonnet | 5 new — B123-G1..G5 |
 
 ## Blocked gaps (each tagged with what it needs)
 
@@ -730,7 +736,7 @@ last_iteration_ts: 2026-09-29T05:10:46Z
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 31
+- **Open gaps — read-only investigable**: 35
 - **Open gaps — requires-execution**: 30
 - **Open gaps — blocked**: 64
 - Consecutive iterations with empty backlog (secondary): 0/2
