@@ -36,6 +36,13 @@ equal under the exact normalizer alone.
 --regrade-nonclean re-grades only the non-clean classes of an existing
 fidelity.<tree>.json into fidelity.<tree>.canon.json (never overwriting the
 source file); `--compare <tree>,<tree>.canon` then reports the transition.
+With --patch-tree <tree>p (a copy of patched classes written by
+tools/n5-patch-doprivileged.py) the patched source is graded as its own ladder
+rung right after the primary tree (engine label = the patch tree name); only
+non-clean classes that have a patched file are re-graded, into
+fidelity.<tree>.patched.json (tree "<tree>.patched" for --compare). A class
+counts as patched (`patched: true`, `patch: {tree, manifest, patched_sha256}`)
+only when the patch rung's grade is the class grade.
 
 Usage:
   python3 tools/n5-fidelity.py --modules control,alarm,schedule [--report]
@@ -1645,6 +1652,8 @@ def _grade_one_class(
     jd_cli_jar: Optional[Path],
     primary_tree: str,
     tool_server: bool = False,
+    patch_tree: Optional[str] = None,
+    patch_dir: Optional[Path] = None,
 ) -> tuple[str, dict]:
     """Grade one top-level class (the redundancy ladder) and return
     (fqcn, record). Self-contained: uses its own temp dirs, so it is safe to
@@ -1696,7 +1705,16 @@ def _grade_one_class(
         # `per_engine_mismatched_methods`.
         first = recompile_and_grade(str(source_java), class_short, classpath, str(classfile), td, javac_bin, javap_bin, tool_server=tool_server)
         attempted = [(primary_tree, first)]
-        if first["grade"] not in LADDER_STOP_GRADES:
+        # patch-tree rung (T21/F8): a mechanically patched copy of the primary
+        # tree's source (tools/n5-patch-doprivileged.py) is graded right after
+        # it, under its own engine label, only when a patched file exists
+        patch_java = Path(patch_dir) / f"{fqcn}.java" if (patch_tree and patch_dir) else None
+        if first["grade"] not in LADDER_STOP_GRADES and patch_java is not None and patch_java.is_file():
+            with tempfile.TemporaryDirectory() as patch_td:
+                attempted.append((patch_tree, recompile_and_grade(
+                    str(patch_java), class_short, classpath, str(classfile), patch_td, javac_bin, javap_bin,
+                    tool_server=tool_server)))
+        if attempted[-1][1]["grade"] not in LADDER_STOP_GRADES:
             cfr_result = cfr_thunk()
             attempted.append(("cfr", cfr_result))
             if cfr_result["grade"] not in LADDER_STOP_GRADES:
@@ -1717,7 +1735,7 @@ def _grade_one_class(
                 ds_result = recompile_and_grade(str(docsource_java), class_short, classpath, str(classfile), ds_td, javac_bin, javap_bin, tool_server=tool_server)
                 docsource_roundtrip = _is_clean(ds_result["grade"])
 
-        return fqcn, {
+        record = {
             "grade": best["grade"],
             "best_decompiler": best["best_decompiler"],
             "attempted": [(n, r["grade"]) for n, r in attempted],
@@ -1742,6 +1760,14 @@ def _grade_one_class(
             "docsource_available": docsource_available,
             "docsource_roundtrip": docsource_roundtrip,
         }
+        if patch_tree:
+            # a patched class counts only when the patch rung's grade IS the
+            # class grade (never merely because a patch rung was attempted)
+            record["patched"] = best["best_decompiler"] == patch_tree
+            if record["patched"]:
+                record["patch"] = {"tree": patch_tree, "manifest": f"{patch_tree}/PATCHES.json",
+                                   "patched_sha256": sha256_of(patch_java)}
+        return fqcn, record
 
 
 def _grade_source(attempted: list[tuple[str, dict]], best: dict) -> tuple[str, dict]:
@@ -1766,6 +1792,7 @@ def grade_module(
     primary_tree: str = "vineflower",
     class_jobs: int = 1,
     tool_server: bool = False,
+    patch_tree: Optional[str] = None,
 ) -> dict:
     """`primary_tree` names the decompiled source tree to grade as the FIRST
     rung of the redundancy ladder — normally "vineflower" (tools/n5-decompile.sh's
@@ -1790,6 +1817,8 @@ def grade_module(
         cfr_jar=cfr_jar, procyon_jar=procyon_jar, jd_cli_jar=jd_cli_jar, primary_tree=primary_tree,
         tool_server=tool_server,
     )
+    if patch_tree:
+        class_kwargs.update(patch_tree=patch_tree, patch_dir=mod_dir / patch_tree)
     per_class = {}
     if class_jobs > 1 and len(classes) > 1:
         # subprocess-bound (javac/javap/java): threads suffice. Results are
@@ -1934,6 +1963,12 @@ def canon_output_path(mod_dir: Path, tree: str) -> Path:
     return Path(mod_dir) / f"fidelity.{tree}.canon.json"
 
 
+def patched_output_path(mod_dir: Path, tree: str) -> Path:
+    """fidelity.<tree>.patched.json -- --regrade-nonclean with --patch-tree:
+    readable as tree "<tree>.patched" by load_tree_results/--compare."""
+    return Path(mod_dir) / f"fidelity.{tree}.patched.json"
+
+
 def _write_json_atomic(path: Path, data: dict) -> None:
     tmp = path.with_name(path.name + ".tmp")
     tmp.write_text(json.dumps(data, indent=2, default=list) + "\n")
@@ -1948,6 +1983,7 @@ def regrade_nonclean_module(
     grade_fn: Optional[Callable[..., tuple[str, dict]]] = None,
     checkpoint_every: int = REGRADE_CHECKPOINT_EVERY,
     force: bool = False,
+    patch_tree: Optional[str] = None,
     **grade_kwargs,
 ) -> dict:
     """Re-grade (recompile, full redundancy ladder, current grader) ONLY the
@@ -1961,7 +1997,12 @@ def regrade_nonclean_module(
     Resumable: a partial one (checkpointed every `checkpoint_every` classes)
     keeps its already re-graded classes and grades only the rest. A changed
     source file or schema, or `force` (the grader itself changed), starts
-    over. `grade_fn` defaults to _grade_one_class
+    over.
+
+    With `patch_tree` (T21/F8) only the non-clean classes that HAVE a patched
+    source under organized/<module>/<patch_tree>/ are re-graded (the patch rung
+    is the only thing that can change), the output is fidelity.<tree>.patched.json
+    and a changed <patch_tree>/PATCHES.json starts over. `grade_fn` defaults to _grade_one_class
     (tests inject a fake); `grade_kwargs` are its keyword arguments minus the
     per-module directories, which are derived here.
     """
@@ -1971,7 +2012,10 @@ def regrade_nonclean_module(
         raise FileNotFoundError(f"no fidelity.{tree}.json for module {module} under {organized_dir}")
     src_sha = sha256_of(src_path)
     source = json.loads(src_path.read_text())
-    out_path = canon_output_path(mod_dir, tree)
+    out_path = patched_output_path(mod_dir, tree) if patch_tree else canon_output_path(mod_dir, tree)
+    patch_dir = mod_dir / patch_tree if patch_tree else None
+    manifest_path = patch_dir / "PATCHES.json" if patch_dir else None
+    manifest_sha = sha256_of(manifest_path) if manifest_path and manifest_path.is_file() else None
 
     previous = None
     if out_path.is_file() and not force:
@@ -1980,13 +2024,16 @@ def regrade_nonclean_module(
         except (json.JSONDecodeError, OSError):
             previous = None
         if previous is not None and (previous.get("source_sha256") != src_sha
-                                     or previous.get("schema_version") != SCHEMA_VERSION):
+                                     or previous.get("schema_version") != SCHEMA_VERSION
+                                     or previous.get("patch_manifest_sha256") != manifest_sha):
             previous = None
     if previous is not None and previous.get("complete"):
         return previous
 
     source_classes = source.get("classes", {})
     targets = [fqcn for fqcn, rec in source_classes.items() if not _is_clean(rec.get("grade", ""))]
+    if patch_dir is not None:
+        targets = [fqcn for fqcn in targets if (patch_dir / f"{fqcn}.java").is_file()]
     done: dict = {}
     if previous is not None:
         for fqcn in previous.get("regraded_classes", []):
@@ -2000,6 +2047,9 @@ def regrade_nonclean_module(
         grade_kwargs.setdefault("fallback_dir", mod_dir / "fallback")
         grade_kwargs.setdefault("docsource_dir", Path(organized_dir) / "docSource" / module)
         grade_kwargs.setdefault("primary_tree", tree)
+        if patch_tree:
+            grade_kwargs.setdefault("patch_tree", patch_tree)
+            grade_kwargs.setdefault("patch_dir", patch_dir)
     extracted = mod_dir / "extracted"
     lock = threading.Lock()
 
@@ -2028,6 +2078,7 @@ def regrade_nonclean_module(
             "source_grade_counts": source_counts,
             "regraded_classes": [f for f in targets if f in done],
             "complete": complete,
+            **({"patch_tree": patch_tree, "patch_manifest_sha256": manifest_sha} if patch_tree else {}),
         }
 
     def record(fqcn: str, rec: dict) -> None:
@@ -2699,6 +2750,7 @@ def _main_regrade_nonclean(args, modules: list[str], organized_dir: Path, classp
         try:
             result = regrade_nonclean_module(
                 module, organized_dir=organized_dir, tree=args.tree, class_jobs=args.class_jobs, force=args.force,
+                patch_tree=args.patch_tree,
                 classpath=classpath, javac_bin=DEFAULT_JAVAC, javap_bin=DEFAULT_JAVAP, java_bin=DEFAULT_JAVA,
                 cfr_jar=DEFAULT_CFR_JAR, procyon_jar=DEFAULT_PROCYON_JAR, jd_cli_jar=jd_cli_jar,
                 tool_server=args.tool_server,
@@ -2759,6 +2811,12 @@ def main(argv: Optional[list[str]] = None) -> int:
                               "fidelity.<tree>.json with the current grader and write the whole module to "
                               "fidelity.<tree>.canon.json (the source file is never overwritten). Idempotent and "
                               "resumable; honours --jobs/--class-jobs/--tool-server.")
+    parser.add_argument("--patch-tree", default=None, metavar="TREE",
+                         help="grade organized/<mod>/<TREE>/<Class>.java (a patched copy of --tree's source, e.g. "
+                              "vineflower2p from tools/n5-patch-doprivileged.py) as its own ladder rung right after "
+                              "--tree when that file exists; a class whose grade comes from it records patched: true. "
+                              "With --regrade-nonclean: only non-clean classes with a patched file are re-graded, into "
+                              "fidelity.<tree>.patched.json.")
     parser.add_argument("--compare", default=None, metavar="TREE_A,TREE_B",
                          help="report mode: read each already-graded module's fidelity.<tree>.json for BOTH "
                               "trees (no grading is performed) and report the per-class grade transition "
@@ -2774,6 +2832,10 @@ def main(argv: Optional[list[str]] = None) -> int:
                               "methodology caveat. Never invented by this tool; the caller supplies the facts.")
     args = parser.parse_args(argv)
 
+    if args.patch_tree and not args.regrade_nonclean:
+        # a patch rung must never leak into the pure fidelity.<tree>.json
+        parser.error("--patch-tree requires --regrade-nonclean (output: fidelity.<tree>.patched.json)")
+        return 2
     organized_dir = Path(args.organized_dir)
     if args.all:
         modules = _list_all_modules(organized_dir)
