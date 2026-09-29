@@ -179,6 +179,41 @@ class TestR8BaselineAttribution(unittest.TestCase):
         self.assertNotIn(":9:", "\n".join(lines_for(r.stdout, "R8")))
 
 
+class TestR9NativeClaimAnchors(unittest.TestCase):
+    def test_audit_fires_on_the_four_incomplete_claims_only(self):
+        r = run("--audit", fx("niagara5-block9011.md"))
+        self.assertEqual(r.returncode, 0)
+        hits = lines_for(r.stdout, "R9")
+        joined = "\n".join(hits)
+        self.assertEqual(len(hits), 4, joined)  # 9011.1, .2, .3 and the first table row
+        self.assertIn("no sha256", joined)
+        self.assertIn("no address anchor", joined)
+        self.assertIn("instruments", joined)
+
+    def test_complete_claim_waiver_and_non_native_do_not_fire(self):
+        r = run("--audit", fx("niagara5-block9011.md"))
+        with open(fx("niagara5-block9011.md"), encoding="utf-8") as fh:
+            text = fh.read().splitlines()
+        fired = {int(h.split(":")[1]) for h in lines_for(r.stdout, "R9")}
+        for marker in ("9011.5", "9011.6", "9011.7", "9011.8", "9011.9"):
+            start = next(i for i, l in enumerate(text, 1) if marker in l and l.startswith("##"))
+            self.assertFalse(any(start <= n <= start + 4 for n in fired), (marker, fired))
+        self.assertEqual(lines_for(r.stdout, "R0"), [])
+
+    def test_enforced_fails_for_block_123_and_up(self):
+        r = run(fx("niagara5-block123.md"))
+        self.assertEqual(r.returncode, 1)
+        self.assertEqual(len(lines_for(r.stdout, "R9")), 1)
+
+    def test_older_blocks_are_audit_only(self):
+        enforced = run(fx("niagara5-block122.md"))
+        self.assertEqual(enforced.returncode, 0)
+        self.assertEqual(lines_for(enforced.stdout, "R9"), [])
+        audit = run("--audit", fx("niagara5-block122.md"))
+        self.assertEqual(len(lines_for(audit.stdout, "R9")), 1)
+        self.assertIn("R9=1", audit.stdout.splitlines()[-1])
+
+
 class TestWaivers(unittest.TestCase):
     def test_nonempty_reason_suppresses_and_raises_no_r0(self):
         r = run("--audit", fx("niagara5-block9009.md"))
