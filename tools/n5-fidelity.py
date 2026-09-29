@@ -32,10 +32,15 @@ the JLS boolean-is-0-or-1 invariant); `canonical_rules` records per class the
 irreducible rule set that was needed. `roundtrip-exact` keeps its meaning:
 equal under the exact normalizer alone.
 
+--regrade-nonclean re-grades only the non-clean classes of an existing
+fidelity.<tree>.json into fidelity.<tree>.canon.json (never overwriting the
+source file); `--compare <tree>,<tree>.canon` then reports the transition.
+
 Usage:
   python3 tools/n5-fidelity.py --modules control,alarm,schedule [--report]
   python3 tools/n5-fidelity.py --all --jobs 6 [--class-jobs 4] [--limit-per-module 50]
   (--jobs parallelizes across modules; --class-jobs parallelizes classes within a module)
+  python3 tools/n5-fidelity.py --modules alarm,bql --tree vineflower2 --regrade-nonclean --tool-server
 
 Resumable: a module is skipped when organized/<mod>/fidelity.json already
 records the module jar's current sha256 and this tool's SCHEMA_VERSION.
@@ -1793,6 +1798,144 @@ def is_module_up_to_date(
 
 
 # ---------------------------------------------------------------------------
+# --regrade-nonclean: re-grade only the non-clean classes of an existing run
+# ---------------------------------------------------------------------------
+
+REGRADE_CHECKPOINT_EVERY = 10
+
+
+def canon_output_path(mod_dir: Path, tree: str) -> Path:
+    """fidelity.<tree>.canon.json -- readable as tree "<tree>.canon" by
+    load_tree_results/--compare, never the source fidelity.<tree>.json."""
+    return Path(mod_dir) / f"fidelity.{tree}.canon.json"
+
+
+def _write_json_atomic(path: Path, data: dict) -> None:
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(json.dumps(data, indent=2, default=list) + "\n")
+    os.replace(tmp, path)
+
+
+def regrade_nonclean_module(
+    module: str,
+    organized_dir: Path = DEFAULT_ORGANIZED_DIR,
+    tree: str = "vineflower",
+    class_jobs: int = 1,
+    grade_fn: Optional[Callable[..., tuple[str, dict]]] = None,
+    checkpoint_every: int = REGRADE_CHECKPOINT_EVERY,
+    **grade_kwargs,
+) -> dict:
+    """Re-grade (recompile, full redundancy ladder, current grader) ONLY the
+    classes whose grade in organized/<module>/fidelity.<tree>.json is not
+    clean, and write the whole module -- clean classes copied verbatim,
+    re-graded ones with `previous_grade` -- to fidelity.<tree>.canon.json.
+    The source file is only read.
+
+    Idempotent: a complete canon file whose `source_sha256` matches the
+    current source file and whose schema is current is returned untouched.
+    Resumable: a partial one (checkpointed every `checkpoint_every` classes)
+    keeps its already re-graded classes and grades only the rest. A changed
+    source file or schema starts over. `grade_fn` defaults to _grade_one_class
+    (tests inject a fake); `grade_kwargs` are its keyword arguments minus the
+    per-module directories, which are derived here.
+    """
+    mod_dir = Path(organized_dir) / module
+    src_path = fidelity_read_path(mod_dir, tree)
+    if src_path is None:
+        raise FileNotFoundError(f"no fidelity.{tree}.json for module {module} under {organized_dir}")
+    src_sha = sha256_of(src_path)
+    source = json.loads(src_path.read_text())
+    out_path = canon_output_path(mod_dir, tree)
+
+    previous = None
+    if out_path.is_file():
+        try:
+            previous = json.loads(out_path.read_text())
+        except (json.JSONDecodeError, OSError):
+            previous = None
+        if previous is not None and (previous.get("source_sha256") != src_sha
+                                     or previous.get("schema_version") != SCHEMA_VERSION):
+            previous = None
+    if previous is not None and previous.get("complete"):
+        return previous
+
+    source_classes = source.get("classes", {})
+    targets = [fqcn for fqcn, rec in source_classes.items() if not _is_clean(rec.get("grade", ""))]
+    done: dict = {}
+    if previous is not None:
+        for fqcn in previous.get("regraded_classes", []):
+            if fqcn in previous.get("classes", {}) and fqcn in targets:
+                done[fqcn] = previous["classes"][fqcn]
+    todo = [f for f in targets if f not in done]
+
+    if grade_fn is None:
+        grade_fn = _grade_one_class
+        grade_kwargs.setdefault("vineflower_dir", mod_dir / tree)
+        grade_kwargs.setdefault("fallback_dir", mod_dir / "fallback")
+        grade_kwargs.setdefault("docsource_dir", Path(organized_dir) / "docSource" / module)
+        grade_kwargs.setdefault("primary_tree", tree)
+    extracted = mod_dir / "extracted"
+    lock = threading.Lock()
+
+    def snapshot(complete: bool) -> dict:
+        classes = {}
+        for fqcn, rec in source_classes.items():
+            classes[fqcn] = done.get(fqcn, rec)
+        counts: dict[str, int] = {}
+        for rec in classes.values():
+            counts[rec["grade"]] = counts.get(rec["grade"], 0) + 1
+        source_counts: dict[str, int] = {}
+        for rec in source_classes.values():
+            source_counts[rec["grade"]] = source_counts.get(rec["grade"], 0) + 1
+        return {
+            "module": module,
+            "schema_version": SCHEMA_VERSION,
+            "jar_sha256": source.get("jar_sha256"),
+            "primary_tree": tree,
+            "class_count": len(classes),
+            "grade_counts": counts,
+            "classes": classes,
+            "limit_per_module": source.get("limit_per_module"),
+            "regraded_from": src_path.name,
+            "source_schema_version": source.get("schema_version"),
+            "source_sha256": src_sha,
+            "source_grade_counts": source_counts,
+            "regraded_classes": [f for f in targets if f in done],
+            "complete": complete,
+        }
+
+    def record(fqcn: str, rec: dict) -> None:
+        rec = dict(rec)
+        rec["previous_grade"] = source_classes[fqcn].get("grade")
+        with lock:
+            done[fqcn] = rec
+            if checkpoint_every and len(done) % checkpoint_every == 0:
+                _write_json_atomic(out_path, snapshot(complete=False))
+
+    def one(fqcn: str) -> tuple[str, dict]:
+        return grade_fn(fqcn, extracted / f"{fqcn}.class", **grade_kwargs)
+
+    if class_jobs > 1 and len(todo) > 1:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=class_jobs) as pool:
+            futures = [pool.submit(one, fqcn) for fqcn in todo]
+            try:
+                for fut in concurrent.futures.as_completed(futures):
+                    record(*fut.result())
+            except BaseException:
+                for fut in futures:
+                    fut.cancel()
+                raise
+        reap_dead_thread_tool_servers()
+    else:
+        for fqcn in todo:
+            record(*one(fqcn))
+
+    result = snapshot(complete=True)
+    _write_json_atomic(out_path, result)
+    return result
+
+
+# ---------------------------------------------------------------------------
 # Sampled independent cross-checks (krak2 + niagara_help.py) — run once at
 # report time over a capped, seeded-random sample of already-graded classes,
 # not inline in the per-class grading loop (which only needs the recompile
@@ -2422,6 +2565,37 @@ def _list_all_modules(organized_dir: Path) -> list[str]:
     return out
 
 
+def _main_regrade_nonclean(args, modules: list[str], organized_dir: Path, classpath: str,
+                           jd_cli_jar: Optional[Path]) -> int:
+    failed = []
+
+    def _one(module: str) -> None:
+        try:
+            result = regrade_nonclean_module(
+                module, organized_dir=organized_dir, tree=args.tree, class_jobs=args.class_jobs,
+                classpath=classpath, javac_bin=DEFAULT_JAVAC, javap_bin=DEFAULT_JAVAP, java_bin=DEFAULT_JAVA,
+                cfr_jar=DEFAULT_CFR_JAR, procyon_jar=DEFAULT_PROCYON_JAR, jd_cli_jar=jd_cli_jar,
+                tool_server=args.tool_server,
+            )
+            print(f"[{module}] regrade-nonclean {len(result['regraded_classes'])} classes: "
+                  f"{result['source_grade_counts']} -> {result['grade_counts']}", file=sys.stderr)
+        except Exception as exc:  # noqa: BLE001 -- one module must not abort the batch
+            print(f"[{module}] regrade-nonclean FAILED: {exc!r}", file=sys.stderr)
+            failed.append(module)
+
+    if args.jobs > 1 and len(modules) > 1:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=args.jobs) as pool:
+            list(pool.map(_one, modules))
+    else:
+        for module in modules:
+            _one(module)
+    shutdown_tool_servers()
+    if failed:
+        print(f"FAILED: {len(failed)} module(s): {failed}", file=sys.stderr)
+        return 1
+    return 0
+
+
 def main(argv: Optional[list[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--modules", help="comma-separated module names")
@@ -2448,6 +2622,11 @@ def main(argv: Optional[list[str]] = None) -> int:
                               "see grade_module docstring. Output is organized/<mod>/fidelity.<tree>.json — "
                               "grading a second tree for the same module writes a SEPARATE file, never "
                               "overwriting the first tree's grade (see fidelity_output_path).")
+    parser.add_argument("--regrade-nonclean", action="store_true",
+                         help="re-grade ONLY the non-clean classes of each selected module's existing "
+                              "fidelity.<tree>.json with the current grader and write the whole module to "
+                              "fidelity.<tree>.canon.json (the source file is never overwritten). Idempotent and "
+                              "resumable; honours --jobs/--class-jobs/--tool-server.")
     parser.add_argument("--compare", default=None, metavar="TREE_A,TREE_B",
                          help="report mode: read each already-graded module's fidelity.<tree>.json for BOTH "
                               "trees (no grading is performed) and report the per-class grade transition "
@@ -2509,6 +2688,9 @@ def main(argv: Optional[list[str]] = None) -> int:
     classpath = build_classpath(cache_dir, Path(args.modules_dir), Path(args.bin_ext_dir))
 
     jd_cli_jar = Path(args.jd_cli_jar) if args.jd_cli_jar else None
+
+    if args.regrade_nonclean:
+        return _main_regrade_nonclean(args, modules, organized_dir, classpath, jd_cli_jar)
 
     to_run = []
     for module in modules:

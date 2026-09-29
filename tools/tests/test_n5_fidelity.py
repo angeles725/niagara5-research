@@ -2404,3 +2404,127 @@ class TestCanonicalGrades(unittest.TestCase):
             self.assertEqual(rec["canonical_rules"], ["tail"])
             self.assertEqual(rec["attempted"], [("vineflower2", "roundtrip-canonical")])
 
+
+class TestRegradeNonclean(unittest.TestCase):
+    """--regrade-nonclean: re-grade only the non-clean classes of an existing
+    fidelity.<tree>.json into fidelity.<tree>.canon.json (never overwriting
+    the source file); idempotent and resumable."""
+
+    def setUp(self):
+        self.mod = _load()
+
+    def _source(self, mod_dir, classes):
+        src = {"module": "m", "schema_version": 1, "jar_sha256": "j", "primary_tree": "vineflower2",
+               "class_count": len(classes), "grade_counts": {}, "classes": classes, "limit_per_module": None}
+        path = Path(mod_dir) / "fidelity.vineflower2.json"
+        path.write_text(json.dumps(src))
+        return path
+
+    def _fake_grader(self, calls):
+        def grade(fqcn, classfile, **kwargs):
+            calls.append(fqcn)
+            return fqcn, {"grade": "roundtrip-canonical", "canonical_rules": ["tail"]}
+        return grade
+
+    def test_only_nonclean_classes_are_regraded_into_a_separate_file(self):
+        with tempfile.TemporaryDirectory() as td:
+            mod_dir = Path(td) / "m"
+            mod_dir.mkdir()
+            src = self._source(mod_dir, {"p/A": {"grade": "roundtrip-exact"},
+                                         "p/B": {"grade": "bytecode-only"},
+                                         "p/C": {"grade": "no-compile"}})
+            before = src.read_bytes()
+            calls = []
+            out = self.mod.regrade_nonclean_module("m", organized_dir=Path(td), tree="vineflower2",
+                                                   grade_fn=self._fake_grader(calls))
+            self.assertEqual(sorted(calls), ["p/B", "p/C"])
+            self.assertEqual(src.read_bytes(), before)
+            written = json.loads((mod_dir / "fidelity.vineflower2.canon.json").read_text())
+            self.assertEqual(written, json.loads(json.dumps(out)))
+            self.assertTrue(written["complete"])
+            self.assertEqual(written["classes"]["p/A"], {"grade": "roundtrip-exact"})
+            self.assertEqual(written["classes"]["p/B"]["previous_grade"], "bytecode-only")
+            self.assertEqual(written["grade_counts"], {"roundtrip-exact": 1, "roundtrip-canonical": 2})
+            self.assertEqual(written["source_grade_counts"], {"roundtrip-exact": 1, "bytecode-only": 1,
+                                                              "no-compile": 1})
+            self.assertEqual(written["regraded_classes"], ["p/B", "p/C"])
+            self.assertEqual(written["schema_version"], self.mod.SCHEMA_VERSION)
+            self.assertEqual(list(written["classes"]), ["p/A", "p/B", "p/C"])
+
+    def test_second_run_is_a_no_op(self):
+        with tempfile.TemporaryDirectory() as td:
+            mod_dir = Path(td) / "m"
+            mod_dir.mkdir()
+            self._source(mod_dir, {"p/B": {"grade": "compiles-mismatch"}})
+            calls = []
+            self.mod.regrade_nonclean_module("m", organized_dir=Path(td), tree="vineflower2",
+                                             grade_fn=self._fake_grader(calls))
+            self.mod.regrade_nonclean_module("m", organized_dir=Path(td), tree="vineflower2",
+                                             grade_fn=self._fake_grader(calls))
+            self.assertEqual(calls, ["p/B"])
+
+    def test_partial_run_resumes_with_the_remaining_classes_only(self):
+        with tempfile.TemporaryDirectory() as td:
+            mod_dir = Path(td) / "m"
+            mod_dir.mkdir()
+            src = self._source(mod_dir, {"p/B": {"grade": "compiles-mismatch"},
+                                         "p/C": {"grade": "compiles-mismatch"}})
+            partial = {"schema_version": self.mod.SCHEMA_VERSION, "complete": False,
+                       "source_sha256": self.mod.sha256_of(src), "regraded_classes": ["p/B"],
+                       "classes": {"p/B": {"grade": "compiles-mismatch", "previous_grade": "compiles-mismatch"}}}
+            (mod_dir / "fidelity.vineflower2.canon.json").write_text(json.dumps(partial))
+            calls = []
+            out = self.mod.regrade_nonclean_module("m", organized_dir=Path(td), tree="vineflower2",
+                                                   grade_fn=self._fake_grader(calls))
+            self.assertEqual(calls, ["p/C"])
+            self.assertEqual(out["classes"]["p/B"]["grade"], "compiles-mismatch")
+            self.assertEqual(out["regraded_classes"], ["p/B", "p/C"])
+
+    def test_changed_source_invalidates_a_previous_canon_file(self):
+        with tempfile.TemporaryDirectory() as td:
+            mod_dir = Path(td) / "m"
+            mod_dir.mkdir()
+            self._source(mod_dir, {"p/B": {"grade": "compiles-mismatch"}})
+            calls = []
+            self.mod.regrade_nonclean_module("m", organized_dir=Path(td), tree="vineflower2",
+                                             grade_fn=self._fake_grader(calls))
+            self._source(mod_dir, {"p/B": {"grade": "compiles-mismatch"}, "p/D": {"grade": "no-compile"}})
+            self.mod.regrade_nonclean_module("m", organized_dir=Path(td), tree="vineflower2",
+                                             grade_fn=self._fake_grader(calls))
+            self.assertEqual(calls, ["p/B", "p/B", "p/D"])
+
+    def test_missing_source_file_raises(self):
+        with tempfile.TemporaryDirectory() as td:
+            (Path(td) / "m").mkdir()
+            with self.assertRaises(FileNotFoundError):
+                self.mod.regrade_nonclean_module("m", organized_dir=Path(td), tree="vineflower2",
+                                                 grade_fn=self._fake_grader([]))
+
+    @unittest.skipUnless(_jdk_available(), "JDK 25 not installed")
+    def test_cli_regrades_a_real_mismatch_to_roundtrip_canonical(self):
+        with tempfile.TemporaryDirectory() as td:
+            organized = Path(td) / "organized"
+            mod_dir = organized / "fakemod"
+            (mod_dir / "extracted" / "p").mkdir(parents=True)
+            (mod_dir / "vineflower2" / "p").mkdir(parents=True)
+            src_dir = Path(td) / "src" / "p"
+            src_dir.mkdir(parents=True)
+            (src_dir / "Foo.java").write_text(
+                'package p;\npublic class Foo {\n  static String f(long v) { if (v == 0) return "a"; return "b"; }\n}\n')
+            subprocess.run([JDK25_JAVAC, "--release", "25", "-g", "-d", str(Path(td) / "g"), str(src_dir / "Foo.java")],
+                           check=True, capture_output=True)
+            shutil.copy(Path(td) / "g" / "p" / "Foo.class", mod_dir / "extracted" / "p" / "Foo.class")
+            (mod_dir / "vineflower2" / "p" / "Foo.java").write_text(
+                'package p;\npublic class Foo {\n  static String f(long v) { return v == 0 ? "a" : "b"; }\n}\n')
+            (mod_dir / "recon.json").write_text(json.dumps({"jar_sha256": "j"}))
+            self._source(mod_dir, {"p/Foo": {"grade": "bytecode-only"}})
+            empty = Path(td) / "empty"
+            empty.mkdir()
+            rc = self.mod.main(["--regrade-nonclean", "--modules", "fakemod", "--tree", "vineflower2",
+                                "--organized-dir", str(organized), "--modules-dir", str(empty),
+                                "--bin-ext-dir", str(empty), "--classpath-cache-dir", str(Path(td) / "cp")])
+            self.assertEqual(rc, 0)
+            out = json.loads((mod_dir / "fidelity.vineflower2.canon.json").read_text())
+            self.assertEqual(out["classes"]["p/Foo"]["grade"], "roundtrip-canonical")
+            self.assertEqual(out["classes"]["p/Foo"]["canonical_rules"], ["tail"])
+            self.assertEqual(out["classes"]["p/Foo"]["previous_grade"], "bytecode-only")
