@@ -36,6 +36,7 @@ records the module jar's current sha256 and this tool's SCHEMA_VERSION.
 from __future__ import annotations
 
 import argparse
+import atexit
 import concurrent.futures
 import hashlib
 import json
@@ -44,8 +45,10 @@ import random
 import re
 import shutil
 import subprocess
+import struct
 import sys
 import tempfile
+import threading
 import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -346,16 +349,197 @@ def _indent_of(line: str) -> int:
     return len(line) - len(line.lstrip(" "))
 
 
+# ---------------------------------------------------------------------------
+# Optional persistent javac/javap server (--tool-server)
+#
+# Per-class JVM startup + a ~440-jar classpath scan dominates grading time. With
+# --tool-server each worker thread owns ONE long-lived JVM
+# (tools/n5-toolserver/ToolServer.java) that runs javac/javap in-process via
+# ToolProvider; results are identical to the subprocess path. Any failure to
+# start or talk to the server falls back to the subprocess path (logged once).
+# ---------------------------------------------------------------------------
+
+TOOL_SERVER_SRC = str(REPO_ROOT / "tools" / "n5-toolserver" / "ToolServer.java")
+TOOL_SERVER_START_TIMEOUT_SECONDS = 60
+# a long-lived javac accumulates heap/class-loader state; recycle the JVM periodically
+TOOL_SERVER_MAX_REQUESTS = 400
+_TOOL_SERVER_JVM_FLAGS = ["-Xmx1g", "-XX:+UseSerialGC", "-Xshare:auto"]
+
+
+class ToolServerError(RuntimeError):
+    """The tool server could not start, died, or spoke garbage (NOT a timeout)."""
+
+
+class ToolServer:
+    """Client for one ToolServer.java JVM. Not thread-safe: one per worker thread."""
+
+    def __init__(self, java_bin: str = DEFAULT_JAVA):
+        self.java_bin = java_bin
+        self.proc: Optional[subprocess.Popen] = None
+        self._requests = 0
+
+    # -- lifecycle ---------------------------------------------------------
+    def _read(self, n: int) -> bytes:
+        buf = self.proc.stdout.read(n)
+        if buf is None or len(buf) != n:
+            raise ToolServerError("tool server closed its pipe")
+        return buf
+
+    def _kill(self) -> None:
+        proc, self.proc = self.proc, None
+        if proc is None:
+            return
+        try:
+            proc.kill()
+        except OSError:
+            pass
+        for stream in (proc.stdin, proc.stdout):
+            try:
+                stream.close()
+            except OSError:
+                pass
+        try:
+            proc.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            pass
+
+    def start(self) -> None:
+        self._kill()
+        try:
+            self.proc = subprocess.Popen(
+                [self.java_bin, *_TOOL_SERVER_JVM_FLAGS, TOOL_SERVER_SRC],
+                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=0,
+            )
+        except OSError as exc:
+            raise ToolServerError(f"cannot launch tool server: {exc}") from exc
+        timer = threading.Timer(TOOL_SERVER_START_TIMEOUT_SECONDS, self.proc.kill)
+        timer.start()
+        try:
+            if self._read(1) != b"R":
+                raise ToolServerError("tool server handshake mismatch")
+        except ToolServerError:
+            self._kill()
+            raise
+        finally:
+            timer.cancel()
+        self._requests = 0
+
+    def close(self) -> None:
+        self._kill()
+
+    # -- requests ----------------------------------------------------------
+    def run(self, tool: str, args: list, timeout: Optional[float] = None) -> tuple[int, str, str]:
+        """Run `tool` (javac/javap) with `args`; returns (returncode, stdout, stderr).
+        Raises subprocess.TimeoutExpired (server is killed; the next call restarts it)
+        or ToolServerError."""
+        if self.proc is None or self.proc.poll() is not None or self._requests >= TOOL_SERVER_MAX_REQUESTS:
+            self.start()
+        parts = [tool, *[str(a) for a in args]]
+        payload = bytearray(struct.pack(">i", len(parts)))
+        for part in parts:
+            raw = part.encode("utf-8")
+            payload += struct.pack(">i", len(raw)) + raw
+        timed_out = threading.Event()
+
+        def _expire():
+            timed_out.set()
+            try:
+                self.proc.kill()
+            except (OSError, AttributeError):
+                pass
+
+        timer = threading.Timer(timeout, _expire) if timeout is not None else None
+        if timer:
+            timer.start()
+        try:
+            self.proc.stdin.write(bytes(payload))
+            rc = struct.unpack(">i", self._read(4))[0]
+            out = self._read(struct.unpack(">i", self._read(4))[0])
+            err = self._read(struct.unpack(">i", self._read(4))[0])
+        except (ToolServerError, OSError, struct.error) as exc:
+            self._kill()
+            if timed_out.is_set():
+                raise subprocess.TimeoutExpired([tool, *args], timeout) from exc
+            raise ToolServerError(f"tool server died during {tool}: {exc}") from exc
+        finally:
+            if timer:
+                timer.cancel()
+        if timed_out.is_set():  # finished as the timer fired: treat the killed server as a timeout
+            self._kill()
+            raise subprocess.TimeoutExpired([tool, *args], timeout)
+        self._requests += 1
+        return rc, out.decode("utf-8", "replace"), err.decode("utf-8", "replace")
+
+
+_tool_server_local = threading.local()
+_tool_servers: list = []
+_tool_servers_lock = threading.Lock()
+_tool_server_disabled = False
+
+
+def _thread_tool_server(java_bin: str) -> Optional[ToolServer]:
+    """This thread's ToolServer (started lazily), or None if unusable (caller falls back)."""
+    global _tool_server_disabled
+    if _tool_server_disabled:
+        return None
+    server = getattr(_tool_server_local, "server", None)
+    if server is None:
+        server = ToolServer(java_bin)
+        _tool_server_local.server = server
+        with _tool_servers_lock:
+            _tool_servers.append(server)
+    return server
+
+
+def _disable_tool_server(reason: str) -> None:
+    global _tool_server_disabled
+    with _tool_servers_lock:
+        first = not _tool_server_disabled
+        _tool_server_disabled = True
+    if first:
+        print(f"n5-fidelity: --tool-server unavailable ({reason}); falling back to subprocess javac/javap", file=sys.stderr)
+
+
+def shutdown_tool_servers() -> None:
+    """Close every tool-server JVM and re-arm the feature (used at end of a run and by tests)."""
+    global _tool_server_disabled
+    with _tool_servers_lock:
+        servers = list(_tool_servers)
+        _tool_servers.clear()
+        _tool_server_disabled = False
+    for server in servers:
+        server.close()
+    _tool_server_local.__dict__.clear()
+
+
+atexit.register(lambda: shutdown_tool_servers())
+
+
+def _run_jdk_tool(tool: str, tool_bin: str, args: list, timeout: Optional[float], tool_server: bool) -> tuple[int, str, str]:
+    """(returncode, stdout, stderr) of a javac/javap invocation, via the per-thread
+    tool server when enabled, else (or on any server failure) via a fresh subprocess.
+    subprocess.TimeoutExpired propagates in both paths."""
+    if tool_server:
+        server = _thread_tool_server(str(Path(tool_bin).with_name("java")) if os.sep in tool_bin else DEFAULT_JAVA)
+        if server is not None:
+            try:
+                return server.run(tool, args, timeout)
+            except ToolServerError as exc:
+                _disable_tool_server(str(exc))
+    proc = subprocess.run([tool_bin, *args], capture_output=True, text=True, timeout=timeout)
+    return proc.returncode, proc.stdout, proc.stderr
+
+
 def run_javap_verbose(
-    classfile: str, javap_bin: str = DEFAULT_JAVAP, timeout: Optional[float] = DEFAULT_JAVAP_TIMEOUT_SECONDS
+    classfile: str, javap_bin: str = DEFAULT_JAVAP, timeout: Optional[float] = DEFAULT_JAVAP_TIMEOUT_SECONDS,
+    tool_server: bool = False,
 ) -> str:
     # subprocess.TimeoutExpired is intentionally NOT caught here (this function's
     # contract stays "returns javap's stdout, or raises") -- callers that need a
     # typed "timeout" grade instead of a propagating exception catch it
     # themselves (see recompile_and_grade), since only they know what grade
     # dict shape to return for their call site.
-    proc = subprocess.run([javap_bin, "-v", "-p", classfile], capture_output=True, text=True, timeout=timeout)
-    return proc.stdout
+    return _run_jdk_tool("javap", javap_bin, ["-v", "-p", classfile], timeout, tool_server)[1]
 
 
 def parse_javap_verbose(text: str) -> dict:
@@ -1017,8 +1201,10 @@ def slot_field_names(parsed_class: dict) -> set[tuple[str, str]]:
 # needed for real corpus classes, not for the self-contained unit tests)
 # ---------------------------------------------------------------------------
 
-def run_javap_instructions(classfile: str, method_name: str, descriptor: str, javap_bin: str = DEFAULT_JAVAP) -> list[str]:
-    text = run_javap_verbose(classfile, javap_bin=javap_bin)
+def run_javap_instructions(
+    classfile: str, method_name: str, descriptor: str, javap_bin: str = DEFAULT_JAVAP, tool_server: bool = False
+) -> list[str]:
+    text = run_javap_verbose(classfile, javap_bin=javap_bin, tool_server=tool_server)
     parsed = parse_javap_verbose(text)
     method = parsed["methods"].get((method_name, descriptor))
     if method is None:
@@ -1048,6 +1234,7 @@ def recompile_and_grade(
     javap_bin: str = DEFAULT_JAVAP,
     javac_timeout: float = DEFAULT_JAVAC_TIMEOUT_SECONDS,
     javap_timeout: float = DEFAULT_JAVAP_TIMEOUT_SECONDS,
+    tool_server: bool = False,
 ) -> dict:
     """Recompile one decompiled .java (top-level class `class_name`, may define
     nested classes too) and grade the top-level class's .class against
@@ -1076,12 +1263,12 @@ def recompile_and_grade(
         }
 
     os.makedirs(out_dir, exist_ok=True)
-    cmd = [javac_bin, "--release", "25", "-g", "-implicit:none", "-proc:none", "-nowarn", "-d", out_dir]
+    javac_args = ["--release", "25", "-g", "-implicit:none", "-proc:none", "-nowarn", "-d", out_dir]
     if classpath:
-        cmd += ["-cp", classpath]
-    cmd.append(java_file)
+        javac_args += ["-cp", classpath]
+    javac_args.append(java_file)
     try:
-        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=javac_timeout)
+        javac_rc, _javac_out, javac_err = _run_jdk_tool("javac", javac_bin, javac_args, javac_timeout, tool_server)
     except subprocess.TimeoutExpired:
         return {
             "grade": "timeout",
@@ -1090,10 +1277,10 @@ def recompile_and_grade(
             "allowlist_matches": [],
         }
 
-    if proc.returncode != 0:
+    if javac_rc != 0:
         return {
             "grade": "no-compile",
-            "first_error": _first_javac_error(proc.stderr),
+            "first_error": _first_javac_error(javac_err),
             "mismatched_methods": [],
             "allowlist_matches": [],
         }
@@ -1113,8 +1300,8 @@ def recompile_and_grade(
     recompiled_class = str(candidates[0])
 
     try:
-        a = parse_javap_verbose(run_javap_verbose(ground_truth_class, javap_bin=javap_bin, timeout=javap_timeout))
-        b = parse_javap_verbose(run_javap_verbose(recompiled_class, javap_bin=javap_bin, timeout=javap_timeout))
+        a = parse_javap_verbose(run_javap_verbose(ground_truth_class, javap_bin=javap_bin, timeout=javap_timeout, tool_server=tool_server))
+        b = parse_javap_verbose(run_javap_verbose(recompiled_class, javap_bin=javap_bin, timeout=javap_timeout, tool_server=tool_server))
     except subprocess.TimeoutExpired:
         return {
             "grade": "timeout",
@@ -1277,6 +1464,7 @@ def _grade_one_class(
     procyon_jar: Path,
     jd_cli_jar: Optional[Path],
     primary_tree: str,
+    tool_server: bool = False,
 ) -> tuple[str, dict]:
     """Grade one top-level class (the redundancy ladder) and return
     (fqcn, record). Self-contained: uses its own temp dirs, so it is safe to
@@ -1313,7 +1501,7 @@ def _grade_one_class(
                     grade = "timeout" if reason == "timeout" else "no-compile"
                     suffix = " (timeout)" if reason == "timeout" else ""
                     return {"grade": grade, "first_error": f"{engine_label} retry decompile failed{suffix}", "mismatched_methods": [], "allowlist_matches": []}
-                return recompile_and_grade(str(java_src), class_short, classpath, str(classfile), compile_td, javac_bin, javap_bin)
+                return recompile_and_grade(str(java_src), class_short, classpath, str(classfile), compile_td, javac_bin, javap_bin, tool_server=tool_server)
 
         def cfr_thunk():
             return _decompile_retry_thunk("cfr", cfr_jar, "CFR")
@@ -1326,7 +1514,7 @@ def _grade_one_class(
         # "vineflower" regardless of `--tree` misattributed a vineflower2
         # (or any other tree's) result to vineflower in `attempted`/
         # `per_engine_mismatched_methods`.
-        first = recompile_and_grade(str(source_java), class_short, classpath, str(classfile), td, javac_bin, javap_bin)
+        first = recompile_and_grade(str(source_java), class_short, classpath, str(classfile), td, javac_bin, javap_bin, tool_server=tool_server)
         attempted = [(primary_tree, first)]
         if not _is_clean(first["grade"]):
             cfr_result = cfr_thunk()
@@ -1346,7 +1534,7 @@ def _grade_one_class(
 
         if docsource_available:
             with tempfile.TemporaryDirectory() as ds_td:
-                ds_result = recompile_and_grade(str(docsource_java), class_short, classpath, str(classfile), ds_td, javac_bin, javap_bin)
+                ds_result = recompile_and_grade(str(docsource_java), class_short, classpath, str(classfile), ds_td, javac_bin, javap_bin, tool_server=tool_server)
                 docsource_roundtrip = _is_clean(ds_result["grade"])
 
         return fqcn, {
@@ -1385,6 +1573,7 @@ def grade_module(
     member_sample_size: int = 0,
     primary_tree: str = "vineflower",
     class_jobs: int = 1,
+    tool_server: bool = False,
 ) -> dict:
     """`primary_tree` names the decompiled source tree to grade as the FIRST
     rung of the redundancy ladder — normally "vineflower" (tools/n5-decompile.sh's
@@ -1407,6 +1596,7 @@ def grade_module(
         vineflower_dir=vineflower_dir, fallback_dir=fallback_dir, docsource_dir=docsource_dir,
         classpath=classpath, javac_bin=javac_bin, javap_bin=javap_bin, java_bin=java_bin,
         cfr_jar=cfr_jar, procyon_jar=procyon_jar, jd_cli_jar=jd_cli_jar, primary_tree=primary_tree,
+        tool_server=tool_server,
     )
     per_class = {}
     if class_jobs > 1 and len(classes) > 1:
@@ -2150,6 +2340,9 @@ def main(argv: Optional[list[str]] = None) -> int:
     parser.add_argument("--jobs", type=int, default=1)
     parser.add_argument("--class-jobs", type=int, default=1,
                          help="grade this many classes concurrently within each module (default 1 = serial; results identical)")
+    parser.add_argument("--tool-server", action="store_true",
+                         help="run javac/javap in one persistent in-process JVM per worker thread instead of a fresh JVM per call "
+                              "(identical grades, much faster; falls back to subprocesses if the server cannot run)")
     parser.add_argument("--limit-per-module", type=int, default=None)
     parser.add_argument("--report", action="store_true", help="(re)write docs/decompile-fidelity-report.md")
     parser.add_argument("--organized-dir", default=str(DEFAULT_ORGANIZED_DIR))
@@ -2258,6 +2451,7 @@ def main(argv: Optional[list[str]] = None) -> int:
                 jd_cli_jar=jd_cli_jar,
                 primary_tree=args.tree,
                 class_jobs=args.class_jobs,
+                tool_server=args.tool_server,
             )
             fidelity_output_path(organized_dir / module, args.tree).write_text(
                 json.dumps(result, indent=2, default=list) + "\n"
@@ -2277,6 +2471,7 @@ def main(argv: Optional[list[str]] = None) -> int:
             results = list(pool.map(_run_one, to_run))
     else:
         results = [_run_one(m) for m in to_run]
+    shutdown_tool_servers()
 
     # include already-up-to-date modules in the report too
     for module in modules:

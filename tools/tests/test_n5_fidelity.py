@@ -1313,6 +1313,138 @@ class TestClassJobsParallelGrading(unittest.TestCase):
             self.assertEqual(seen.get("class_jobs"), 3)
 
 
+class TestToolServer(unittest.TestCase):
+    """--tool-server: javac/javap run in one long-lived in-process JVM per worker
+    thread. Output must be byte-identical to the subprocess path."""
+
+    SOURCE = (
+        "package pk;\n"
+        "public class Tiny {\n"
+        "    private final int x;\n"
+        "    public Tiny(int x) { this.x = x; }\n"
+        "    public int getX() { return x + 1; }\n"
+        "}\n"
+    )
+    JAVAC_OPTS = ["--release", "25", "-g", "-implicit:none", "-proc:none", "-nowarn"]
+
+    def setUp(self):
+        if not _jdk_available():
+            self.skipTest("JDK 25 (javac/javap) not installed at the pinned brew path")
+        self.mod = _load()
+        self.tmpdir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmpdir, ignore_errors=True)
+        self.addCleanup(self.mod.shutdown_tool_servers)
+        self.src = os.path.join(self.tmpdir, "Tiny.java")
+        with open(self.src, "w") as f:
+            f.write(self.SOURCE)
+
+    def _server(self):
+        server = self.mod.ToolServer(java_bin=self.mod.DEFAULT_JAVA)
+        self.addCleanup(server.close)
+        return server
+
+    def _subprocess_compile(self, out_dir):
+        os.makedirs(out_dir)
+        subprocess.run([JDK25_JAVAC, *self.JAVAC_OPTS, "-d", out_dir, self.src], check=True, capture_output=True)
+        return os.path.join(out_dir, "pk", "Tiny.class")
+
+    def test_javac_via_server_is_byte_identical_to_subprocess(self):
+        ref = self._subprocess_compile(os.path.join(self.tmpdir, "ref"))
+        srv_out = os.path.join(self.tmpdir, "srv")
+        os.makedirs(srv_out)
+        server = self._server()
+        rc, out, err = server.run("javac", [*self.JAVAC_OPTS, "-d", srv_out, self.src], timeout=60)
+        self.assertEqual(rc, 0, err)
+        with open(ref, "rb") as a, open(os.path.join(srv_out, "pk", "Tiny.class"), "rb") as b:
+            self.assertEqual(a.read(), b.read())
+
+    def test_javac_error_text_and_exit_code_round_trip(self):
+        bad = os.path.join(self.tmpdir, "Bad.java")
+        with open(bad, "w") as f:
+            f.write("class Bad { int f() { return \"\u00e9\"; } }\n")
+        out_dir = os.path.join(self.tmpdir, "o")
+        os.makedirs(out_dir)
+        proc = subprocess.run([JDK25_JAVAC, *self.JAVAC_OPTS, "-d", out_dir, bad], capture_output=True, text=True)
+        server = self._server()
+        rc, out, err = server.run("javac", [*self.JAVAC_OPTS, "-d", out_dir, bad], timeout=60)
+        self.assertNotEqual(rc, 0)
+        self.assertEqual(rc, proc.returncode)
+        self.assertEqual(err, proc.stderr)
+
+    def test_javap_via_server_text_equals_subprocess(self):
+        ref = self._subprocess_compile(os.path.join(self.tmpdir, "ref"))
+        expected = self.mod.run_javap_verbose(ref, javap_bin=JDK25_JAVAP)
+        got = self.mod.run_javap_verbose(ref, javap_bin=JDK25_JAVAP, tool_server=True)
+        self.assertEqual(got, expected)
+        self.assertIn("getX", got)
+
+    def test_timeout_restarts_server_and_grade_is_timeout(self):
+        server = self._server()
+        out_dir = os.path.join(self.tmpdir, "t")
+        os.makedirs(out_dir)
+        with self.assertRaises(subprocess.TimeoutExpired):
+            server.run("javac", [*self.JAVAC_OPTS, "-d", out_dir, self.src], timeout=0.001)
+        rc, _, err = server.run("javac", [*self.JAVAC_OPTS, "-d", out_dir, self.src], timeout=60)
+        self.assertEqual(rc, 0, err)
+        ref = self._subprocess_compile(os.path.join(self.tmpdir, "ref"))
+        result = self.mod.recompile_and_grade(
+            self.src, "Tiny", "", ref, os.path.join(self.tmpdir, "g"),
+            javac_bin=JDK25_JAVAC, javap_bin=JDK25_JAVAP, javac_timeout=0.001, tool_server=True,
+        )
+        self.assertEqual(result["grade"], "timeout")
+
+    def test_server_start_failure_falls_back_to_subprocess_with_identical_grade(self):
+        ref = self._subprocess_compile(os.path.join(self.tmpdir, "ref"))
+        baseline = self.mod.recompile_and_grade(
+            self.src, "Tiny", "", ref, os.path.join(self.tmpdir, "g1"),
+            javac_bin=JDK25_JAVAC, javap_bin=JDK25_JAVAP,
+        )
+        with mock.patch.object(self.mod, "TOOL_SERVER_SRC", os.path.join(self.tmpdir, "missing", "ToolServer.java")):
+            self.mod.shutdown_tool_servers()
+            fallback = self.mod.recompile_and_grade(
+                self.src, "Tiny", "", ref, os.path.join(self.tmpdir, "g2"),
+                javac_bin=JDK25_JAVAC, javap_bin=JDK25_JAVAP, tool_server=True,
+            )
+        self.assertEqual(fallback, baseline)
+        self.assertEqual(fallback["grade"], "roundtrip-exact")
+
+    def test_recompile_and_grade_via_server_matches_subprocess(self):
+        ref = self._subprocess_compile(os.path.join(self.tmpdir, "ref"))
+        a = self.mod.recompile_and_grade(self.src, "Tiny", "", ref, os.path.join(self.tmpdir, "g1"),
+                                         javac_bin=JDK25_JAVAC, javap_bin=JDK25_JAVAP)
+        b = self.mod.recompile_and_grade(self.src, "Tiny", "", ref, os.path.join(self.tmpdir, "g2"),
+                                         javac_bin=JDK25_JAVAC, javap_bin=JDK25_JAVAP, tool_server=True)
+        self.assertEqual(a, b)
+
+    def test_main_passes_tool_server_through(self):
+        with tempfile.TemporaryDirectory() as td:
+            organized_dir = Path(td)
+            mod_dir = organized_dir / "m"
+            (mod_dir / "extracted").mkdir(parents=True)
+            (mod_dir / "recon.json").write_text(json.dumps({"jar_sha256": "sha-m"}))
+            seen = {}
+
+            def fake_grade_module(module, primary_tree="vineflower", limit=None, **kwargs):
+                seen.update(kwargs)
+                return {
+                    "module": module, "schema_version": self.mod.SCHEMA_VERSION,
+                    "jar_sha256": "sha-m", "primary_tree": primary_tree, "limit_per_module": limit,
+                    "class_count": 0, "grade_counts": {}, "classes": {},
+                }
+
+            for argv_extra, expected in (([], False), (["--tool-server"], True)):
+                seen.clear()
+                with mock.patch.object(self.mod, "grade_module", side_effect=fake_grade_module), \
+                     mock.patch.object(self.mod, "build_classpath", return_value=""):
+                    rc = self.mod.main([
+                        "--modules", "m", "--force", *argv_extra,
+                        "--organized-dir", str(organized_dir),
+                        "--classpath-cache-dir", str(organized_dir / "_cp"),
+                    ])
+                self.assertEqual(rc, 0)
+                self.assertIs(seen.get("tool_server"), expected)
+
+
 class TestHarnessErrorsAndTimeouts(unittest.TestCase):
     """Missing ground-truth/source files and subprocess timeouts are HARNESS
     problems, never a decompiler-fidelity finding -- distinct typed grades
