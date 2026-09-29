@@ -54,6 +54,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Optional
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import n5_canon  # noqa: E402  (tools/n5_canon.py: parser + sound CFG canonicalization)
+
 # 2 (F6): the exact normalizer was tightened -- parameter slots are pinned (a
 # first-use renumbering let `a - b` and `b - a` compare equal), exception-table
 # rows keep their order (row order is catch priority), wide slot forms
@@ -179,72 +182,11 @@ def _slot_of(mnemonic: str, operand: str) -> Optional[int]:
     return None
 
 
-# javap prints a negative case key bare (e.g. "-5: 36", verified against a real
-# javac 25 compile of a `switch` with negative int case labels) -- the target
-# offset itself is never negative in practice, but "-?\d+" is used for both so
-# a malformed/unexpected negative offset is captured (and compared) rather than
-# silently dropped, which is the false-exact bug this regex previously caused:
-# an unmatched row was skipped by _parse_code_stream instead of being added to
-# `entries`, so two switches differing ONLY in a negative-key arm's target
-# could normalize identical.
-_SWITCH_CASE_RE = re.compile(r"^\s*(-?\d+|default)\s*:\s*(-?\d+)\s*$")
-
-
-def _parse_code_stream(raw_lines: list[str]) -> list[dict]:
-    """Parse raw ``Code`` lines into a list of instruction records.
-
-    javap prints ``tableswitch``/``lookupswitch`` as a MULTI-LINE block::
-
-        1: lookupswitch  { // 2
-                       5: 28
-                     200: 31
-                 default: 34
-              }
-
-    Each ``<key>: <target>`` row inside that block is switch OPERAND data, not
-    a separate instruction — but it is syntactically indistinguishable from a
-    regular ``<offset>: <mnemonic>`` line by regex alone. Treating it as one
-    (the previous implementation's bug) corrupts offset->position numbering
-    for every instruction that follows: a switch with an arm at raw offset 28
-    would register a *second*, bogus "instruction" at offset 5 (the case key)
-    before the real instruction at offset 28 is ever seen. This function
-    explicitly consumes a switch's block as part of the switch record instead.
-    """
-    records: list[dict] = []
-    i = 0
-    while i < len(raw_lines):
-        m = _INSTR_LINE_RE.match(raw_lines[i])
-        if not m:
-            i += 1
-            continue
-        offset = int(m.group(1))
-        mnemonic = m.group(2)
-        rest = m.group(3)
-        if mnemonic in ("tableswitch", "lookupswitch"):
-            entries: list[tuple[int, int]] = []
-            default_target = None
-            i += 1
-            while i < len(raw_lines):
-                line = raw_lines[i].strip()
-                if line == "}":
-                    i += 1
-                    break
-                cm = _SWITCH_CASE_RE.match(line)
-                if cm:
-                    key, target = cm.group(1), int(cm.group(2))
-                    if key == "default":
-                        default_target = target
-                    else:
-                        entries.append((int(key), target))
-                i += 1
-            records.append({
-                "kind": "switch", "offset": offset, "mnemonic": mnemonic,
-                "entries": entries, "default": default_target,
-            })
-        else:
-            records.append({"kind": "insn", "offset": offset, "mnemonic": mnemonic, "rest": rest})
-            i += 1
-    return records
+# javap Code-stream parsing (multi-line tableswitch/lookupswitch blocks,
+# negative case keys) lives in tools/n5_canon.py, shared with the canonical
+# comparison so both read javap output identically.
+_SWITCH_CASE_RE = n5_canon.SWITCH_CASE_RE
+_parse_code_stream = n5_canon.parse_code_stream
 
 
 def _offset_to_pos_map(records: list[dict]) -> dict[int, int]:
