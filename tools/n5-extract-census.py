@@ -11,10 +11,17 @@ Subcommands:
   module <jar> <moddir> [--release N] [--json]
       Census one module jar against organized/<mod>/{extracted,resources,
       vineflower,fallback}. Exit 0 = byte-exact and complete, 1 = at least one
-      class mismatch/missing or resource mismatch/missing, 2 = usage/read error.
+      class mismatch/missing or resource mismatch/missing, 2 = usage error (argparse),
+      3 = read/internal error (missing or corrupt jar, any unexpected exception). A
+      crash never exits 1 and a mismatch never exits 2/3, so a caller can gate on the code.
   sweep <jar-dir> <organized-dir> [--release N] [--json]
       Run `module` for every <jar-dir>/*.jar that has organized/<stem>/recon.json
-      and print an aggregate. Same exit convention (1 if any module is not clean).
+      (jars without one are listed under skipped_no_recon) and print an aggregate. A module
+      that cannot be read is isolated into errored_modules and the sweep continues; it makes
+      the exit code 3 unless a real mismatch (1) was also found. Same exit convention (1 if any module is not clean).
+
+Entry names are normalized (safe_entry_path); an entry that would escape the module directory
+is reported under unsafe_entries and makes the module unclean.
 
 Rules (each pinned by tools/tests/test_n5_extract_census.py):
   * Byte-exactness: sha256 of each jar entry vs the file at extracted/<entry>
@@ -27,7 +34,7 @@ Rules (each pinned by tools/tests/test_n5_extract_census.py):
   * Multi-Release: honoured only when the jar MANIFEST says `Multi-Release: true`
     (JarFile semantics); for release N the JVM loads the highest
     META-INF/versions/<v>/ entry with v <= N, else the base entry.
-  * Native payloads: detected by magic bytes (PE "MZ", ELF, Mach-O), not by name.
+  * Native payloads: detected by magic bytes (PE = MZ + e_lfanew -> "PE\\0\\0", ELF, Mach-O), not by name.
   * Minified JS: longest line >= 1000 bytes or mean line length >= 250 bytes.
 """
 import argparse
@@ -35,10 +42,12 @@ import hashlib
 import io
 import json
 import os
+import posixpath
 import re
 import sys
 import zipfile
 
+EXIT_CLEAN, EXIT_UNCLEAN, EXIT_USAGE, EXIT_ERROR = 0, 1, 2, 3
 TRIDIUM_PREFIXES = ("com/tridium/", "niagara/", "javax/baja/")
 VERSIONS_RE = re.compile(r"^META-INF/versions/(\d+)/(.+)$")
 
@@ -53,8 +62,18 @@ def tridium_share(names):
     return trid, len(classes)
 
 
+def _is_pe(data):
+    """DOS "MZ" header whose e_lfanew (u32 at 0x3c) points at the "PE\\0\\0" signature.
+    "MZ" alone is two ASCII letters and matches plain text; the pointer check is what makes
+    this a PE. Needs the whole (or at least the first e_lfanew+4) bytes, not an 8-byte prefix."""
+    if data[:2] != b"MZ" or len(data) < 0x40:
+        return False
+    lfanew = int.from_bytes(data[0x3c:0x40], "little")
+    return lfanew + 4 <= len(data) and data[lfanew:lfanew + 4] == b"PE\x00\x00"
+
+
 def native_format(data):
-    if data[:2] == b"MZ":
+    if _is_pe(data):
         return "PE"
     if data[:4] == b"\x7fELF":
         return "ELF"
@@ -115,7 +134,7 @@ def nested_jar_census(name, data, release):
     versions, selected = mr_resolution(zf, release)
     natives = []
     for n in names:
-        fmt = native_format(zf.read(n)[:8])
+        fmt = native_format(zf.read(n))
         if fmt:
             natives.append({"name": n, "format": fmt, "sha256": sha256(zf.read(n))})
     return {
@@ -134,6 +153,19 @@ def nested_jar_census(name, data, release):
     }
 
 
+def safe_entry_path(name):
+    """Normalize a zip entry name to the relative POSIX path an extractor would create, or None
+    when it cannot be mapped safely under the module directory (absolute, `..` escape, backslash,
+    NUL, empty). Without this, os.path.join(extracted, "../../x") reads a file outside the tree
+    and can report a bogus byte-exact match."""
+    if not name or "\\" in name or "\x00" in name or name.startswith("/"):
+        return None
+    rel = posixpath.normpath(name)
+    if rel in (".", "") or rel == ".." or rel.startswith("../") or rel.startswith("/"):
+        return None
+    return rel
+
+
 def _read_file(path):
     try:
         with open(path, "rb") as fh:
@@ -148,9 +180,11 @@ def census_module(jar, moddir, release=25):
         "jar": jar,
         "jar_sha256": sha256(_read_file(jar)),
         "moddir": moddir,
+        "unsafe_entries": [],
         "classes": {"checked": 0, "mismatched": [], "missing": []},
         "resources": {"expected": 0, "present_exact": 0, "mismatched": [], "missing": []},
         "nested": [],
+        "nested_unreadable": [],
         "nested_classes_total": 0,
         "nested_classes_decompiled": 0,
         "natives": [],
@@ -164,17 +198,21 @@ def census_module(jar, moddir, release=25):
         name = info.filename
         if name.endswith("/"):
             continue
-        data = zf.read(name)
+        rel = safe_entry_path(name)
+        if rel is None:
+            result["unsafe_entries"].append(name)
+            continue
+        data = zf.read(info)
         if name.endswith(".class"):
             result["classes"]["checked"] += 1
-            got = _read_file(os.path.join(ext_dir, name))
+            got = _read_file(os.path.join(ext_dir, rel))
             if got is None:
                 result["classes"]["missing"].append(name)
             elif sha256(got) != sha256(data):
                 result["classes"]["mismatched"].append(name)
             continue
         result["resources"]["expected"] += 1
-        got = _read_file(os.path.join(res_dir, name))
+        got = _read_file(os.path.join(res_dir, rel))
         if got is None:
             result["resources"]["missing"].append(name)
         elif sha256(got) != sha256(data):
@@ -188,14 +226,18 @@ def census_module(jar, moddir, release=25):
                 result["js"]["minified"] += 1
         elif lower.endswith(".map"):
             result["js"]["source_maps"] += 1
-        fmt = native_format(data[:8])
+        fmt = native_format(data)
         if fmt:
             result["natives"].append({"name": name, "format": fmt, "sha256": sha256(data),
                                       "size": len(data)})
         if data[:4] == b"PK\x03\x04":
             try:
                 nested = nested_jar_census(name, data, release)
-            except zipfile.BadZipFile:
+            except zipfile.BadZipFile as exc:
+                # A nested jar that will not open was NOT analysed: say so instead of
+                # silently dropping it from the counts.
+                result["nested_unreadable"].append(
+                    {"name": name, "sha256": sha256(data), "error": str(exc)})
                 continue
             decompiled = 0
             tops = {_top_level_java(c) for c in nested["class_names"]
@@ -213,19 +255,28 @@ def census_module(jar, moddir, release=25):
 
 
 def is_clean(r):
-    return not (r["classes"]["mismatched"] or r["classes"]["missing"]
+    return not (r["unsafe_entries"] or r["classes"]["mismatched"] or r["classes"]["missing"]
                 or r["resources"]["mismatched"] or r["resources"]["missing"])
 
 
 def sweep(jar_dir, organized, release=25):
+    """Census every jar with an organized/<stem>/recon.json. A module that cannot be read
+    (corrupt jar, I/O error, any exception) is recorded in `errored_modules` and the sweep goes
+    on: one bad module must not hide the state of the other 250."""
     modules = []
+    errored = []
+    skipped = []
     for fn in sorted(os.listdir(jar_dir)):
         if not fn.endswith(".jar"):
             continue
         moddir = os.path.join(organized, fn[:-4])
         if not os.path.isfile(os.path.join(moddir, "recon.json")):
+            skipped.append(fn[:-4])
             continue
-        modules.append(census_module(os.path.join(jar_dir, fn), moddir, release))
+        try:
+            modules.append(census_module(os.path.join(jar_dir, fn), moddir, release))
+        except Exception as exc:  # noqa: BLE001 - isolation is the point
+            errored.append({"module": fn[:-4], "error": f"{type(exc).__name__}: {exc}"})
     agg = {
         "modules": len(modules),
         "classes_checked": sum(m["classes"]["checked"] for m in modules),
@@ -234,15 +285,28 @@ def sweep(jar_dir, organized, release=25):
         "resources_expected": sum(m["resources"]["expected"] for m in modules),
         "resource_mismatches": sum(len(m["resources"]["mismatched"]) for m in modules),
         "resource_missing": sum(len(m["resources"]["missing"]) for m in modules),
+        "unsafe_entries": sum(len(m["unsafe_entries"]) for m in modules),
         "nested_jars": sum(len(m["nested"]) for m in modules),
+        "nested_unreadable": sum(len(m["nested_unreadable"]) for m in modules),
         "nested_classes_total": sum(m["nested_classes_total"] for m in modules),
         "nested_top_level_decompiled": sum(m["nested_classes_decompiled"] for m in modules),
         "natives": sum(len(m["natives"]) for m in modules),
         "js_total": sum(m["js"]["total"] for m in modules),
         "js_minified": sum(m["js"]["minified"] for m in modules),
         "unclean_modules": [os.path.basename(m["moddir"]) for m in modules if not is_clean(m)],
+        "errored_modules": errored,
+        "skipped_no_recon": skipped,
     }
     return agg, modules
+
+
+def _emit(out, as_json):
+    if as_json:
+        print(json.dumps(out, indent=1))
+    else:
+        for k, v in out.items():
+            if not isinstance(v, (list, dict)):
+                print(f"{k}: {v}")
 
 
 def main(argv=None):
@@ -271,16 +335,16 @@ def main(argv=None):
                     json.dump(mods, fh, indent=1)
             clean = not agg["unclean_modules"]
             out = agg
-    except (OSError, zipfile.BadZipFile) as exc:
-        print(f"error: {exc}", file=sys.stderr)
-        return 2
-    if args.json:
-        print(json.dumps(out, indent=1))
-    else:
-        for k, v in out.items():
-            if not isinstance(v, (list, dict)):
-                print(f"{k}: {v}")
-    return 0 if clean else 1
+            if agg["errored_modules"] and clean:
+                for e in agg["errored_modules"]:
+                    print(f"error: {e['module']}: {e['error']}", file=sys.stderr)
+                _emit(out, args.json)
+                return EXIT_ERROR
+    except Exception as exc:  # noqa: BLE001 - exit 1 is reserved for "mismatch"
+        print(f"error: {type(exc).__name__}: {exc}", file=sys.stderr)
+        return EXIT_ERROR
+    _emit(out, args.json)
+    return EXIT_CLEAN if clean else EXIT_UNCLEAN
 
 
 if __name__ == "__main__":

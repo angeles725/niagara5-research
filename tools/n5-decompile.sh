@@ -7,6 +7,8 @@
 #   tools/n5-decompile.sh --docsource     # only extract docSource.jar (original .java sources)
 #   tools/n5-decompile.sh --bin-ext       # decompile the Tridium-owned jars under bin/ext/
 #   tools/n5-decompile.sh --force <name>  # ignore the sha256 cache, redo it
+#   tools/n5-decompile.sh --verify [<name>]  # re-run the extraction gate (byte-exact census +
+#                                          # jarsigner) over already-decompiled modules; `make census`
 #   tools/n5-decompile.sh --prepare-libcache    # v2/cons: build organized/_v2-libcache/ (see below)
 #   tools/n5-decompile.sh --variant v2 <name>   # v2: same module, WITH library context
 #   tools/n5-decompile.sh --variant v2 --all    # v2 over every module jar (see below)
@@ -137,6 +139,10 @@
 #   N5_OUT_DIR       default: <repo>/organized
 #   N5_JAVA          default: /home/linuxbrew/.linuxbrew/opt/openjdk@26/bin/java
 #   N5_VINEFLOWER    default: <repo>/tools/decompilers/vineflower-1.12.0.jar
+#   N5_JARSIGNER     default: jarsigner next to $N5_JAVA, else the first on PATH (extraction gate,
+#                    see resolve_jarsigner / verify_extraction)
+#   N5_JARSIGNER_SKIP=1   record signature_status "skipped" instead of failing when jarsigner is
+#                    unavailable; N5_REQUIRE_SIGNED=1 additionally fails an unsigned module jar
 #   N5_CFR           default: <repo>/tools/decompilers/cfr-0.152.jar
 #   N5_PRIMARY_TIMEOUT   default: 240 (seconds, whole-jar primary decompile budget)
 #   N5_ISOLATE_TIMEOUT   default: 90 (seconds, T24: per-package/per-class budget used ONLY
@@ -329,6 +335,142 @@ extract_docsource() {
 }
 
 # ---------------------------------------------------------------------------
+# Extraction gate (B117-G7, niagara5-block123.md): before anything is decompiled, prove that
+# extracted/ + resources/ are byte-exact copies of the jar (tools/n5-extract-census.py `module`,
+# exit 0 only) and that the vendor signature verifies (`jarsigner -verify -strict`). FAIL CLOSED:
+# any census mismatch/error, a digest error, or an unusable jarsigner returns 1 and the caller
+# must not decompile or write recon.json. On success the globals below hold the facts recon.json
+# records: byte_exact, signature_verified, signature_status, jarsigner_exit.
+#
+# jarsigner -strict exit codes are a bit mask (JDK docs): 2 = expiring cert, 4 = expired or
+# unvalidated chain, 8/16/32/64 = key usage, unsigned entry, alias, TSA problems, 1 = severe (a
+# digest mismatch is a SecurityException, exit 1). Tridium re-signs with a chain that is not in
+# the JDK trust store, so 4 alone is the EXPECTED result for a genuine jar (B117 §117.6, 356 jars);
+# only exit codes within {0,2,4,6} whose output says "jar verified" are accepted.
+# ---------------------------------------------------------------------------
+N5_GATE_FAILURES=0
+GATE_BYTE_EXACT="" GATE_SIG_VERIFIED="" GATE_SIG_STATUS="" GATE_JARSIGNER_EXIT="" GATE_JSON=""
+
+resolve_jarsigner() {
+  # Explicit N5_JARSIGNER wins (even if unusable: the gate then fails closed rather than silently
+  # picking another). Otherwise the jarsigner beside N5_JAVA, then PATH; empty when none exists.
+  if [[ -n "${N5_JARSIGNER:-}" ]]; then printf '%s' "$N5_JARSIGNER"; return 0; fi
+  local beside; beside="$(dirname "$N5_JAVA")/jarsigner"
+  if [[ -x "$beside" ]]; then printf '%s' "$beside"; return 0; fi
+  command -v jarsigner || true
+}
+
+finish_gate() {
+  if [[ "$N5_GATE_FAILURES" -gt 0 ]]; then
+    echo "$N5_GATE_FAILURES module(s) failed the extraction gate (grep 'GATE FAILED' $LOG_DIR/*.log)" >&2
+    exit 1
+  fi
+}
+
+classify_jarsigner() {
+  # $1 = exit code, $2 = captured output file -> echoes status; returns 1 for a hard failure
+  local rc="$1" out="$2"
+  if grep -Eiq 'digest error|SecurityException|unsigned entries|verification failed|invalid SHA' "$out"; then
+    echo "failed"; return 1
+  fi
+  if [[ "$rc" -eq 0 ]] && grep -q 'jar is unsigned' "$out"; then
+    echo "unsigned"; return 0
+  fi
+  if [[ "$rc" -eq 0 ]] && grep -q 'jar verified' "$out"; then
+    echo "verified"; return 0
+  fi
+  if [[ $(( rc & ~6 )) -eq 0 && "$rc" -ne 0 ]] && grep -q 'jar verified' "$out"; then
+    echo "verified-with-signer-warnings"; return 0
+  fi
+  echo "failed"; return 1
+}
+
+gate_build_json() {
+  GATE_JSON="$(python3 -c 'import json,sys
+a=sys.argv
+print(json.dumps({"byte_exact": a[1]=="true", "signature_verified": a[2]=="true",
+                  "signature_status": a[3], "jarsigner_exit": None if a[4]=="null" else int(a[4])}))' \
+    "$GATE_BYTE_EXACT" "$GATE_SIG_VERIFIED" "$GATE_SIG_STATUS" "$GATE_JARSIGNER_EXIT")"
+}
+
+verify_extraction() {
+  local module="$1" jar="$2" moddir="$3"
+  local census_out="$LOG_DIR/$module.census.json" sig_out="$LOG_DIR/$module.jarsigner.log"
+  local jarsigner; jarsigner="$(resolve_jarsigner)"
+  GATE_BYTE_EXACT="false" GATE_SIG_VERIFIED="false" GATE_SIG_STATUS="failed" GATE_JARSIGNER_EXIT="null"
+  local crc=0
+  python3 "$SCRIPT_DIR/n5-extract-census.py" module "$jar" "$moddir" --json > "$census_out" 2>> "$LOG_DIR/$module.log" || crc=$?
+  if [[ "$crc" -ne 0 ]]; then
+    log "$module" "GATE FAILED: byte-exactness census exit=$crc (see $census_out)"
+    gate_build_json
+    return 1
+  fi
+  GATE_BYTE_EXACT="true"
+  rm -f "$census_out"   # clean run: the aggregate is recon.json's byte_exact, not a per-module artifact
+
+  if [[ ! -x "$jarsigner" ]]; then
+    if [[ "${N5_JARSIGNER_SKIP:-0}" == "1" ]]; then
+      GATE_SIG_STATUS="skipped"
+      log "$module" "GATE: jarsigner unavailable, skipped by N5_JARSIGNER_SKIP=1"
+    else
+      gate_build_json
+      log "$module" "GATE FAILED: no executable jarsigner (N5_JARSIGNER='${N5_JARSIGNER:-}', none beside N5_JAVA or on PATH; set N5_JARSIGNER, or N5_JARSIGNER_SKIP=1 to record signature_status=skipped)"
+      return 1
+    fi
+  else
+    local src=0
+    "$jarsigner" -verify -strict "$jar" > "$sig_out" 2>&1 || src=$?
+    GATE_JARSIGNER_EXIT="$src"
+    if ! GATE_SIG_STATUS="$(classify_jarsigner "$src" "$sig_out")"; then
+      log "$module" "GATE FAILED: jarsigner exit=$src status=$GATE_SIG_STATUS (see $sig_out)"
+      gate_build_json
+      return 1
+    fi
+    if [[ "$GATE_SIG_STATUS" == "unsigned" && "${N5_REQUIRE_SIGNED:-0}" == "1" ]]; then
+      log "$module" "GATE FAILED: jar is unsigned and N5_REQUIRE_SIGNED=1"
+      gate_build_json
+      return 1
+    fi
+    [[ "$GATE_SIG_STATUS" == "verified" || "$GATE_SIG_STATUS" == "verified-with-signer-warnings" ]] \
+      && GATE_SIG_VERIFIED="true"
+    rm -f "$sig_out"
+  fi
+  gate_build_json
+  log "$module" "gate ok: $GATE_JSON"
+}
+
+# --verify [<module>]: re-run the extraction gate over ALREADY-decompiled modules (those with an
+# organized/<mod>/recon.json) without touching extracted/, resources/ or any decompile tree, and
+# merge byte_exact/signature_* into their recon.json (a failure records byte_exact=false etc. too).
+# This is what `make census` runs; it backfills recon.json files written before the gate existed.
+run_verify_modules() {
+  local only="${1:-}" jar module moddir ok=0 failed=0
+  while IFS= read -r -d '' jar; do
+    module="$(basename "$jar" .jar)"
+    [[ "$module" == "docSource" ]] && continue
+    [[ -n "$only" && "$module" != "$only" ]] && continue
+    is_tridium_module "$jar" || continue
+    moddir="$N5_OUT_DIR/$module"
+    [[ -f "$moddir/recon.json" ]] || continue
+    if verify_extraction "$module" "$jar" "$moddir"; then ok=$((ok + 1)); else failed=$((failed + 1)); fi
+    RECON_PATH="$moddir/recon.json" RECON_GATE_JSON="$GATE_JSON" python3 -c '
+import json, os
+p = os.environ["RECON_PATH"]
+d = json.load(open(p))
+d.update(json.loads(os.environ["RECON_GATE_JSON"]))
+with open(p, "w") as fh:
+    json.dump(d, fh, indent=2)
+    fh.write("\n")'
+  done < <(find "$N5_MODULES_DIR" -maxdepth 1 -name '*.jar' -print0 | sort -z)
+  echo "verify: ok=$ok failed=$failed"
+  if [[ -n "$only" && $((ok + failed)) -eq 0 ]]; then
+    echo "verify: no decompiled Tridium module named '$only' (needs $N5_OUT_DIR/$only/recon.json)" >&2
+    return 1
+  fi
+  [[ "$failed" -eq 0 ]]
+}
+
+# ---------------------------------------------------------------------------
 # recon.json — lightweight structural facts about one module jar
 # ---------------------------------------------------------------------------
 write_recon() {
@@ -394,6 +536,7 @@ write_recon() {
   RECON_PATH="$moddir/recon.json" \
   RECON_MRJAR_VERSIONS="$mrjar_versions_json" \
   RECON_MRJAR_UNREPRESENTED="$mrjar_unrepresented_json" \
+  RECON_GATE_JSON="${GATE_JSON:-}" \
   python3 <<'PYEOF'
 import json, os
 
@@ -402,6 +545,8 @@ with open(path) as fh:
     recon = json.load(fh)
 recon["mrjar_versions"] = json.loads(os.environ["RECON_MRJAR_VERSIONS"])
 recon["mrjar_unrepresented"] = json.loads(os.environ["RECON_MRJAR_UNREPRESENTED"])
+if os.environ.get("RECON_GATE_JSON"):
+    recon.update(json.loads(os.environ["RECON_GATE_JSON"]))  # byte_exact, signature_* (B117-G7)
 with open(path, "w") as fh:
     json.dump(recon, fh, indent=2)
     fh.write("\n")
@@ -1125,6 +1270,18 @@ decompile_module() {
         mkdir -p "$moddir/resources/$(dirname "$f")"
         cp "$moddir/extracted/$f" "$moddir/resources/$f"
       done
+
+  # B117-G7 extraction gate: fail closed BEFORE decompiling or writing recon.json, so a
+  # non-byte-exact extraction or a bad signature can never yield a recon.json that later
+  # runs treat as "up to date".
+  if ! verify_extraction "$module" "$jar" "$moddir"; then
+    # Recorded in a global, NOT signalled by `return 1`: callers invoking this function inside
+    # `||`/`if` would silently disable `set -e` for its whole body (fail-open for every other
+    # step). main() turns N5_GATE_FAILURES into a non-zero exit via finish_gate.
+    rm -f "$moddir/recon.json"
+    N5_GATE_FAILURES=$((N5_GATE_FAILURES + 1))
+    return 0
+  fi
 
   local class_count
   class_count="$(find "$moddir/extracted" -name '*.class' | wc -l)"
@@ -2612,6 +2769,10 @@ main() {
         mode="docsource"
         shift
         ;;
+      --verify)
+        mode="verify"
+        shift
+        ;;
       --bin-ext)
         mode="bin-ext"
         shift
@@ -2644,6 +2805,11 @@ main() {
   done
 
   mkdir -p "$N5_OUT_DIR"
+
+  if [[ "$mode" == "verify" ]]; then
+    run_verify_modules "${only%.jar}"
+    exit $?
+  fi
 
   if [[ "$mode" == "extra-tridium" ]]; then
     local rc1=0 rc2=0
@@ -2702,6 +2868,7 @@ main() {
 
   if [[ "$mode" == "bin-ext" ]]; then
     decompile_binext "$force"
+    finish_gate
     exit 0
   fi
 
@@ -2721,6 +2888,7 @@ main() {
       exit 0
     fi
     decompile_module "$jar" "$force"
+    finish_gate
     exit 0
   fi
 
@@ -2744,6 +2912,7 @@ main() {
     decompile_module "$jar" "$force"
   done < <(find "$N5_MODULES_DIR" -maxdepth 1 -name '*.jar' -print0)
   log "_full-run" "vendor filter: excluded $excluded non-Tridium jar(s) from $N5_MODULES_DIR"
+  finish_gate
 }
 
 # Only run main() when executed directly, not when sourced (e.g. by the T19-fix

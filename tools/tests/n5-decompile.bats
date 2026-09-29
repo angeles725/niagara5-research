@@ -116,7 +116,9 @@ setup() {
   N5_OUT_DIR="$BATS_FILE_TMPDIR/organized"
   export REPO_ROOT N5_MODULES_DIR MODULE N5_OUT_DIR
 
-  if [[ -f "$BATS_FILE_TMPDIR/skip_all" ]]; then
+  # "gate:" tests (B117-G7) stub every heavy step and need neither the N5 install nor the
+  # decompiler jars, so they run everywhere (including CI-like machines).
+  if [[ -f "$BATS_FILE_TMPDIR/skip_all" && "$BATS_TEST_DESCRIPTION" != gate:* ]]; then
     skip "N5 modules dir or decompiler jars not available (see tools/decompilers/README.md)"
   fi
 }
@@ -2040,4 +2042,184 @@ PY
   # by decompile_module_v2/decompile_module_cons) call it.
   call_count=$(grep -c 'vf_handle_mrjar_versions "' "$REPO_ROOT/tools/n5-decompile.sh")
   [ "$call_count" -ge 2 ]
+}
+
+# --- B117-G7 extraction gate (niagara5-block123.md): byte-exactness census + jarsigner run
+# after extraction and BEFORE decompile; fail closed, record byte_exact/signature_* in recon.json.
+# Heavy steps are stubbed: N5_JAVA is a no-op (Vineflower/CFR "run" and produce nothing) and
+# N5_JARSIGNER is a scripted stand-in, so these tests are hermetic and need no N5 install.
+
+gate_setup() {
+  gate_dir="$BATS_TEST_TMPDIR/gate"
+  mkdir -p "$gate_dir/modules" "$gate_dir/fakebin"
+  make_fake_jar "$gate_dir/modules/modA.jar" Tridium ""
+  printf '#!/bin/sh\nexit 0\n' > "$gate_dir/fakebin/java"
+  chmod +x "$gate_dir/fakebin/java"
+}
+
+# $1 = jarsigner exit code, $2 = its stdout text
+gate_fake_jarsigner() {
+  printf '#!/bin/sh\necho "%s"\nexit %s\n' "$2" "$1" > "$gate_dir/fakebin/jarsigner"
+  chmod +x "$gate_dir/fakebin/jarsigner"
+}
+
+gate_run() {
+  N5_MODULES_DIR="$gate_dir/modules" N5_BIN_EXT_DIR=/nonexistent N5_OUT_DIR="$gate_dir/out" \
+    N5_JAVA="$gate_dir/fakebin/java" N5_JARSIGNER="$gate_dir/fakebin/jarsigner" \
+    "$REPO_ROOT/tools/n5-decompile.sh" "$@"
+}
+
+gate_field() {
+  python3 -c "import json;print(json.load(open('$gate_dir/out/modA/recon.json'))['$1'])"
+}
+
+@test "gate: a verified jar records byte_exact and signature_* in recon.json (exit 4 = untrusted chain is accepted)" {
+  gate_setup
+  gate_fake_jarsigner 4 "jar verified, with signer errors."
+  run gate_run modA
+  [ "$status" -eq 0 ]
+  [ "$(gate_field byte_exact)" = "True" ]
+  [ "$(gate_field signature_verified)" = "True" ]
+  [ "$(gate_field signature_status)" = "verified-with-signer-warnings" ]
+  [ "$(gate_field jarsigner_exit)" = "4" ]
+}
+
+@test "gate: exit 0 'jar verified.' is status verified" {
+  gate_setup
+  gate_fake_jarsigner 0 "jar verified."
+  run gate_run modA
+  [ "$status" -eq 0 ]
+  [ "$(gate_field signature_status)" = "verified" ]
+}
+
+@test "gate: a digest error fails closed (non-zero exit, no recon.json, GATE FAILED logged)" {
+  gate_setup
+  gate_fake_jarsigner 1 "jarsigner: java.lang.SecurityException: SHA-256 digest error for a/A.class"
+  run gate_run modA
+  [ "$status" -ne 0 ]
+  [ ! -f "$gate_dir/out/modA/recon.json" ]
+  grep -q "GATE FAILED: jarsigner exit=1" "$gate_dir/out/_logs/modA.log"
+}
+
+@test "gate: exit 4 whose output does not say 'jar verified' is rejected" {
+  gate_setup
+  gate_fake_jarsigner 4 "something unexpected"
+  run gate_run modA
+  [ "$status" -ne 0 ]
+  [ ! -f "$gate_dir/out/modA/recon.json" ]
+}
+
+@test "gate: an unsigned jar is recorded signature_verified=false, and fails only under N5_REQUIRE_SIGNED=1" {
+  gate_setup
+  gate_fake_jarsigner 0 "jar is unsigned."
+  run gate_run modA
+  [ "$status" -eq 0 ]
+  [ "$(gate_field signature_verified)" = "False" ]
+  [ "$(gate_field signature_status)" = "unsigned" ]
+  N5_REQUIRE_SIGNED=1 run gate_run --force modA
+  [ "$status" -ne 0 ]
+  [ ! -f "$gate_dir/out/modA/recon.json" ]
+}
+
+@test "gate: a missing jarsigner fails closed unless N5_JARSIGNER_SKIP=1, which records status skipped" {
+  gate_setup
+  run gate_run modA
+  [ "$status" -ne 0 ]
+  grep -q "no executable jarsigner" "$gate_dir/out/_logs/modA.log"
+  N5_JARSIGNER_SKIP=1 run gate_run --force modA
+  [ "$status" -eq 0 ]
+  [ "$(gate_field signature_status)" = "skipped" ]
+  [ "$(gate_field signature_verified)" = "False" ]
+}
+
+@test "gate: a non-byte-exact extraction fails closed even when the signature is fine" {
+  gate_setup
+  gate_fake_jarsigner 0 "jar verified."
+  # unzip stand-in that extracts correctly, then corrupts one extracted file (a torn/partial copy)
+  cat > "$gate_dir/fakebin/unzip" <<'SH'
+#!/usr/bin/env bash
+/usr/bin/unzip "$@"; rc=$?
+dest=""; prev=""
+for a in "$@"; do [[ "$prev" == "-d" ]] && dest="$a"; prev="$a"; done
+[[ -n "$dest" ]] && echo tampered >> "$dest/marker.txt"
+exit $rc
+SH
+  chmod +x "$gate_dir/fakebin/unzip"
+  PATH="$gate_dir/fakebin:$PATH" run gate_run modA
+  [ "$status" -ne 0 ]
+  [ ! -f "$gate_dir/out/modA/recon.json" ]
+  grep -q "GATE FAILED: byte-exactness census exit=1" "$gate_dir/out/_logs/modA.log"
+}
+
+@test "gate: one failing module does not stop the others, but finish_gate still exits non-zero" {
+  gate_setup
+  make_fake_jar "$gate_dir/modules/modB.jar" Tridium ""
+  cat > "$gate_dir/fakebin/jarsigner" <<'SH'
+#!/bin/sh
+case "$*" in *modB.jar*) echo "SecurityException: digest error"; exit 1;; esac
+echo "jar verified."; exit 0
+SH
+  chmod +x "$gate_dir/fakebin/jarsigner"
+  run bash -c "
+    set -euo pipefail
+    export N5_MODULES_DIR='$gate_dir/modules' N5_BIN_EXT_DIR=/nonexistent N5_OUT_DIR='$gate_dir/out'
+    export N5_JAVA='$gate_dir/fakebin/java' N5_JARSIGNER='$gate_dir/fakebin/jarsigner'
+    source '$REPO_ROOT/tools/n5-decompile.sh'
+    decompile_module '$gate_dir/modules/modB.jar' false
+    decompile_module '$gate_dir/modules/modA.jar' false
+    finish_gate
+  "
+  [ "$status" -eq 1 ]
+  [ -f "$gate_dir/out/modA/recon.json" ]
+  [ ! -f "$gate_dir/out/modB/recon.json" ]
+  [[ "$output" == *"1 module(s) failed the extraction gate"* ]]
+}
+
+@test "gate: --verify backfills byte_exact/signature_* into an existing recon.json without re-decompiling" {
+  gate_setup
+  gate_fake_jarsigner 4 "jar verified, with signer errors."
+  run gate_run modA
+  [ "$status" -eq 0 ]
+  python3 - "$gate_dir/out/modA/recon.json" <<'PY'
+import json, sys
+p = sys.argv[1]
+d = json.load(open(p))
+for k in ("byte_exact", "signature_verified", "signature_status", "jarsigner_exit"):
+    d.pop(k)
+json.dump(d, open(p, "w"))
+PY
+  mkdir -p "$gate_dir/out/modA/vineflower"; echo keep > "$gate_dir/out/modA/vineflower/sentinel.txt"
+  run gate_run --verify
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"verify: ok=1 failed=0"* ]]
+  [ "$(gate_field byte_exact)" = "True" ]
+  [ "$(gate_field signature_status)" = "verified-with-signer-warnings" ]
+  [ -f "$gate_dir/out/modA/vineflower/sentinel.txt" ]
+}
+
+@test "gate: --verify exits 1 and records byte_exact=false when an organized/ file was altered after extraction" {
+  gate_setup
+  gate_fake_jarsigner 0 "jar verified."
+  run gate_run modA
+  [ "$status" -eq 0 ]
+  echo tampered >> "$gate_dir/out/modA/resources/marker.txt"
+  run gate_run --verify modA
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"verify: ok=0 failed=1"* ]]
+  [ "$(gate_field byte_exact)" = "False" ]
+  [ "$(gate_field signature_verified)" = "False" ]
+}
+
+@test "gate: --verify skips modules with no recon.json and non-Tridium vendors" {
+  gate_setup
+  gate_fake_jarsigner 0 "jar verified."
+  make_fake_jar "$gate_dir/modules/poc.jar" poc ""
+  make_fake_jar "$gate_dir/modules/norecon.jar" Tridium ""
+  run gate_run modA
+  [ "$status" -eq 0 ]
+  run gate_run --verify
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"verify: ok=1 failed=0"* ]]
+  [ ! -f "$gate_dir/out/poc/recon.json" ]
+  [ ! -f "$gate_dir/out/norecon/recon.json" ]
 }
