@@ -232,7 +232,8 @@ public class KotlinAudit {
             }
             if (declared.contains(key)) cls = "declared";
             else if (fwd) cls = "jvmstatic-forwarder";
-            else if (!m.name.endsWith("$default") && (fnNames.contains(m.name) || fnNames.stream().anyMatch(n -> m.name.startsWith(n + "$") || m.name.startsWith(n + "-")))) cls = "declared(by-name; signature derived)";
+            else if (!m.name.endsWith("$default") && !synth && !m.name.contains("$lambda") && fnNames.stream().anyMatch(n -> m.name.startsWith(n + "$") || m.name.startsWith(n + "-"))) { cls = "declared(internal-name-mangled)"; bump(jar, seen, "bc:internal-fun-mangled-jvm-name", 1); }
+            else if (!m.name.endsWith("$default") && fnNames.contains(m.name)) { cls = "declared(same-name JVM overload: @JvmOverloads or erasure variant)"; bump(jar, seen, "bc:same-name-overload-of-declared-fun", 1); }
             else if (propAccessorNames.contains(m.name)) cls = "declared(property accessor by-name)";
             else if (delegNames.contains(m.name)) cls = "class-delegation-generated";
             else if (readOnlyStub(m)) { cls = "read-only-collection-mutator-stub"; bump(jar, seen, "bc:read-only-collection-mutator-stub(throws UnsupportedOperationException)", 1); }
