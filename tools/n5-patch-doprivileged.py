@@ -65,6 +65,9 @@ HELPER_SRC = TOOLS_DIR / "n5-patch-doprivileged" / "DoPrivilegedSites.java"
 
 SECURITY_UTIL = "niagara/nre/util/SecurityUtil"
 ALLOWED_QUALIFIERS = ("SecurityUtil", "niagara.nre.util.SecurityUtil", "")
+# java.security.AccessController.doPrivileged(action[, context[, permissions...]]) has the same
+# PrivilegedAction / PrivilegedExceptionAction ambiguity; only its first argument is cast
+ACCESS_CONTROLLER_QUALIFIERS = ("AccessController", "java.security.AccessController")
 # type-parameter count of each doPrivileged argument interface: T, then exception types
 IFACE_ARITY = {
     "java/security/PrivilegedAction": 1,
@@ -183,6 +186,7 @@ class BytecodeSite:
 class BytecodeMethod:
     name: str
     descriptor: str
+    bridge: bool = False                    # ACC_BRIDGE / ACC_SYNTHETIC: never a source overload
     throws: list[str] = field(default_factory=list)
     sites: list[BytecodeSite] = field(default_factory=list)
 
@@ -195,7 +199,9 @@ class BytecodeClass:
 
 
 _INSN_RE = re.compile(r"^\s+(\d+): (\w+)\b\s*(.*)$")
-_DP_RE = re.compile(r"// Method " + re.escape(SECURITY_UTIL) + r"\.doPrivileged:\(L([\w/$]+);\)Ljava/lang/Object;")
+ACCESS_CONTROLLER = "java/security/AccessController"
+_DP_RE = re.compile(r"// Method (?:" + re.escape(SECURITY_UTIL) + "|" + re.escape(ACCESS_CONTROLLER)
+                    + r")\.doPrivileged:\(L([\w/$]+);([^)]*)\)Ljava/lang/Object;")
 _INDY_RE = re.compile(r"// InvokeDynamic #(\d+):")
 _CHECKCAST_RE = re.compile(r"// class (\S+)")
 
@@ -229,6 +235,22 @@ def _parse_bootstraps(lines: list[str]) -> list[list[str]]:
         if m and out:
             out[-1].append(m.group(1))
     return out
+
+
+_PLAIN_LOADS = ("aload", "getstatic", "aconst_null", "iconst", "anewarray", "dup", "aastore")
+
+
+def _action_producer(insns: list, k: int, prev, extra_args: bool):
+    """The instruction that produced the action argument of the doPrivileged call
+    at insns[k]: the previous instruction, or -- for AccessController.doPrivileged
+    with a context/permissions -- the instruction before the plain loads of those
+    further arguments."""
+    if not extra_args:
+        return prev
+    j = k - 1
+    while j >= 0 and k - j <= 8 and insns[j][1].startswith(_PLAIN_LOADS):
+        j -= 1
+    return insns[j] if j >= 0 else None
 
 
 def parse_javap_classes(text: str) -> dict[str, BytecodeClass]:
@@ -278,8 +300,9 @@ def parse_javap_classes(text: str) -> dict[str, BytecodeClass]:
                 m = _DP_RE.search(rest) if op == "invokestatic" else None
                 if m:
                     site = BytecodeSite(offset=off, iface=m.group(1))
-                    if prev is not None and prev[1] == "invokedynamic":
-                        im = _INDY_RE.search(prev[2])
+                    lookback = _action_producer(insns, k, prev, extra_args=bool(m.group(2)))
+                    if lookback is not None and lookback[1] == "invokedynamic":
+                        im = _INDY_RE.search(lookback[2])
                         bsm = bootstraps[int(im.group(1))] if im and int(im.group(1)) < len(bootstraps) else None
                         if bsm and "LambdaMetafactory" in bsm[0] and len(bsm) >= 4:
                             site.indy = True
@@ -310,6 +333,9 @@ def parse_javap_classes(text: str) -> dict[str, BytecodeClass]:
                 continue
             if re.match(r"^    Exceptions:", line):
                 in_exceptions = True
+                continue
+            if member.bridge is False and re.match(r"^    flags:", line) and "ACC_BRIDGE" in s:
+                member.bridge = True
                 continue
             if in_exceptions and s.startswith("throws "):
                 member.throws = [t.strip() for t in s[len("throws "):].split(",")]
@@ -416,7 +442,7 @@ def _resolve_method(bc: BytecodeClass, member: dict) -> tuple[Optional[BytecodeM
     # hold exactly one method.
     cands = []
     for m in bc.methods:
-        if m.name != name:
+        if m.name != name or m.bridge:
             continue
         params = [_descriptor_simple(p) for p in split_method_descriptor(m.descriptor)[0]]
         if params == want:
@@ -447,6 +473,36 @@ def _anon_verified(bc: Optional[BytecodeClass], cls: dict) -> bool:
 # Matching: source sites <-> bytecode sites
 # ---------------------------------------------------------------------------
 
+def _is_candidate_site(s: dict) -> bool:
+    if s["qualifier"] in ALLOWED_QUALIFIERS:
+        return s["nargs"] == 1
+    return s["qualifier"] in ACCESS_CONTROLLER_QUALIFIERS and s["nargs"] >= 1
+
+
+def _init_group(bc: BytecodeClass, cls_members: list[dict], group: list[dict], binary: str):
+    """Match the sites of a class's instance initializers (field initializers and
+    initializer blocks, in source order) to the leading sites of the constructors
+    that run them. javac copies the initializer code into every constructor that
+    does not start with `this(...)`. Returns ([(method, index, bytecode site)],
+    prefix methods, None) or (None, None, reason)."""
+    n = len(group)
+    inits = [m for m in bc.methods if m.name == "<init>" and not m.bridge]
+    delegating = set()
+    for member in cls_members:
+        if member.get("kind") == "ctor" and member.get("delegates"):
+            meth, why = _resolve_method(bc, member)
+            if meth is None:
+                return None, None, "instance-initializer"
+            delegating.add(id(meth))
+    prefix = [m for m in inits if id(m) not in delegating]
+    if not prefix or any(len(m.sites) < n for m in prefix):
+        return None, None, "instance-initializer"
+    ref = prefix[0].sites[:n]
+    if any([b.evidence() for b in m.sites[:n]] != [b.evidence() for b in ref] for m in prefix):
+        return None, None, "instance-initializer"
+    return [(prefix[0], i, b) for i, b in enumerate(ref)], prefix, None
+
+
 def match_sites(scan: dict, package: str, bytecode: dict[str, BytecodeClass]) -> tuple[dict[int, dict], list[dict]]:
     """Return ({inv_start: {site, bytecode_site, class, method, index}}, refused).
 
@@ -454,7 +510,7 @@ def match_sites(scan: dict, package: str, bytecode: dict[str, BytecodeClass]) ->
     no unambiguous bytecode partner, with the reason."""
     names = binary_names(scan["classes"], package)
     classes = {c["id"]: c for c in scan["classes"]}
-    sites = [s for s in scan["sites"] if s["qualifier"] in ALLOWED_QUALIFIERS and s["nargs"] == 1]
+    sites = [s for s in scan["sites"] if _is_candidate_site(s)]
     scopes: dict[tuple, list[dict]] = {}
     refused: list[dict] = []
     for s in sites:
@@ -462,6 +518,8 @@ def match_sites(scan: dict, package: str, bytecode: dict[str, BytecodeClass]) ->
         if s["lambda_depth"] > 0:
             pool = _lambda_pool_name(member)
             key = ("lambda", s["class_id"], pool)
+        elif member.get("kind") == "instinit":
+            key = ("init", s["class_id"], "")
         else:
             key = ("method", s["class_id"], json.dumps(member, sort_keys=True))
         scopes.setdefault(key, []).append(s)
@@ -473,7 +531,38 @@ def match_sites(scan: dict, package: str, bytecode: dict[str, BytecodeClass]) ->
             if s["arg_kind"] in ("LAMBDA_EXPRESSION", "MEMBER_REFERENCE"):
                 refused.append({"inv_start": s["inv_start"], "reason": reason, **extra})
 
+    # initializer prefixes: class id -> (site count, prefix constructors) or None when unmatched
+    init_prefix: dict[int, Optional[tuple[int, list[BytecodeMethod]]]] = {}
+    for (kind, cid, _), group in list(scopes.items()):
+        if kind != "init":
+            continue
+        group.sort(key=lambda s: s["inv_start"])
+        binary = names.get(cid)
+        bc = bytecode.get(binary) if binary else None
+        cls = classes.get(cid)
+        if cls is None or not _anon_verified(bc, cls):
+            refuse(group, "class-file-unmatched", binary=binary)
+            init_prefix[cid] = None
+            continue
+        bsites, prefix, why = _init_group(bc, cls.get("ctors", []), group, binary)
+        if bsites is None:
+            refuse(group, why, binary=binary)
+            init_prefix[cid] = None
+            continue
+        kinds_ok = all((s["arg_kind"] in ("LAMBDA_EXPRESSION", "MEMBER_REFERENCE")) == b.indy
+                       for s, (_, _, b) in zip(group, bsites))
+        if not kinds_ok:
+            refuse(group, "argument-kind-mismatch", binary=binary)
+            init_prefix[cid] = None
+            continue
+        for s, (meth, idx, b) in zip(group, bsites):
+            matched[s["inv_start"]] = {"site": s, "bytecode": b, "class": binary,
+                                       "method": meth.name + meth.descriptor, "index": idx, "scope": "init"}
+        init_prefix[cid] = (len(group), prefix)
+
     for key, group in scopes.items():
+        if key[0] == "init":
+            continue
         group.sort(key=lambda s: s["inv_start"])
         cls = classes.get(key[1])
         binary = names.get(key[1])
@@ -487,7 +576,15 @@ def match_sites(scan: dict, package: str, bytecode: dict[str, BytecodeClass]) ->
             if meth is None:
                 refuse(group, why, binary=binary)
                 continue
-            bsites = [(meth, i, b) for i, b in enumerate(meth.sites)]
+            skip = 0
+            if member.get("kind") == "ctor" and key[1] in init_prefix:
+                if init_prefix[key[1]] is None:
+                    refuse(group, "instance-initializer", binary=binary)
+                    continue
+                n_init, prefix = init_prefix[key[1]]
+                if any(meth is m for m in prefix):
+                    skip = n_init
+            bsites = [(meth, i, b) for i, b in enumerate(meth.sites) if i >= skip]
         else:
             pool = key[2]
             if pool is None:
