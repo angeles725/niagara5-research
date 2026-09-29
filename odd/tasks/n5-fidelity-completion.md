@@ -38,7 +38,7 @@ Task IDs are C<n> (completion). "N4"/"N5" always mean Niagara 4 / Niagara 5, nev
       reported, never dropped. Forecast: 6,186 nested files; they are already produced by the existing compile step,
       so the added cost is javap+compare only. Route: delegated writer (TDD; writer trigger: tool + tests).
 - [ ] C1b Full regrade with nested files on the best-of trees; report "fully proven (outer + nested)" per module.
-- [ ] C2a (code 03df7d1 reviewed: lineage review-e1d0c2509715fd09 approved+acknowledged; 174 tests OK; real run in progress) Grade the 6 Tridium bin/ext jars (nre 704, niagarad 255, niagaraAnnotationProcessors 51, niagara-remote-client 8,
+- [x] C2a (code 03df7d1 reviewed: lineage review-e1d0c2509715fd09 approved+acknowledged; 174 tests OK; run 2026-09-29: 501/587 = 85.35% proven) Grade the 6 Tridium bin/ext jars (nre 704, niagarad 255, niagaraAnnotationProcessors 51, niagara-remote-client 8,
       securityBridge 2, splash 2 classes; trees already in organized/_bin-ext/*/vineflower2, no fidelity JSON yet). ~600 top-level.
 - [ ] C2b Grade third-party classes without proven upstream source (~14.6k: 38 identified artifacts incl. woodstox 735,
       nimbus-jose 203, mssql-jdbc 166, paho 109 vendor-modified; unidentified jxbrowser 5,914, prosys-opc-ua 4,591, swt 959)
@@ -81,6 +81,13 @@ Task IDs are C<n> (completion). "N4"/"N5" always mean Niagara 4 / Niagara 5, nev
   drift reported, not re-paired; C1-G3 nested of never-compiled outers are not-graded (regrade after C3); C1-G4 regrade-nonclean
   cannot backfill nested for clean classes -> C1b needs a full --force run first.
 
+- C2a result (vineflower2 base tree only, organized/_bin-ext/<jar>/fidelity.vineflower2.json): 587 top-level classes —
+  exact 401, canonical 99, canonical-t2 1, bytecode-only 86 -> 501 proven (85.35%). Per jar: nre 304/49/1/64, niagarad 48/46/0/21,
+  niagaraAnnotationProcessors 43/3/0/1, niagara-remote-client 3/1, securityBridge 2, splash 1. Nested: 435 files, 273 not-graded
+  (under bytecode-only outers), fully proven 497.
+  Child gap C2a-G1: bin/ext got only the base rung — apply F8 doPrivileged patch, F9 splice, and the v1 tree to _bin-ext
+  (fold into C3a/C3d once those land) so it is graded on the same best-of ladder as modules.
+
 ## Next step
-Finish C2a run (nre pending) and record numbers; C3a result -> review -> merge into feature branch; then C3b/C3c.
+C3a result -> review -> merge into feature branch; then C3b/C3c.
 C1b (full --force regrade) is deferred until the C2/C3 tool changes land, so it runs once.
