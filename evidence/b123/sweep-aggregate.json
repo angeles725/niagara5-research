@@ -1,0 +1,22 @@
+{
+ "modules": 246,
+ "classes_checked": 20723,
+ "class_mismatches": 0,
+ "class_missing": 0,
+ "resources_expected": 20481,
+ "resource_mismatches": 0,
+ "resource_missing": 0,
+ "unsafe_entries": 0,
+ "nested_jars": 103,
+ "nested_unreadable": 0,
+ "nested_classes_total": 34605,
+ "nested_top_level_decompiled": 0,
+ "natives": 23,
+ "js_total": 2560,
+ "js_minified": 234,
+ "unclean_modules": [],
+ "errored_modules": [],
+ "skipped_no_recon": [
+  "docSource"
+ ]
+}

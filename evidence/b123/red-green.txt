@@ -1,0 +1,10 @@
+bf02b02 fix(census): reserve exit 1 :: RED: FAILED (failures=3, skipped=1) -> GREEN: OK (skipped=1)
+fdf4591 fix(census): isolate per-module :: RED: FAILED (failures=1, errors=2, skipped=1) -> GREEN: OK (skipped=1)
+3a034a8 fix(census): normalize zip entry :: RED: FAILED (errors=2, skipped=1) -> GREEN: OK (skipped=1)
+84e721b fix(census): require the PE signature :: RED: FAILED (failures=2, skipped=1) -> GREEN: OK (skipped=1)
+96661ed fix(census): report nested jars :: RED: FAILED (errors=1, skipped=1) -> GREEN: OK (skipped=1)
+8c64db8 feat(lint): add R9 :: RED: FAILED (failures=3) -> GREEN: OK
+4fca335 feat(pipeline): fail closed :: RED: bats gate: ok=0 not_ok=8 -> GREEN: bats gate: ok=8 not_ok=0
+637ca82 feat(pipeline): add --verify :: RED: bats gate: ok=8 not_ok=3 -> GREEN: bats gate: ok=11 not_ok=0
+cumulative census tests vs pre-B123 script (0df8d0a): FAILED (failures=7, errors=5, skipped=1)
+cumulative census tests vs current script: OK (skipped=1)
