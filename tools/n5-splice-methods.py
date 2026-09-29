@@ -415,11 +415,12 @@ def splice_module(module: str, organized_dir: Path, tree: str, out_tree: str, ta
         except Exception as exc:  # noqa: BLE001 -- one class must not abort the module
             return fqcn, {"status": "refused", "reason": "tool-error", "detail": repr(exc)[:300]}
 
-    if class_jobs > 1 and len(targets) > 1:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=class_jobs) as pool:
-            results = list(pool.map(one, targets))
-    else:
-        results = [one(f) for f in targets]
+    # every class runs on this module's own pool (even a single one), so the
+    # long-lived --jobs threads never own a tool-server JVM; the pool's JVMs are
+    # closed once its threads have exited: at most jobs x class_jobs JVMs live
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, class_jobs)) as pool:
+        results = list(pool.map(one, targets))
+    FID.reap_dead_thread_tool_servers()
     if out_dir.is_dir():
         for old in out_dir.rglob("*.java"):
             old.unlink()

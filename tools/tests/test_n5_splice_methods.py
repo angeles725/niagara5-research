@@ -72,6 +72,40 @@ class TestPure(unittest.TestCase):
         self.assertEqual(out, text.replace("return 1;", "return 3;").replace("import a.B;", "import a.B;\nimport x.Y;"))
 
 
+class TestToolServerBound(unittest.TestCase):
+    """R4: a finished per-module class pool must not leave its tool-server JVMs
+    behind (one JVM per dead thread accumulated to modules x class_jobs), and a
+    module's classes run only on pool threads, so the long-lived per-module
+    threads of --jobs never own a JVM: at most jobs x class_jobs are alive."""
+
+    def test_servers_of_finished_module_pools_are_reaped(self):
+        mod = _load()
+        closed = []
+
+        class FakeServer:
+            def close(self):
+                closed.append(self)
+
+        def fake_splice_class(fqcn, *a, **k):
+            import threading
+            assert threading.current_thread() is not threading.main_thread()
+            with mod.FID._tool_servers_lock:
+                mod.FID._tool_servers.append((threading.current_thread(), FakeServer()))
+            return {"status": "not-candidate", "reason": "x", "detail": ""}
+        with tempfile.TemporaryDirectory() as td, \
+                mock.patch.object(mod, "splice_class", side_effect=fake_splice_class):
+            registered = 0
+            for i, targets in enumerate((["a/A"], ["a/A", "a/B", "a/C", "a/D", "a/E"], ["a/A", "a/B"])):
+                mod.splice_module(f"m{i}", Path(td), "vineflower2", "vineflower2s", targets, classpath="",
+                                  helper_dir=Path(td), javac_bin="", javap_bin="", java_bin="", tool_server=True,
+                                  class_jobs=4)
+                registered += len(targets)
+                alive = [s for t, s in mod.FID._tool_servers if t.is_alive()]
+                self.assertEqual(alive, [])
+                self.assertEqual(len(mod.FID._tool_servers), 0)
+            self.assertEqual(len(closed), registered)
+
+
 SHIPPED = """package p;
 import java.util.List;
 public class Foo {
