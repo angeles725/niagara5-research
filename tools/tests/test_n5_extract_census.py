@@ -237,9 +237,7 @@ class ExitCodeTest(unittest.TestCase):
         out = self._run("module", jar, tmp)
         self.assertEqual(out.returncode, 3, out.stderr)
 
-    def test_unexpected_exception_is_exit_3_not_1(self):
-        # A corrupt deflate stream raises BadZipFile/zlib.error; an uncaught traceback would
-        # exit 1 == "mismatch".
+    def test_bad_crc_is_exit_3(self):
         tmp = tempfile.mkdtemp()
         jar = os.path.join(tmp, "trunc.jar")
         buf = io.BytesIO()
@@ -247,6 +245,19 @@ class ExitCodeTest(unittest.TestCase):
             zf.writestr("a/A.class", CLASS_MAGIC + os.urandom(4000))
         raw = bytearray(buf.getvalue())
         raw[60:120] = b"\x00" * 60  # corrupt the deflate stream, keep the directory intact
+        _write(jar, bytes(raw))
+        out = self._run("module", jar, tmp)
+        self.assertEqual(out.returncode, 3, out.stderr)
+
+    def test_non_zip_exception_is_exit_3_not_1(self):
+        # An entry flagged as encrypted raises RuntimeError from ZipFile.read (neither OSError nor
+        # BadZipFile). Uncaught, the traceback exits 1 == "census found a mismatch": a crash
+        # masquerading as a finding (the exit-code collision RDD review-49636f53e9119721 flagged).
+        tmp = tempfile.mkdtemp()
+        raw = bytearray(_jar_bytes({"a/A.class": CLASS_MAGIC + b"x" * 50}))
+        raw[raw.find(b"PK\x03\x04") + 6] |= 1  # local header: general-purpose flag bit 0
+        raw[raw.find(b"PK\x01\x02") + 8] |= 1  # central directory copy of the flag
+        jar = os.path.join(tmp, "enc.jar")
         _write(jar, bytes(raw))
         out = self._run("module", jar, tmp)
         self.assertEqual(out.returncode, 3, out.stderr)
