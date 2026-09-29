@@ -1,0 +1,1 @@
+{'paths': 448, 'unique_sha': 88, 'json': 86, 'nonjson': ['_lib-inf-3p/jakarta.mail-2.0.5-f48001755a4a/extracted/META-INF/jakarta.charset.map', '_lib-inf-3p/jakarta.mail-2.0.5-f48001755a4a/extracted/META-INF/jakarta.address.map'], 'json_with_sc': 42, 'json_without_sc': 44, 'sources_entries': 269, 'sc_nonempty_entries': 42}

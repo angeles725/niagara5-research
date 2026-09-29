@@ -1,0 +1,170 @@
+jar	category	classes	occurrences
+n-conv-plugin	bc:Intrinsics-call	14	15
+n-conv-plugin	bc:Intrinsics.checkNotNullParameter	14	15
+n-conv-plugin	bc:extension-receiver-lvt($this$)	14	15
+n-conv-plugin	bc:indy-lambda(LambdaMetafactory)	1	1
+n-conv-plugin	bc:inlined-lambda-marker($i$a$)	4	4
+n-conv-plugin	bc:object-INSTANCE-field	6	6
+n-conv-plugin	bc:same-name-overload-of-declared-fun	4	4
+n-conv-plugin	decl:constructors	4	4
+n-conv-plugin	decl:functions	4	4
+n-conv-plugin	kind:class	4	4
+n-conv-plugin	kind:synthetic	10	10
+n-conv-plugin	kotlin-classes	14	14
+n-conv-plugin	meta:classkind:CLASS	4	4
+n-conv-plugin	meta:synthetic-class-WITHOUT-any-declaration(no d1 payload)	10	10
+n-conv-plugin	metadata-version:[2,2,0]	14	14
+n-plugin	bc:$default-callsite(other class)	60	130
+n-plugin	bc:$default-callsite(same class)	7	22
+n-plugin	bc:$default-synthetic-method	22	27
+n-plugin	bc:Companion-static-field	37	37
+n-plugin	bc:Intrinsics-call	490	2103
+n-plugin	bc:Intrinsics.areEqual	33	68
+n-plugin	bc:Intrinsics.checkNotNull	37	82
+n-plugin	bc:Intrinsics.checkNotNullExpressionValue	215	1003
+n-plugin	bc:Intrinsics.checkNotNullParameter	448	945
+n-plugin	bc:Intrinsics.throwUninitializedPropertyAccessException	2	5
+n-plugin	bc:JvmStatic-companion-forwarder	8	9
+n-plugin	bc:WhenMappings-class	12	12
+n-plugin	bc:WhenMappings-read(when on enum)	13	24
+n-plugin	bc:ctor-default-marker-synthetic	49	49
+n-plugin	bc:extension-receiver-lvt($this$)	328	931
+n-plugin	bc:implements-FunctionN	1	1
+n-plugin	bc:indy-lambda(LambdaMetafactory)	40	86
+n-plugin	bc:indy-string-concat	117	274
+n-plugin	bc:inlined-fun-callsite-marker($i$f$)	137	425
+n-plugin	bc:inlined-lambda-marker($i$a$)	135	382
+n-plugin	bc:kotlin-stdlib-Kt-static-call(ext fun)	116	459
+n-plugin	bc:lazy-delegate-call	7	17
+n-plugin	bc:object-INSTANCE-field	116	116
+n-plugin	bc:read-only-collection-mutator-stub(throws UnsupportedOperationException)	1	16
+n-plugin	bc:same-name-overload-of-declared-fun	56	95
+n-plugin	bc:static-method-in-companion	2	2
+n-plugin	decl:constructors	237	240
+n-plugin	decl:functions	217	697
+n-plugin	decl:properties	201	767
+n-plugin	kind:class	306	306
+n-plugin	kind:file-facade	28	28
+n-plugin	kind:synthetic	316	316
+n-plugin	kotlin-classes	650	650
+n-plugin	meta:class-type-params	10	11
+n-plugin	meta:classkind:CLASS	228	228
+n-plugin	meta:classkind:COMPANION_OBJECT	37	37
+n-plugin	meta:classkind:ENUM_CLASS	14	14
+n-plugin	meta:classkind:INTERFACE	26	26
+n-plugin	meta:classkind:OBJECT	1	1
+n-plugin	meta:const-property	26	136
+n-plugin	meta:ctor-with-defaults	11	11
+n-plugin	meta:data-class	5	5
+n-plugin	meta:default-value-params	32	62
+n-plugin	meta:delegated-property	8	17
+n-plugin	meta:delegation-fun(by)	1	42
+n-plugin	meta:enum-entries	14	74
+n-plugin	meta:extension-fun	49	129
+n-plugin	meta:extension-property	4	5
+n-plugin	meta:fun-with-defaults	22	27
+n-plugin	meta:has-companion	37	37
+n-plugin	meta:inline-fun	3	6
+n-plugin	meta:internal-class	2	2
+n-plugin	meta:internal-fun	13	38
+n-plugin	meta:internal-fun-name-mangled	9	28
+n-plugin	meta:is-companion	37	37
+n-plugin	meta:lateinit-property	2	5
+n-plugin	meta:nullable-TYPE-ARGUMENT(not in JVM generic signature)	2	3
+n-plugin	meta:nullable-types-in-signatures	41	105
+n-plugin	meta:operator-fun	8	27
+n-plugin	meta:private-property-without-getter	60	103
+n-plugin	meta:property-without-getter-signature(default accessor)	82	221
+n-plugin	meta:reified-type-param	3	6
+n-plugin	meta:secondary-ctor	3	3
+n-plugin	meta:synthesized-fun(data component/copy)	5	35
+n-plugin	meta:synthetic-class-WITHOUT-any-declaration(no d1 payload)	316	316
+n-plugin	meta:val-property	193	739
+n-plugin	meta:var-property	11	28
+n-plugin	meta:vararg-params	6	7
+n-plugin	metadata-version:[2,2,0]	650	650
+n-plugin	name-ends-Kt	28	28
+n-plugin	residual:classes-with-unexplained-jvm-methods	1	1
+settings	bc:$default-callsite(other class)	2	2
+settings	bc:$default-synthetic-method	4	6
+settings	bc:Companion-static-field	2	2
+settings	bc:Intrinsics-call	15	60
+settings	bc:Intrinsics.areEqual	2	5
+settings	bc:Intrinsics.checkNotNull	1	1
+settings	bc:Intrinsics.checkNotNullExpressionValue	8	17
+settings	bc:Intrinsics.checkNotNullParameter	15	37
+settings	bc:ctor-default-marker-synthetic	3	3
+settings	bc:extension-receiver-lvt($this$)	11	31
+settings	bc:indy-lambda(LambdaMetafactory)	1	3
+settings	bc:indy-string-concat	5	8
+settings	bc:inlined-fun-callsite-marker($i$f$)	4	6
+settings	bc:inlined-lambda-marker($i$a$)	8	16
+settings	bc:kotlin-stdlib-Kt-static-call(ext fun)	4	12
+settings	bc:object-INSTANCE-field	1	1
+settings	bc:same-name-overload-of-declared-fun	5	5
+settings	decl:constructors	14	14
+settings	decl:functions	14	36
+settings	decl:properties	10	64
+settings	kind:class	14	14
+settings	kind:file-facade	3	3
+settings	kind:synthetic	3	3
+settings	kotlin-classes	20	20
+settings	meta:class-type-params	1	1
+settings	meta:classkind:CLASS	12	12
+settings	meta:classkind:COMPANION_OBJECT	2	2
+settings	meta:const-property	1	1
+settings	meta:ctor-with-defaults	1	1
+settings	meta:data-class	2	2
+settings	meta:default-value-params	4	15
+settings	meta:extension-fun	5	11
+settings	meta:fun-with-defaults	4	6
+settings	meta:has-companion	2	2
+settings	meta:is-companion	2	2
+settings	meta:nullable-types-in-signatures	5	6
+settings	meta:operator-fun	2	8
+settings	meta:private-property-without-getter	3	3
+settings	meta:property-without-getter-signature(default accessor)	4	4
+settings	meta:synthesized-fun(data component/copy)	2	14
+settings	meta:synthetic-class-WITHOUT-any-declaration(no d1 payload)	3	3
+settings	meta:val-property	10	64
+settings	metadata-version:[2,2,0]	20	20
+settings	name-ends-Kt	3	3
+utils	bc:$default-callsite(other class)	1	4
+utils	bc:$default-callsite(same class)	1	1
+utils	bc:$default-synthetic-method	4	11
+utils	bc:Intrinsics-call	12	72
+utils	bc:Intrinsics.areEqual	2	4
+utils	bc:Intrinsics.checkNotNull	1	1
+utils	bc:Intrinsics.checkNotNullExpressionValue	3	10
+utils	bc:Intrinsics.checkNotNullParameter	12	57
+utils	bc:extension-receiver-lvt($this$)	7	29
+utils	bc:indy-lambda(LambdaMetafactory)	1	2
+utils	bc:indy-string-concat	5	8
+utils	bc:inlined-fun-callsite-marker($i$f$)	1	4
+utils	bc:inlined-lambda-marker($i$a$)	1	4
+utils	bc:kotlin-stdlib-Kt-static-call(ext fun)	2	9
+utils	bc:object-INSTANCE-field	1	1
+utils	decl:constructors	4	4
+utils	decl:functions	8	37
+utils	decl:properties	3	5
+utils	kind:class	4	4
+utils	kind:file-facade	4	4
+utils	kind:synthetic	4	4
+utils	kotlin-classes	12	12
+utils	meta:class-type-params	1	1
+utils	meta:classkind:CLASS	3	3
+utils	meta:classkind:OBJECT	1	1
+utils	meta:data-class	2	2
+utils	meta:default-value-params	4	15
+utils	meta:extension-fun	3	20
+utils	meta:fun-with-defaults	4	11
+utils	meta:nullable-types-in-signatures	4	8
+utils	meta:operator-fun	2	6
+utils	meta:private-property-without-getter	1	1
+utils	meta:property-without-getter-signature(default accessor)	1	1
+utils	meta:synthesized-fun(data component/copy)	2	12
+utils	meta:synthetic-class-WITHOUT-any-declaration(no d1 payload)	4	4
+utils	meta:val-property	3	5
+utils	meta:vararg-params	1	1
+utils	metadata-version:[2,2,0]	12	12
+utils	name-ends-Kt	4	4

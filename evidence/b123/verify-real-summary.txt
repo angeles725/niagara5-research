@@ -1,0 +1,7 @@
+# n5-decompile.sh --verify over a scratch view of organized/ (symlinked extracted/ + resources/, copied recon.json), jars = sha256-verified local mirror of config-home modules/, jarsigner = openjdk@26, 2026-09-29
+# command line result: 'verify: ok=246 failed=0', wall 18m31s
+recon.json files in the scratch view: 246
+carrying both byte_exact and signature_verified: 246
+byte_exact: {True: 246}
+signature_status: {'verified-with-signer-warnings': 246}
+jarsigner_exit: {4: 246}

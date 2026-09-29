@@ -1,0 +1,6 @@
+module basenames in map: 160
+term1a: basenames found under a path containing 'underscore': 1
+term1b: basenames found anywhere under organized/ (non-_best): 2 ['template.js', 'underscore.js']
+term2 'function restArguments' -> 5 files; distinct tree/name: ['js/extracted:underscore.js', 'js/resources:underscore.js', 'js/vineflower-cons:underscore.js', 'js/vineflower2:underscore.js', 'js/vineflower:underscore.js']
+term2 'modules/_setup' -> 0 files; distinct tree/name: []
+term2 "VERSION = '1.13" -> 5 files; distinct tree/name: ['js/extracted:underscore.js', 'js/resources:underscore.js', 'js/vineflower-cons:underscore.js', 'js/vineflower2:underscore.js', 'js/vineflower:underscore.js']

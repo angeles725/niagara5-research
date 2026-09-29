@@ -98,7 +98,7 @@ transpilation, `rc/bajaux.built.min.js` still contains literal `define("bajaux/e
 calls at the top level — confirming the build pipeline (Babel → AMD bundle) targets the *same* RequireJS
 module system, not `webpackJsonp`/`__webpack_require__`/`System.register`/UMD. `[CERT]`
 (`bajaux.jar:rc/bajaux.built.min.js`, `grep`-confirmed absence of the three webpack/SystemJS markers, and
-`define(` found at offset 5980). **No ES-module (`import`/`export`) syntax was found in any of the 11
+`define(` found at offset 5980). **[Corrected by [Block 124] §124.9/§124.10: `bs.built.min.js` is 363,641 B, not 363,625; every `define` module of both bundles maps to a readable file (e.g. `rc/events.js` for `bajaux/events`), cite that instead of `built.min.js:1-400`.]** **No ES-module (`import`/`export`) syntax was found in any of the 11
 JS-bearing target jars' source (non-minified) files.**
 
 **No React/Vue/Angular dependency anywhere in the 11 JS-bearing jars.** A scripted search across all

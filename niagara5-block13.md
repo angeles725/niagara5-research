@@ -289,6 +289,9 @@ consolidation influx), `xprotect` +12,777,380, `ffmpeg` +3,112,811, `gx` +2,544,
 `apachePoi` −2,793,149, `abstractMqttDriver` −2,228,211, `samlEncryption` −1,202,712, `commonsLang`
 −696,817.
 
+> **Correction (added by [Block 122], §122.8, §14 cross-block).** The `xprotect` and `ffmpeg` growth figures are measured against the N4.14 parts only. Against the N4-4.15.3.28 OEM install (`xprotect-ux` 181,730 + `xprotect-wb` 2,903,882 B; `ffmpeg-rt` 46,063 + `ffmpeg-wb` 23,488,672 B) the growth is +11,571,737 and +1,648,861 B (`evidence/b122/claim-audit.tsv`); of the quoted growth 1,205,643 B (xprotect) and 1,463,950 B (ffmpeg) is 4.14→4.15, not N5; the 14 .NET files and the 26-export ffmpeg wrapper already ship in 4.15.
+
+
 **Dependency-list churn.** Comparing each common module's declared `<dependency>` name set (N4 side: union
 across its rt/ux/wb/se parts, suffix-stripped; N5 side: its single module.xml) found 155/229 modules with at
 least one *added* declared dependency and 130/229 with at least one *removed* one. The most frequently

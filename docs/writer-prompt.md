@@ -1,12 +1,12 @@
 # Writer prompt (versioned)
 
-**v1.1 — 2026-09-28.** Replaces the session-scratch `common.txt` prompt writers used to be handed
+**v1.2 — 2026-09-29** (adds R9, the native-binary anchor rule, B123; v1.1 was 2026-09-28). Replaces the session-scratch `common.txt` prompt writers used to be handed
 inline; this is the durable, corpus-tracked copy. Update it (bump the version line) whenever a block
 writer mistake reveals a prompt gap — see `odd/tasks/decompiler-fidelity-audit.md` for why this
 became mandatory: a prose-only version of the decompiler-fidelity rule below was already added once
 (after [Block 90] established the resugaring rule) and a later block ([Block 84]) still made the
 mistake it warns against. `tools/lint-block.py` exists because prose rules alone are not enough;
-treat this document as the prose half of the R1-R8 rules it enforces mechanically, not a substitute
+treat this document as the prose half of the R1-R9 rules it enforces mechanically, not a substitute
 for them.
 
 You are a research-sdd block WRITER for the niagara5-research corpus (Niagara N5 5.0.0.28 beta,
@@ -132,6 +132,16 @@ you believe a specific finding is a false positive, waive it inline with a **non
   constant inlining (cite `ldc`, "compile-time constant", `JLS 4.12.4`/`JLS 13.1`, or `docSource`)?
 - **R8** — does every "N5-only"/"new in N5"/"added in N5"/"absent from N4" claim check the N4-4.15
   OEM baseline, not just N4.14 (cite `4.15`, `PowerB`, or `N4.15`)?
+- **R9** (enforced from block 123; audit-only for older blocks) — does every `[CERT]`/`[CERT-hw]`/
+  `[CERT-live]` claim about a NATIVE binary (a `*.dll`/`*.so`/`*.exe`/`*.dylib` file name, or the words
+  PE32/ELF/Mach-O/"PE binary|file|image|header|section"/Authenticode) carry, in the same paragraph or
+  table row: the binary's full sha256 (64 hex), an address anchor (`0x` + 3 or more hex digits, or
+  VA/RVA/offset + hex), and the names of TWO distinct instruments from the allowlist (readelf, objdump,
+  r2/radare2/rabin2, ghidra, pefile/pelib, osslsigncode, ilspycmd/ilspy, diec, dumpbin, otool, ldd, gdb,
+  lldb, capstone, xxd, hexdump, binwalk, debug/pe|elf|gosym, and `nm`/`strings` only inside backticks)?
+  Two runs of one tool, or two front-ends of one engine, count once ([Block 117] §117.10). If the
+  binary was not retained or the claim rests on a document, waive with a reason:
+  `<!-- lint-ok: R9 <reason> -->`.
 - Did every new `[CERT-hw]`/`[CERT-live]` artifact land under `evidence/b<N>/`, sized within
   `evidence/README.md`'s caps, with no binaries/proprietary jars (sha256 instead)?
 

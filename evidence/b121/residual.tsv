@@ -1,0 +1,3 @@
+jar	class	member	note
+n-plugin	com/tridium/gradle/plugins/bajadoc/javadoc/LazyList	toArray()[Ljava/lang/Object;	access=0x1
+n-plugin	com/tridium/gradle/plugins/bajadoc/javadoc/LazyList	toArray([Ljava/lang/Object;)[Ljava/lang/Object;	access=0x1

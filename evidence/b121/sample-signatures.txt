@@ -1,0 +1,40 @@
+# B121 sample of recovered Kotlin declarations (3 short classes, first 12 lines each, of 696 listings; the full listings are out of git)
+
+## natives/NiagaraNativePlatform
+// com/tridium/gradle/plugins/natives/NiagaraNativePlatform  (kotlin.Metadata k=1)
+public final data class com/tridium/gradle/plugins/natives/NiagaraNativePlatform : org.gradle.api.Named
+  public primary constructor(name: kotlin.String)   // jvm <init>(Ljava/lang/String;)V
+  public constructor(name: kotlin.String, os: com.tridium.gradle.plugins.natives.Os, arch: kotlin.String, devkitName: kotlin.String, compiler: com.tridium.gradle.plugins.natives.CompilerFamily)   // jvm <init>(Ljava/lang/String;Lcom/tridium
+  private val name: kotlin.String   // field=name:Ljava/lang/String;
+  public lateinit var os: com.tridium.gradle.plugins.natives.Os   // get=getOs()Lcom/tridium/gradle/plugins/natives/Os; set=setOs(Lcom/tridium/gradle/plugins/natives/Os;)V field=os:Lcom/tridium/gradle/plugins/natives/Os;
+  public lateinit var arch: kotlin.String   // get=getArch()Ljava/lang/String; set=setArch(Ljava/lang/String;)V field=arch:Ljava/lang/String;
+  public lateinit var devkitName: kotlin.String   // get=getDevkitName()Ljava/lang/String; set=setDevkitName(Ljava/lang/String;)V field=devkitName:Ljava/lang/String;
+  public lateinit var compiler: com.tridium.gradle.plugins.natives.CompilerFamily   // get=getCompiler()Lcom/tridium/gradle/plugins/natives/CompilerFamily; set=setCompiler(Lcom/tridium/gradle/plugins/natives/CompilerFamily;)V field=compiler
+  public open fun getName(): kotlin.String   // jvm getName()Ljava/lang/String;
+  public fun asTaskName(): kotlin.String   // jvm asTaskName()Ljava/lang/String;
+  public fun buildTaskName(source: com.tridium.gradle.plugins.natives.source.RootNativeSource): kotlin.String   // jvm buildTaskName(Lcom/tridium/gradle/plugins/natives/source/RootNativeSource;)Ljava/lang/String;
+
+## vendor/VendorExtension
+// com/tridium/gradle/plugins/vendor/VendorExtension  (kotlin.Metadata k=1)
+public open class com/tridium/gradle/plugins/vendor/VendorExtension : kotlin.Any
+  public primary constructor(project: org.gradle.api.Project, vendorProviders: com.tridium.gradle.plugins.vendor.VendorProviderExtension)   // jvm <init>(Lorg/gradle/api/Project;Lcom/tridium/gradle/plugins/vendor/VendorProviderExtension;)V
+  private val project: org.gradle.api.Project   // field=project:Lorg/gradle/api/Project;
+  private val vendorProviders: com.tridium.gradle.plugins.vendor.VendorProviderExtension   // field=vendorProviders:Lcom/tridium/gradle/plugins/vendor/VendorProviderExtension;
+  public fun defaultGroup(group: kotlin.String): kotlin.Unit   // jvm defaultGroup(Ljava/lang/String;)V
+  public fun defaultVendor(vendor: kotlin.String): kotlin.Unit   // jvm defaultVendor(Ljava/lang/String;)V
+  public fun defaultModuleVersion(version: kotlin.String): kotlin.Unit   // jvm defaultModuleVersion(Ljava/lang/String;)V
+  public fun defaultDistVersion(version: kotlin.String): kotlin.Unit   // jvm defaultDistVersion(Ljava/lang/String;)V
+
+## signing/profile/SigningProfileProperties
+// com/tridium/gradle/plugins/signing/profile/SigningProfileProperties  (kotlin.Metadata k=1)
+public final class com/tridium/gradle/plugins/signing/profile/SigningProfileProperties : kotlin.Any
+  companion object Companion
+  public primary constructor(propertiesXmlFile: java.io.File)   // jvm <init>(Ljava/io/File;)V
+  private val propertiesXmlFile: java.io.File   // field=propertiesXmlFile:Ljava/io/File;
+  private val props: java.util.Properties by <delegate>   // get=getProps()Ljava/util/Properties; field=props$delegate:Lkotlin/Lazy;
+  private val expander: com.tridium.tools.util.java.TextExpander   // get=getExpander()Lcom/tridium/tools/util/java/TextExpander;
+  private fun load(): java.util.Properties   // jvm load()Ljava/util/Properties;
+  public fun save(): kotlin.Unit   // jvm save()V
+  public fun getKeys(): kotlin.collections.Set<kotlin.String>   // jvm getKeys()Ljava/util/Set;
+  public fun containsKey(key: kotlin.String): kotlin.Boolean   // jvm containsKey(Ljava/lang/String;)Z
+  public fun getProperty(key: kotlin.String): kotlin.String   // jvm getProperty(Ljava/lang/String;)Ljava/lang/String;

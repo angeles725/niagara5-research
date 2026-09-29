@@ -415,6 +415,9 @@ decoder file) — consistent with a genuinely stale, hand-maintained illustrativ
 re-generated from the real templates, not a doc simplification of one conditional branch (the NDriver
 `learn/` case remains the only clean simplification example in this doc).
 
+> **Scope note (added by [Block 122], §122.8, §14 cross-block).** "No Mjpeg/Ffmpeg split exists" holds for what `VideoDriverModuleGenerator` emits (one generic decoder). The shipped drivers do hand-write both families: four `FfmpegVideoDecoder` subclasses (`MaxproFfmpegH264Decoder`, `MaxproRtspDecoder`, `AxisFfmpegMpeg4Decoder`, `MilestoneFfmpegMpeg4Decoder`) and `XProtectMjpegVideoDecoder` (a `GenericMjpegDecoder`), so the doc's two names are not implausible for real drivers; the "fictional" verdict applies to the generated tree only.
+
+
 ## 102.9 — B93-G1 CLOSED: `BCertificateStatusHealth` does not exist anywhere in this session's shipped N5 5.0.0.28 `baja.jar` — confirmed by direct namelist grep, zero matches `[CERT]`
 
 Parent text ([Block 93] §93.8, its own child-gap list): *"Confirm, directly against the shipped N5

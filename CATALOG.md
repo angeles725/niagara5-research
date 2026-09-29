@@ -2,7 +2,7 @@
 
 # Block catalog
 
-Total: **118 blocks**
+Total: **125 blocks**
 
 | Block | File | Title |
 |-------|------|-------|
@@ -124,3 +124,10 @@ Total: **118 blocks**
 | 116 | [niagara5-block116.md](niagara5-block116.md) | What Java decompilation cannot or did not preserve: an empirical loss catalog for the N5 tree (synthetic javac-25 first principles, a 2,809-file docSource differential, a recompile-and-compare bytecode oracle, 11 confirmed semantic defects in the corpus's own decompiled text, and docSource proven byte-identical to the shipped bytecode) |
 | 117 | [niagara5-block117.md](niagara5-block117.md) | Extraction and native-binary fidelity audit: the analysed Java bytes are the vendor's (21,751 classes byte-exact, 356 signed jars verified), but 24,896 nested-jar classes and 958 out-of-pipeline Tridium classes were never decompiled; 45 of 46 single-instrument native claims confirmed by a second instrument, 3 details refuted |
 | 118 | [niagara5-block118.md](niagara5-block118.md) | Logic-recovery method ladder for N5: what each instrument proves (line-mapped Vineflower, a LineNumberTable pattern discriminator, SootUp/Joern/bytecode-xref call graphs, sandboxed differential execution, an ASM trace agent, CodeQL vs Joern dataflow, and a krak2 round-trip of all 20,724 module classes) |
+| 119 | [niagara5-block119.md](niagara5-block119.md) | Source-map census and minified-JS audit: 86 JSON source maps ship, only 42 carry originals (all Babel-transpiled driver/workbench code that already ships readable), none of the 234 minified JS files has a map, and the 42 originals are now recovered |
+| 120 | [niagara5-block120.md](niagara5-block120.md) | Pattern-switch decompile fidelity: 26 of 27 `typeSwitch` sites render as valid, faithful Java in Vineflower, one site (`PlatformStationManager.createStation`) is pseudo-Java in every tree and now has a bytecode-verified reconstruction |
+| 121 | [niagara5-block121.md](niagara5-block121.md) | The four Kotlin-compiled Tridium jars: 696 classes all decode from `kotlin.Metadata`, the corpus trees for them are already Vineflower Kotlin-plugin output (not a Java decompile), 73 sites are unreadable in them, and 1 of 42 audited corpus claims is contradicted |
+| 122 | [niagara5-block122.md](niagara5-block122.md) | The XProtect .NET bridge and the FFmpeg JNI wrapper: 14 of 14 CLR assemblies decompiled, a loopback SOAP bridge whose session key is enforced only under TLS, 24 of 26 FFmpeg natives bound (2 throw `UnsatisfiedLinkError`), and LGPL-2.1 FFmpeg 8.1.1 |
+| 123 | [niagara5-block123.md](niagara5-block123.md) | Mechanizing the extraction gate: a hardened byte-exactness census, a fail-closed extraction and signature gate in the decompile pipeline, and lint rule R9 for native-binary claims |
+| 124 | [niagara5-block124.md](niagara5-block124.md) | Tracing the 72 `*.built.min.js` bundles to readable source: every one of 2,315 `define()` modules has a shipped readable counterpart, 975 are proven equal by an AST or compiler oracle, 1,315 match by names and literals only |
+| 125 | [niagara5-block125.md](niagara5-block125.md) | Durable counterpart for the 73 Kotlin-plugin wall sites: the Java-mode decompile reads 56 of 67 wall methods but none of their classes recompile, so `javap -c` is the only verified representation and every wall traces to one plugin failure |

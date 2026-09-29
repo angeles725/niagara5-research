@@ -1,0 +1,23 @@
+file	digest_alg	digest_match	verified_signatures	result	signer	signed_at	failure_reason
+Autofac.dll	SHA384	yes	1	Succeeded	CN=Tridium\, Inc.,O=Tridium\, Inc.,L=Richmond,ST=Virginia,C=US	Aug 31 18:39:28 2026 GMT	-
+Microsoft.ApplicationInsights.dll	SHA256	yes	2	Succeeded	CN=Microsoft Corporation,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US	Nov 30 22:34:28 2023 GMT	Verify error: unable to get local issuer certificate
+System.Net.Http.Formatting.dll	SHA256	yes	2	Succeeded	CN=Microsoft Corporation,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US	Nov 28 20:55:13 2018 GMT	Verify error: unable to get local issuer certificate
+VideoOS.Common.EnvironmentServices.dll	SHA384	yes	1	Succeeded	CN=Tridium\, Inc.,O=Tridium\, Inc.,L=Richmond,ST=Virginia,C=US	Aug 31 18:39:39 2026 GMT	-
+VideoOS.Common.Login.dll	SHA384	yes	1	Succeeded	CN=Tridium\, Inc.,O=Tridium\, Inc.,L=Richmond,ST=Virginia,C=US	Aug 31 18:39:42 2026 GMT	-
+VideoOS.Common.State.dll	SHA384	yes	1	Succeeded	CN=Tridium\, Inc.,O=Tridium\, Inc.,L=Richmond,ST=Virginia,C=US	Aug 31 18:39:44 2026 GMT	-
+VideoOS.Common.dll	SHA384	yes	1	Succeeded	CN=Tridium\, Inc.,O=Tridium\, Inc.,L=Richmond,ST=Virginia,C=US	Aug 31 18:39:37 2026 GMT	-
+VideoOS.IdentityServer.Common.dll	SHA384	yes	1	Succeeded	CN=Tridium\, Inc.,O=Tridium\, Inc.,L=Richmond,ST=Virginia,C=US	Aug 31 18:39:47 2026 GMT	-
+VideoOS.Platform.Common.dll	SHA384	yes	1	Succeeded	CN=Tridium\, Inc.,O=Tridium\, Inc.,L=Richmond,ST=Virginia,C=US	Aug 31 18:39:49 2026 GMT	-
+VideoOS.Platform.SDK.dll	SHA384	yes	1	Succeeded	CN=Tridium\, Inc.,O=Tridium\, Inc.,L=Richmond,ST=Virginia,C=US	Aug 31 18:39:55 2026 GMT	-
+VideoOS.Platform.dll	SHA384	yes	1	Succeeded	CN=Tridium\, Inc.,O=Tridium\, Inc.,L=Richmond,ST=Virginia,C=US	Aug 31 18:39:52 2026 GMT	-
+VideoOS.Telemetry.dll	SHA384	yes	1	Succeeded	CN=Tridium\, Inc.,O=Tridium\, Inc.,L=Richmond,ST=Virginia,C=US	Aug 31 18:39:57 2026 GMT	-
+VideoOS.Utilities.dll	SHA384	yes	1	Succeeded	CN=Tridium\, Inc.,O=Tridium\, Inc.,L=Richmond,ST=Virginia,C=US	Aug 31 18:40:01 2026 GMT	-
+XProtectBridgeService.exe	SHA384	yes	1	Succeeded	CN=Tridium\, Inc.,O=Tridium\, Inc.,L=Richmond,ST=Virginia,C=US	Aug 31 18:40:04 2026 GMT	-
+avcodec-62.dll	SHA256	yes	1	Failed	C=US,O=Honeywell International Inc.,CN=Niagara4Modules Code Signing	Jun  1 09:00:50 2026 GMT	Verify error: self-signed certificate in certificate chain
+avdevice-62.dll	SHA256	yes	1	Failed	C=US,O=Honeywell International Inc.,CN=Niagara4Modules Code Signing	Jun  1 09:00:51 2026 GMT	Verify error: self-signed certificate in certificate chain
+avfilter-11.dll	SHA256	yes	1	Failed	C=US,O=Honeywell International Inc.,CN=Niagara4Modules Code Signing	Jun  1 09:00:50 2026 GMT	Verify error: self-signed certificate in certificate chain
+avformat-62.dll	SHA256	yes	1	Failed	C=US,O=Honeywell International Inc.,CN=Niagara4Modules Code Signing	Jun  1 09:00:50 2026 GMT	Verify error: self-signed certificate in certificate chain
+avutil-60.dll	SHA256	yes	1	Failed	C=US,O=Honeywell International Inc.,CN=Niagara4Modules Code Signing	Jun  1 09:00:50 2026 GMT	Verify error: self-signed certificate in certificate chain
+ffmpeg-wrapper.dll	SHA256	yes	1	Failed	C=US,O=Honeywell International Inc.,CN=Niagara4Modules Code Signing	Jun  1 09:00:50 2026 GMT	Verify error: self-signed certificate in certificate chain
+swresample-6.dll	SHA256	yes	1	Failed	C=US,O=Honeywell International Inc.,CN=Niagara4Modules Code Signing	Jun  1 09:00:50 2026 GMT	Verify error: self-signed certificate in certificate chain
+swscale-9.dll	SHA256	yes	1	Failed	C=US,O=Honeywell International Inc.,CN=Niagara4Modules Code Signing	Jun  1 09:00:51 2026 GMT	Verify error: self-signed certificate in certificate chain

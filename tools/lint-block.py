@@ -23,6 +23,12 @@ shapes each one is tuned against):
       compile-time-constant-inlining evidence token.
   R8  an "N5-only"/"new in N5"/"absent from N4"-style claim without a 4.15/PowerB/N4.15 baseline
       token.
+  R9  a `[CERT]`/`[CERT-hw]`/`[CERT-live]` claim about a NATIVE binary (a *.dll/*.so/*.exe/*.dylib
+      file name, or the words PE32/ELF/Mach-O/"PE binary|file|image|header|section"/
+      Authenticode) whose paragraph or table row lacks any of: the binary's sha256 (64 hex), an
+      address anchor (`0x` + 3 or more hex digits, or VA/RVA/offset followed by hex), two distinct
+      instruments from R9_INSTRUMENTS. Waive with `<!-- lint-ok: R9 <reason> -->`. Enforced only for
+      blocks >= RULE_MIN_BLOCK["R9"] (123); older blocks are reported by --audit only.
 
 Usage:
   python3 tools/lint-block.py [--audit] [--min-block N] [--root DIR] [<files>...]
@@ -49,6 +55,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_MIN_BLOCK = 115
+# Per-rule enforcement floor: a rule listed here gates only blocks >= its floor (in addition to
+# --min-block); --audit reports it for every block. R9 was introduced with block 123 (B117-G7), so
+# blocks 115-122 must not start failing CI retroactively.
+RULE_MIN_BLOCK = {"R9": 123}
 
 BLOCK_NAME_RE = re.compile(r"niagara5-block(\d+)\.md$")
 
@@ -503,12 +513,74 @@ def rule_r8(units):
     return out
 
 
-RULES = [rule_r1, rule_r2, rule_r5, rule_r6, rule_r7, rule_r8]  # unit-only rules
+# ---------------------------------------------------------------------------
+# R9 — native-binary claims must carry sha256 + address anchor + two instruments (B117-G7)
+# ---------------------------------------------------------------------------
+# Trigger (per clause): an evidence marker AND native-binary context in the same clause.
+#   marker  : [CERT], [CERT-hw], [CERT-live]  ([CERT-doc]/[CERT-web]/[INFER] make no byte claim)
+#   context : a file name ending .dll/.so(.N)/.exe/.dylib (NOT .sys/.ocx: `javax.baja.sys` is a Java package), or (case-sensitive) PE32,
+#             ELF, Mach-O, "PE binary|file|image|header|section", Authenticode.
+# Requirement (per unit = paragraph or table row, like R6, because the sha256/VA/instruments of one
+# claim routinely sit in neighbouring sentences or cells): all of sha256, anchor, two instruments.
+R9_MARKER_RE = re.compile(r"\[CERT(?:-hw|-live)?\]")
+R9_NATIVE_RE = re.compile(
+    r"\b[\w.+-]+\.(?:dll|so(?:\.\d+)*|exe|dylib)\b(?![\w/-]|\.[A-Za-z])"
+    r"|\bPE32\+?|\bELF(?:32|64)?\b|\bMach-O\b|\bPE\s+(?:binary|binaries|file|image|header|section)s?\b"
+    r"|\bAuthenticode\b")
+R9_SHA256_RE = re.compile(r"(?<![0-9A-Fa-f])[0-9A-Fa-f]{64}(?![0-9A-Fa-f])")
+R9_ANCHOR_RE = re.compile(
+    r"\b0x[0-9A-Fa-f]{3,}\b|\b(?:VA|RVA|offset)\s*[:=]?\s*[0-9A-Fa-f]{4,}\b")
+# Documented instrument allowlist. `nm` and `strings` are ordinary words/units, so they count only
+# inside a backtick code span; every other name counts anywhere (case-insensitive, word-bounded).
+R9_INSTRUMENTS = {
+    "readelf", "objdump", "r2", "radare2", "rabin2", "ghidra", "pefile", "pelib", "osslsigncode",
+    "ilspycmd", "ilspy", "diec", "dumpbin", "otool", "ldd", "gdb", "lldb", "capstone", "xxd",
+    "hexdump", "binwalk", "debug/pe", "debug/gosym", "debug/elf", "gosym",
+}
+R9_CODE_ONLY_INSTRUMENTS = {"nm", "strings"}
+R9_INSTRUMENT_RE = re.compile(
+    r"(?<![\w/])(" + "|".join(re.escape(n) for n in sorted(R9_INSTRUMENTS, key=len, reverse=True))
+    + r")(?![\w])", re.IGNORECASE)
+R9_CODE_SPAN_RE = re.compile(r"`([^`]*)`")
+
+
+def r9_instruments(text):
+    found = {m.group(1).lower() for m in R9_INSTRUMENT_RE.finditer(text)}
+    for span in R9_CODE_SPAN_RE.findall(text):
+        for name in R9_CODE_ONLY_INSTRUMENTS:
+            if re.search(r"(?<![\w/-])" + name + r"(?![\w-])", span):
+                found.add(name)
+    return found
+
+
+def rule_r9(units):
+    out = []
+    for text, line, kind in units:
+        if kind not in ("para", "row", "heading"):
+            continue
+        if waived(text, "R9"):
+            continue
+        if not any(R9_MARKER_RE.search(c) and R9_NATIVE_RE.search(c) for c in clauses(text)):
+            continue
+        missing = []
+        if not R9_SHA256_RE.search(text):
+            missing.append("no sha256 (64 hex) of the binary")
+        if not R9_ANCHOR_RE.search(text):
+            missing.append("no address anchor (0x... VA or file offset)")
+        n = len(r9_instruments(text))
+        if n < 2:
+            missing.append(f"{n} of 2 instruments named (allowlist R9_INSTRUMENTS)")
+        if missing:
+            out.append((line, "R9", f"native-binary claim: {'; '.join(missing)}: {excerpt(text)}"))
+    return out
+
+
+RULES = [rule_r1, rule_r2, rule_r5, rule_r6, rule_r7, rule_r8, rule_r9]  # unit-only rules
 # R3 and R4 need the raw lines too (section scoping) and are invoked separately.
 
 
 def lint_file(path):
-    """Return sorted [(line, rule, message)] findings for one file (R0-R8)."""
+    """Return sorted [(line, rule, message)] findings for one file (R0-R9)."""
     text = path.read_text(encoding="utf-8")
     # Strip markdown bold markers before matching: this corpus routinely emphasizes the load-
     # bearing word inside a trigger phrase ("does **not** ship"), which would otherwise split the
@@ -568,6 +640,8 @@ def main():
                 continue
             enforced_count += 1
         for line, rule, message in findings:
+            if not args.audit and bnum < RULE_MIN_BLOCK.get(rule, 0):
+                continue  # rule not yet enforced for this block (audit-only)
             print(f"{rule} {path.name}:{line}: {message}")
             counts[rule] = counts.get(rule, 0) + 1
             total_findings += 1
@@ -576,7 +650,7 @@ def main():
         return 2
 
     if args.audit:
-        parts = " ".join(f"{r}={counts.get(r, 0)}" for r in ("R0", "R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8"))
+        parts = " ".join(f"{r}={counts.get(r, 0)}" for r in ("R0", "R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9"))
         print(f"{parts} total={total_findings}")
         return 0
 

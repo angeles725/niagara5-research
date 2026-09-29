@@ -1,0 +1,1 @@
+{"version":3,"file":"b.js","sources":["webpack:///./src/b.js","webpack://ns/src/nested/c.js","../../../../etc/passwd","/etc/shadow","src/../../escape.js","C:\\win\\x.js","src/empty.js","src/null.js"],"sourcesContent":["// b\n","// c\n","evil-1","evil-2","evil-3","evil-4","",null],"mappings":"AAAA"}

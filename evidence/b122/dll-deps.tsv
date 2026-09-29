@@ -1,0 +1,9 @@
+dll	imports_agree	non_system_imports	system_imports	authenticode_digest	authenticode_leaf	external_markers
+avcodec-62.dll	True	avutil-60.dll,swresample-6.dll	2	sha256	CN=Niagara4Modules Code Signing, O=Honeywell International Inc., C=US	x264 
+avdevice-62.dll	True	AVICAP32.dll,avcodec-62.dll,avfilter-11.dll,avformat-62.dll,avutil-60.dll	6	sha256	CN=Niagara4Modules Code Signing, O=Honeywell International Inc., C=US	-
+avfilter-11.dll	True	avcodec-62.dll,avformat-62.dll,avutil-60.dll,swresample-6.dll,swscale-9.dll	2	sha256	CN=Niagara4Modules Code Signing, O=Honeywell International Inc., C=US	-
+avformat-62.dll	True	avcodec-62.dll,avutil-60.dll	5	sha256	CN=Niagara4Modules Code Signing, O=Honeywell International Inc., C=US	libmp3lame
+avutil-60.dll	True		3	sha256	CN=Niagara4Modules Code Signing, O=Honeywell International Inc., C=US	-
+ffmpeg-wrapper.dll	True	avcodec-62.dll,avutil-60.dll,swscale-9.dll	5	sha256	CN=Niagara4Modules Code Signing, O=Honeywell International Inc., C=US	-
+swresample-6.dll	True	avutil-60.dll	1	sha256	CN=Niagara4Modules Code Signing, O=Honeywell International Inc., C=US	-
+swscale-9.dll	True	avutil-60.dll	1	sha256	CN=Niagara4Modules Code Signing, O=Honeywell International Inc., C=US	-

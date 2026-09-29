@@ -1,0 +1,4 @@
+# bats --tap tools/tests/n5-decompile.bats, snapshot copy of the worktree at the gate commit (before the --verify tests), real Vineflower 1.12.0 + CFR 0.152 jars, 2026-09-29
+ok=91 not_ok=0 final_line=exit=0
+# Final run, snapshot copy at the last code commit (637ca82 plus the census test follow-up), same jars, same command:
+ok=94 not_ok=0 final_line=exit=0

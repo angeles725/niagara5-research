@@ -93,10 +93,14 @@ All 20,481 non-class entries are present byte-exact in `resources/` (§117.1). B
 `[CERT-hw]` (`census-modules.json` `natives`, `file`, `diec`, `r2 iEj`). None of these was ever decompiled by the
 pipeline; the .NET ones are decompilable with the kit's `decompile-net.sh` (B117-G4).
 
+> **Correction (added by [Block 122], §122.6 and §122.8, §14 cross-block).** Three refinements, counts unchanged: (1) "the only JNI library shipped inside a jar" is **refuted**: 13 PE files inside jars export `Java_` names, 6 in module jars (the wrapper and 5 SWT DLLs in `gx.jar`'s nested jar) and 7 in `bin/ext` jars (`evidence/b122/jni-libs-in-jars.tsv`); (2) of the 14 .NET files 10 are Milestone VideoOS, 3 are third-party (Autofac, Application Insights, `System.Net.Http.Formatting`) and 1 is the Tridium-authored bridge exe; (3) the "24 of 26 exports" are 24 bindable `Java_` exports plus 2 C++-mangled orphans, and 2 of the 26 declared natives have no export (`evidence/b122/jni-match.tsv`). The .NET files are now decompiled (14 of 14, §122.2).
+
+
 **Minified JS.** 234 of 2,560 `.js` files meet the minified rule (longest line ≥ 1,000 B or mean line ≥ 250 B,
 `tools/n5-extract-census.py:66`); 86 `.map` source maps ship alongside. Heaviest: `js` 35/76, `docDeveloper`
 21/114, `analytics` 18/141, `webEditors` 12/400, `uxBuilder` 11/116 `[CERT-hw]`. Any corpus claim about those
 234 files rests on minified code (B117-G3).
+**[CORRECTED by [Block 119] §119.6:** the 234 over-count by 102 — only 132 files are truly minified (mean line ≥ 250 B); 102 are readable Babel output caught by the longest-line half of the rule. The 86 maps do not "ship alongside minified JS": 42 map LESS, 42 map readable Babel ES5 with embedded ES2015+ originals, 1 maps underscore, 1 is empty; none of the 234 has a map.]**
 
 **Encoded/encrypted blobs.** Scanning every non-image/non-font/non-archive entry ≥ 256 B for Shannon entropy
 ≥ 7.2 bits/byte: 956 hits, all identified by magic — 704 gzip (`fonts.jar` `microFont/*.font`), 5 ZIP (`.bog`),
@@ -128,6 +132,9 @@ session) — [Block 2]'s title already calls `n-plugin` a Kotlin plugin, but a J
 explains behaviour without being the source; claims read from it carry that caveat (B117-G2). No module jar or
 included bin/ext class carries Kotlin, Scala (`ScalaSig`/`ScalaSignature`) or Groovy (`GroovyObject`) markers
 (0 of 21,752) `[CERT-hw]` (`jvmlang-preview.txt`).
+
+> **Correction (added by [Block 121], §121.2, §14 cross-block).** The four counts above are reproduced exactly (`evidence/b121/kotlin-census-all.tsv`), but "a Java decompile" is the wrong description of the corpus trees for these jars:
+> `organized/_etc-m2/<jar>/vineflower2/` holds Vineflower 1.12.0 **Kotlin-plugin** output (329 `.kt` + 62 `.java` files) with 67 method walls and 6 class walls; a Java-mode run (`--kt-enable=false`) has none. Scope clarification, not a refutation.
 
 **Preview class files:** 0. All 21,752 classes in the 247 module jars + 6 bin/ext jars are exactly
 major 69 / minor 0 (no minor 65535) `[CERT-hw]` (`jvmlang-preview.txt`).

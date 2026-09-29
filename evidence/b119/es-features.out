@@ -1,0 +1,9 @@
+src uses ES2015+: 33 of 42
+gen uses ES2015+: 0
+arrow src files 24 gen files 0
+class src files 20 gen files 0
+const_let src files 27 gen files 0
+template src files 1 gen files 0
+spread_rest src files 7 gen files 0
+workbench/extracted/com/tridium/workbench/web/browser/interop/BroadcastChannel.js.map ['(function (global) {'] {'arrow': 0, 'class': 0, 'const_let': 0, 'template': 0, 'spread_rest': 0} {'arrow': 0, 'class': 0, 'const_let': 0, 'template': 0, 'spread_rest': 0}
+workbench/extracted/rc/find/findCommands.js.map ['(function () {'] {'arrow': 0, 'class': 0, 'const_let': 0, 'template': 0, 'spread_rest': 0} {'arrow': 0, 'class': 0, 'const_let': 0, 'template': 0, 'spread_rest': 0}

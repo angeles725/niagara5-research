@@ -415,6 +415,10 @@ further (out of scope: this gap is about the Slotomatic/AP split, not the RPC su
 
 ## 7.x — Open question: exact Gradle task-graph edge between `slotomatic` and `compileJava` `[INFER]`
 
+> **Resolved (added by [Block 121], §121.8, §14 cross-block).** `javap -c -p` of the lambda class this section could not read (`NiagaraModulePlugin$registerSlotomaticTasks$3`, the
+> `<unrepresentable>.INSTANCE`) shows it only sets `SlotomaticTask.javaLanguageLevel` from the Java toolchain version; none of the module plugin's 7 `dependsOn` sites involves
+> `slotomatic`/`migrateSlotomatic`. The conclusion below (no automatic edge) is confirmed from bytecode for `n-plugin` 5.0.54.9.2; B7-G1 is answered (Gradle's implicit input-based ordering still needs a `gradlew` run).
+
 [Block 2] §2.1 already found the Kotlin-plugin decompile has an opacity ceiling: Vineflower cannot
 reconstruct Kotlin lambda bodies past a certain nesting, rendering them `<unrepresentable>.INSTANCE`.
 Re-opening `NiagaraModulePlugin.kt` this session for `registerSlotomaticTasks()` (line 356) and
