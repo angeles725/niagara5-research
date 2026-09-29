@@ -38,7 +38,7 @@ Task IDs are C<n> (completion). "N4"/"N5" always mean Niagara 4 / Niagara 5, nev
       reported, never dropped. Forecast: 6,186 nested files; they are already produced by the existing compile step,
       so the added cost is javap+compare only. Route: delegated writer (TDD; writer trigger: tool + tests).
 - [ ] C1b Full regrade with nested files on the best-of trees; report "fully proven (outer + nested)" per module.
-- [ ] C2a Grade the 6 Tridium bin/ext jars (nre 704, niagarad 255, niagaraAnnotationProcessors 51, niagara-remote-client 8,
+- [ ] C2a (code 03df7d1 reviewed: lineage review-e1d0c2509715fd09 approved+acknowledged; 174 tests OK; real run in progress) Grade the 6 Tridium bin/ext jars (nre 704, niagarad 255, niagaraAnnotationProcessors 51, niagara-remote-client 8,
       securityBridge 2, splash 2 classes; trees already in organized/_bin-ext/*/vineflower2, no fidelity JSON yet). ~600 top-level.
 - [ ] C2b Grade third-party classes without proven upstream source (~14.6k: 38 identified artifacts incl. woodstox 735,
       nimbus-jose 203, mssql-jdbc 166, paho 109 vendor-modified; unidentified jxbrowser 5,914, prosys-opc-ua 4,591, swt 959)
@@ -58,6 +58,10 @@ Task IDs are C<n> (completion). "N4"/"N5" always mean Niagara 4 / Niagara 5, nev
 - C0: inline (state check only).
 - C1: delegated writer (trigger: tool + tests, 2 non-trivial files); parent spot check re-ran the 19 nested tests: OK.
 - C2/C3/C4 map: delegated read-only Explore (trigger: 4+ files).
+- C2a: delegated writer (tool + tests); interrupted by a network error and a session teardown after commit 03df7d1;
+  parent re-launched the real run inline in background (log organized/_evidence/c2a/run.log).
+- C3a: delegated writer in worktree c3a (feat/n5-c3a-doprivileged); first writer left e248220 + 624f772, resumed by a fresh writer.
+- C1 review: lineage review-fb22cee6e85fed40 approved + acknowledged (4 lenses).
 
 ## Progress / evidence
 - 2026-09-29: branch feat/n5-fidelity-completion from main 3d1bc79. RDD status: on (global).
@@ -78,4 +82,5 @@ Task IDs are C<n> (completion). "N4"/"N5" always mean Niagara 4 / Niagara 5, nev
   cannot backfill nested for clean classes -> C1b needs a full --force run first.
 
 ## Next step
-C1b full --force regrade (both trees) in background; meanwhile C2a writer.
+Finish C2a run (nre pending) and record numbers; C3a result -> review -> merge into feature branch; then C3b/C3c.
+C1b (full --force regrade) is deferred until the C2/C3 tool changes land, so it runs once.
