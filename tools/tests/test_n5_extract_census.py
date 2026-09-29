@@ -224,6 +224,65 @@ class ExitCodeTest(unittest.TestCase):
         self.assertEqual(self._run().returncode, 2)
 
 
+class SweepTest(unittest.TestCase):
+    """sweep(): aggregation, selection, and per-module error isolation."""
+
+    def setUp(self):
+        self.m = _load()
+        self.tmp = tempfile.mkdtemp()
+        self.jars = os.path.join(self.tmp, "modules")
+        self.org = os.path.join(self.tmp, "organized")
+        os.makedirs(self.jars)
+
+    def _module(self, name, entries, tamper=False, recon=True):
+        _write(os.path.join(self.jars, name + ".jar"), _jar_bytes(entries))
+        moddir = os.path.join(self.org, name)
+        os.makedirs(moddir, exist_ok=True)
+        if recon:
+            _write(os.path.join(moddir, "recon.json"), b"{}")
+        for entry, data in entries.items():
+            sub = "extracted" if entry.endswith(".class") else "resources"
+            _write(os.path.join(moddir, sub, entry), b"X" if tamper else data)
+
+    def test_aggregates_and_lists_unclean_modules(self):
+        self._module("good", {"a/A.class": CLASS_MAGIC + b"1", "a/r.txt": b"r"})
+        self._module("bad", {"b/B.class": CLASS_MAGIC + b"2"}, tamper=True)
+        agg, mods = self.m.sweep(self.jars, self.org)
+        self.assertEqual(agg["modules"], 2)
+        self.assertEqual(agg["classes_checked"], 2)
+        self.assertEqual(agg["class_mismatches"], 1)
+        self.assertEqual(agg["unclean_modules"], ["bad"])
+        self.assertEqual([os.path.basename(x["moddir"]) for x in mods], ["bad", "good"])
+
+    def test_jar_without_recon_is_reported_skipped_not_silently_dropped(self):
+        self._module("good", {"a/A.class": CLASS_MAGIC})
+        self._module("poc", {"p/P.class": CLASS_MAGIC}, recon=False)
+        agg, _ = self.m.sweep(self.jars, self.org)
+        self.assertEqual(agg["modules"], 1)
+        self.assertEqual(agg["skipped_no_recon"], ["poc"])
+
+    def test_one_corrupt_jar_does_not_abort_the_sweep(self):
+        self._module("aaa", {"a/A.class": CLASS_MAGIC})
+        _write(os.path.join(self.jars, "bbb.jar"), b"not a zip")
+        _write(os.path.join(self.org, "bbb", "recon.json"), b"{}")
+        self._module("ccc", {"c/C.class": CLASS_MAGIC})
+        agg, mods = self.m.sweep(self.jars, self.org)
+        self.assertEqual(agg["modules"], 2)  # aaa and ccc were still censused
+        self.assertEqual([e["module"] for e in agg["errored_modules"]], ["bbb"])
+        self.assertEqual(agg["unclean_modules"], [])
+
+    def test_cli_sweep_exit_codes(self):
+        self._module("good", {"a/A.class": CLASS_MAGIC})
+        run = lambda: subprocess.run([sys.executable, SCRIPT, "sweep", self.jars, self.org],
+                                     capture_output=True, text=True, check=False)
+        self.assertEqual(run().returncode, 0)
+        _write(os.path.join(self.jars, "bbb.jar"), b"not a zip")
+        _write(os.path.join(self.org, "bbb", "recon.json"), b"{}")
+        self.assertEqual(run().returncode, 3)  # unreadable module: cannot attest, not "clean"
+        self._module("ddd", {"d/D.class": CLASS_MAGIC}, tamper=True)
+        self.assertEqual(run().returncode, 1)  # a real mismatch outranks the read error
+
+
 @unittest.skipUnless(os.path.isfile(os.path.join(N5_MODULES_DIR, "control.jar"))
                      and os.path.isdir(os.path.join(N5_ORGANIZED, "control")),
                      "real N5 install / organized tree not present")

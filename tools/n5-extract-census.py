@@ -16,7 +16,9 @@ Subcommands:
       crash never exits 1 and a mismatch never exits 2/3, so a caller can gate on the code.
   sweep <jar-dir> <organized-dir> [--release N] [--json]
       Run `module` for every <jar-dir>/*.jar that has organized/<stem>/recon.json
-      and print an aggregate. Same exit convention (1 if any module is not clean).
+      (jars without one are listed under skipped_no_recon) and print an aggregate. A module
+      that cannot be read is isolated into errored_modules and the sweep continues; it makes
+      the exit code 3 unless a real mismatch (1) was also found. Same exit convention (1 if any module is not clean).
 
 Rules (each pinned by tools/tests/test_n5_extract_census.py):
   * Byte-exactness: sha256 of each jar entry vs the file at extracted/<entry>
@@ -221,14 +223,23 @@ def is_clean(r):
 
 
 def sweep(jar_dir, organized, release=25):
+    """Census every jar with an organized/<stem>/recon.json. A module that cannot be read
+    (corrupt jar, I/O error, any exception) is recorded in `errored_modules` and the sweep goes
+    on: one bad module must not hide the state of the other 250."""
     modules = []
+    errored = []
+    skipped = []
     for fn in sorted(os.listdir(jar_dir)):
         if not fn.endswith(".jar"):
             continue
         moddir = os.path.join(organized, fn[:-4])
         if not os.path.isfile(os.path.join(moddir, "recon.json")):
+            skipped.append(fn[:-4])
             continue
-        modules.append(census_module(os.path.join(jar_dir, fn), moddir, release))
+        try:
+            modules.append(census_module(os.path.join(jar_dir, fn), moddir, release))
+        except Exception as exc:  # noqa: BLE001 - isolation is the point
+            errored.append({"module": fn[:-4], "error": f"{type(exc).__name__}: {exc}"})
     agg = {
         "modules": len(modules),
         "classes_checked": sum(m["classes"]["checked"] for m in modules),
@@ -244,8 +255,19 @@ def sweep(jar_dir, organized, release=25):
         "js_total": sum(m["js"]["total"] for m in modules),
         "js_minified": sum(m["js"]["minified"] for m in modules),
         "unclean_modules": [os.path.basename(m["moddir"]) for m in modules if not is_clean(m)],
+        "errored_modules": errored,
+        "skipped_no_recon": skipped,
     }
     return agg, modules
+
+
+def _emit(out, as_json):
+    if as_json:
+        print(json.dumps(out, indent=1))
+    else:
+        for k, v in out.items():
+            if not isinstance(v, (list, dict)):
+                print(f"{k}: {v}")
 
 
 def main(argv=None):
@@ -274,15 +296,15 @@ def main(argv=None):
                     json.dump(mods, fh, indent=1)
             clean = not agg["unclean_modules"]
             out = agg
+            if agg["errored_modules"] and clean:
+                for e in agg["errored_modules"]:
+                    print(f"error: {e['module']}: {e['error']}", file=sys.stderr)
+                _emit(out, args.json)
+                return EXIT_ERROR
     except Exception as exc:  # noqa: BLE001 - exit 1 is reserved for "mismatch"
         print(f"error: {type(exc).__name__}: {exc}", file=sys.stderr)
         return EXIT_ERROR
-    if args.json:
-        print(json.dumps(out, indent=1))
-    else:
-        for k, v in out.items():
-            if not isinstance(v, (list, dict)):
-                print(f"{k}: {v}")
+    _emit(out, args.json)
     return EXIT_CLEAN if clean else EXIT_UNCLEAN
 
 
