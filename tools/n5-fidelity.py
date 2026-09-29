@@ -3,8 +3,9 @@
 
 Ground truth is the shipped Tridium .class files under organized/<mod>/extracted/.
 For every top-level class C, the decompiled Vineflower .java is recompiled with
-`javac --release 25` against a classpath of ALL N5 jars (classpath/unnamed-module
-mode — everything except C binds to the ORIGINAL bytecode) and the resulting
+`javac --release 25` against a classpath of ALL N5 jars -- modules, the launcher's
+bin/ext module path and the JavaFX modules of N5's bundled JRE, see build_classpath
+-- (classpath/unnamed-module mode — everything except C binds to the ORIGINAL bytecode) and the resulting
 .class is compared to the shipped .class with a normalizer built over
 `javap -v -p` output: constant-pool indices are dropped in favor of the symbolic
 comments javap already resolves, LineNumberTable/LocalVariableTable/StackMapTable
@@ -82,7 +83,10 @@ DEFAULT_ORGANIZED_DIR = REPO_ROOT / "organized"
 DEFAULT_MODULES_DIR = Path("/mnt/c/ProgramData/Niagara/tridium/config/5.0.0.28/modules")
 DEFAULT_BIN_EXT_DIR = Path("/mnt/c/Program Files/Niagara/5.0.0.28/bin/ext")
 
+DEFAULT_JRE_DIR = Path("/mnt/c/Program Files/Niagara/5.0.0.28/jre")
+
 DEFAULT_JAVAC = "/home/linuxbrew/.linuxbrew/opt/openjdk@25/bin/javac"
+DEFAULT_JIMAGE = "/home/linuxbrew/.linuxbrew/opt/openjdk@25/bin/jimage"
 DEFAULT_JAVAP = "/home/linuxbrew/.linuxbrew/opt/openjdk@25/bin/javap"
 
 DECOMPILERS_DIR = REPO_ROOT / "tools" / "decompilers"
@@ -1429,39 +1433,112 @@ def sha256_of(path: Path) -> str:
     return h.hexdigest()
 
 
+# The module path N5's launcher builds (nre.dll initPaths() format strings,
+# T21/F7): `%s\bin\ext`, `%s\bin\ext\%s` with %s = bcfips|bcstd (chosen by
+# initFips()), `%s\bin\ext\jxbrowser`, `%s\bin\ext\system`, and the separate
+# security-bridge path `%s\bin\ext\securityBridge`. Only these directories --
+# never a blind recursive glob of bin/ext.
+BC_VARIANTS = ("bcstd", "bcfips")
+DEFAULT_BC_VARIANT = "bcstd"
+BIN_EXT_LAUNCHER_SUBDIRS = ("jxbrowser", "system", "securityBridge")
+# N5 runs on its bundled JRE (`<niagaraHome>\jre`), whose modules image adds the
+# JavaFX modules the grader's JDK lacks; they are extracted with jimage and put
+# on the classpath as directories.
+JRE_EXTRA_MODULE_RE = r"(javafx|jfx)\.[^/]+"
+CLASSPATH_LAYOUT_VERSION = 2
+
+
 def build_classpath(
     cache_dir: Path,
     modules_dir: Path = DEFAULT_MODULES_DIR,
     bin_ext_dir: Path = DEFAULT_BIN_EXT_DIR,
     force: bool = False,
+    bc_variant: str = DEFAULT_BC_VARIANT,
+    jre_dir: Optional[Path] = DEFAULT_JRE_DIR,
+    jimage_bin: str = DEFAULT_JIMAGE,
 ) -> str:
-    """Idempotent: on a cache hit (manifest recorded and every listed jar still
-    present) this only reads a file; nested LIB-INF jars are extracted at most
-    once per cache dir. Intended cache_dir: a scratch/session directory, not
-    the repo (see module docstring / task spec: "extract once to a cache dir
-    under the scratchpad").
+    """Idempotent: on a cache hit (same inputs recorded in classpath.inputs.json
+    and every listed entry still present) this only reads files; nested LIB-INF
+    jars and the JRE's extra modules are extracted at most once per cache dir.
+    Intended cache_dir: a scratch/session directory, not the repo.
+
+    Entries, in order: modules/*.jar (+ their nested LIB-INF jars), bin/ext/*.jar,
+    bin/ext/<bc_variant>/*.jar and bin/ext/{jxbrowser,system,securityBridge}/*.jar
+    (the launcher's module path, see BIN_EXT_LAUNCHER_SUBDIRS), then the
+    javafx.*/jfx.* module directories of `jre_dir`'s modules image (skipped when
+    `jre_dir` has no lib/modules).
     """
+    if bc_variant not in BC_VARIANTS:
+        raise ValueError(f"build_classpath: bc_variant must be one of {BC_VARIANTS}, got {bc_variant!r}")
     cache_dir = Path(cache_dir)
     cache_dir.mkdir(parents=True, exist_ok=True)
     manifest_path = cache_dir / "classpath.txt"
-    if not force and manifest_path.is_file():
+    inputs_path = cache_dir / "classpath.inputs.json"
+    jre_image = Path(jre_dir) / "lib" / "modules" if jre_dir is not None else None
+    if jre_image is not None and not jre_image.is_file():
+        jre_image = None
+    inputs = {
+        "layout_version": CLASSPATH_LAYOUT_VERSION,
+        "modules_dir": str(modules_dir),
+        "bin_ext_dir": str(bin_ext_dir),
+        "bc_variant": bc_variant,
+        "jre_modules": str(jre_image) if jre_image else None,
+    }
+    if not force and manifest_path.is_file() and inputs_path.is_file():
+        try:
+            recorded = json.loads(inputs_path.read_text())
+        except (json.JSONDecodeError, OSError):
+            recorded = {}
         entries = [line.strip() for line in manifest_path.read_text().splitlines() if line.strip()]
-        if entries and all(os.path.isfile(e) for e in entries):
+        if ({k: recorded.get(k) for k in inputs} == inputs
+                and all(os.path.exists(e) for e in entries)):
             return ":".join(entries)
 
     entries: list[str] = []
     nested_dir = cache_dir / "_nested-libinf"
     nested_dir.mkdir(parents=True, exist_ok=True)
 
-    for jar_dir in (modules_dir, bin_ext_dir):
+    bin_ext_dir = Path(bin_ext_dir)
+    jar_dirs = [Path(modules_dir), bin_ext_dir, bin_ext_dir / bc_variant]
+    jar_dirs += [bin_ext_dir / d for d in BIN_EXT_LAUNCHER_SUBDIRS]
+    for jar_dir in jar_dirs:
         if not jar_dir.is_dir():
             continue
         for jar in sorted(jar_dir.glob("*.jar")):
             entries.append(str(jar))
             entries.extend(_extract_nested_libinf(jar, nested_dir))
 
-    manifest_path.write_text("\n".join(entries) + "\n")
+    record = dict(inputs)
+    if jre_image is not None:
+        entries.extend(_extract_jre_extra_modules(jre_image, cache_dir / "_jre-modules", jimage_bin))
+        record["jre_modules_sha256"] = sha256_of(jre_image)
+
+    manifest_path.write_text("\n".join(entries) + ("\n" if entries else ""))
+    inputs_path.write_text(json.dumps(record, indent=2) + "\n")
     return ":".join(entries)
+
+
+def _extract_jre_extra_modules(jre_image: Path, out_dir: Path, jimage_bin: str) -> list[str]:
+    """Extract the JRE_EXTRA_MODULE_RE modules of a JDK modules image into
+    out_dir/<module>/ and return those directories (sorted). A jimage failure
+    is reported on stderr and yields no entries (the classes needing them then
+    grade no-compile, as before) -- never a silent partial classpath."""
+    if out_dir.is_dir():
+        shutil.rmtree(out_dir)
+    out_dir.mkdir(parents=True)
+    cmd = [jimage_bin, "extract", "--dir", str(out_dir), "--include", f"regex:/{JRE_EXTRA_MODULE_RE}/.*", str(jre_image)]
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        print(f"build_classpath: jimage extract failed: {exc!r}", file=sys.stderr)
+        shutil.rmtree(out_dir, ignore_errors=True)
+        return []
+    if proc.returncode != 0:
+        print(f"build_classpath: jimage extract rc={proc.returncode}: {proc.stderr.strip()}", file=sys.stderr)
+        shutil.rmtree(out_dir, ignore_errors=True)
+        return []
+    rx = re.compile(JRE_EXTRA_MODULE_RE)
+    return [str(d) for d in sorted(out_dir.iterdir()) if d.is_dir() and rx.fullmatch(d.name)]
 
 
 def _extract_nested_libinf(jar: Path, nested_dir: Path) -> list[str]:
@@ -2662,6 +2739,12 @@ def main(argv: Optional[list[str]] = None) -> int:
     parser.add_argument("--bin-ext-dir", default=str(DEFAULT_BIN_EXT_DIR))
     parser.add_argument("--classpath-cache-dir", default=None,
                          help="default: a scratch dir under $TMPDIR (see task: 'extract once to a cache dir under the scratchpad')")
+    parser.add_argument("--bc-variant", choices=BC_VARIANTS, default=DEFAULT_BC_VARIANT,
+                         help="which bin/ext BouncyCastle directory N5's launcher puts on the module path "
+                              "(bcstd = non-FIPS, bcfips = FIPS mode); default bcstd")
+    parser.add_argument("--jre-dir", default=str(DEFAULT_JRE_DIR),
+                         help="N5's bundled JRE; its javafx.*/jfx.* modules are extracted onto the classpath "
+                              "('' to skip)")
     parser.add_argument("--force", action="store_true", help="ignore fidelity.json's up-to-date cache")
     parser.add_argument("--jd-cli-jar", default=None)
     parser.add_argument("--cross-check-sample", type=int, default=0,
@@ -2734,7 +2817,8 @@ def main(argv: Optional[list[str]] = None) -> int:
         return 0
 
     cache_dir = Path(args.classpath_cache_dir) if args.classpath_cache_dir else Path(tempfile.gettempdir()) / "n5-fidelity-classpath-cache"
-    classpath = build_classpath(cache_dir, Path(args.modules_dir), Path(args.bin_ext_dir))
+    classpath = build_classpath(cache_dir, Path(args.modules_dir), Path(args.bin_ext_dir),
+                                bc_variant=args.bc_variant, jre_dir=Path(args.jre_dir) if args.jre_dir else None)
 
     jd_cli_jar = Path(args.jd_cli_jar) if args.jd_cli_jar else None
 
