@@ -65,6 +65,9 @@ import zipfile
 from pathlib import Path
 from typing import Callable, Optional
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import n5_classfile  # noqa: E402
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 MAVEN_CENTRAL = "https://repo1.maven.org/maven2"
 DEFAULT_EVIDENCE = REPO_ROOT / "evidence" / "b117" / "maven-repo1.json"
@@ -1084,6 +1087,28 @@ def sources_top_level_names(art: dict) -> Optional[dict]:
     return {"path": path_names, "declared": declared_names}
 
 
+def proven_entries(art: dict, real_entries) -> set:
+    """The subset of `real_entries` (every real `.class` entry of the artifact's jar) whose BINARY
+    identity is proven against Central: whole-jar proof (sha1-exact/resigned-identical
+    content_identity, or T26a's own whole-jar SHA-1 `identification_method`) proves all of them;
+    partially-modified proves all except its different/local-only classes; anything else proves
+    none. Shared by the coverage headline and the uncovered population so both use ONE rule."""
+    ci = art.get("content_identity")
+    if ci and ci["status"] in WHOLE_TRUST_STATUSES:
+        return set(real_entries)
+    if ci and ci["status"] == "partially-modified":
+        not_proven = set(ci.get("different_classes", [])) | set(ci.get("local_only_classes", []))
+        return set(real_entries) - not_proven
+    if ci:
+        # vendor-modified / unverifiable / mixed / unverified: no binary identity proof at any
+        # granularity.
+        return set()
+    if art.get("identification_method"):
+        # T26a's OWN whole-jar SHA-1 proof (see run_identify_unidentified): proves every entry.
+        return set(real_entries)
+    return set()
+
+
 def run_all_third_party_coverage(manifest: dict, mirror_modules_dir=MIRROR_MODULES_DIR,
                                   mirror_binext_dir=MIRROR_BINEXT_DIR) -> dict:
     """T26a headline fix, tightened by an orchestrator follow-up review (2026-09-28): the
@@ -1161,25 +1186,7 @@ def run_all_third_party_coverage(manifest: dict, mirror_modules_dir=MIRROR_MODUL
         art["class_count"] = len(real_entries)
         total += len(real_entries)
 
-        ci = art.get("content_identity")
-        if ci and ci["status"] in WHOLE_TRUST_STATUSES:
-            proven = set(real_entries)
-        elif ci and ci["status"] == "partially-modified":
-            not_proven = set(ci.get("different_classes", [])) | set(ci.get("local_only_classes", []))
-            proven = set(real_entries) - not_proven
-        elif ci:
-            # vendor-modified / unverifiable / mixed / unverified: no binary identity proof at
-            # any granularity.
-            proven = set()
-        elif art.get("identification_method"):
-            # T26a's OWN whole-jar SHA-1 proof (sha1-search hit, or a filename-guess whose SHA-1
-            # matched exactly) -- by design no content_identity is computed for this case (the
-            # whole-jar SHA-1 already IS the strongest possible proof, see
-            # run_identify_unidentified), but it proves every entry just as WHOLE_TRUST_STATUSES
-            # would.
-            proven = set(real_entries)
-        else:
-            proven = set()
+        proven = proven_entries(art, real_entries)
 
         if proven:
             src_names = sources_top_level_names(art)
@@ -1211,6 +1218,117 @@ def run_all_third_party_coverage(manifest: dict, mirror_modules_dir=MIRROR_MODUL
                 "artifacts_with_proof_but_unreadable_sources_jar": unreadable_sources_jar}
     manifest["all_third_party_coverage"] = coverage
     return coverage
+
+
+def _art_key(art: dict) -> str:
+    return f"{art.get('groupId')}:{art.get('artifactId')}:{art.get('version')}"
+
+
+def _population_bytes(occ: dict, modules_dir, binext_dir, install_dir) -> Optional[bytes]:
+    """Jar bytes of an occurrence: the jar mirror first; the mirror carries no `etc/m2` jars, so
+    those are read from the N5 install (`install_dir`, None = not available)."""
+    data = load_binary_bytes_from_mirror(occ, modules_dir, binext_dir)
+    if data is None and occ.get("kind") == "etc/m2" and install_dir is not None:
+        try:
+            data = (Path(install_dir) / occ["name"]).read_bytes()
+        except OSError:
+            data = None
+    return data
+
+
+def compute_uncovered_population(manifest: dict, mirror_modules_dir=MIRROR_MODULES_DIR,
+                                  mirror_binext_dir=MIRROR_BINEXT_DIR, install_dir=N5_INSTALL_DIR) -> dict:
+    """C2b: the authoritative population of third-party classes WITHOUT a proven byte-adjacent
+    upstream source -- the classes that still need a decompile-fidelity grade. Same unit and same
+    proof rule as run_all_third_party_coverage (real `.class` entries of the first occurrence's jar,
+    nested included, module-info/package-info excluded; covered = proven identity AND a matching
+    top-level source in the fetched sources jar), so its numbers reconcile with the report headline.
+
+    Difference (the reconciliation finding): the jar mirror has no `etc/m2` jars, so the headline
+    counts those artifacts at classdiff's top-level-only `binary_total` with 0 covered; here their
+    real jars are read from `install_dir`. Such artifacts are listed in
+    reconciliation["mirror_gap_artifacts"]. An artifact whose bytes cannot be read anywhere is
+    listed in summary["artifacts_without_bytes"], never silently dropped.
+
+    Per-artifact record: key, occurrences (kind/name/binary_sha256: the tree lookup keys),
+    class_count, uncovered_entries (sorted class entries), uncovered_top_level (sorted, the
+    granularity the grader works at)."""
+    total = uncovered = 0
+    without_bytes: list[str] = []
+    gaps: list[dict] = []
+    records: list[dict] = []
+
+    def _record(key: str, occs: list[dict], real_entries: set, covered: set, jar_bytes: bytes) -> None:
+        unc = sorted(real_entries - covered)
+        if not unc:
+            return
+        tops = sorted({top_level_class_of(e) for e in unc})
+        kotlin = []
+        with zipfile.ZipFile(io.BytesIO(jar_bytes)) as z:
+            for top in tops:
+                try:
+                    if n5_classfile.has_kotlin_metadata(z.read(top + ".class")):
+                        kotlin.append(top)
+                except KeyError:
+                    pass
+        records.append({
+            "key": key,
+            "jar_sha256": hashlib.sha256(jar_bytes).hexdigest(),
+            "occurrences": [{"kind": o.get("kind"), "name": o.get("name"),
+                             "binary_sha256": o.get("binary_sha256")} for o in occs],
+            "class_count": len(real_entries),
+            "uncovered_entries": unc,
+            "uncovered_top_level": tops,
+            "kotlin_top_level": kotlin,
+        })
+
+    for art in manifest["artifacts"]:
+        occs = art.get("occurrences") or []
+        key = _art_key(art)
+        data = _population_bytes(occs[0], mirror_modules_dir, mirror_binext_dir, install_dir) if occs else None
+        if data is None:
+            without_bytes.append(key)
+            continue
+        real_entries = set(real_class_entries(data))
+        total += len(real_entries)
+        covered: set = set()
+        proven = proven_entries(art, real_entries)
+        if proven:
+            src_names = sources_top_level_names(art)
+            if src_names:
+                covered = {e for e in proven if class_has_matching_source(top_level_class_of(e), src_names)}
+        uncovered += len(real_entries - covered)
+        _record(key, occs, real_entries, covered, data)
+        if load_binary_bytes_from_mirror(occs[0], mirror_modules_dir, mirror_binext_dir) is None:
+            gaps.append({"key": key, "classdiff_binary_total": (art.get("classdiff") or {}).get("binary_total"),
+                         "real_class_count": len(real_entries), "covered": len(covered)})
+    for u in manifest.get("unidentified", []):
+        key = f"unidentified:{u.get('name')}"
+        data = _population_bytes(u, mirror_modules_dir, mirror_binext_dir, install_dir)
+        if data is None:
+            without_bytes.append(key)
+            continue
+        real_entries = set(real_class_entries(data))
+        total += len(real_entries)
+        uncovered += len(real_entries)
+        _record(key, [u], real_entries, set(), data)
+
+    report = manifest.get("all_third_party_coverage") or {}
+    rec = {
+        "report_classes_total": report.get("classes_total"),
+        "report_classes_covered": report.get("classes_with_upstream_source"),
+        "population_classes_total": total,
+        "population_classes_covered": total - uncovered,
+        "mirror_gap_artifacts": gaps,
+    }
+    if report.get("classes_total") is not None:
+        rec["report_classes_uncovered"] = report["classes_total"] - report.get("classes_with_upstream_source", 0)
+        rec["total_delta"] = report["classes_total"] - total
+        rec["uncovered_delta"] = rec["report_classes_uncovered"] - uncovered
+    return {"summary": {"classes_total": total, "classes_covered": total - uncovered,
+                        "classes_uncovered": uncovered, "artifacts_with_uncovered": len(records),
+                        "artifacts_without_bytes": without_bytes},
+            "reconciliation": rec, "artifacts": records}
 
 
 # Statuses that mean "every .class entry in this occurrence's jar is proven byte-identical to
@@ -1831,6 +1949,10 @@ def main(argv: Optional[list[str]] = None) -> int:
     srep.add_argument("--out", default=str(DEFAULT_OUT_DIR))
     srep.add_argument("--report", default=str(DEFAULT_REPORT))
 
+    sup = sub.add_parser("uncovered-population",
+                         help="C2b: write uncovered-population.json (third-party classes without proven upstream source)")
+    sup.add_argument("--out", default=str(DEFAULT_OUT_DIR))
+
     sa = sub.add_parser("all")
     sa.add_argument("--evidence", default=str(DEFAULT_EVIDENCE))
     sa.add_argument("--out", default=str(DEFAULT_OUT_DIR))
@@ -1906,6 +2028,16 @@ def main(argv: Optional[list[str]] = None) -> int:
         Path(args.report).parent.mkdir(parents=True, exist_ok=True)
         Path(args.report).write_text(text)
         print(f"wrote {args.report}")
+        return 0
+
+    if args.cmd == "uncovered-population":
+        manifest = json.load(open(out_dir / "manifest.json"))
+        pop = compute_uncovered_population(manifest)
+        json.dump(pop, open(out_dir / "uncovered-population.json", "w"), indent=1)
+        print(json.dumps({"summary": {k: (v if k != "artifacts_without_bytes" else len(v))
+                                      for k, v in pop["summary"].items()},
+                          "reconciliation": {k: v for k, v in pop["reconciliation"].items()
+                                             if k != "mirror_gap_artifacts"}}, indent=1))
         return 0
 
     if args.cmd == "all":

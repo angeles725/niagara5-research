@@ -2347,6 +2347,168 @@ class RenderReportAllThirdPartyHeadlineTest(unittest.TestCase):
         self.assertIn("| unverified | 0 |", text)
 
 
+class TestUncoveredPopulation(unittest.TestCase):
+    """C2b: the authoritative population of third-party classes WITHOUT a proven upstream source
+    (the classes still worth grading by decompile fidelity), as a reproducible tool output that
+    reconciles with run_all_third_party_coverage's report headline."""
+
+    def _dirs(self, td):
+        modules_dir = os.path.join(td, "modules")
+        binext_dir = os.path.join(td, "bin-ext")
+        install_dir = os.path.join(td, "install")
+        for d in (modules_dir, binext_dir, install_dir):
+            os.makedirs(d, exist_ok=True)
+        return modules_dir, binext_dir, install_dir
+
+    def _sources(self, name, entries):
+        import shutil
+        m = _load()
+        out_dir = m.REPO_ROOT / "organized" / "_test_tmp_population_sources"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        self.addCleanup(shutil.rmtree, out_dir, True)
+        (out_dir / name).write_bytes(_jar_bytes(entries))
+        return str((out_dir / name).relative_to(m.REPO_ROOT))
+
+    def test_classes_without_a_matching_source_are_uncovered_and_grouped_by_top_level(self):
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir, binext_dir, install_dir = self._dirs(td)
+            with open(os.path.join(binext_dir, "w-1.0.jar"), "wb") as f:
+                f.write(_jar_bytes({"a/Has.class": b"1", "a/Has$In.class": b"2",
+                                    "a/Lacks.class": b"3", "a/Lacks$1.class": b"4"}))
+            src = self._sources("w-1.0-sources.jar", {"a/Has.java": b"class Has {}"})
+            manifest = {"artifacts": [
+                {"groupId": "g", "artifactId": "w", "version": "1.0", "status": "fetched",
+                 "sources_jar_path": src,
+                 "occurrences": [{"kind": "bin/ext", "name": "bin/ext/w-1.0.jar"}],
+                 "content_identity": {"status": "resigned-identical"}}], "unidentified": []}
+            pop = m.compute_uncovered_population(manifest, modules_dir, binext_dir, install_dir)
+        self.assertEqual(pop["summary"]["classes_total"], 4)
+        self.assertEqual(pop["summary"]["classes_uncovered"], 2)
+        art = pop["artifacts"][0]
+        self.assertEqual(art["uncovered_top_level"], ["a/Lacks"])
+        self.assertEqual(art["uncovered_entries"], ["a/Lacks$1.class", "a/Lacks.class"])
+        self.assertEqual(art["key"], "g:w:1.0")
+
+    def test_fully_covered_artifact_is_absent_and_unidentified_jar_is_wholly_uncovered(self):
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir, binext_dir, install_dir = self._dirs(td)
+            with open(os.path.join(binext_dir, "w-1.0.jar"), "wb") as f:
+                f.write(_jar_bytes({"a/Has.class": b"1"}))
+            with open(os.path.join(binext_dir, "mystery.jar"), "wb") as f:
+                f.write(_jar_bytes({"x/One.class": b"1", "x/Two.class": b"2", "module-info.class": b"m"}))
+            src = self._sources("w2-1.0-sources.jar", {"a/Has.java": b"class Has {}"})
+            manifest = {"artifacts": [
+                {"groupId": "g", "artifactId": "w", "version": "1.0", "status": "fetched",
+                 "sources_jar_path": src,
+                 "occurrences": [{"kind": "bin/ext", "name": "bin/ext/w-1.0.jar"}],
+                 "content_identity": {"status": "sha1-exact"}}],
+                "unidentified": [{"kind": "bin/ext", "name": "bin/ext/mystery.jar", "reason": "not-on-central"}]}
+            pop = m.compute_uncovered_population(manifest, modules_dir, binext_dir, install_dir)
+        self.assertEqual([a["key"] for a in pop["artifacts"]], ["unidentified:bin/ext/mystery.jar"])
+        self.assertEqual(pop["artifacts"][0]["uncovered_top_level"], ["x/One", "x/Two"])
+        self.assertEqual(pop["summary"]["classes_total"], 3)
+        self.assertEqual(pop["summary"]["classes_uncovered"], 2)
+
+    def test_etc_m2_jar_is_read_from_the_install_dir_not_dropped_to_the_classdiff_fallback(self):
+        # C2b reconciliation: the jar mirror has no etc/m2, so run_all_third_party_coverage used
+        # classdiff's top-level-only binary_total (0 covered) for these artifacts; the population
+        # reads the real jar from the install dir and counts real entries.
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir, binext_dir, install_dir = self._dirs(td)
+            rel = "etc/m2/repository/g/k/1/k-1.jar"
+            os.makedirs(os.path.dirname(os.path.join(install_dir, rel)))
+            with open(os.path.join(install_dir, rel), "wb") as f:
+                f.write(_jar_bytes({"k/A.class": b"1", "k/A$1.class": b"2", "k/B.class": b"3"}))
+            src = self._sources("k-1-sources.jar", {"k/A.java": b"class A {}"})
+            manifest = {"artifacts": [
+                {"groupId": "g", "artifactId": "k", "version": "1", "status": "fetched",
+                 "sources_jar_path": src, "classdiff": {"binary_total": 2},
+                 "occurrences": [{"kind": "etc/m2", "name": rel}],
+                 "content_identity": {"status": "sha1-exact"}}], "unidentified": [],
+                "all_third_party_coverage": {"classes_with_upstream_source": 0, "classes_total": 2}}
+            pop = m.compute_uncovered_population(manifest, modules_dir, binext_dir, install_dir)
+        self.assertEqual(pop["summary"]["classes_total"], 3)
+        self.assertEqual(pop["artifacts"][0]["uncovered_top_level"], ["k/B"])
+        rec = pop["reconciliation"]
+        self.assertEqual(rec["report_classes_total"], 2)
+        self.assertEqual(rec["population_classes_total"], 3)
+        self.assertEqual([a["key"] for a in rec["mirror_gap_artifacts"]], ["g:k:1"])
+        self.assertEqual(rec["mirror_gap_artifacts"][0]["classdiff_binary_total"], 2)
+        self.assertEqual(rec["mirror_gap_artifacts"][0]["real_class_count"], 3)
+
+    def test_unreadable_jar_is_reported_never_silently_dropped(self):
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir, binext_dir, install_dir = self._dirs(td)
+            manifest = {"artifacts": [
+                {"groupId": "g", "artifactId": "gone", "version": "1", "status": "fetched",
+                 "occurrences": [{"kind": "bin/ext", "name": "bin/ext/gone-1.jar"}]}], "unidentified": []}
+            pop = m.compute_uncovered_population(manifest, modules_dir, binext_dir, install_dir)
+        self.assertEqual(pop["summary"]["artifacts_without_bytes"], ["g:gone:1"])
+        self.assertEqual(pop["artifacts"], [])
+
+    def test_occurrences_carry_the_tree_lookup_keys(self):
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir, binext_dir, install_dir = self._dirs(td)
+            with open(os.path.join(binext_dir, "w-1.0.jar"), "wb") as f:
+                f.write(_jar_bytes({"a/Lacks.class": b"3"}))
+            manifest = {"artifacts": [
+                {"groupId": "g", "artifactId": "w", "version": "1.0", "status": "no-sources-published",
+                 "occurrences": [{"kind": "bin/ext", "name": "bin/ext/w-1.0.jar", "binary_sha256": "ab" * 32}]}],
+                "unidentified": []}
+            pop = m.compute_uncovered_population(manifest, modules_dir, binext_dir, install_dir)
+        occ = pop["artifacts"][0]["occurrences"][0]
+        self.assertEqual((occ["kind"], occ["name"], occ["binary_sha256"]), ("bin/ext", "bin/ext/w-1.0.jar", "ab" * 32))
+
+    def test_kotlin_top_level_classes_are_flagged_from_the_class_bytes(self):
+        # kotlin.Metadata class annotation (real javac-25 class) -> flagged; plain class -> not
+        import subprocess
+        javac = "/home/linuxbrew/.linuxbrew/opt/openjdk@25/bin/javac"
+        if not os.path.isfile(javac):
+            self.skipTest("JDK 25 javac not installed")
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            src = os.path.join(td, "src")
+            os.makedirs(os.path.join(src, "kotlin"))
+            open(os.path.join(src, "kotlin", "Metadata.java"), "w").write(
+                "package kotlin; import java.lang.annotation.*; "
+                "@Retention(RetentionPolicy.RUNTIME) public @interface Metadata { int k() default 1; }")
+            open(os.path.join(src, "K.java"), "w").write("@kotlin.Metadata public class K {}")
+            open(os.path.join(src, "P.java"), "w").write("public class P {}")
+            out = os.path.join(td, "out")
+            subprocess.run([javac, "-proc:none", "-d", out, *[os.path.join(src, f) for f in ("kotlin/Metadata.java", "K.java", "P.java")]],
+                           check=True, capture_output=True)
+            entries = {n: open(os.path.join(out, n), "rb").read() for n in ("K.class", "P.class")}
+            modules_dir, binext_dir, install_dir = self._dirs(td)
+            with open(os.path.join(binext_dir, "w-1.0.jar"), "wb") as f:
+                f.write(_jar_bytes(entries))
+            manifest = {"artifacts": [
+                {"groupId": "g", "artifactId": "w", "version": "1.0", "status": "no-sources-published",
+                 "occurrences": [{"kind": "bin/ext", "name": "bin/ext/w-1.0.jar"}]}], "unidentified": []}
+            pop = m.compute_uncovered_population(manifest, modules_dir, binext_dir, install_dir)
+        self.assertEqual(pop["artifacts"][0]["kotlin_top_level"], ["K"])
+        self.assertEqual(pop["artifacts"][0]["uncovered_top_level"], ["K", "P"])
+
+    def test_record_carries_the_sha256_of_the_jar_bytes_actually_read(self):
+        # the manifest's binary_sha256 is not always recorded; the sha256 of the read bytes is the
+        # reliable key to find the artifact's decompiled tree (organized/_lib-inf-3p/<stem>-<sha12>)
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir, binext_dir, install_dir = self._dirs(td)
+            jar = _jar_bytes({"a/Lacks.class": b"3"})
+            with open(os.path.join(binext_dir, "w-1.0.jar"), "wb") as f:
+                f.write(jar)
+            manifest = {"artifacts": [
+                {"groupId": "g", "artifactId": "w", "version": "1.0", "status": "no-sources-published",
+                 "occurrences": [{"kind": "bin/ext", "name": "bin/ext/w-1.0.jar"}]}], "unidentified": []}
+            pop = m.compute_uncovered_population(manifest, modules_dir, binext_dir, install_dir)
+        self.assertEqual(pop["artifacts"][0]["jar_sha256"], hashlib.sha256(jar).hexdigest())
+
+
 class TestJavapFailureIsNeverAMatch(unittest.TestCase):
     """Review review-38b7ff2daec0bf35: javap failing on both sides produced [] == [] -> a false MATCH."""
 
