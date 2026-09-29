@@ -47,3 +47,5 @@ tools/n5-fidelity.py + tests (performance only, grading semantics unchanged); or
   alarmOrion 128 s vs 489 s (~2.8-3.8x); all 129 classes identical (grade/best_decompiler/attempted/mismatched_methods/consensus/docsource_roundtrip) vs the F3 JSON; only first_error temp paths differ.
   Bug found and fixed by verification: unbuffered pipe reads truncated >64 KB javap replies (regression test added).
 - F3 launched: scratchpad run-t21.sh (vineflower2 then vineflower), log t21.log.
+- F2b RDD: 5efbc27 under budget (medium); 156c533 review-4db7520f8f538813 raised R4-jvm-leak-per-module-pool (CRITICAL, real: per-module class pools left one JVM per finished thread) → fixed abf1b56 (TDD: RED 2 tests, GREEN 114/114), targeted validation passed, approved + acknowledged; 50ef661 review-60ae58ae9c55861b approved. make test 481 OK before the fix.
+- F3 restarted 2026-09-29T05:48Z with --jobs 3 --class-jobs 4 --tool-server (run 1 stopped after 39 modules; finished modules skipped as up to date).
