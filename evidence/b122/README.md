@@ -17,6 +17,7 @@ sha256 (decompile-net.sh is deterministic: a re-run of the bridge exe gives the 
     python3 dll_deps.py <nativeLib/x86_64> > dll-deps.tsv
     python3 loader_vs_shipped.py <organized> > loader-vs-shipped.tsv
     python3 jni_in_jars.py > jni-libs-in-jars.tsv
+    ./verify_signatures.sh <organized> > authenticode-verify.tsv  # osslsigncode: digest recomputed + chain, 14 .NET + 8 FFmpeg files (network: CRL fetch)
     jni-probe/run.sh <dir with the 8 FFmpeg DLLs>               # local Windows-JRE binding probe (jni-probe/probe-output.txt)
 
 ## Files
@@ -35,6 +36,7 @@ sha256 (decompile-net.sh is deterministic: a re-run of the bridge exe gives the 
 | `dll_deps.py`, `dll-deps.tsv` | import closure per FFmpeg DLL (pelib = objdump), Authenticode leaf, external-codec markers |
 | `loader_vs_shipped.py`, `loader-vs-shipped.tsv` | Java loader constants vs shipped natives (xprotect 13 of 14, ffmpeg 6 of 8) and the wrapper's import closure |
 | `jni_in_jars.py`, `jni-libs-in-jars.tsv` | 13 PE files inside jars that export Java_ names (tests B117's "only JNI library shipped inside a jar") |
+| `verify_signatures.sh`, `authenticode-verify.tsv` | osslsigncode result per file: digest match 22 of 22; chain ok for the 12 DigiCert-chained Tridium files, Microsoft root missing locally for 2, private Honeywell root for the 8 FFmpeg files |
 | `claim-audit.tsv` | 23 claims from 14 blocks: 18 SAFE, 4 SUSPECT, 1 CONTRADICTED |
 
 ## Provenance of external artifacts
