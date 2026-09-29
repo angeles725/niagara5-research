@@ -22,3 +22,5 @@ Inputs pinned by sha256: `n-plugin-5.0.54.9.2.jar` eb9831b65465f7f06831f875215ba
 
 Tables: `wall-sites.tsv` (75 rows, 73 wall ids; the index), `wall-sites-map.tsv` (mapping and failure text), `java-grades.tsv`, `java-grades-patched.tsv`, `java-body-metrics.tsv`, `plugin-bytecode-dump.tsv`, `claim-audit.tsv`.
 Method grades (`grade_sites.py`): `exact` (normalized bytecode equal), `equivalent` (width allowlist), `canonical` / `canonical-t2` (n5_canon rules), `anon-name-only`, `mismatch`, `missing`, `no-compile`.
+
+Final run: `wall-sites.tsv` sha256 2bac622bbc573e5e70f728b79469022289855cd53497d524a2a7dbcaf97f514b. `grade_sites.py` error buckets: placeholder-syntax, anon-not-implementing, classpath-missing (package or class not found), synthetic-class-reference (`cannot access` a Kotlin-generated class name), companion-ctor, enclosing-instance, synthetic-symbol, incompatible-types, other; counts are per top-level file.
