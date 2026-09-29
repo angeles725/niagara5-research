@@ -24,6 +24,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -2130,3 +2131,56 @@ class TestLoadTreeResultsReportsSkippedModules(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestToolServerReaping(unittest.TestCase):
+    """R4-jvm-leak-per-module-pool: grade_module's per-module class pool starts a
+    tool-server JVM per worker thread; those JVMs must be closed once the pool's
+    threads are gone, or idle JVMs accumulate as modules x class_jobs."""
+
+    def setUp(self):
+        self.mod = _load()
+        self.addCleanup(self.mod.shutdown_tool_servers)
+        self.closed = []
+        closed = self.closed
+
+        class FakeServer:
+            def __init__(self, java_bin=None):
+                self.java_bin = java_bin
+
+            def close(self):
+                closed.append(self)
+
+        self.orig = self.mod.ToolServer
+        self.mod.ToolServer = FakeServer
+        self.addCleanup(setattr, self.mod, "ToolServer", self.orig)
+
+    def test_reap_closes_servers_of_finished_threads_only(self):
+        t = threading.Thread(target=self.mod._thread_tool_server, args=("java",))
+        t.start()
+        t.join()
+        mine = self.mod._thread_tool_server("java")
+        self.mod.reap_dead_thread_tool_servers()
+        self.assertEqual(len(self.closed), 1)
+        self.assertIsNot(self.closed[0], mine)
+        self.assertEqual([s for _, s in self.mod._tool_servers], [mine])
+
+    def test_grade_module_reaps_its_class_pool_servers(self):
+        tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, tmp, ignore_errors=True)
+        org = Path(tmp)
+        for i in range(6):
+            p = org / "m" / "extracted" / "pk" / f"C{i}.class"
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_bytes(b"x")
+
+        def fake_grade(fqcn, classfile, **kw):
+            self.mod._thread_tool_server("java")
+            return fqcn, {"grade": "roundtrip-exact"}
+
+        orig = self.mod._grade_one_class
+        self.mod._grade_one_class = fake_grade
+        self.addCleanup(setattr, self.mod, "_grade_one_class", orig)
+        self.mod.grade_module("m", organized_dir=org, class_jobs=3, tool_server=True)
+        self.assertEqual(self.mod._tool_servers, [])
+        self.assertGreaterEqual(len(self.closed), 1)

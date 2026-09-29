@@ -489,7 +489,7 @@ def _thread_tool_server(java_bin: str) -> Optional[ToolServer]:
         server = ToolServer(java_bin)
         _tool_server_local.server = server
         with _tool_servers_lock:
-            _tool_servers.append(server)
+            _tool_servers.append((threading.current_thread(), server))
     return server
 
 
@@ -506,12 +506,23 @@ def shutdown_tool_servers() -> None:
     """Close every tool-server JVM and re-arm the feature (used at end of a run and by tests)."""
     global _tool_server_disabled
     with _tool_servers_lock:
-        servers = list(_tool_servers)
+        servers = [server for _, server in _tool_servers]
         _tool_servers.clear()
         _tool_server_disabled = False
     for server in servers:
         server.close()
     _tool_server_local.__dict__.clear()
+
+
+def reap_dead_thread_tool_servers() -> None:
+    """Close the tool-server JVMs whose owning thread has exited (e.g. a finished
+    per-module class pool), so idle JVMs never accumulate as modules x class_jobs
+    over a long run (R4-jvm-leak-per-module-pool). Live threads keep theirs."""
+    with _tool_servers_lock:
+        dead = [server for owner, server in _tool_servers if not owner.is_alive()]
+        _tool_servers[:] = [(owner, server) for owner, server in _tool_servers if owner.is_alive()]
+    for server in dead:
+        server.close()
 
 
 atexit.register(lambda: shutdown_tool_servers())
@@ -1616,6 +1627,8 @@ def grade_module(
                 for fut in futures:
                     fut.cancel()
                 raise
+        # the pool's worker threads are joined now; close the JVMs they started
+        reap_dead_thread_tool_servers()
     else:
         for fqcn, classfile in classes:
             fqcn, record = _grade_one_class(fqcn, classfile, **class_kwargs)
