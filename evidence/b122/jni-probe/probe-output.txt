@@ -1,0 +1,13 @@
+loaded avutil-60.dll
+loaded swresample-6.dll
+loaded avcodec-62.dll
+loaded avformat-62.dll
+loaded swscale-9.dll
+loaded ffmpeg-wrapper.dll
+av_log_set_level(-8)      [exported, control] -> OK 
+getFfmpegCodecID0(h264)   [exported, control] -> OK -1
+avcodec_find_decoder(27)  [exported, control] -> OK true
+avcodec_free_context(0)   [declared, no Java_ export] -> UnsatisfiedLinkError: 'void org.baja.ffmpeg.libavcodec.FfmpegAvCodecUtil.avcodec_free_context(long)'
+av_frame_free(0)          [declared, no Java_ export] -> UnsatisfiedLinkError: 'void org.baja.ffmpeg.libavcodec.FfmpegAvCodecUtil.av_frame_free(long)'
+av_free(0)                [only ?Java_ C++-mangled export] -> UnsatisfiedLinkError: 'void org.baja.ffmpeg.libavcodec.FfmpegAvCodecUtil.av_free(long)'
+avcodec_close(0)          [only ?Java_ C++-mangled export] -> UnsatisfiedLinkError: 'int org.baja.ffmpeg.libavcodec.FfmpegAvCodecUtil.avcodec_close(long)'
