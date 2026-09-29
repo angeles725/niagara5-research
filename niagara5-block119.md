@@ -121,7 +121,7 @@ the `_`-prefixed pseudo-modules the count is **234 of 2,560**, B117's figure, so
   the rest are third-party vendor libraries (`jquery`, `d3`, `moment`, `handlebars`, `bluebird`, `ace`, `babel`,
   `prettify`, …; module `js` 32, `docDeveloper` 20). Every one of the 71 bundle modules also ships readable
   per-file JS under its `rc/` (e.g. `webEditors` 399 files, `bajaScript` 206); that these are the bundle's
-  constituents is `[INFER]` (bundle membership not proved, child gap B119-G1).
+  constituents is `[INFER]` (bundle membership not proved, child gap B119-G1). **[Measured by [Block 124] §124.1, §124.10: 72 `*.built.min.js` files, 57 with the 2026 banner (not 71); membership is now measured for all 2,315 `define` modules.]**
 - Minified files are physically 4-5 lines: `bs.built.min.js` (363,641 B), `bajaux.built.min.js` (155,569 B),
   `uxBuilder.built.min.js` (382,030 B) each have 4 newline characters (`awk 'END{print NR}'` = 5). A `file:line` citation
   into them is therefore meaningless beyond line 5; use a byte offset or a string.

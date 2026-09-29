@@ -85,7 +85,7 @@ Top-level directories (entry counts include subdirectory-marker entries):
 |---|---|---|
 | `doc/` | 8,726 | everything documented below (§4.2–§4.6) |
 | `examples/` | 45 | `bajaScript/*.js` runnable code samples (referenced from the Developer Guide's BajaScript tutorials) |
-| `rc/` | 20 | JS Playground widget resources (`JsPlayground.built.min.js`, `.hbs` template) + Sunlight.js syntax-highlighter assets used to render `<pre>` code blocks in the guide HTML |
+| `rc/` | 20 | JS Playground widget resources (`JsPlayground.built.min.js`, `.hbs` template) + Sunlight.js syntax-highlighter assets used to render `<pre>` code blocks in the guide HTML **[Refined by [Block 124] §124.9: 2,897,029 of the 2,946,323 B of `JsPlayground.built.min.js` (98.3%) are the bundled Babel standalone; the Tridium content is 2 modules.]** |
 | `com/` | 13 | `.class` files for `com.tridium.docdeveloper.*` — a Workbench-viewable `BJsPlayground`/`BBajaScriptTestComp` demo component, plus dashboard-widget example classes (`BExampleLinearGauge`, `BDashboardWidget`) referenced by the guide |
 | `META-INF/` | 5 | manifest + signature (`NIAGARA4.SF`/`.RSA`) + `module.xml` |
 | `ext/` | 5 | a bundled `@babel/standalone` (babel.min.js + LICENSE) — used by the JS Playground to transpile pasted examples in-browser |
