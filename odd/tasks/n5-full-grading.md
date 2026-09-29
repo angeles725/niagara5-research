@@ -123,7 +123,7 @@ tools/n5-fidelity.py + tests (performance only, grading semantics unchanged); or
 - TDD: test_n5_patch_doprivileged RED 10 errors (module absent) -> GREEN 13; test_n5_fidelity_patch_rung RED 8/8 ->
   GREEN 8; regressions found by the real run, each RED first: javap offsets >= 100 dropped (1 FAIL), no-arg
   constructor vs overloads (1 FAIL), thrown-type/type-variable feedback (2 FAIL). The CLI guard test was written with
-  its code. `make test` 590 OK (skipped=4) before the feedback fix; patcher suite 15 OK after it.
+  its code. `make test` 590 OK (skipped=4) at 9ba04f9 and again at 948e141 (after the feedback fix).
 - Real run (all 259 organized dirs, vineflower2 tree, classpath of F7): 522 files contain `doPrivileged(`; 504 classes
   patched, 1,469 sites (PrivilegedAction 894, PrivilegedExceptionAction 489, SingleException 83, DoubleException 3),
   1,452 sites on the first (pure-evidence) cast, 17 needed javac feedback; 467 patched classes compile, 37 still fail on
