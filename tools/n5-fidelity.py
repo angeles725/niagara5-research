@@ -1761,13 +1761,31 @@ def _grade_one_class(
             "docsource_roundtrip": docsource_roundtrip,
         }
         if patch_tree:
-            # a patched class counts only when the patch rung's grade IS the
-            # class grade (never merely because a patch rung was attempted)
-            record["patched"] = best["best_decompiler"] == patch_tree
-            if record["patched"]:
-                record["patch"] = {"tree": patch_tree, "manifest": f"{patch_tree}/PATCHES.json",
-                                   "patched_sha256": sha256_of(patch_java)}
+            # a patched (or spliced) class counts only when the patch rung's grade
+            # IS the class grade (never merely because a patch rung was attempted)
+            hit = best["best_decompiler"] == patch_tree
+            if patch_output_label(primary_tree, patch_tree) == "spliced":
+                record["spliced"] = hit
+                if hit:
+                    record["splice"] = _splice_record(fqcn, patch_tree, Path(patch_dir), patch_java)
+            else:
+                record["patched"] = hit
+                if hit:
+                    record["patch"] = {"tree": patch_tree, "manifest": f"{patch_tree}/PATCHES.json",
+                                       "patched_sha256": sha256_of(patch_java)}
         return fqcn, record
+
+
+def _splice_record(fqcn: str, patch_tree: str, patch_dir: Path, spliced_java: Path) -> dict:
+    """Provenance of a spliced class grade: the SPLICES.json per-method donors
+    (engine, donor source sha256, per-method verdict) of this class."""
+    methods = None
+    manifest = patch_dir / "SPLICES.json"
+    if manifest.is_file():
+        entry = json.loads(manifest.read_text()).get("classes", {}).get(fqcn) or {}
+        methods = entry.get("methods")
+    return {"tree": patch_tree, "manifest": f"{patch_tree}/SPLICES.json",
+            "spliced_sha256": sha256_of(spliced_java), "donors": methods}
 
 
 def _grade_source(attempted: list[tuple[str, dict]], best: dict) -> tuple[str, dict]:
@@ -1969,6 +1987,22 @@ def patched_output_path(mod_dir: Path, tree: str) -> Path:
     return Path(mod_dir) / f"fidelity.{tree}.patched.json"
 
 
+def patch_output_label(tree: str, patch_tree: str) -> str:
+    """"spliced" for a per-method splice tree (T21/F9, tools/n5-splice-methods.py
+    writes <tree>s), "patched" for every other patch tree (F8's <tree>p)."""
+    return "spliced" if patch_tree == tree + "s" else "patched"
+
+
+def patch_manifest_name(tree: str, patch_tree: str) -> str:
+    return "SPLICES.json" if patch_output_label(tree, patch_tree) == "spliced" else "PATCHES.json"
+
+
+def patch_output_path(mod_dir: Path, tree: str, patch_tree: str) -> Path:
+    """fidelity.<tree>.<label>.json (label: patch_output_label) -- a splice run
+    never overwrites the F8 patched file, and vice versa."""
+    return Path(mod_dir) / f"fidelity.{tree}.{patch_output_label(tree, patch_tree)}.json"
+
+
 def _write_json_atomic(path: Path, data: dict) -> None:
     tmp = path.with_name(path.name + ".tmp")
     tmp.write_text(json.dumps(data, indent=2, default=list) + "\n")
@@ -2002,7 +2036,8 @@ def regrade_nonclean_module(
     With `patch_tree` (T21/F8) only the non-clean classes that HAVE a patched
     source under organized/<module>/<patch_tree>/ are re-graded (the patch rung
     is the only thing that can change), the output is fidelity.<tree>.patched.json
-    and a changed <patch_tree>/PATCHES.json starts over. `grade_fn` defaults to _grade_one_class
+    (fidelity.<tree>.spliced.json for a <tree>s splice tree, see patch_output_label)
+    and a changed <patch_tree>/PATCHES.json (SPLICES.json) starts over. `grade_fn` defaults to _grade_one_class
     (tests inject a fake); `grade_kwargs` are its keyword arguments minus the
     per-module directories, which are derived here.
     """
@@ -2012,9 +2047,9 @@ def regrade_nonclean_module(
         raise FileNotFoundError(f"no fidelity.{tree}.json for module {module} under {organized_dir}")
     src_sha = sha256_of(src_path)
     source = json.loads(src_path.read_text())
-    out_path = patched_output_path(mod_dir, tree) if patch_tree else canon_output_path(mod_dir, tree)
+    out_path = patch_output_path(mod_dir, tree, patch_tree) if patch_tree else canon_output_path(mod_dir, tree)
     patch_dir = mod_dir / patch_tree if patch_tree else None
-    manifest_path = patch_dir / "PATCHES.json" if patch_dir else None
+    manifest_path = patch_dir / patch_manifest_name(tree, patch_tree) if patch_dir else None
     manifest_sha = sha256_of(manifest_path) if manifest_path and manifest_path.is_file() else None
 
     previous = None
@@ -2816,7 +2851,9 @@ def main(argv: Optional[list[str]] = None) -> int:
                               "vineflower2p from tools/n5-patch-doprivileged.py) as its own ladder rung right after "
                               "--tree when that file exists; a class whose grade comes from it records patched: true. "
                               "With --regrade-nonclean: only non-clean classes with a patched file are re-graded, into "
-                              "fidelity.<tree>.patched.json.")
+                              "fidelity.<tree>.patched.json. TREE = <tree>s is a per-method splice tree "
+                              "(tools/n5-splice-methods.py, SPLICES.json): output fidelity.<tree>.spliced.json, "
+                              "records spliced: true + splice donors.")
     parser.add_argument("--compare", default=None, metavar="TREE_A,TREE_B",
                          help="report mode: read each already-graded module's fidelity.<tree>.json for BOTH "
                               "trees (no grading is performed) and report the per-class grade transition "
