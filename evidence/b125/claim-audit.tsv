@@ -1,0 +1,14 @@
+block	cited_location	claim	verdict	missing_or_unexpected	class_files
+B36	§36.5 :195-204	GruntPlugin.apply() registers gruntBuild/gruntCi/gruntIntegration, wired through withPlugin(com.tridium.n-module)	SAFE	-	12
+B36	§36.5 :195 'exactly 3'	exactly 3 TaskContainer.register call sites (GruntBuildTask once, GruntCiTask twice) in the GruntPlugin class family	SAFE	-	12
+B36	§36.1 :60-66, :111-119	findPackage() carries the first-party error text about 'npm', PATH and the Gradle property nodeHome	SAFE	-	12
+B36	§36.3 :157	wireSkipJsConvention wires a skipjs property and onlyIf skips the task when it is true	SAFE	-	2
+B36	§36.4 :181-186	YarnWorkspacePlugin.apply refuses the root project and publishes yarnWorkspaceElements	SAFE	-	7
+B74	§74.3 :212-226	RootProjectNiagaraNativePlugin.apply: depth != 0 throws IllegalStateException; two devkit regexes; devkitProperties service; dumpDevkits task	SAFE	-	5
+B89	§89.4 :94-111	NativePlatformFactory.create: read-only guard, new NiagaraNativePlatform(name), three NiagaraNativePluginKt configuration calls, one TaskContainer.register	SAFE	-	2
+B2	§2.6 :355-361	NiagaraAnnotationProcessorsPlugin.apply builds one niagaraAnnotationProcessor configuration that annotationProcessor and moduleTestAnnotationProcessor extend	SAFE	-	12
+B2	§2.7 :437-441	NiagaraJavaPlugin.apply adds compact3, limitModules, apt and modulePath argument providers to JavaCompile	SAFE	-	3
+B51	§51 :73-78	NiagaraJavaPlugin has no subprojects/allprojects traversal (per-module application)	SAFE	-	3
+B2	§2.3 :192-196; B51 :121	VendorExtension.defaultModuleVersion sets ModuleXml.vendorVersion; defaultVendor sets ModuleXml.vendor convention	SAFE	-	15
+B108	§108.2 :183	registerModuleTasks jarTask$1$4.execute calls CopySpec.into("LIB-INF")	SAFE	-	1
+B89	§89.x :165	registerModuleTasks$lambda$2$0 is the Compact3 provider wiring (uses ExtensionsKt.isCompact3)	SAFE	-	62
