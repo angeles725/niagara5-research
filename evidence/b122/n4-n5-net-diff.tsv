@@ -1,0 +1,15 @@
+file	whole_file_equal	image_hash_equal	n4_size	n5_size
+Autofac.dll	False	True	241488	242720
+Microsoft.ApplicationInsights.dll	False	True	386384	397792
+System.Net.Http.Formatting.dll	False	True	180048	190632
+VideoOS.Common.EnvironmentServices.dll	False	True	58192	59432
+VideoOS.Common.Login.dll	False	True	48464	49696
+VideoOS.Common.State.dll	False	True	40784	42016
+VideoOS.Common.dll	False	True	35664	36904
+VideoOS.IdentityServer.Common.dll	False	True	178512	179744
+VideoOS.Platform.Common.dll	False	True	205136	206376
+VideoOS.Platform.SDK.dll	False	True	1352016	1353248
+VideoOS.Platform.dll	False	True	5461328	5462560
+VideoOS.Telemetry.dll	False	True	26448	27688
+VideoOS.Utilities.dll	False	True	353104	354344
+XProtectBridgeService.exe	False	True	30032	31272

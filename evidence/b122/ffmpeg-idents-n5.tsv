@@ -1,0 +1,23 @@
+dll	sha256	size	offset	va	string	r2_agrees	strings_agrees	src_version
+avcodec-62.dll	992b5fe6f1b46291d958d113517f76be8b5064e24dea7b8c6d4681898dbe75be	20311680	0xed5268	0x180ed6868	Lavc62.28.101	True	True	62.28.101
+avcodec-62.dll	992b5fe6f1b46291d958d113517f76be8b5064e24dea7b8c6d4681898dbe75be	20311680	0x11a29f0	0x1811a3ff0	FFmpeg version n8.1.1	True	True	62.28.101
+avcodec-62.dll	992b5fe6f1b46291d958d113517f76be8b5064e24dea7b8c6d4681898dbe75be	20311680	0x11a2a10	0x1811a4010	--prefix=ffmpeg_64/ --enable-shared --x86asmexe='C:/c99/nasm-3.01/nasm.exe' --target-os=win64 --arch=x86_64 --toolchain=msvc	True	True	62.28.101
+avcodec-62.dll	992b5fe6f1b46291d958d113517f76be8b5064e24dea7b8c6d4681898dbe75be	20311680	0x11a2aa8	0x1811a40a8	libavcodec license: LGPL version 2.1 or later	True	True	62.28.101
+avdevice-62.dll	6bdd2144623779336a6e2d88d6795f4ffab2eba5ad25f4d6dfc1e3dfc9be1cbe	964224	0xb8350	0x1800b9350	FFmpeg version n8.1.1	True	True	62.3.101
+avdevice-62.dll	6bdd2144623779336a6e2d88d6795f4ffab2eba5ad25f4d6dfc1e3dfc9be1cbe	964224	0xb8370	0x1800b9370	--prefix=ffmpeg_64/ --enable-shared --x86asmexe='C:/c99/nasm-3.01/nasm.exe' --target-os=win64 --arch=x86_64 --toolchain=msvc	True	True	62.3.101
+avdevice-62.dll	6bdd2144623779336a6e2d88d6795f4ffab2eba5ad25f4d6dfc1e3dfc9be1cbe	964224	0xb8408	0x1800b9408	libavdevice license: LGPL version 2.1 or later	True	True	62.3.101
+avfilter-11.dll	a0aecc0ba1143ce62ff96168a7239471b76452db355619f7f86aca71d775ced4	8046720	0x593140	0x180593d40	FFmpeg version n8.1.1	True	True	11.14.101
+avfilter-11.dll	a0aecc0ba1143ce62ff96168a7239471b76452db355619f7f86aca71d775ced4	8046720	0x593160	0x180593d60	--prefix=ffmpeg_64/ --enable-shared --x86asmexe='C:/c99/nasm-3.01/nasm.exe' --target-os=win64 --arch=x86_64 --toolchain=msvc	True	True	11.14.101
+avfilter-11.dll	a0aecc0ba1143ce62ff96168a7239471b76452db355619f7f86aca71d775ced4	8046720	0x5931f8	0x180593df8	libavfilter license: LGPL version 2.1 or later	True	True	11.14.101
+avformat-62.dll	64caad67be1faffb5237c5fcd52c4745e3958194f09f23c0231021192738e220	4518528	0x348b30	0x180349f30	Lavf62.12.101	True	True	62.12.101
+avformat-62.dll	64caad67be1faffb5237c5fcd52c4745e3958194f09f23c0231021192738e220	4518528	0x3bfb40	0x1803c0f40	FFmpeg version n8.1.1	True	True	62.12.101
+avformat-62.dll	64caad67be1faffb5237c5fcd52c4745e3958194f09f23c0231021192738e220	4518528	0x3bfb60	0x1803c0f60	--prefix=ffmpeg_64/ --enable-shared --x86asmexe='C:/c99/nasm-3.01/nasm.exe' --target-os=win64 --arch=x86_64 --toolchain=msvc	True	True	62.12.101
+avformat-62.dll	64caad67be1faffb5237c5fcd52c4745e3958194f09f23c0231021192738e220	4518528	0x3bfbf8	0x1803c0ff8	libavformat license: LGPL version 2.1 or later	True	True	62.12.101
+avutil-60.dll	d1ca3c738cf50d6d2da5e6255f57c265751b7a49e6f5c30d6ce4316141d1f7d6	2221696	0x1cb560	0x1801cc560	FFmpeg version n8.1.1	True	True	60.26.101
+avutil-60.dll	d1ca3c738cf50d6d2da5e6255f57c265751b7a49e6f5c30d6ce4316141d1f7d6	2221696	0x1cb590	0x1801cc590	--prefix=ffmpeg_64/ --enable-shared --x86asmexe='C:/c99/nasm-3.01/nasm.exe' --target-os=win64 --arch=x86_64 --toolchain=msvc	True	True	60.26.101
+avutil-60.dll	d1ca3c738cf50d6d2da5e6255f57c265751b7a49e6f5c30d6ce4316141d1f7d6	2221696	0x1cb628	0x1801cc628	libavutil license: LGPL version 2.1 or later	True	True	60.26.101
+swresample-6.dll	a1abedefa4eddc4353d2298cbd1ad3b1335e167b04c227b26f5c9980d6b514b9	846464	0xa76b0	0x1800a8eb0	FFmpeg version n8.1.1	True	True	6.3.101
+swresample-6.dll	a1abedefa4eddc4353d2298cbd1ad3b1335e167b04c227b26f5c9980d6b514b9	846464	0xa76d0	0x1800a8ed0	--prefix=ffmpeg_64/ --enable-shared --x86asmexe='C:/c99/nasm-3.01/nasm.exe' --target-os=win64 --arch=x86_64 --toolchain=msvc	True	True	6.3.101
+swresample-6.dll	a1abedefa4eddc4353d2298cbd1ad3b1335e167b04c227b26f5c9980d6b514b9	846464	0xa7768	0x1800a8f68	libswresample license: LGPL version 2.1 or later	True	True	6.3.101
+swscale-9.dll	9feaf3ae7b08bfa98d8245dc4f26b836897cbecd88fe87bec3d582be6c3801c7	2232448	0x1d1d10	0x1801d3710	--prefix=ffmpeg_64/ --enable-shared --x86asmexe='C:/c99/nasm-3.01/nasm.exe' --target-os=win64 --arch=x86_64 --toolchain=msvc	True	True	9.5.101
+swscale-9.dll	9feaf3ae7b08bfa98d8245dc4f26b836897cbecd88fe87bec3d582be6c3801c7	2232448	0x1d1da8	0x1801d37a8	libswscale license: LGPL version 2.1 or later	True	True	9.5.101

@@ -1,0 +1,272 @@
+source	member	sha256	size	machine	pe32p	clr	asm	ver	tfm	sn	token	authenticode	exports
+jars	ffmpeg.jar!nativeLib/x86_64/avcodec-62.dll	992b5fe6f1b46291d958d113517f76be8b5064e24dea7b8c6d4681898dbe75be	20311680	0x8664	1	0						1	178
+jars	ffmpeg.jar!nativeLib/x86_64/avdevice-62.dll	6bdd2144623779336a6e2d88d6795f4ffab2eba5ad25f4d6dfc1e3dfc9be1cbe	964224	0x8664	1	0						1	15
+jars	ffmpeg.jar!nativeLib/x86_64/avfilter-11.dll	a0aecc0ba1143ce62ff96168a7239471b76452db355619f7f86aca71d775ced4	8046720	0x8664	1	0						1	67
+jars	ffmpeg.jar!nativeLib/x86_64/avformat-62.dll	64caad67be1faffb5237c5fcd52c4745e3958194f09f23c0231021192738e220	4518528	0x8664	1	0						1	156
+jars	ffmpeg.jar!nativeLib/x86_64/avutil-60.dll	d1ca3c738cf50d6d2da5e6255f57c265751b7a49e6f5c30d6ce4316141d1f7d6	2221696	0x8664	1	0						1	622
+jars	ffmpeg.jar!nativeLib/x86_64/ffmpeg-wrapper.dll	15a515a6c75069f0750c926092eccdde6f0bf4b0e4881a81d62d3c1a7a668e44	70272	0x8664	1	0						1	26
+jars	ffmpeg.jar!nativeLib/x86_64/swresample-6.dll	a1abedefa4eddc4353d2298cbd1ad3b1335e167b04c227b26f5c9980d6b514b9	846464	0x8664	1	0						1	23
+jars	ffmpeg.jar!nativeLib/x86_64/swscale-9.dll	9feaf3ae7b08bfa98d8245dc4f26b836897cbecd88fe87bec3d582be6c3801c7	2232448	0x8664	1	0						1	40
+jars	gx.jar!LIB-INF/org.eclipse.swt.win32.win32.x86_64-3.134.0.jar!swt-win32-4973r12.dll	984f5e123a253fbc7db404188a392a884867e44dc422fd846f8ef10df300f54c	791720	0x8664	1	0						1	891
+jars	gx.jar!LIB-INF/org.eclipse.swt.win32.win32.x86_64-3.134.0.jar!swt-gdip-win32-4973r12.dll	8d14dbf9cc8e2e98fb562a3a297bf0737d9416dd3cc77ba5265bc6226da7fa3a	170664	0x8664	1	0						1	188
+jars	gx.jar!LIB-INF/org.eclipse.swt.win32.win32.x86_64-3.134.0.jar!WebView2Loader.dll	184574b9c36b044888644fc1f2b19176e0e76ccc3ddd2f0a5f0d618c88661f86	141224	0x8664	1	0						1	4
+jars	gx.jar!LIB-INF/org.eclipse.swt.win32.win32.x86_64-3.134.0.jar!swt-awt-win32-4973r12.dll	800227b44ae57cddff06bef724e0a0a27da0f5bea5018be374ec0dd554be6fd4	122024	0x8664	1	0						1	3
+jars	gx.jar!LIB-INF/org.eclipse.swt.win32.win32.x86_64-3.134.0.jar!swt-wgl-win32-4973r12.dll	cf56ff1fdb536e9bb26dc10700497b2fe8c1695ada3b676c9dd0450a18b6a929	125608	0x8664	1	0						1	9
+jars	gx.jar!LIB-INF/org.eclipse.swt.win32.win32.x86_64-3.134.0.jar!swt-osversion-win32-4973r12.dll	9aeec18ef40ca91b49a4d88ba20627c137b40d437e1c9d311b9aa9e0c602c3b7	123560	0x8664	1	0						1	2
+jars	xprotect.jar!nativeLib/Autofac.dll	52093994c5e2aadfa32a7f00214ddc16a6babf22e47a43917d953037f26c47d9	242720	0x014c	0	1	Autofac	4.9.4.0	.NETStandard,Version=v2.0	1	17863af14b0044da	1	0
+jars	xprotect.jar!nativeLib/Microsoft.ApplicationInsights.dll	e855c0780611251f513afe5b49b8c7e781bad6586eb026bf96644c6c079a96aa	397792	0x014c	0	1	Microsoft.ApplicationInsights	2.22.0.997	.NETStandard,Version=v2.0	1	31bf3856ad364e35	1	0
+jars	xprotect.jar!nativeLib/System.Net.Http.Formatting.dll	af48fdfc979cc875183942bc9e87eb349b8a4f93a78fb7ab5c0feb694e7dd875	190632	0x014c	0	1	System.Net.Http.Formatting	5.2.7.0	.NETFramework,Version=v4.5	1	31bf3856ad364e35	1	0
+jars	xprotect.jar!nativeLib/VideoOS.Common.EnvironmentServices.dll	6ce61a9cf970dbfd628246cd027f6f4601ccc73d3cd963f6a8f8723a4172ddb5	59432	0x014c	0	1	VideoOS.Common.EnvironmentServices	24.2.0.0	.NETFramework,Version=v4.7.2	1	bc60fba4a7969f89	1	0
+jars	xprotect.jar!nativeLib/VideoOS.Common.Login.dll	3bc00ee3cef6c8391271ed8e93273a2ace99dda7384c94fc7afe58425bcd30de	49696	0x014c	0	1	VideoOS.Common.Login	24.2.0.0	.NETFramework,Version=v4.7.2	1	bc60fba4a7969f89	1	0
+jars	xprotect.jar!nativeLib/VideoOS.Common.State.dll	c226b61df133a58357905a431164e5885a2e287e292e42f11ac0fa2b7ec4ba45	42016	0x014c	0	1	VideoOS.Common.State	24.2.0.0	.NETFramework,Version=v4.7.2	1	bc60fba4a7969f89	1	0
+jars	xprotect.jar!nativeLib/VideoOS.Common.dll	2f39b19d5004543eddd131ad0955a43edb5ef01da427525ced292d90bf49e49d	36904	0x014c	0	1	VideoOS.Common	24.2.0.0	.NETFramework,Version=v4.7.2	1	bc60fba4a7969f89	1	0
+jars	xprotect.jar!nativeLib/VideoOS.IdentityServer.Common.dll	da1a617f6ee2035d6b3cb93fe618821459e36d5792f46c3b4d8ec74255c7e7d6	179744	0x014c	0	1	VideoOS.IdentityServer.Common	24.2.0.0	.NETFramework,Version=v4.7.2	1	bc60fba4a7969f89	1	0
+jars	xprotect.jar!nativeLib/VideoOS.Platform.Common.dll	21d439f01b302c6fd700ad7ac4a836f781211ce186dc0b72ec39183b11005b20	206376	0x014c	0	1	VideoOS.Platform.Common	24.2.0.0	.NETFramework,Version=v4.7.2	1	bc60fba4a7969f89	1	0
+jars	xprotect.jar!nativeLib/VideoOS.Platform.SDK.dll	22d60d1ced35539157c9bc963ac5436dffa5124f08c24feeb75142c3562cfe61	1353248	0x014c	0	1	VideoOS.Platform.SDK	24.2.0.0	.NETFramework,Version=v4.7.2	1	bc60fba4a7969f89	1	0
+jars	xprotect.jar!nativeLib/VideoOS.Platform.dll	0eb82cdeedf93fb8aa7ae4fbfadd9f0bd18d5e77a44fda6c9347a7fbbdbce3bd	5462560	0x014c	0	1	VideoOS.Platform	1.0.0.0	.NETFramework,Version=v4.7	1	bc60fba4a7969f89	1	0
+jars	xprotect.jar!nativeLib/VideoOS.Telemetry.dll	af41218a55d3de9e94537a1254046deddb520a8d5ae0523c41e83642b8f344dc	27688	0x014c	0	1	VideoOS.Telemetry	24.2.0.0	.NETStandard,Version=v2.0	1	bc60fba4a7969f89	1	0
+jars	xprotect.jar!nativeLib/VideoOS.Utilities.dll	a05a1e44969b1d2aec2d1311e3df412dd771bd719ac3e35618da766593cf84f3	354344	0x014c	0	1	VideoOS.Utilities	24.2.0.0	.NETFramework,Version=v4.7.2	1	bc60fba4a7969f89	1	0
+jars	xprotect.jar!nativeLib/XProtectBridgeService.exe	677dd5e8368ea738f993c83ad4fcb9baa135e5f016fd40b1ff08559e843ac7c4	31272	0x014c	0	1	XProtectBridgeService	1.0.0.0	.NETFramework,Version=v4.7.2	0	-	1	0
+inst	bin/alarmDialog.dll	90b095755f6c5a10a5fb673de8ef159a0ff6e8463a06b92af9014a2244065186	26152	0x8664	1	0						1	4
+inst	bin/common.dll	799c6c8dedfc69aaf18bfdab584e7080d69fd5a1e3dc3a614ea59617db4745ab	169512	0x8664	1	0						1	400
+inst	bin/console.exe	d8601f84875d18088cf00bdcdb46c63643d7d15dcbef3ecc9d11f4f371f2ab3e	101920	0x8664	1	0						1	4
+inst	bin/cppunit.dll	3386491a276acdcb05f0de043fd607d11b6d3491337b02dd97c466de3d1d4eaf	215592	0x8664	1	0						1	518
+inst	bin/lon.dll	a0f0dadc86a96d64f2ad21d3b241a8e21053bc01dcf6ec27197499fb4da21fef	36896	0x8664	1	0						1	11
+inst	bin/msvcp140.dll	03e31b7be4a05831fb56a1930e2f461c6668928f98e26b7f9d6880f898daa86a	569528	0x8664	1	0						1	1515
+inst	bin/n5mig.exe	95b5deae0afc4a0b68361f82d4696398691e4b2130a285dce471ab3aa5c97e46	101408	0x8664	1	0						1	4
+inst	bin/niagarad.exe	64fd6403fe00bc1b8b940254682bad454806e1983f3fe54343c56c035c24944b	24616	0x8664	1	0						1	4
+inst	bin/njre.dll	1b8b0074c79dc148e479602bb5bb1a2245f3549db421ccb6534bca7f6a4dfd0b	75296	0x8664	1	0						1	91
+inst	bin/nre.dll	a6317e8b024ed823ebe857113bff4378600fc2bd41890309696375dce91239c4	116264	0x8664	1	0						1	206
+inst	bin/nre.exe	098b52fb992bd08918da8f0209148061cba74de4c1353807265a0ea6aba2aa43	24104	0x8664	1	0						1	4
+inst	bin/pcapBacEther.dll	d5d4e7eeddf5f9253fa7c2f667195f0e11e61e2539157b0d6b7a8abf4da3b804	29736	0x8664	1	0						1	6
+inst	bin/plat.exe	86e6878ea2b39963964a5e1e6f96b39d42841082e4046c5abcc8dd0a95f9339f	52776	0x8664	1	0						1	0
+inst	bin/station.exe	b166aba5aa4beabab1ee6392600387fdd668ea59467333cc474c48fe8802467a	26152	0x8664	1	0						1	4
+inst	bin/test.exe	21c6020ca17b4dfbe2282fea1829566b6f84d24839dc35e997bdb68893fcf36a	54816	0x8664	1	0						1	8
+inst	bin/trayIcon.dll	3cff7cc74febc05114112fdcd17b17adedb031c12524c3b4ebd144fa2625b0f7	200224	0x8664	1	0						1	5
+inst	bin/vcruntime140.dll	e629362935662499b7288ef5027afd8a266498987c0a3c4b138f3bff036e8268	136344	0x8664	1	0						1	71
+inst	bin/vcruntime140_1.dll	ace3a3f7e4e0b282f8309a052daf7e84ae9c857c0382f33381f6d38cbbb7f052	61592	0x8664	1	0						1	3
+inst	bin/wb.exe	026622cd7ef88426829fedd18bd5156ca86de1cc9715e33ee4559c943dd90d49	99360	0x8664	1	0						1	4
+inst	bin/wb_w.exe	7a99fdc0afbb596e19af3a5d4a7fe781f828b16fc6fdbe1fcdafc57d57d9659e	99368	0x8664	1	0						1	4
+inst	bin/ext/jxbrowser/jxbrowser-win64-9.5.0.jar!9.5.0/7zr.exe	7ddfe18be3aa93d00e45a390ed4bea826363646d5771fb12d32eb5e40ebfb014	612760	0x014c	0	0						1	0
+inst	bin/ext/system/jffi-1.4.0-native.jar!jni/i386-Windows/jffi-1.2.dll	d63b0ec9a7cc75c26fa951928bf550c0e9a5e6c195a3de94a9c24995206bbfd2	116997	0x014c	0	0						0	330
+inst	bin/ext/system/jffi-1.4.0-native.jar!jni/x86_64-Windows/jffi-1.2.dll	58398ba5cda1b7cb89ad4e03dd4a658006956f81acfef4efb4e7dd934e2733ef	141178	0x8664	1	0						0	165
+inst	bin/ext/system/jffi-1.4.0-native.jar!jni/aarch64-Windows/jffi-1.2.dll	a4e7cb99d84f2a3b195fabcc4a6c59ab48e9eb25ddf58284b26d068163c9e505	126976	0xaa64	1	0						0	209
+inst	bin/ext/system/jna-5.19.1.jar!com/sun/jna/win32-x86/jnidispatch.dll	752d597cee7e95cb517327146bf42f124c0d6c0bc48b3ecc3b1b3b0531a52f44	226304	0x014c	0	0						0	71
+inst	bin/ext/system/jna-5.19.1.jar!com/sun/jna/win32-x86-64/jnidispatch.dll	5a7ff949f6d93d86491eb5b26b1cfc60051168a60622650224b89995ac420023	273408	0x8664	1	0						0	71
+inst	bin/ext/system/jna-5.19.1.jar!com/sun/jna/win32-aarch64/jnidispatch.dll	b8f98be314234cf12b5b46c29652f70c0f6abb93ae19b63d3fe2692062aa699d	274432	0xaa64	1	0						0	71
+inst	bin/ext/system/lz4-java-1.11.2.jar!net/jpountz/util/windows/amd64/liblz4-java.dll	d7197f6c9d3d21526e3ddd1504b69bc6574dfd8c9b5eec88abda8e10f6313e09	269740	0x8664	1	0						0	25
+inst	bin/x86/ldvProxy.exe	2876acfa8305eadcd16f2dea80b6b62b31f7686f3e3abc5b1a1d76234a0c2f5c	31784	0x014c	0	0						1	0
+inst	bin/x86/msvcp140.dll	2069edcf9132cdeea3c9f3dcf06517f680054100642e559ea1b68004d6b0c473	459416	0x014c	0	0						1	1515
+inst	bin/x86/vcruntime140.dll	4ec7840d46f01a69d354e00a9afe6e883f74e5cc0bb064bb27184e9aa89bc392	103024	0x014c	0	0						1	81
+inst	jre/bin/api-ms-win-core-console-l1-1-0.dll	869ec6bc79d1da594b0db2cfa510472ca781ffd826acbe7716198415ea3a3605	22056	0x8664	1	0						1	14
+inst	jre/bin/api-ms-win-core-console-l1-2-0.dll	69a12b4beba7e6cf1a9b7263e2c6a494a60ddbbed0bd8c40920c51179f571d99	21960	0x8664	1	0						1	17
+inst	jre/bin/api-ms-win-core-datetime-l1-1-0.dll	60675dfc2cb2af87456032d28d454baa4821d6b1921cb03f12a2891def445fd6	22056	0x8664	1	0						1	4
+inst	jre/bin/api-ms-win-core-debug-l1-1-0.dll	3182765b6cae55cf4c67b9cb5b6f0b037f323585950ff9b6301b59e5e5acf780	21960	0x8664	1	0						1	4
+inst	jre/bin/api-ms-win-core-errorhandling-l1-1-0.dll	3746169e2226c52c7b930bbffc8f3e263283d559d3237c4e193cbb07abaced1c	22056	0x8664	1	0						1	7
+inst	jre/bin/api-ms-win-core-fibers-l1-1-0.dll	7ad9720c4999b88c8b8db1dcb1ee765f374900b489b2f09bb40e4951b68b0aab	22056	0x8664	1	0						1	4
+inst	jre/bin/api-ms-win-core-fibers-l1-1-1.dll	6599741ffe12d3e90ef2b456b64cee90425ff995bc0d1c3cd9c754ddba6697ae	21960	0x8664	1	0						1	1
+inst	jre/bin/api-ms-win-core-file-l1-1-0.dll	3a7bdd492a945a962eb18f486ae7bcddc2bbd5b43a12eb461057a6cdc5657f5f	26056	0x8664	1	0						1	77
+inst	jre/bin/api-ms-win-core-file-l1-2-0.dll	1b384401b534ca9a61dce7f51c8d54b9eabb625f86569bf09e449be5724c6ca0	22072	0x8664	1	0						1	4
+inst	jre/bin/api-ms-win-core-file-l2-1-0.dll	1d2f1efefd0a802190f0257aac7e1589d08ffbaea550c561c69c1827e57b55e7	22056	0x8664	1	0						1	11
+inst	jre/bin/api-ms-win-core-handle-l1-1-0.dll	819976a22a6648536ba0c184d80d093d867d513849baa8f7011fade104a7f8c0	22072	0x8664	1	0						1	5
+inst	jre/bin/api-ms-win-core-heap-l1-1-0.dll	83ca55315263d7a42d16cf032e67b79359052321c43c5df97d687c2f4d84a79c	22072	0x8664	1	0						1	16
+inst	jre/bin/api-ms-win-core-interlocked-l1-1-0.dll	7e32a4463c99e54dd1366658b4284020e1a3384c4c366761116309dae49ee831	22072	0x8664	1	0						1	6
+inst	jre/bin/api-ms-win-core-kernel32-legacy-l1-1-1.dll	82bb3c053e3c8f4ed9127d3a4d0d5bea73d13b98a023073ea0f039ca96405c09	21960	0x8664	1	0						1	15
+inst	jre/bin/api-ms-win-core-libraryloader-l1-1-0.dll	c29c1592af0578c58f2f37e77a044573e8c9fda4daba184c3ac5032b061693a5	21960	0x8664	1	0						1	23
+inst	jre/bin/api-ms-win-core-localization-l1-2-0.dll	2fb638be18863ef6077fef2b7f4ebda92527b8e19d2e5b39eba27b3bf96a7fed	22056	0x8664	1	0						1	59
+inst	jre/bin/api-ms-win-core-memory-l1-1-0.dll	7aacd77d48b5a7595c59ef95c09d65bd9ee6644206b0878a8108398563b09515	22056	0x8664	1	0						1	16
+inst	jre/bin/api-ms-win-core-namedpipe-l1-1-0.dll	c184419f20f5ea131239e627dcad237da804a5fd21b446846f5c0d60b06a7b49	22056	0x8664	1	0						1	10
+inst	jre/bin/api-ms-win-core-processenvironment-l1-1-0.dll	9ab3de163dd167a9423946c308a6f225e22172e8547ccf154e0269d258588df7	22056	0x8664	1	0						1	21
+inst	jre/bin/api-ms-win-core-processthreads-l1-1-0.dll	f5b2cd5c8fbe89ac55a09b6939cfacdd0861ff47e1fc3df300412603fa96e00b	22056	0x8664	1	0						1	49
+inst	jre/bin/api-ms-win-core-processthreads-l1-1-1.dll	5a3d41a750d1d6714232448193e57ab7d8fd718ba9cec24c7afc71f69886dae3	22072	0x8664	1	0						1	14
+inst	jre/bin/api-ms-win-core-profile-l1-1-0.dll	23a1324112574ad2f7d903a881592354e8fe915ba3086e830b9dc49cfbf7154c	21944	0x8664	1	0						1	2
+inst	jre/bin/api-ms-win-core-rtlsupport-l1-1-0.dll	17423b1dfc0d5c9246a1b4c50bce5af931b186ad66268761b2611e611d9adbb3	21944	0x8664	1	0						1	14
+inst	jre/bin/api-ms-win-core-string-l1-1-0.dll	ac5a66b65ead96dfbc63afd947601bd276c1c5ede2a7acc0d580b02ef104892a	22072	0x8664	1	0						1	8
+inst	jre/bin/api-ms-win-core-synch-l1-1-0.dll	2d577cdae281cd49141a87340d21ee3b372a297ef9ce35e82cf449dd352f380d	21944	0x8664	1	0						1	41
+inst	jre/bin/api-ms-win-core-synch-l1-2-0.dll	220a7cee500b92a005b58d45006b1b98545fcd2040dda5d3d750fe2e6de5c62b	22072	0x8664	1	0						1	17
+inst	jre/bin/api-ms-win-core-sysinfo-l1-1-0.dll	371442d516a47a8949945f85c6bb0fe3c3b88731de07a4ff457c2b041c928cfd	21960	0x8664	1	0						1	22
+inst	jre/bin/api-ms-win-core-sysinfo-l1-2-0.dll	da65cf54767305c74eaf35e39ac8b7ff472c2df5e22a84e4fc465e2448d2fea3	21960	0x8664	1	0						1	9
+inst	jre/bin/api-ms-win-core-timezone-l1-1-0.dll	9dae313de05c31ab6583545323e422dd1bdaec4aa26e81cbea0d5b69b632fd0c	21944	0x8664	1	0						1	13
+inst	jre/bin/api-ms-win-core-util-l1-1-0.dll	d627df017ddcf7472c761f9796cb55fc7a2347f05cc897bf6c7c29aee8e4dd0c	22056	0x8664	1	0						1	5
+inst	jre/bin/api-ms-win-crt-conio-l1-1-0.dll	4324863a74391b29229e5376020de3e1a04f436abbd4604e305307fde4601fa7	22072	0x8664	1	0						1	30
+inst	jre/bin/api-ms-win-crt-convert-l1-1-0.dll	6f997e4a9837f42295fa25f45cb564f5efa93c99768e2a2e2643008ecffe97b0	26040	0x8664	1	0						1	122
+inst	jre/bin/api-ms-win-crt-environment-l1-1-0.dll	3c0893659c504d16984d6b87c61c98fa050d60473ff77e294f69fdb7fae155bb	21944	0x8664	1	0						1	18
+inst	jre/bin/api-ms-win-crt-filesystem-l1-1-0.dll	924099811552d0e9623d220fd9f9348a14d44ef08694a15d442010193574b1fe	21944	0x8664	1	0						1	65
+inst	jre/bin/api-ms-win-crt-heap-l1-1-0.dll	2cfc2c7c376630b595e3582ccd2dda019f82ae5dc1665d34d3621e2c62e1a868	22056	0x8664	1	0						1	27
+inst	jre/bin/api-ms-win-crt-locale-l1-1-0.dll	3c2bc1ebdcb4c6fedefc5b82419a1a4b5ba035c3f5453e9d083dccdbfe2d9e95	22072	0x8664	1	0						1	20
+inst	jre/bin/api-ms-win-crt-math-l1-1-0.dll	930fbbcfd3fbd97bfc2c0174f059ff48f33fa54274e409ed6d629a7230e45aa0	30248	0x8664	1	0						1	290
+inst	jre/bin/api-ms-win-crt-multibyte-l1-1-0.dll	ebf235dce2322da2bf32ff0ddc0e2b0a159b1360ee0a07e3604f621fca883125	30264	0x8664	1	0						1	200
+inst	jre/bin/api-ms-win-crt-private-l1-1-0.dll	0b6c38eae2ba2929b5a25393766cf66028b0d5d2cd51c218528a8df9f62cafee	75320	0x8664	1	0						1	1134
+inst	jre/bin/api-ms-win-crt-process-l1-1-0.dll	4efdca4ac7819401a586e2abebc3b858ba8ba0b13ad296c6afacd583500f2575	21944	0x8664	1	0						1	36
+inst	jre/bin/api-ms-win-crt-runtime-l1-1-0.dll	5e9837abf4517eb8f74edcf7ea08a3d32916e253d9c24663869dda40cf7b0280	26168	0x8664	1	0						1	104
+inst	jre/bin/api-ms-win-crt-stdio-l1-1-0.dll	f2a7e41ededd62b2c192fe6381c8cc33f9bd223164ffc8b38623c9220c009ccb	26168	0x8664	1	0						1	159
+inst	jre/bin/api-ms-win-crt-string-l1-1-0.dll	0b337649b564a760abb57e21fb2a755cff080a604034b71c3e8a3cc48c7da71d	26168	0x8664	1	0						1	178
+inst	jre/bin/api-ms-win-crt-time-l1-1-0.dll	63a56aa00ca3bec9225e516ccd336003fc4145c1c1439c7d4d9925d8be24c0e7	21944	0x8664	1	0						1	72
+inst	jre/bin/api-ms-win-crt-utility-l1-1-0.dll	dc75e73ff3f294ada7e9646b51b2ed137f5c26364cbbd71f36a8f5029a3111db	21944	0x8664	1	0						1	30
+inst	jre/bin/attach.dll	dd643560e0a701b000483e4406b753c1325c78ad68a46b69bf35ea198973698b	19968	0x8664	1	0						0	14
+inst	jre/bin/awt.dll	f2719adc43d14c3c5792c7d448d700bd6fef347a5e66850c1865d1b9e9505adc	1404928	0x8664	1	0						0	633
+inst	jre/bin/dt_socket.dll	47e88729dd975f303c706b3ff4fa4b71d0a9b3820c2d9a3b52498bb1316e55d2	26112	0x8664	1	0						0	1
+inst	jre/bin/extnet.dll	65eb480332ca0db1f4c9d75a3567fbc5aab462aabae4de7b8d7ee7f5ad81d2f8	13824	0x8664	1	0						0	9
+inst	jre/bin/fontmanager.dll	0e7520f04840f4ac3ed115b8d9d62e5f742e9de50f78807b8291ecb91808082d	1008128	0x8664	1	0						0	39
+inst	jre/bin/freetype.dll	6a024d5ddbbeea18bc06e7abf7109bc43b6bf6ec15db82bc8318a7d0f3f2b2b9	547840	0x8664	1	0						0	188
+inst	jre/bin/instrument.dll	debeeb5bb2ae90204df6aee9b3a66b84719adb6f5bd02ce1542dc39b9f74e2b2	41984	0x8664	1	0						0	16
+inst	jre/bin/j2gss.dll	a83804d31d443b7039ad674b75b265e03390e0e6402dfd9ad30c98d81fa30661	41984	0x8664	1	0						0	31
+inst	jre/bin/j2pcsc.dll	07c4f58921694d085afffbbd61aa33e6069487aac9de0f557346f4d3e08e3fe0	15872	0x8664	1	0						0	11
+inst	jre/bin/j2pkcs11.dll	265a6de837b1d2954857c717731ee29a7c63a333d0b6299ba0a5934abe58a4bd	70656	0x8664	1	0						0	70
+inst	jre/bin/jaas.dll	742894a434fbe1614871e30d085764676c4a6cc9458ec3cfdb913b3fa8905de4	17920	0x8664	1	0						0	2
+inst	jre/bin/jabswitch.exe	9e0c0ac8afeb6fe45b978b770a8adaee86d9561b36f6fe020dc8977b0596459e	34816	0x8664	1	0						0	0
+inst	jre/bin/jaccessinspector.exe	9c7cf0f3368fae0c7455148551831cc5b41cd977ccae29874790d6125579eb40	96256	0x8664	1	0						0	0
+inst	jre/bin/jaccesswalker.exe	526b74e7107b6980645109fda821b215f5a92d69b331dd509ac72b2b04c3cb75	60416	0x8664	1	0						0	0
+inst	jre/bin/java.dll	d9fffcc11414548aa4528232465fe057f5b86814d04f3234a98ce18e8168c59e	106496	0x8664	1	0						0	286
+inst	jre/bin/java.exe	0e1d7a36c3fc114e42eebd46b8f6a025bce75980f0e2aafc33588cbff3ab82af	39424	0x8664	1	0						0	1
+inst	jre/bin/javaaccessbridge.dll	7753adc8cb40ad72c46caf4db16e45adad64440e983069359477b40c0274578f	295424	0x8664	1	0						0	30
+inst	jre/bin/javac.exe	355c3f45fdffdf5f4f37fe27a32f5eba125b243d20d280a79e54ef33d360366b	13312	0x8664	1	0						0	1
+inst	jre/bin/javajpeg.dll	f55c94e8302d4f0f02effaca05e6dd7edc7b8932c6f4847f25767e884449e7f2	169472	0x8664	1	0						0	22
+inst	jre/bin/javaw.exe	6685586bebd835539b34b7d2f1f33e84ba3638e791eb4a30591188f67017e4ff	39424	0x8664	1	0						0	0
+inst	jre/bin/jawt.dll	26fdade7862786ffc33ed73a5921489ee73ae34bf745fd86cde757f2f3db9642	10752	0x8664	1	0						0	1
+inst	jre/bin/jdwp.dll	6dc3e89f05a58432e089aa29c41877f946c74f08073e272af7bdee336b5b837c	229376	0x8664	1	0						0	2
+inst	jre/bin/jfr.exe	0cfff25f7798deb2656ec18b54905454903e91715921f1620e7eb4df7c77e4a9	13312	0x8664	1	0						0	1
+inst	jre/bin/jimage.dll	d17ef81a5f8f1ccf748ccb2e6a67b0a1a5626defed2c3f326cd128d35a57c7d8	23040	0x8664	1	0						0	7
+inst	jre/bin/jli.dll	fc90c307ef375a01740a2a51bbdad318c75802612ff88df8f851cdb8cefa2518	76800	0x8664	1	0						0	18
+inst	jre/bin/jrunscript.exe	e0d328eb6ccb71806e54e7ac6b363cbb0f206bfdf527cdaa6e7424863cdf1a7e	13312	0x8664	1	0						0	1
+inst	jre/bin/jsound.dll	6d1573d4a381ae213f5bf9a6c114c247a1e6f702dcb969fb3ae9ad41a868e3dc	51200	0x8664	1	0						0	50
+inst	jre/bin/jsvml.dll	769ddf3838705541559a606d5c095fa1f1822beccdf43759fc05624f9d051860	859136	0x8664	1	0						0	270
+inst	jre/bin/jwebserver.exe	7ad374bc5f41dc059a4073ce82453446308fd2fef877db68f2553c8445991ca2	13312	0x8664	1	0						0	1
+inst	jre/bin/keytool.exe	1a471d9fc5a860ccdebefb70654b19ca1f89cdf0b4cfd578d811aad3ff12cd04	13312	0x8664	1	0						0	1
+inst	jre/bin/kinit.exe	e41a3ae3393f01c16dc385940b007a300447aa7e0c73df44a4e43316308ba200	13312	0x8664	1	0						0	1
+inst	jre/bin/klist.exe	bf2c392322e9345576fb3b8ed3a409094c865ac2632233d6b56afefdb48c5a70	13312	0x8664	1	0						0	1
+inst	jre/bin/ktab.exe	96338a08f54a59ca5a0d76d2a03da266e90ab1de0c6b624ecdadc8447ad51737	13312	0x8664	1	0						0	1
+inst	jre/bin/lcms.dll	6cb133123d3d9ee984da93810dde281fac3f425c91f0e1f129a29d3bb97b1065	248832	0x8664	1	0						0	7
+inst	jre/bin/management.dll	0e9adbbbb905f192908879043c82df773bffdd5d0b907733c7d37125aaabf530	18944	0x8664	1	0						0	68
+inst	jre/bin/management_agent.dll	5f6a3e05eacb0e623a60feb7fe7dc9e2b083404c8d1fd40152b5505b7ad886e6	14336	0x8664	1	0						0	4
+inst	jre/bin/management_ext.dll	4d5439e530ad5590db6f05a3f4d4ac4ef12a2cadb5c0e28a248ce8de2b77ec22	25600	0x8664	1	0						0	27
+inst	jre/bin/mlib_image.dll	7150a4e9e74865221292a6130e543a69837cef8bdc68785876202cf2782bb417	501760	0x8664	1	0						0	7
+inst	jre/bin/msvcp140.dll	a4c2229bdc2a2a630acdc095b4d86008e5c3e3bc7773174354f3da4f5beb9cde	575056	0x8664	1	0						1	1515
+inst	jre/bin/net.dll	a8568b900bdace9131660d6035538885d3eaa4a03cbc4845f65b646cd0427e74	49152	0x8664	1	0						0	51
+inst	jre/bin/nio.dll	bde417469ef7fafa4140e6d93eea32dc42c8e2b8950e9244268fab9167b1fe09	70656	0x8664	1	0						0	204
+inst	jre/bin/prefs.dll	0476d09531a19fcb46bc9398c879234949a91e09cefe99e82acf1d955d9a8b0d	15360	0x8664	1	0						0	11
+inst	jre/bin/rmi.dll	6f88bae463686ee99f9b03550d80881d8f986bb24c59ceaa89d1260f6669acc9	10752	0x8664	1	0						0	1
+inst	jre/bin/rmiregistry.exe	b1f15ad7f3504448910769073360f1d61f400991922254c3fedd43aaa6d5f822	13312	0x8664	1	0						0	1
+inst	jre/bin/serialver.exe	d963d8df6c9248a5b4fe30e20b7beaa902c39bad7fcb45ce82a21548348539e5	13312	0x8664	1	0						0	1
+inst	jre/bin/splashscreen.dll	7c9ce2013c8cca663617dc91c99831c79b18cb1c92e888693fa16f54e1a66528	199680	0x8664	1	0						0	18
+inst	jre/bin/sspi_bridge.dll	25cb5407e20f533996021b1253c70790e9aa241cee0a652ab9444c9c1d00a0cd	34816	0x8664	1	0						0	28
+inst	jre/bin/sunmscapi.dll	7d6b6f101ea6ff681f966dd3e9f39d6b15e0fcf1750bc9a75a35ac44684b0158	38400	0x8664	1	0						0	26
+inst	jre/bin/syslookup.dll	b78c15331c74319fee50319481f6a8983fc2c446b0a542d02fecd8beb20b348e	17408	0x8664	1	0						0	1
+inst	jre/bin/ucrtbase.dll	d404dc9aa843d53d7e276dd078b2cac8d7aa905e2838a1fe8385278e19ba3810	1357256	0x8664	1	0						1	2484
+inst	jre/bin/vcruntime140.dll	02c6aa0e6e624411a9f19b0360a7865ab15908e26024510e5c38a9c08362c35a	119888	0x8664	1	0						1	71
+inst	jre/bin/vcruntime140_1.dll	7dd9aa02e271c68ca6d5f18d651d23a15d7259715af43326578f7dde27f37637	49640	0x8664	1	0						1	3
+inst	jre/bin/verify.dll	355cfd924b5947fd38ee85a893f917db66a7baa9b4255c106b9630fe63dce521	44544	0x8664	1	0						0	1
+inst	jre/bin/w2k_lsa_auth.dll	7a0e70ac963837ffd648066f933ca024f34113ebedac1095394715b2873a94d2	21504	0x8664	1	0						0	4
+inst	jre/bin/windowsaccessbridge-64.dll	76b854f7a562c97320924ff5599062aaa5a07bbe978343953f209a167d087dc6	61952	0x8664	1	0						0	97
+inst	jre/bin/zip.dll	96d20ab668c278b3e9d54d1f8d54e484027f32863af227779a267d526405c489	71680	0x8664	1	0						0	37
+inst	jre/bin/javafx/api-ms-win-core-console-l1-1-0.dll	191e08dea0ad5ac02e7e84669d9fffa5aa67dc696e36077c5fa20d81c80b6a56	20960	0x8664	1	0						1	14
+inst	jre/bin/javafx/api-ms-win-core-console-l1-2-0.dll	9e04918d9e751dbc56d0251d3ada573381b469a012599554d72aa4affda9658a	20928	0x8664	1	0						1	17
+inst	jre/bin/javafx/api-ms-win-core-datetime-l1-1-0.dll	a94b80a5111aabefb1309609abdd300bb626d861cd8e0938b9735ab711a43c22	20936	0x8664	1	0						1	4
+inst	jre/bin/javafx/api-ms-win-core-debug-l1-1-0.dll	263e038363527b7bed05110f37f7e5b95f82aab9c0280c9c522cf7bfce10fd7d	20936	0x8664	1	0						1	4
+inst	jre/bin/javafx/api-ms-win-core-errorhandling-l1-1-0.dll	085968d938ea924827c4740697713674850218a8fe91dd9982e93b0effacc820	20936	0x8664	1	0						1	7
+inst	jre/bin/javafx/api-ms-win-core-file-l1-1-0.dll	120c3afed9ce2a981c61208757fca0665f43926751ec8d0d13e10ef1096a0d48	25032	0x8664	1	0						1	75
+inst	jre/bin/javafx/api-ms-win-core-file-l1-2-0.dll	0dc1f695befddb8ee52a308801410f2f1d115fc70668131075c2dbcfa0b6f9a0	20936	0x8664	1	0						1	4
+inst	jre/bin/javafx/api-ms-win-core-file-l2-1-0.dll	18655793b4d489f769327e3c8710aced6b763c7873b6a8dc5ae6f28d228647f4	20936	0x8664	1	0						1	11
+inst	jre/bin/javafx/api-ms-win-core-handle-l1-1-0.dll	7e45a1b997331f4d038f847f205904d6ec703df7a8c5c660435697e318ced8fc	20928	0x8664	1	0						1	5
+inst	jre/bin/javafx/api-ms-win-core-heap-l1-1-0.dll	dd1e8c77002685629c5cd569ee17f9aa2bcb2e59d41b76ae5bc751cae26d75bf	20936	0x8664	1	0						1	16
+inst	jre/bin/javafx/api-ms-win-core-interlocked-l1-1-0.dll	ea60d03a35ef2c50306dbbd1ad408c714b1548035c615359af5a7ce8c0bd14a8	20936	0x8664	1	0						1	6
+inst	jre/bin/javafx/api-ms-win-core-libraryloader-l1-1-0.dll	929298566ba01d1c3e64356a1f8370c1e97f0599f56f823c508cde9ae17f130b	20936	0x8664	1	0						1	23
+inst	jre/bin/javafx/api-ms-win-core-localization-l1-2-0.dll	dc570708327c4c8419d4cced2a162d7ca112a168301134dd1fb5e2040eee45b6	20936	0x8664	1	0						1	59
+inst	jre/bin/javafx/api-ms-win-core-memory-l1-1-0.dll	8a4b66cea7b474506fbdbe4c45e78923645f5f0a13f7f4e43449649f50ea38b8	20936	0x8664	1	0						1	16
+inst	jre/bin/javafx/api-ms-win-core-namedpipe-l1-1-0.dll	e8382a73730c2f7f873b40e2fcc5e1cd4847e7cb42fef3c76bea183af5891d65	20936	0x8664	1	0						1	10
+inst	jre/bin/javafx/api-ms-win-core-processenvironment-l1-1-0.dll	9c1afc7cd0b0e0d136d09b65dd082ace136fc306f8f116f3d13956211ec146c8	20936	0x8664	1	0						1	21
+inst	jre/bin/javafx/api-ms-win-core-processthreads-l1-1-0.dll	6e5bd110a2f4dc345b68e9a8fb081783586c8c25f46027c58443ade2d3e1bf01	20936	0x8664	1	0						1	49
+inst	jre/bin/javafx/api-ms-win-core-processthreads-l1-1-1.dll	19b018be16afe143fb107ef1dd5b8e6c6cb45966806eb3d31ec09ff0dc2b70d1	20936	0x8664	1	0						1	14
+inst	jre/bin/javafx/api-ms-win-core-profile-l1-1-0.dll	cc3c609193f2e99f80a6a21064d10c5c591101e386338879326775ccdd77dcb6	20960	0x8664	1	0						1	2
+inst	jre/bin/javafx/api-ms-win-core-rtlsupport-l1-1-0.dll	bcb9a6dd2cc0caaa700d95fa3af5163a8246388c2efefbbc4cf6e1fe2687c72e	20936	0x8664	1	0						1	13
+inst	jre/bin/javafx/api-ms-win-core-string-l1-1-0.dll	9b071b842445a5dd90148445af148d024674085927d079864f7893807fd1b305	20936	0x8664	1	0						1	8
+inst	jre/bin/javafx/api-ms-win-core-synch-l1-1-0.dll	a981a24c9231e0230031bb1cba8f2509565ece1f53ebdb4d0a50efd722ab4330	20936	0x8664	1	0						1	41
+inst	jre/bin/javafx/api-ms-win-core-synch-l1-2-0.dll	69dd52caffe1ea6e0900fb9604a57a87618f8468dc68cbb2a9bcefd1265f3f49	20960	0x8664	1	0						1	17
+inst	jre/bin/javafx/api-ms-win-core-sysinfo-l1-1-0.dll	3513cffa44c88ec13d6a8c9b63e5d505a131b46746d13ee654144f08a96f20c3	20928	0x8664	1	0						1	22
+inst	jre/bin/javafx/api-ms-win-core-timezone-l1-1-0.dll	24f4530debf2161e0d0256f923b836aeccc3278a6ff2c9400e415600276b5a6d	20936	0x8664	1	0						1	13
+inst	jre/bin/javafx/api-ms-win-core-util-l1-1-0.dll	2e1cc12f93837a4e1fe95e0c640b147be29793705628f9c6cd91a0b5c0c50262	20936	0x8664	1	0						1	5
+inst	jre/bin/javafx/api-ms-win-crt-conio-l1-1-0.dll	1368b9af85f186a2b35e2a744eb2103555234b32fdfbfdb94c0f5e525c588e46	20936	0x8664	1	0						1	30
+inst	jre/bin/javafx/api-ms-win-crt-convert-l1-1-0.dll	2ccb01b62188ddc051a582c128bf880608111c602534e487ec09a7cf67c22d17	25032	0x8664	1	0						1	122
+inst	jre/bin/javafx/api-ms-win-crt-environment-l1-1-0.dll	5a2ae5b270c1eaf467878e7f5dbdc689b71914bdf30293d7d46c01d9dd11bdd4	20936	0x8664	1	0						1	18
+inst	jre/bin/javafx/api-ms-win-crt-filesystem-l1-1-0.dll	42a99227775e85ca8c197811a86aad0e2af496bd21623e4c9a2dd747571c8990	20928	0x8664	1	0						1	65
+inst	jre/bin/javafx/api-ms-win-crt-heap-l1-1-0.dll	43c80120970be1efed3ea60bf7aa37b46fcce946b94fb11ca6e3ffff2f16bb29	20936	0x8664	1	0						1	27
+inst	jre/bin/javafx/api-ms-win-crt-locale-l1-1-0.dll	6011ece89f4833dcb4cefb02ea366b828725205eae6f25ab704b76fd9e5d86eb	20936	0x8664	1	0						1	20
+inst	jre/bin/javafx/api-ms-win-crt-math-l1-1-0.dll	5ba8f9c2842990ccdb447fc6d22023103b03f5387f341d3375809f060b5bb4ef	29120	0x8664	1	0						1	290
+inst	jre/bin/javafx/api-ms-win-crt-multibyte-l1-1-0.dll	77328a716589be3c3bcf1f3d3134b4ad050380f504dbc1a3fa076380d77ed0f8	29128	0x8664	1	0						1	200
+inst	jre/bin/javafx/api-ms-win-crt-private-l1-1-0.dll	0e2751637bbeb7ccc2556194fa774ea4bcb937ea803fc955c7f10be0bf38cc77	74184	0x8664	1	0						1	1134
+inst	jre/bin/javafx/api-ms-win-crt-process-l1-1-0.dll	cfc12dd7c1deabf35c8e0fbe01248171c49555fe2d1bed72c5fdba2102090870	20936	0x8664	1	0						1	36
+inst	jre/bin/javafx/api-ms-win-crt-runtime-l1-1-0.dll	698fa887c5b994375c9271222e21d0d4c74810e73d377ad898927549fb69dcb3	25040	0x8664	1	0						1	104
+inst	jre/bin/javafx/api-ms-win-crt-stdio-l1-1-0.dll	c1541ed4dc6879a136bf532393f7cefd3c48ad371d2ed9965e7cbd44c87a1137	25032	0x8664	1	0						1	159
+inst	jre/bin/javafx/api-ms-win-crt-string-l1-1-0.dll	4429b8e6707645fb503ebc3bd50ce2a84f559b6a2ed778196835808bdfec2f48	25032	0x8664	1	0						1	178
+inst	jre/bin/javafx/api-ms-win-crt-time-l1-1-0.dll	f3e6f692cec86adb3985b929345c731469777aeaeb088e3ce070957df481f924	20928	0x8664	1	0						1	72
+inst	jre/bin/javafx/api-ms-win-crt-utility-l1-1-0.dll	6c78d4aba91877c5bb33e545b6a69a818f377e07ff62e791b804fa5b4d2bcf02	20928	0x8664	1	0						1	30
+inst	jre/bin/javafx/decora_sse.dll	c60b190649b768570e3e23037f15582d9c064b802e18c8b11e3a55c129fa0822	81408	0x8664	1	0						0	38
+inst	jre/bin/javafx/fxplugins.dll	87aaf8c642fbd73e47344285d7fe9c5ade1aeec4d0e721f23e417af9832cb2fa	132608	0x8664	1	0						0	1
+inst	jre/bin/javafx/glass.dll	9537a0c287cd0b44491ef985176050327d37ba960a2be49c16efc6b88d2b1445	279552	0x8664	1	0						0	122
+inst	jre/bin/javafx/glib-lite.dll	752bd6a22136db35504f9eaec0ad8e42f6ed2082ffa95a92ca1b6038ab916cf2	692224	0x8664	1	0						0	0
+inst	jre/bin/javafx/gstreamer-lite.dll	1cf4428a5a0b0ea1bcfe078c2f174b7ec3da54541e5ec9170dd807450c3a9215	1103872	0x8664	1	0						0	0
+inst	jre/bin/javafx/javafx_font.dll	adba0434d54aa2120a52ee204788e4e344b4d7c543a6347b3bf0894ccc75b103	68096	0x8664	1	0						0	78
+inst	jre/bin/javafx/javafx_iio.dll	18011da7cbcc303cbc98f77aaf676eb040c63ac6bc8c0301cf0fa2071b097510	160768	0x8664	1	0						0	8
+inst	jre/bin/javafx/jfxmedia.dll	0d3e77608d4e41eb443f4092f5548608661daeb8995ce0934237778621a9d380	132608	0x8664	1	0						0	55
+inst	jre/bin/javafx/jfxwebkit.dll	ffcf84d1b612053c7181459e46fed619354ac95bfb9543e391da1f044d95cda2	96633856	0x8664	1	0						0	14898
+inst	jre/bin/javafx/msvcp140.dll	74892d9b4028c05debaf0b9b5d9dc6d22f7956fa7d7eee00c681318c26792823	578384	0x8664	1	0						1	1515
+inst	jre/bin/javafx/msvcp140_1.dll	a3a1199de32bbbc8318ec33e2e1ce556247d012851e4b367fe853a51e74ce4ee	35704	0x8664	1	0						1	7
+inst	jre/bin/javafx/msvcp140_2.dll	63f1a20cb17ec5e0ca4ebea870b68740f24e063e28b235c3c8b58a3d8f57a9c4	267160	0x8664	1	0						1	44
+inst	jre/bin/javafx/prism_common.dll	b2cd4566ca1029473ac450ae59ac042ec08c19e794b6619c41403f6e8ba40622	10752	0x8664	1	0						0	2
+inst	jre/bin/javafx/prism_d3d.dll	e522b25624b128d346fc17182f6a9f12852527cfa8ebe834e3cecddc83944af8	179200	0x8664	1	0						0	65
+inst	jre/bin/javafx/prism_sw.dll	b3b77e74269d5c2cb389c8ad0fbc4a5cf20bd88468e8023403574c62c5b132ed	57856	0x8664	1	0						0	20
+inst	jre/bin/javafx/ucrtbase.dll	d2ebd8719455ae4634d00fd0d0eb0c3ad75054fee4ff545346a1524e5d7e3a66	1118664	0x8664	1	0						1	2484
+inst	jre/bin/javafx/vcruntime140.dll	69320f278d90efaaeb67e2a1b55e5b0543883125834c812c8d9c39676e0494fc	109440	0x8664	1	0						1	71
+inst	jre/bin/javafx/vcruntime140_1.dll	6fd366a691ed68430bcd0a3de3d8d19a0cb2102952bfc140bbef4354ed082c47	49560	0x8664	1	0						1	3
+inst	jre/bin/server/jvm.dll	9373b856504d297f9b50fc6e85a8fc1f79726235e7e7cdc769da1bad270a0795	14586880	0x8664	1	0						0	4492
+inst	JxBrowser/9.5.0/awt_toolkit32.dll	fe48da4d562bb5436977f9ab0edc762f639166550cab9dc600f45250485df2bc	903576	0x014c	0	0						1	3
+inst	JxBrowser/9.5.0/awt_toolkit64.dll	4394f7f09e8816f88dbc7f6016913789ca073d4cc93b5358d9de54611d0c5cb9	1946520	0x8664	1	0						1	3
+inst	JxBrowser/9.5.0/chrome.dll	c312bd6b139c18da0abc8053e675f0077578611fcad3686de3554445a89e6b54	303999896	0x8664	1	0						1	6
+inst	JxBrowser/9.5.0/chrome_elf.dll	819b906f35b5cd03ae64b6b4e1698c0411067921254ed5e0ba39501306f5f0c2	2715032	0x8664	1	0						1	27
+inst	JxBrowser/9.5.0/chromium.exe	e75ba811a1603feb20fa9d1badb5beba80be0adbaf3113601f61427d4fa4adf1	4149144	0x8664	1	0						1	2
+inst	JxBrowser/9.5.0/d3dcompiler_47.dll	3a5fd3aa3e9853405b15521a1da59b3ae6a2864671c4a0753aa20bb7a752c2f2	4741528	0x8664	1	0						1	29
+inst	JxBrowser/9.5.0/dxcompiler.dll	66ed582b83fa5ab42fef4365f85b44790372b1b3ae08f0d190f4571a7deb5e3b	25765272	0x8664	1	0						1	2
+inst	JxBrowser/9.5.0/dxil.dll	c284858e046e3b0a1563b3ec5691a2e8e39a7a11cfb0f2548928809c2b8e969a	1509784	0x8664	1	0						1	2
+inst	JxBrowser/9.5.0/ipc32.dll	56b2bf2a8c83dc1934577caed9d696a73382d55597829644ff0b2fb27d7cf2ce	929688	0x014c	0	0						1	22
+inst	JxBrowser/9.5.0/ipc64.dll	59c135aa9dfb3bdaaa125640931b13b8a4aad3f881eaf5fe5501292df3d472b4	1975192	0x8664	1	0						1	22
+inst	JxBrowser/9.5.0/libEGL.dll	6340d8503ed1201690186aa31f0b19543f884629ea9875ec772a4dd864fef1e6	468376	0x8664	1	0						1	0
+inst	JxBrowser/9.5.0/libGLESv2.dll	d30d501d7d04a632a874f5a5703121183590df6953a8cf87762d2ee80bb810ab	468376	0x8664	1	0						1	0
+inst	JxBrowser/9.5.0/toolkit32.dll	09e99d2dab6b068872f964c8656992e13365eeed4ec442d7b07de4a09f2ec9be	1002392	0x014c	0	0						1	51
+inst	JxBrowser/9.5.0/toolkit64.dll	f7ef1a06396d2367682668478377c892e0a4a6ab8bce13002ebcafc2743faf2b	2054040	0x8664	1	0						1	51
+inst	JxBrowser/9.5.0/vk_swiftshader.dll	14567e08bc75a950649c093278ff71e4c5f5affdcac8a635dd2059340082364d	5445528	0x8664	1	0						1	239
+inst	JxBrowser/9.5.0/vulkan-1.dll	f005f7d361fe41f6871b2845b4141bd50d832d02df409a0ca1bda3fbcf092c40	976792	0x8664	1	0						1	265
+inst	NCS-Agent/tridium-ncs-supervisor-amd64-windows.exe	e459956a71949d8feeb4e98eba500d790e29ace2f547c822113620a2658b8ac7	8242176	0x8664	1	0						0	0
+org	ffmpeg/resources/nativeLib/x86_64/avformat-62.dll	64caad67be1faffb5237c5fcd52c4745e3958194f09f23c0231021192738e220	4518528	0x8664	1	0						1	156
+org	ffmpeg/resources/nativeLib/x86_64/swresample-6.dll	a1abedefa4eddc4353d2298cbd1ad3b1335e167b04c227b26f5c9980d6b514b9	846464	0x8664	1	0						1	23
+org	ffmpeg/resources/nativeLib/x86_64/avdevice-62.dll	6bdd2144623779336a6e2d88d6795f4ffab2eba5ad25f4d6dfc1e3dfc9be1cbe	964224	0x8664	1	0						1	15
+org	ffmpeg/resources/nativeLib/x86_64/avcodec-62.dll	992b5fe6f1b46291d958d113517f76be8b5064e24dea7b8c6d4681898dbe75be	20311680	0x8664	1	0						1	178
+org	ffmpeg/resources/nativeLib/x86_64/avutil-60.dll	d1ca3c738cf50d6d2da5e6255f57c265751b7a49e6f5c30d6ce4316141d1f7d6	2221696	0x8664	1	0						1	622
+org	ffmpeg/resources/nativeLib/x86_64/ffmpeg-wrapper.dll	15a515a6c75069f0750c926092eccdde6f0bf4b0e4881a81d62d3c1a7a668e44	70272	0x8664	1	0						1	26
+org	ffmpeg/resources/nativeLib/x86_64/avfilter-11.dll	a0aecc0ba1143ce62ff96168a7239471b76452db355619f7f86aca71d775ced4	8046720	0x8664	1	0						1	67
+org	ffmpeg/resources/nativeLib/x86_64/swscale-9.dll	9feaf3ae7b08bfa98d8245dc4f26b836897cbecd88fe87bec3d582be6c3801c7	2232448	0x8664	1	0						1	40
+org	_lib-inf-3p/org.eclipse.swt.win32.win32.x86_64-3.134.0-76d2d9611ed2/resources/swt-gdip-win32-4973r12.dll	8d14dbf9cc8e2e98fb562a3a297bf0737d9416dd3cc77ba5265bc6226da7fa3a	170664	0x8664	1	0						1	188
+org	_lib-inf-3p/org.eclipse.swt.win32.win32.x86_64-3.134.0-76d2d9611ed2/resources/swt-win32-4973r12.dll	984f5e123a253fbc7db404188a392a884867e44dc422fd846f8ef10df300f54c	791720	0x8664	1	0						1	891
+org	_lib-inf-3p/org.eclipse.swt.win32.win32.x86_64-3.134.0-76d2d9611ed2/resources/swt-osversion-win32-4973r12.dll	9aeec18ef40ca91b49a4d88ba20627c137b40d437e1c9d311b9aa9e0c602c3b7	123560	0x8664	1	0						1	2
+org	_lib-inf-3p/org.eclipse.swt.win32.win32.x86_64-3.134.0-76d2d9611ed2/resources/swt-wgl-win32-4973r12.dll	cf56ff1fdb536e9bb26dc10700497b2fe8c1695ada3b676c9dd0450a18b6a929	125608	0x8664	1	0						1	9
+org	_lib-inf-3p/org.eclipse.swt.win32.win32.x86_64-3.134.0-76d2d9611ed2/resources/swt-awt-win32-4973r12.dll	800227b44ae57cddff06bef724e0a0a27da0f5bea5018be374ec0dd554be6fd4	122024	0x8664	1	0						1	3
+org	_lib-inf-3p/org.eclipse.swt.win32.win32.x86_64-3.134.0-76d2d9611ed2/resources/WebView2Loader.dll	184574b9c36b044888644fc1f2b19176e0e76ccc3ddd2f0a5f0d618c88661f86	141224	0x8664	1	0						1	4
+org	xprotect/resources/nativeLib/Microsoft.ApplicationInsights.dll	e855c0780611251f513afe5b49b8c7e781bad6586eb026bf96644c6c079a96aa	397792	0x014c	0	1	Microsoft.ApplicationInsights	2.22.0.997	.NETStandard,Version=v2.0	1	31bf3856ad364e35	1	0
+org	xprotect/resources/nativeLib/VideoOS.Common.EnvironmentServices.dll	6ce61a9cf970dbfd628246cd027f6f4601ccc73d3cd963f6a8f8723a4172ddb5	59432	0x014c	0	1	VideoOS.Common.EnvironmentServices	24.2.0.0	.NETFramework,Version=v4.7.2	1	bc60fba4a7969f89	1	0
+org	xprotect/resources/nativeLib/VideoOS.Platform.Common.dll	21d439f01b302c6fd700ad7ac4a836f781211ce186dc0b72ec39183b11005b20	206376	0x014c	0	1	VideoOS.Platform.Common	24.2.0.0	.NETFramework,Version=v4.7.2	1	bc60fba4a7969f89	1	0
+org	xprotect/resources/nativeLib/VideoOS.Common.State.dll	c226b61df133a58357905a431164e5885a2e287e292e42f11ac0fa2b7ec4ba45	42016	0x014c	0	1	VideoOS.Common.State	24.2.0.0	.NETFramework,Version=v4.7.2	1	bc60fba4a7969f89	1	0
+org	xprotect/resources/nativeLib/VideoOS.IdentityServer.Common.dll	da1a617f6ee2035d6b3cb93fe618821459e36d5792f46c3b4d8ec74255c7e7d6	179744	0x014c	0	1	VideoOS.IdentityServer.Common	24.2.0.0	.NETFramework,Version=v4.7.2	1	bc60fba4a7969f89	1	0
+org	xprotect/resources/nativeLib/XProtectBridgeService.exe	677dd5e8368ea738f993c83ad4fcb9baa135e5f016fd40b1ff08559e843ac7c4	31272	0x014c	0	1	XProtectBridgeService	1.0.0.0	.NETFramework,Version=v4.7.2	0	-	1	0
+org	xprotect/resources/nativeLib/System.Net.Http.Formatting.dll	af48fdfc979cc875183942bc9e87eb349b8a4f93a78fb7ab5c0feb694e7dd875	190632	0x014c	0	1	System.Net.Http.Formatting	5.2.7.0	.NETFramework,Version=v4.5	1	31bf3856ad364e35	1	0
+org	xprotect/resources/nativeLib/VideoOS.Platform.dll	0eb82cdeedf93fb8aa7ae4fbfadd9f0bd18d5e77a44fda6c9347a7fbbdbce3bd	5462560	0x014c	0	1	VideoOS.Platform	1.0.0.0	.NETFramework,Version=v4.7	1	bc60fba4a7969f89	1	0
+org	xprotect/resources/nativeLib/Autofac.dll	52093994c5e2aadfa32a7f00214ddc16a6babf22e47a43917d953037f26c47d9	242720	0x014c	0	1	Autofac	4.9.4.0	.NETStandard,Version=v2.0	1	17863af14b0044da	1	0
+org	xprotect/resources/nativeLib/VideoOS.Common.Login.dll	3bc00ee3cef6c8391271ed8e93273a2ace99dda7384c94fc7afe58425bcd30de	49696	0x014c	0	1	VideoOS.Common.Login	24.2.0.0	.NETFramework,Version=v4.7.2	1	bc60fba4a7969f89	1	0
+org	xprotect/resources/nativeLib/VideoOS.Telemetry.dll	af41218a55d3de9e94537a1254046deddb520a8d5ae0523c41e83642b8f344dc	27688	0x014c	0	1	VideoOS.Telemetry	24.2.0.0	.NETStandard,Version=v2.0	1	bc60fba4a7969f89	1	0
+org	xprotect/resources/nativeLib/VideoOS.Platform.SDK.dll	22d60d1ced35539157c9bc963ac5436dffa5124f08c24feeb75142c3562cfe61	1353248	0x014c	0	1	VideoOS.Platform.SDK	24.2.0.0	.NETFramework,Version=v4.7.2	1	bc60fba4a7969f89	1	0
+org	xprotect/resources/nativeLib/VideoOS.Common.dll	2f39b19d5004543eddd131ad0955a43edb5ef01da427525ced292d90bf49e49d	36904	0x014c	0	1	VideoOS.Common	24.2.0.0	.NETFramework,Version=v4.7.2	1	bc60fba4a7969f89	1	0
+org	xprotect/resources/nativeLib/VideoOS.Utilities.dll	a05a1e44969b1d2aec2d1311e3df412dd771bd719ac3e35618da766593cf84f3	354344	0x014c	0	1	VideoOS.Utilities	24.2.0.0	.NETFramework,Version=v4.7.2	1	bc60fba4a7969f89	1	0
+org	gx/resources/LIB-INF/org.eclipse.swt.win32.win32.x86_64-3.134.0.jar!swt-win32-4973r12.dll	984f5e123a253fbc7db404188a392a884867e44dc422fd846f8ef10df300f54c	791720	0x8664	1	0						1	891
+org	gx/resources/LIB-INF/org.eclipse.swt.win32.win32.x86_64-3.134.0.jar!swt-gdip-win32-4973r12.dll	8d14dbf9cc8e2e98fb562a3a297bf0737d9416dd3cc77ba5265bc6226da7fa3a	170664	0x8664	1	0						1	188
+org	gx/resources/LIB-INF/org.eclipse.swt.win32.win32.x86_64-3.134.0.jar!WebView2Loader.dll	184574b9c36b044888644fc1f2b19176e0e76ccc3ddd2f0a5f0d618c88661f86	141224	0x8664	1	0						1	4
+org	gx/resources/LIB-INF/org.eclipse.swt.win32.win32.x86_64-3.134.0.jar!swt-awt-win32-4973r12.dll	800227b44ae57cddff06bef724e0a0a27da0f5bea5018be374ec0dd554be6fd4	122024	0x8664	1	0						1	3
+org	gx/resources/LIB-INF/org.eclipse.swt.win32.win32.x86_64-3.134.0.jar!swt-wgl-win32-4973r12.dll	cf56ff1fdb536e9bb26dc10700497b2fe8c1695ada3b676c9dd0450a18b6a929	125608	0x8664	1	0						1	9
+org	gx/resources/LIB-INF/org.eclipse.swt.win32.win32.x86_64-3.134.0.jar!swt-osversion-win32-4973r12.dll	9aeec18ef40ca91b49a4d88ba20627c137b40d437e1c9d311b9aa9e0c602c3b7	123560	0x8664	1	0						1	2
