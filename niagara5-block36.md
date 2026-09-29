@@ -228,6 +228,10 @@ port/suspend flag, `browsers`/`chromeFlags` (feeding the `puppeteer`-driven head
 confirms `gruntCi`/`gruntIntegration` run a real **spun-up Niagara test station + Karma/JUnit/jshint/
 jsdoc/complexity/coverage report pipeline**, not just a lint pass — matching the `srcTest/rc/stations/…`
 test-station pattern already documented for N4's `grunt-niagara` (REMIT `niagara-research` B957 §957.5-6).
+
+> **Correction (added by [Block 121], §121.7, §14 cross-block).** The three default ports (9088 / 9089 / 9911) are right but are not in `GruntCiOptions.kt`: that class only declares
+> `Property<Int>`. The defaults are `private const val DEFAULT_STATION_*_PORT` in `GruntPlugin.Companion` (`GruntPlugin.kt:235-237`), inlined into the lambda class
+> `GruntPlugin$configureTask$2` (`javap -c`: `getStationHttpPort` / `sipush 9088` / `Property.convention`); cite that bytecode, not the options class.
 `configureTask()` also sets `NODE_PATH` on the task's environment to
 `NodePluginKt.getGlobalNodeModulesDirectory(niagaraEnvironmentService)` — the platform-specific global
 npm-modules dir (`<nodeHome>/lib/node_modules` on Linux, `<nodeHome>/node_modules` elsewhere) — so `grunt`

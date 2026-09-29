@@ -300,6 +300,10 @@ whole file read).
 
 ## 2.5 — Slotomatic: same tool, same package, now exposed as a Kotlin `Slotomatic` task type `[CERT]`
 
+> **Correction (added by [Block 121], §121.7, §14 cross-block).** The heading is wrong about the language of the task type: `Slotomatic`, `SlotomaticTask` and
+> `MigrateSlotomaticTask` are **Java** classes (no `kotlin/Metadata` on any of the three, `evidence/b121/claim-audit.tsv`); only the registering plugin
+> `NiagaraModulePlugin` is Kotlin. The body's own citation (`Slotomatic.java`) and [Block 74] §74.1 already say so. The delegation to `com.tridium.slottool.Slotomatic` below is unaffected.
+
 The Gradle task class `com.tridium.gradle.plugins.module.task.Slotomatic` (registered by
 `NiagaraModulePlugin.registerSlotomaticTasks()`, task name `slotomatic`, invoked as
 `gradlew :<moduleName>:slotomatic`) delegates to **`com.tridium.slottool.Slotomatic`** — the identical

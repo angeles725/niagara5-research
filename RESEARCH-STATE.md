@@ -44,16 +44,16 @@ ANGLE: decompiled-Java + packaged resources + shipped docs (docSource.jar origin
      Field names use UNDERSCORES on purpose: they must never collide with the prose greps below. -->
 <!-- research-state.v1 -->
 schema: research-state.v1
-covered_blocks: 120
-gaps_closed: 391
-known_gaps: 520
-investigable_open: 27
-requires_execution_open: 26
+covered_blocks: 121
+gaps_closed: 392
+known_gaps: 525
+investigable_open: 30
+requires_execution_open: 27
 blocked_open: 64
 deferred_open: 12
 undocumented_findings: 0
-blocks_since_retro: 5
-last_iteration_ts: 2026-09-29T02:31:00Z
+blocks_since_retro: 6
+last_iteration_ts: 2026-09-29T03:05:40Z
 <!-- /research-state.v1 -->
 <!-- last_iteration_ts is always present — write the ISO-8601 UTC timestamp on every block commit;
      applies to every corpus (single-focus and campaign alike); the stall-detection instrument reads it
@@ -61,9 +61,9 @@ last_iteration_ts: 2026-09-29T02:31:00Z
 
 ## Coverage
 
-- **Covered blocks**: 120 (B1..B120)
-- **Coverage metric**: 391 / 520 closed
-- **Last iteration**: 2026-09-29 — B120 pattern-switch decompile fidelity (closes B116-G5); focus: decompile fidelity
+- **Covered blocks**: 121 (B1..B121)
+- **Coverage metric**: 392 / 525 closed
+- **Last iteration**: 2026-09-29 — B121 Kotlin-compiled Tridium jars audit (closes B117-G2); focus: decompile fidelity
 
 ## Gap-backlog
 
@@ -495,7 +495,7 @@ last_iteration_ts: 2026-09-29T02:31:00Z
 | medium | B116-G5 Review the 27 typeSwitch / 10 MatchException classes decompiled as pseudo-Java | organized/ | ✅ covered — B120 (27 sites/23 classes and 15 MatchException methods/10 classes reproduced; v1/v2 render 26 of 27 typeSwitch sites faithfully, createStation is pseudo-Java in all 5 trees and has a bytecode-exact reconstruction; unnamed `case T _` rendered as varN; no wrong order/guard/default/record loss found) |
 | low | B116-G6 Independent second review of the 113 benign SEM? verdicts | evidence/b116 | pending |
 | high | B117-G1 Durable decompile of the 10 out-of-pipeline Tridium jars (etc/m2, lib doclet) and devkit LIB-INF Tridium jars | etc/m2 + devkit | pending |
-| medium | B117-G2 Audit corpus claims read from Java decompiles of the 4 Kotlin-compiled Tridium jars | corpus + etc/m2 | pending |
+| medium | B117-G2 Audit corpus claims read from Java decompiles of the 4 Kotlin-compiled Tridium jars | corpus + etc/m2 | ✅ covered — B121 (696/696 classes decode from kotlin.Metadata; corpus trees are Vineflower Kotlin-plugin output, 67 method + 6 class walls; 42 claims audited: 36 SAFE / 4 SUSPECT / 1 CONTRADICTED (B2 §2.5) / 1 ADVANCED (B7-G1 answered); §14 pointers B2/B7/B36/B117) |
 | medium | B117-G3 Tag claims resting on minified JS; check the 86 .map files for original sources | module resources | ✅ covered — B119 (86 maps: 42 carry originals, recovered to organized/_sourcemaps; 0 of the 234 minified files has a map; 132 truly minified + 102 long-line-only; 15 minified citations in 5 blocks, none contradicted) |
 | low | B117-G4 Decompile the 14 .NET assemblies (xprotect) and map the ffmpeg JNI surface | module payloads | pending |
 | medium | B117-G5 Verify Authenticode digests of the Tridium PE binaries | bin/ | ✅ covered — orchestrator (osslsigncode provisioned; 20/20 bin/*.dll,*.exe digest match, evidence/b117/authenticode-verify.txt; B117 counted 21 — 1 PE outside bin/ top level not yet checked) |
@@ -520,6 +520,11 @@ last_iteration_ts: 2026-09-29T02:31:00Z
 | low | B120-G3 Machine-check `when` guards (restart-index assignments) of pseudo-Java trees at the 9 guard-loop sites | evidence/b120 | pending |
 | low | B120-G4 Census the Procyon 0.6.0 InvokeDynamicRewriter NPE (empty files) across all indy classes | decompilers | requires-execution → §19 |
 | low | B120-G5 Reconcile _lib-inf-3p (33,713) / _etc-m2 (945) class counts with B117's 24,896 / 958 | organized/ | pending |
+| medium | B121-G1 Durable Java-mode companion (or wall index) for the 73 Kotlin-plugin wall sites (67 methods + 6 classes) in the four Kotlin jars' trees | organized/_etc-m2 + n5-decompile | pending |
+| medium | B121-G2 Recompile the Kotlin-plugin .kt output with kotlinc 2.2.x and compare normalized bytecode with the shipped classes | kotlinc + Gradle API classpath | requires-execution → §19 |
+| low | B121-G3 Recount B89 §89.8 NativeCommand key sets (17 vs 18 constants; SEVEN cc / NINE ld-ar populated keys) | organized/_etc-m2 n-plugin | pending |
+| low | B121-G4 Audit claims resting on the five third-party Kotlin jars beyond B55/B106; grade okhttp/okio .kt output against upstream sources | corpus + _upstream-sources | pending |
+| low | B121-G5 Root-cause the 45 metadata function names missing from and 90 extra fun names in the Kotlin plugin's .kt output | evidence/b121 | pending |
 | low | B104-G5 Live-station confirmation of B104's static driver/sync findings | station | requires-execution → §19 |
 | low | B106-G1 Gradle --info/dependencyInsight trace of which wiring puts the moduleTest jar on compileModuleTestJava | Gradle run | requires-execution → §19 |
 
@@ -647,6 +652,7 @@ last_iteration_ts: 2026-09-29T02:31:00Z
 | 118 | 2026-09-28 | Logic-recovery method ladder: conservative line-mapped Vineflower (669/669 lines match docSource), LineNumberTable pattern discriminator, SootUp/Joern bytecode call graphs on class-file 69, differential execution + jqwik + JaCoCo, CodeQL traced vs Joern dataflow, krak2 -r 20,724/20,724 byte-identical; §14 pointers B107, B115 | B118 | yes · opus | 7 new — B118-G1..G7 |
 | 119 | 2026-09-29 | Source-map census + minified-JS audit (B117-G3): 86 JSON maps (42 with originals, all Babel-transpiled driver/workbench JS that already ships readable; 42 LESS; 1 underscore; 1 empty), 0 of 234 minified JS files has a map, 132 truly minified + 102 long-line-only, 15 minified citations in 5 blocks none contradicted; tools/n5-sourcemap-recover.py (RED→GREEN 16 tests) recovered 42 originals; §14 pointer B75 | B119 | yes · sonnet | 5 new — B119-G1..G5 |
 | 120 | 2026-09-29 | Pattern-switch decompile fidelity (B116-G5): census reproduced (27 typeSwitch sites/23 classes, 7 enumSwitch, 15 MatchException methods/10 classes; 0 sites in 3P/etc-m2 roots), 5 trees x 49 methods graded by javac-25 recompile + normalized bytecode with BSM labels injected; v1/v2 faithful for 26/27 typeSwitch sites, createStation pseudo-Java in all trees (reconstruction bytecode-exact), unnamed `case T _` rendered as varN (docSource BWbProfile:598), cons/CFR/Procyon never compilable for typeSwitch but labels 29/29 exact, Procyon NPE empties 10 units | B120 | yes · sonnet | 5 new — B120-G1..G5 |
+| 121 | 2026-09-29 | Kotlin-compiled Tridium jars (B117-G2): census 475 jar entries, Kotlin in 4 Tridium jars (696 classes) + 6 third-party (2,672); 696/696 classes decode from kotlin.Metadata (kotlin-metadata-jvm 2.4.10, sha1-verified) into 774 functions/836 properties/262 constructors; corpus trees are Vineflower Kotlin-plugin output (329 .kt/62 .java) with 67 method + 6 class walls, Java mode 0; fidelity matrix of 15 constructs measured; 3,297 JVM methods mapped (45% compiler-generated); 42 claims audited (36 SAFE/4 SUSPECT/1 CONTRADICTED B2 §2.5/1 ADVANCED); B7-G1 answered from bytecode; §14 pointers B2/B7/B36/B117 | B121 | yes · opus | 5 new — B121-G1..G5 |
 
 ## Blocked gaps (each tagged with what it needs)
 
@@ -717,8 +723,8 @@ last_iteration_ts: 2026-09-29T02:31:00Z
 
 ## Stop control (primary = read-only-investigable exhaustion, METHODOLOGY §8)
 
-- **Open gaps — read-only investigable**: 25
-- **Open gaps — requires-execution**: 24
+- **Open gaps — read-only investigable**: 30
+- **Open gaps — requires-execution**: 27
 - **Open gaps — blocked**: 64
 - Consecutive iterations with empty backlog (secondary): 0/2
 - Budget cap (default safety net): none
