@@ -1,0 +1,81 @@
+# N5 decompile fidelity completion (after T21)
+
+## Objective
+Close every fidelity gap left open by T21 (odd/tasks/n5-full-grading.md) so the N5 5.0.0.28 decompile is measured
+and proven across ALL class files, not only top-level Tridium classes. Only after this is done does the toolchain
+move to Niagara N4 (user decision 2026-09-29).
+
+## Problem / why
+T21 proved 95.79% of 14,307 top-level classes. Still unmeasured or unproven:
+- 6,186 nested/inner/anonymous class files (`Outer$Inner.class`) are compiled but never compared.
+- Third-party LIB-INF jars without proven upstream source, and bin/ext jars, are not graded.
+- 602 top-level classes are bytecode-only (no decompile reproduces the shipped bytecode).
+- 3,375 classes are proven only up to canonical normalization, not byte-exact.
+
+## Scope (authorized, user 2026-09-29: "mejorarlo todo lo que nos falta ... fiel y exacto")
+tools/ (n5-fidelity.py, n5_canon.py, n5-splice-methods.py, n5-patch-doprivileged.py, new helpers) + tests;
+generated organized/<mod>/fidelity.*.json; docs/decompile-fidelity-report.md; this document.
+Decompiled/reconstructed vendor source stays under gitignored paths (organized/<mod>/vineflower*/, organized/_evidence/).
+
+## Constraints
+- User authorization 2026-09-29 (research-sdd launch): ODD + RDD (granted, accept Gentle-AI review consent) + commit + push + PR + pr view +
+  issues + merge without asking; answer own questions by recommendation; run uninterrupted. After this feature: frontier
+  research chain (heavy + auto + chained) on niagara5-research.
+- TDD: strict, source = user CLAUDE.md ("Strict TDD Mode: enabled"); runner `cd tools/tests && python3 -m unittest <module>`
+  and full `make test` (pytest not installed).
+- Classpath = sha256-verified jar mirror /home/cristian/niagara5-research-localcache/jar-mirror-5.0.0.28.
+- Grade with `--tool-server --class-jobs 4 --jobs 3`. Never `pkill -f` a pattern present in your own command line.
+- RDD: on (global). Commits for review stay small (< ~250 lines per slice; lens budget).
+- Delivery: feature branch feat/n5-fidelity-completion + PR (standing authorization from the T21 session).
+- Grading semantics: a new grade never weakens an existing one; schema bumps retract older grades explicitly.
+
+## Tasks
+Task IDs are C<n> (completion). "N4"/"N5" always mean Niagara 4 / Niagara 5, never a task.
+- [x] C0 Bookkeeping: T21 F5 is done (parent T21 line checked at odd/tasks/decompiler-fidelity-audit.md:242, PR #23/#24 merged).
+- [x] C1 (a4002c0; 19 new tests RED->GREEN, make test 658 OK; smoke backup+axvelocity) Grade nested/inner/anonymous class files. Each `Outer$X.class` produced by recompiling the outer source is
+      compared against the shipped `Outer$X.class` with the same normalizer/canonical ladder; a top-level class is
+      "fully proven" only when it and all its nested files are proven. Missing/extra synthetic nested files are
+      reported, never dropped. Forecast: 6,186 nested files; they are already produced by the existing compile step,
+      so the added cost is javap+compare only. Route: delegated writer (TDD; writer trigger: tool + tests).
+- [ ] C1b Full regrade with nested files on the best-of trees; report "fully proven (outer + nested)" per module.
+- [ ] C2a Grade the 6 Tridium bin/ext jars (nre 704, niagarad 255, niagaraAnnotationProcessors 51, niagara-remote-client 8,
+      securityBridge 2, splash 2 classes; trees already in organized/_bin-ext/*/vineflower2, no fidelity JSON yet). ~600 top-level.
+- [ ] C2b Grade third-party classes without proven upstream source (~14.6k: 38 identified artifacts incl. woodstox 735,
+      nimbus-jose 203, mssql-jdbc 166, paho 109 vendor-modified; unidentified jxbrowser 5,914, prosys-opc-ua 4,591, swt 959)
+      on organized/_lib-inf-3p trees; per-jar --release; Kotlin (~3.6k) uses javap as the verified representation (B125).
+- [ ] C3a Extend the F8 doPrivileged patch tree to the 109 bytecode-only `reference to doPrivileged is ambiguous` classes.
+- [ ] C3b Mechanical patches: anonymous-class-with-arguments (12), generic Object->String casts (12), `no suitable method` overload casts (22).
+- [ ] C3c Split `cannot find symbol` (67) by missing symbol kind and patch the mechanical sub-classes.
+- [ ] C3d Per-method splice with more donors / hand edits for the 103 one-method and 18 two-to-three-method mismatches
+      (`<clinit>` is the top mismatched method: 166 of 602).
+- [ ] C3e Hand reconstruction of the long tail (~220 compile errors + 4 many-method mismatches), prioritised by module use.
+- [ ] C4 Push canonical-only classes toward byte-exact where source-controllable: expression-level rules (r1 503, iinc 21,
+      cmp1 18, const 1, boolmat 53 ~ 700 classes) first; inspect the 210 canonical classes with no rule fired;
+      layout rules (tail 2,101, min 1,192, web, inl, merge, dse, thread, peep) are javac codegen shape and stay canonical.
+- [ ] C5 Report + PR + merge; then open the N4 port as a separate ODD project.
+
+## Route log
+- C0: inline (state check only).
+- C1: delegated writer (trigger: tool + tests, 2 non-trivial files); parent spot check re-ran the 19 nested tests: OK.
+- C2/C3/C4 map: delegated read-only Explore (trigger: 4+ files).
+
+## Progress / evidence
+- 2026-09-29: branch feat/n5-fidelity-completion from main 3d1bc79. RDD status: on (global).
+  Class-file census (organized/*/extracted, excluding _*): 14,683 top-level, 6,186 nested.
+
+- 2026-09-29 C2/C3/C4 map (read-only Explore, script scratchpad/a.py): best-of recount reproduces T21 exactly
+  (14,307 / 10,306 / 24 / 3,305 / 70 / 602). 602 bytecode-only = 477 no-compile + 103 one-method + 18 two-three + 4 many.
+  Top modules: baja 49, bacnet 38, provisioningNiagara 27, lonworks 25. bin/ext: 109 jars, 6 Tridium (1,022 classes incl. nested),
+  103 third-party (42,936). _lib-inf-3p: 94 artifact trees, 23,683 .java, ungraded. Canonical winners: base 2,980, patched 297, spliced 79.
+  Open reconcile: upstream coverage recount 14,638 uncovered of 76,129 vs report 16,228 of 77,719 (1,590 via classdiff fallback) -> C2b checks.
+
+- C1 result: per-class `nested` {files, missing, extra, drift_suspected} + `fully_proven` (outer clean AND all shipped nested
+  clean AND no missing/extra); SCHEMA_VERSION stays 2, separate NESTED_SCHEMA_VERSION=1 makes legacy JSON not up-to-date.
+  Smoke: axvelocity 12 nested (9 exact, 1 mismatch, 2 not-graded), 20/22 fully proven; backup 20 nested (3 exact, 17 not-graded
+  under 2 bytecode-only outers), 5/8 fully proven.
+  Child gaps: C1-G1 nested taken from the outer's winning rung only (score outer+nested jointly); C1-G2 anonymous numbering
+  drift reported, not re-paired; C1-G3 nested of never-compiled outers are not-graded (regrade after C3); C1-G4 regrade-nonclean
+  cannot backfill nested for clean classes -> C1b needs a full --force run first.
+
+## Next step
+C1b full --force regrade (both trees) in background; meanwhile C2a writer.
