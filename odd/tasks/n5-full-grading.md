@@ -34,6 +34,9 @@ tools/n5-fidelity.py + tests (performance only, grading semantics unchanged); or
       Route: delegated writer (worktree t21-f7f8, TDD on). Commit 4eeaafb. Evidence under "F7 evidence" below.
 - [x] F8 Mechanical doPrivileged disambiguation patch tree (vineflower2p), verified by recompile + canonical grade.
       Route: delegated writer (worktree t21-f7f8, TDD on). Commits 7d9cb2d, 9ba04f9, 11136c8. Evidence under "F8 evidence" below.
+- [x] F9 Per-method splice (meta-decompilation) tree vineflower2s, graded as its own rung; a splice counts only when
+      the whole class grades clean. Route: delegated writer (worktree t21-f7f8, TDD on; writer trigger: 2+ non-trivial
+      files). Commits 89ab294, d8e0942, 97c6ac0, faedc62. Evidence under "F9 evidence" below.
 - [ ] F3 Full run, vineflower2 then vineflower, all modules; failures recorded as module_error, never dropped.
       Route: inline background run.
 - [ ] F4 Report: regenerate docs/decompile-fidelity-report.md + `--compare vineflower,vineflower2`; verify numbers
@@ -143,3 +146,47 @@ tools/n5-fidelity.py + tests (performance only, grading semantics unchanged); or
   f8-final-grades.json, descr-diffs.json, patch/regrade logs, scratch-patched/*.fidelity.vineflower2.patched.json, scripts.
 - Next: after F3, run the patcher over the final tree and `--regrade-nonclean --patch-tree vineflower2p --all` for the
   published numbers; the vineflower2p rung counts as a separate, labelled source in the report.
+
+## F9 evidence (2026-09-29, worktree t21-f7f8)
+- Tool: tools/n5-splice-methods.py + tools/n5-splice-methods/MethodSpans.java (javac Tree API, parse AND attribute
+  against the grading classpath: descriptors are javac's erasure, enum constructor prefix added; member/type/static
+  references with offsets). Per class: primary = vineflower2p when present else vineflower2, must compile; CFR and
+  Procyon decompiled fresh, recompiled, compared per method with the grader's own normalizer + allowlist + n5_canon;
+  donor per mismatched method = exact > allowlist > canonical, CFR before Procyon; only the method's declaration from
+  the end of the primary's modifiers (whole declaration when flags/throws differ) is replaced, plus single-type/static
+  imports the donor span needs; up to 8 donor combinations; only a spliced class that self-grades clean is written.
+  Refusals: clinit, synthetic-method (lambda$/access$...), structural-mismatch, no-donor, method-not-located,
+  local-class, synthetic-member/missing-member, import-conflict, attribution-error, splice-no-compile, splice-not-clean.
+  `make test` 605 OK (skipped=4) at faedc62 (the "FAILED ... bad" line in its log is an expected-failure fixture).
+  Grader: `--patch-tree <tree>s` = label "spliced": fidelity.<tree>.spliced.json keyed on SPLICES.json, records
+  `spliced: true` + `splice: {tree, manifest, spliced_sha256, donors}` only when the splice rung IS the class grade.
+- TDD: test_n5_fidelity_splice_rung RED 4 errors -> GREEN 4; test_n5_splice_methods RED (module absent) -> GREEN 9, then
+  RED 1 FAIL (`this`/`super` reported as nest members; found by the trial run on alarm SkipList) -> GREEN 10, then
+  RED 1 FAIL (tool-server JVMs of finished per-module pools never reaped: the real run held 36 ToolServer JVMs) ->
+  GREEN 11. Soundness tests: a deliberately wrong donor (Procyon `a + b` for shipped `a - b`) spliced in grades
+  compiles-mismatch and the module run refuses no-donor and writes nothing; a donor body calling a synthetic-named
+  helper only the donor declares (`access$000`) is refused synthetic-member; an anonymous class in the donor span is
+  refused local-class. Regression suites test_n5_fidelity + patch/splice rung + patch_doprivileged OK.
+- JVM leak fix (faedc62): every class of a module runs on the module's pool (the --jobs threads never own a JVM) and
+  the pool's JVMs are reaped when it finishes: <= jobs x class_jobs JVMs (8 at --jobs 2 --class-jobs 4, observed 4 on
+  the single-module rerun). The first run (136 of 137 modules finished before it was stopped; one tool server died
+  and the run fell back to subprocess javac/javap, grades unaffected) was not repeated; only the unfinished module
+  (workbench) was re-run with the fix.
+- Real run over the 702 non-clean classes (best of vineflower2/.canon/.patched), --tool-server --jobs 2 --class-jobs 4:
+  181 not candidates (primary-no-compile 180, no-source 1); 521 candidates -> 91 spliced, 430 refused: no-donor 360,
+  clinit 46, synthetic-method 17, structural-mismatch 4, local-class 1, synthetic-member 1, splice-not-clean 1.
+  Spliced methods 115 (Procyon 65, CFR 50; donor verdict exact 74, canonical 41); 78 classes with 1 method, 13 with
+  2-6 methods. 14 splices needed an added import.
+- Grades: `n5-fidelity.py --regrade-nonclean --tree vineflower2 --patch-tree vineflower2s` over the 53 modules with a
+  splice -> all 91 spliced classes graded clean with best_decompiler vineflower2s, spliced: true, spliced_sha256 equal
+  to SPLICES.json and grade equal to the tool's self grade: roundtrip-exact 10, roundtrip-equivalent 2,
+  roundtrip-canonical 77, roundtrip-canonical-t2 2. Best-per-class: 702 -> 611 not clean, 95.09% -> 95.73% clean
+  (13,696 / 14,307).
+- Hand checks (independent javac + javap outside the tool, organized/_evidence/t21-f9/handcheck.out): the spliced
+  method's normalized Code equals the shipped one (exception table too) where vineflower2's does not --
+  AbstractStubGen.getConcreteClass, FileChooserModel.isSelected, BAceDevice.doReadFile/getComponent (Procyon, exact:
+  vineflower2 drops the synchronized block's exception-path monitorexit), BSystemDbService.doPing (Procyon, exact:
+  branch layout), BAceDevice.getNextSessionId (Procyon, exact); BHistoryDbTable.updateHistorySources (CFR, canonical
+  `peep`: operand order of an unboxing, proven by n5_canon).
+- Evidence copies: organized/_evidence/t21-f9/ (gitignored). Spliced sources: organized/<mod>/vineflower2s/ (gitignored).
+- Next: in the report, count vineflower2s as its own labelled source (per-method meta-decompilation, Harrand et al.).
