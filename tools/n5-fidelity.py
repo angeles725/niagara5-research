@@ -1048,6 +1048,11 @@ _GRADE_RANK = {
 CLEAN_GRADES = ("roundtrip-exact", "roundtrip-equivalent", "roundtrip-canonical", "roundtrip-canonical-t2")
 
 
+# grades that END the redundancy ladder: a canonical grade is clean but weaker
+# evidence, so the ladder keeps looking for an engine that round-trips exactly
+LADDER_STOP_GRADES = ("roundtrip-exact", "roundtrip-equivalent")
+
+
 def _is_clean(grade: str) -> bool:
     return grade in CLEAN_GRADES
 
@@ -1060,25 +1065,32 @@ def run_redundancy_ladder(ladder: list[tuple[str, Callable[[], dict]]]) -> dict:
     """Run each (name, thunk) in order, stopping at the first clean grade.
 
     Every engine actually invoked is recorded in `attempted` (for disagreement
-    visibility), but engines after a clean hit are never run — this is the
-    "keep the first that round-trips" rule from the task spec, made cheap.
+    visibility), but engines after an exact/equivalent hit are never run —
+    the "keep the first that round-trips" rule, made cheap. A canonical grade
+    does not stop the ladder (see LADDER_STOP_GRADES).
     """
     attempted: list[tuple[str, dict]] = []
     for name, thunk in ladder:
         result = thunk()
         attempted.append((name, result))
-        if _is_clean(result["grade"]):
+        if result["grade"] in LADDER_STOP_GRADES:
             break
     return select_best_decompiler(attempted)
 
 
 def select_best_decompiler(attempts: list[tuple[str, dict]]) -> dict:
+    """The first engine reaching roundtrip-exact/equivalent; failing that, the
+    best-ranked canonical grade (tier 1 over tier 2, earlier engine on a tie);
+    failing that, bytecode-only."""
     best_name = None
     best_result = None
     for name, result in attempts:
-        if _is_clean(result["grade"]):
+        if not _is_clean(result["grade"]):
+            continue
+        if best_result is None or _GRADE_RANK[result["grade"]] > _GRADE_RANK[best_result["grade"]]:
             best_name = name
             best_result = result
+        if result["grade"] in LADDER_STOP_GRADES:
             break
     if best_result is None:
         grade = "bytecode-only"
@@ -1607,13 +1619,13 @@ def _grade_one_class(
         # `per_engine_mismatched_methods`.
         first = recompile_and_grade(str(source_java), class_short, classpath, str(classfile), td, javac_bin, javap_bin, tool_server=tool_server)
         attempted = [(primary_tree, first)]
-        if not _is_clean(first["grade"]):
+        if first["grade"] not in LADDER_STOP_GRADES:
             cfr_result = cfr_thunk()
             attempted.append(("cfr", cfr_result))
-            if not _is_clean(cfr_result["grade"]):
+            if cfr_result["grade"] not in LADDER_STOP_GRADES:
                 procyon_result = procyon_thunk()
                 attempted.append(("procyon", procyon_result))
-                if not _is_clean(procyon_result["grade"]) and jd_cli_jar is not None:
+                if procyon_result["grade"] not in LADDER_STOP_GRADES and jd_cli_jar is not None:
 
                     def jdcli_thunk():
                         return _decompile_retry_thunk("jd-cli", jd_cli_jar, "JD-CLI")
@@ -1639,8 +1651,8 @@ def _grade_one_class(
             # canonical evidence of the engine whose grade IS the class grade
             # (the first clean rung, else the primary tree): which methods the
             # sound canonical comparison resolved and the rules it needed
-            "canonical_methods": [list(k) for k in (_grade_source(attempted)[1].get("canonical_methods") or [])],
-            "canonical_rules": list(_grade_source(attempted)[1].get("canonical_rules") or []),
+            "canonical_methods": [list(k) for k in (_grade_source(attempted, best)[1].get("canonical_methods") or [])],
+            "canonical_rules": list(_grade_source(attempted, best)[1].get("canonical_rules") or []),
             # per-engine, per-method round-trip data — NOT a merge (an unsound
             # per-method Frankenstein class is never assembled here; see
             # docs/decompile-fidelity-report.md's Meta-decompilation section /
@@ -1655,8 +1667,10 @@ def _grade_one_class(
         }
 
 
-def _grade_source(attempted: list[tuple[str, dict]]) -> tuple[str, dict]:
-    return next(((n, r) for n, r in attempted if _is_clean(r["grade"])), attempted[0])
+def _grade_source(attempted: list[tuple[str, dict]], best: dict) -> tuple[str, dict]:
+    """The (engine, result) whose grade is the class grade: the selected best
+    decompiler, or the primary tree when nothing round-tripped."""
+    return next(((n, r) for n, r in attempted if n == best["best_decompiler"]), attempted[0])
 
 
 def grade_module(

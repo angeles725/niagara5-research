@@ -2397,12 +2397,16 @@ class TestCanonicalGrades(unittest.TestCase):
                            check=True, capture_output=True)
             shutil.copy(Path(td) / "g" / "p" / "Foo.class", mod_dir / "extracted" / "p" / "Foo.class")
             (mod_dir / "vineflower2" / "p" / "Foo.java").write_text(decompiled)
-            result = self.mod.grade_module("fakemod", organized_dir=Path(td), classpath="", primary_tree="vineflower2",
-                                           javac_bin=JDK25_JAVAC, javap_bin=JDK25_JAVAP)
+            # the other engines produce nothing, so the canonical first rung is the best grade
+            with mock.patch.object(self.mod, "_decompile_one_class_with", return_value=(None, None)):
+                result = self.mod.grade_module("fakemod", organized_dir=Path(td), classpath="",
+                                               primary_tree="vineflower2", javac_bin=JDK25_JAVAC, javap_bin=JDK25_JAVAP)
             rec = result["classes"]["p/Foo"]
             self.assertEqual(rec["grade"], "roundtrip-canonical")
+            self.assertEqual(rec["best_decompiler"], "vineflower2")
             self.assertEqual(rec["canonical_rules"], ["tail"])
-            self.assertEqual(rec["attempted"], [("vineflower2", "roundtrip-canonical")])
+            self.assertEqual(rec["attempted"], [("vineflower2", "roundtrip-canonical"), ("cfr", "no-compile"),
+                                                ("procyon", "no-compile")])
 
 
 class TestRegradeNonclean(unittest.TestCase):
@@ -2520,9 +2524,10 @@ class TestRegradeNonclean(unittest.TestCase):
             self._source(mod_dir, {"p/Foo": {"grade": "bytecode-only"}})
             empty = Path(td) / "empty"
             empty.mkdir()
-            rc = self.mod.main(["--regrade-nonclean", "--modules", "fakemod", "--tree", "vineflower2",
-                                "--organized-dir", str(organized), "--modules-dir", str(empty),
-                                "--bin-ext-dir", str(empty), "--classpath-cache-dir", str(Path(td) / "cp")])
+            with mock.patch.object(self.mod, "_decompile_one_class_with", return_value=(None, None)):
+                rc = self.mod.main(["--regrade-nonclean", "--modules", "fakemod", "--tree", "vineflower2",
+                                    "--organized-dir", str(organized), "--modules-dir", str(empty),
+                                    "--bin-ext-dir", str(empty), "--classpath-cache-dir", str(Path(td) / "cp")])
             self.assertEqual(rc, 0)
             out = json.loads((mod_dir / "fidelity.vineflower2.canon.json").read_text())
             self.assertEqual(out["classes"]["p/Foo"]["grade"], "roundtrip-canonical")
@@ -2602,3 +2607,76 @@ class TestRegradeNoncleanForce(unittest.TestCase):
                 self.mod.regrade_nonclean_module("m", organized_dir=Path(td), tree="vineflower2", grade_fn=grade,
                                                  force=force)
             self.assertEqual(calls, ["p/B", "p/B"])
+
+
+class TestLadderPrefersExactOverCanonical(unittest.TestCase):
+    """A canonical grade is clean but weaker evidence than exact/equivalent:
+    the redundancy ladder must keep going after it, and a later engine that
+    reaches roundtrip-exact/equivalent wins (57 classes of 5 modules lost
+    their CFR/Procyon roundtrip-exact when the ladder stopped at a canonical
+    first rung)."""
+
+    def setUp(self):
+        self.mod = _load()
+
+    def test_later_exact_beats_earlier_canonical(self):
+        result = self.mod.select_best_decompiler([
+            ("vineflower2", {"grade": "roundtrip-canonical"}), ("cfr", {"grade": "roundtrip-exact"})])
+        self.assertEqual((result["best_decompiler"], result["grade"]), ("cfr", "roundtrip-exact"))
+
+    def test_best_ranked_canonical_wins_when_nothing_is_exact(self):
+        result = self.mod.select_best_decompiler([
+            ("vineflower2", {"grade": "roundtrip-canonical-t2"}), ("cfr", {"grade": "roundtrip-canonical"}),
+            ("procyon", {"grade": "compiles-mismatch"})])
+        self.assertEqual((result["best_decompiler"], result["grade"]), ("cfr", "roundtrip-canonical"))
+        result = self.mod.select_best_decompiler([
+            ("vineflower2", {"grade": "roundtrip-canonical"}), ("cfr", {"grade": "roundtrip-canonical-t2"})])
+        self.assertEqual(result["best_decompiler"], "vineflower2")
+
+    def test_ladder_continues_after_a_canonical_rung_and_stops_at_exact(self):
+        calls = []
+
+        def engine(name, grade):
+            def run():
+                calls.append(name)
+                return {"grade": grade}
+            return run
+        result = self.mod.run_redundancy_ladder([
+            ("vineflower2", engine("vineflower2", "roundtrip-canonical")),
+            ("cfr", engine("cfr", "roundtrip-exact")),
+            ("procyon", engine("procyon", "roundtrip-exact"))])
+        self.assertEqual(calls, ["vineflower2", "cfr"])
+        self.assertEqual(result["grade"], "roundtrip-exact")
+
+    @unittest.skipUnless(_jdk_available(), "JDK 25 not installed")
+    def test_grade_one_class_tries_the_next_engine_after_a_canonical_first_rung(self):
+        with tempfile.TemporaryDirectory() as td:
+            mod_dir = Path(td) / "fakemod"
+            (mod_dir / "extracted" / "p").mkdir(parents=True)
+            (mod_dir / "vineflower2" / "p").mkdir(parents=True)
+            src_dir = Path(td) / "src" / "p"
+            src_dir.mkdir(parents=True)
+            (src_dir / "Foo.java").write_text(
+                'package p;\npublic class Foo {\n  static String f(long v) { if (v == 0) return "a"; return "b"; }\n}\n')
+            subprocess.run([JDK25_JAVAC, "--release", "25", "-g", "-d", str(Path(td) / "g"), str(src_dir / "Foo.java")],
+                           check=True, capture_output=True)
+            shutil.copy(Path(td) / "g" / "p" / "Foo.class", mod_dir / "extracted" / "p" / "Foo.class")
+            (mod_dir / "vineflower2" / "p" / "Foo.java").write_text(
+                'package p;\npublic class Foo {\n  static String f(long v) { return v == 0 ? "a" : "b"; }\n}\n')
+            calls = []
+
+            def fake_decompile(java_bin, engine, tool_jar, classfile, out_dir):
+                calls.append(engine)
+                out = Path(out_dir) / "p"
+                out.mkdir(parents=True, exist_ok=True)
+                (out / "Foo.java").write_text((src_dir / "Foo.java").read_text())
+                return out / "Foo.java", None
+            with mock.patch.object(self.mod, "_decompile_one_class_with", side_effect=fake_decompile):
+                result = self.mod.grade_module("fakemod", organized_dir=Path(td), classpath="",
+                                               primary_tree="vineflower2", javac_bin=JDK25_JAVAC, javap_bin=JDK25_JAVAP)
+            rec = result["classes"]["p/Foo"]
+            self.assertEqual(calls, ["cfr"])
+            self.assertEqual(rec["grade"], "roundtrip-exact")
+            self.assertEqual(rec["best_decompiler"], "cfr")
+            self.assertEqual(rec["attempted"], [("vineflower2", "roundtrip-canonical"), ("cfr", "roundtrip-exact")])
+            self.assertEqual(rec["canonical_rules"], [])
