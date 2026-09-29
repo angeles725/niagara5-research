@@ -52,6 +52,15 @@ Usage:
 
 Resumable: a module is skipped when organized/<mod>/fidelity.json already
 records the module jar's current sha256 and this tool's SCHEMA_VERSION.
+
+Nested files (C1): every `Outer$*.class` (inner, anonymous, local) is graded
+with the same normalizer and canonical ladder as the top-level class, paired by
+file name. Each class record gains `nested` ({files, missing, extra,
+drift_suspected}) and `fully_proven` (outer proven AND every shipped nested file
+proven, no missing/extra nested file); the module JSON gains
+`nested_schema_version` and nested counts. The top-level `grade` is unchanged
+and SCHEMA_VERSION is NOT bumped: a JSON without `nested_schema_version` has no
+nested grades and is re-graded by a full run.
 """
 from __future__ import annotations
 
@@ -84,6 +93,11 @@ import n5_canon  # noqa: E402  (tools/n5_canon.py: parser + sound CFG canonicali
 # were added. A schema-1 file can hold a false `roundtrip-exact` and has no
 # canonical grades, so it is not an up-to-date cache of this grader.
 SCHEMA_VERSION = 2
+# C1: nested/inner/anonymous class files are graded too. This is a SEPARATE,
+# additive schema marker (SCHEMA_VERSION stays 2 so every existing top-level
+# grade keeps its meaning): a fidelity JSON without it carries no nested
+# grades and is_module_up_to_date treats it as stale for a nested-aware run.
+NESTED_SCHEMA_VERSION = 1
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_ORGANIZED_DIR = REPO_ROOT / "organized"
@@ -1338,6 +1352,81 @@ def _first_javac_error(stderr: str) -> Optional[str]:
     return stderr.strip().splitlines()[0] if stderr.strip() else "javac failed with no diagnostic output"
 
 
+def list_nested_class_files(class_file: str) -> list[str]:
+    """Sorted file names of every `<Outer>$*.class` sitting next to
+    `class_file` (nested, inner, anonymous and local classes)."""
+    p = Path(class_file)
+    return sorted(f.name for f in p.parent.glob(f"{p.stem}$*.class") if f.is_file())
+
+
+def grade_nested_classes(
+    ground_truth_class: str, recompiled_class: str, javap_bin: str = DEFAULT_JAVAP,
+    javap_timeout: Optional[float] = DEFAULT_JAVAP_TIMEOUT_SECONDS, tool_server: bool = False,
+) -> dict:
+    """Grade every nested class file with the same normalizer + canonical
+    ladder as the top-level class. Files are paired STRICTLY by file name: a
+    shipped `Outer$2.class` is compared to the recompiled `Outer$2.class` only,
+    so anonymous-class numbering drift shows up as a mismatch (or as
+    missing+extra), never as a lucky proof. Shipped files the recompile did not
+    produce are `missing`; recompiled files that were not shipped are `extra`.
+    """
+    shipped = list_nested_class_files(ground_truth_class)
+    produced = list_nested_class_files(recompiled_class)
+    gdir, rdir = Path(ground_truth_class).parent, Path(recompiled_class).parent
+    files: dict[str, dict] = {}
+    for name in shipped:
+        if name not in produced:
+            continue
+        try:
+            a = parse_javap_verbose(run_javap_verbose(str(gdir / name), javap_bin=javap_bin, timeout=javap_timeout, tool_server=tool_server))
+            b = parse_javap_verbose(run_javap_verbose(str(rdir / name), javap_bin=javap_bin, timeout=javap_timeout, tool_server=tool_server))
+        except subprocess.TimeoutExpired:
+            files[name] = {"grade": "timeout", "mismatched_methods": []}
+            continue
+        result = grade_class_result(compiled_ok=True, diff=diff_normalized_classes(a, b), first_error=None)
+        files[name] = {"grade": result["grade"], "mismatched_methods": [list(k) for k in result["mismatched_methods"]]}
+    missing = [n for n in shipped if n not in produced]
+    extra = [n for n in produced if n not in shipped]
+    return {"files": files, "missing": missing, "extra": extra, "drift_suspected": bool(missing and extra)}
+
+
+def ungraded_nested(class_file: str, reason: str = "not-graded") -> dict:
+    """The nested record for a class whose recompile never produced nested
+    files to compare (no-compile, harness error, ...): every shipped nested
+    file is listed as unproven, never dropped."""
+    return {"files": {n: {"grade": reason, "mismatched_methods": []} for n in list_nested_class_files(class_file)},
+            "missing": [], "extra": [], "drift_suspected": False}
+
+
+def fully_proven(outer_grade: str, nested: dict) -> bool:
+    """The outer class AND every shipped nested file are proven, and the
+    recompile produced no nested file the shipped jar does not have (an extra
+    or missing file means the recompiled class set differs)."""
+    return (_is_clean(outer_grade) and not nested["missing"] and not nested["extra"]
+            and all(_is_clean(f["grade"]) for f in nested["files"].values()))
+
+
+def summarize_nested(classes: dict) -> dict:
+    """Module-level nested counts over class records carrying `nested`."""
+    counts: dict[str, int] = {}
+    total = extra = proven = graded = 0
+    for rec in classes.values():
+        nested = rec.get("nested")
+        if nested is None:
+            continue
+        graded += 1
+        for f in nested["files"].values():
+            counts[f["grade"]] = counts.get(f["grade"], 0) + 1
+            total += 1
+        if nested["missing"]:
+            counts["missing-from-recompile"] = counts.get("missing-from-recompile", 0) + len(nested["missing"])
+            total += len(nested["missing"])
+        extra += len(nested["extra"])
+        proven += 1 if rec.get("fully_proven") else 0
+    return {"nested_file_count": total, "nested_grade_counts": counts, "extra_nested_count": extra,
+            "fully_proven_count": proven, "nested_graded_class_count": graded}
+
+
 def recompile_and_grade(
     java_file: str,
     class_name: str,
@@ -1424,7 +1513,9 @@ def recompile_and_grade(
             "allowlist_matches": [],
         }
     diff = diff_normalized_classes(a, b)
-    return grade_class_result(compiled_ok=True, diff=diff, first_error=None)
+    result = grade_class_result(compiled_ok=True, diff=diff, first_error=None)
+    result["nested"] = grade_nested_classes(ground_truth_class, recompiled_class, javap_bin, javap_timeout, tool_server)
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -1680,6 +1771,8 @@ def _grade_one_class(
             "consensus": {"reaching_roundtrip": [], "count": 0},
             "docsource_available": docsource_available,
             "docsource_roundtrip": docsource_roundtrip,
+            "nested": ungraded_nested(str(classfile)),
+            "fully_proven": False,
         }
 
     with tempfile.TemporaryDirectory(prefix=f"n5fid-{class_short}-") as td:
@@ -1760,6 +1853,12 @@ def _grade_one_class(
             "docsource_available": docsource_available,
             "docsource_roundtrip": docsource_roundtrip,
         }
+        # nested files ride the SAME rung whose grade is the class grade (the
+        # first clean rung, else the primary tree); a rung that never compiled
+        # produced no nested files to compare, so they are listed as not-graded
+        nested = _grade_source(attempted, best)[1].get("nested") or ungraded_nested(str(classfile))
+        record["nested"] = nested
+        record["fully_proven"] = fully_proven(best["grade"], nested)
         if patch_tree:
             # a patched (or spliced) class counts only when the patch rung's grade
             # IS the class grade (never merely because a patch rung was attempted)
@@ -1879,6 +1978,8 @@ def grade_module(
         "primary_tree": primary_tree,
         "class_count": len(classes),
         "grade_counts": grade_counts,
+        "nested_schema_version": NESTED_SCHEMA_VERSION,
+        **{k: v for k, v in summarize_nested(per_class).items()},
         "classes": per_class,
         # a --limit-per-module run graded only a PREFIX of the module's real
         # classes -- is_module_up_to_date must never treat that partial run as
@@ -1955,6 +2056,9 @@ def is_module_up_to_date(
         return False
     return (
         fidelity.get("schema_version") == SCHEMA_VERSION
+        # a JSON written before nested grading carries no nested grades: stale
+        # for this grader, never mistaken for a nested-aware run
+        and fidelity.get("nested_schema_version") == NESTED_SCHEMA_VERSION
         and fidelity.get("jar_sha256") == recon.get("jar_sha256")
         # a fidelity.json from grading a DIFFERENT tree (e.g. "vineflower2")
         # must never be mistaken for an up-to-date cache of THIS tree's grade —
@@ -2105,6 +2209,10 @@ def regrade_nonclean_module(
             "primary_tree": tree,
             "class_count": len(classes),
             "grade_counts": counts,
+            # nested grades exist only when the SOURCE run was nested-aware
+            # (its clean classes are copied verbatim) -- never claimed otherwise
+            **({"nested_schema_version": NESTED_SCHEMA_VERSION, **summarize_nested(classes)}
+               if source.get("nested_schema_version") == NESTED_SCHEMA_VERSION else {}),
             "classes": classes,
             "limit_per_module": source.get("limit_per_module"),
             "regraded_from": src_path.name,
@@ -2339,6 +2447,30 @@ def generate_report(module_results: list[dict], cross_checks: Optional[dict] = N
                       "`tools/n5-fidelity.py`) but no observed mismatch pattern has yet been confirmed "
                       "provably-semantics-preserving; every method-body mismatch currently grades "
                       "`compiles-mismatch`, never `roundtrip-equivalent`.")
+
+    nested_rows = [mr for mr in sorted(module_results, key=lambda r: r["module"])
+                   if not mr.get("module_error") and mr.get("nested_schema_version") == NESTED_SCHEMA_VERSION]
+    if nested_rows:
+        lines.append("")
+        lines.append("## Nested class files")
+        lines.append("")
+        lines.append("Nested, inner, anonymous and local class files (`Outer$*.class`) are graded with the same normalizer and "
+                     "canonical ladder as top-level classes, paired strictly by file name. A class is *fully proven* when it and every "
+                     "shipped nested file are proven and the recompile produced no nested file the jar does not ship. Shipped nested "
+                     "files the recompile did not produce count as `missing-from-recompile`.")
+        lines.append("")
+        lines.append("| Module | Nested files | Proven | Unproven or missing | Extra (recompile only) | Fully proven classes |")
+        lines.append("|---|---:|---:|---:|---:|---:|")
+        t_files = t_proven = t_extra = t_full = 0
+        for mr in nested_rows:
+            proven = sum(v for g, v in mr["nested_grade_counts"].items() if _is_clean(g))
+            t_files += mr["nested_file_count"]
+            t_proven += proven
+            t_extra += mr["extra_nested_count"]
+            t_full += mr["fully_proven_count"]
+            lines.append(f"| {mr['module']} | {mr['nested_file_count']} | {proven} | {mr['nested_file_count'] - proven} | "
+                         f"{mr['extra_nested_count']} | {mr['fully_proven_count']} |")
+        lines.append(f"| **total** | {t_files} | {t_proven} | {t_files - t_proven} | {t_extra} | {t_full} |")
 
     lines.append("")
     lines.append("## Canonical grades")

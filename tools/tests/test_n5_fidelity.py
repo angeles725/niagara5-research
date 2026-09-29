@@ -1172,6 +1172,7 @@ class TestPrimaryTreeSelection(unittest.TestCase):
             (mod_dir / "recon.json").write_text(json.dumps({"jar_sha256": "abc"}))
             (mod_dir / "fidelity.json").write_text(json.dumps({
                 "schema_version": self.mod.SCHEMA_VERSION, "jar_sha256": "abc", "primary_tree": "vineflower",
+                "nested_schema_version": self.mod.NESTED_SCHEMA_VERSION,
             }))
             self.assertTrue(self.mod.is_module_up_to_date(mod_dir, primary_tree="vineflower"))
             self.assertFalse(self.mod.is_module_up_to_date(mod_dir, primary_tree="vineflower2"))
@@ -1184,6 +1185,7 @@ class TestPrimaryTreeSelection(unittest.TestCase):
             (mod_dir / "recon.json").write_text(json.dumps({"jar_sha256": "abc"}))
             (mod_dir / "fidelity.json").write_text(json.dumps({
                 "schema_version": self.mod.SCHEMA_VERSION, "jar_sha256": "abc",
+                "nested_schema_version": self.mod.NESTED_SCHEMA_VERSION,
             }))
             self.assertTrue(self.mod.is_module_up_to_date(mod_dir, primary_tree="vineflower"))
 
@@ -1795,6 +1797,7 @@ class TestFidelityOutputPaths(unittest.TestCase):
             (mod_dir / "fidelity.vineflower.json").write_text(json.dumps({
                 "schema_version": self.mod.SCHEMA_VERSION, "jar_sha256": "abc",
                 "primary_tree": "vineflower", "limit_per_module": 6,
+                "nested_schema_version": self.mod.NESTED_SCHEMA_VERSION,
             }))
             self.assertTrue(self.mod.is_module_up_to_date(mod_dir, primary_tree="vineflower", limit_per_module=6))
             self.assertFalse(self.mod.is_module_up_to_date(mod_dir, primary_tree="vineflower", limit_per_module=None))
@@ -1809,6 +1812,7 @@ class TestFidelityOutputPaths(unittest.TestCase):
             (mod_dir / "recon.json").write_text(json.dumps({"jar_sha256": "abc"}))
             (mod_dir / "fidelity.json").write_text(json.dumps({
                 "schema_version": self.mod.SCHEMA_VERSION, "jar_sha256": "abc",
+                "nested_schema_version": self.mod.NESTED_SCHEMA_VERSION,
             }))
             self.assertTrue(self.mod.is_module_up_to_date(mod_dir, primary_tree="vineflower", limit_per_module=None))
 
@@ -2680,3 +2684,272 @@ class TestLadderPrefersExactOverCanonical(unittest.TestCase):
             self.assertEqual(rec["best_decompiler"], "cfr")
             self.assertEqual(rec["attempted"], [("vineflower2", "roundtrip-canonical"), ("cfr", "roundtrip-exact")])
             self.assertEqual(rec["canonical_rules"], [])
+
+
+# ---------------------------------------------------------------------------
+# C1: nested / inner / anonymous / local class files are graded too
+# ---------------------------------------------------------------------------
+NESTED_SRC = (
+    "package p;\n"
+    "public class Outer {\n"
+    "    private int v;\n"
+    "    public class Inner { public int get() { return v; } }\n"
+    "    public Runnable anon() { return new Runnable() { public void run() { v++; } }; }\n"
+    "    public int local() { class Loc { int f() { return 7; } } return new Loc().f(); }\n"
+    "}\n"
+)
+
+
+class TestNestedClassGrading(unittest.TestCase):
+    def setUp(self):
+        if not _jdk_available():
+            self.skipTest("JDK 25 (javac/javap) not installed at the pinned brew path")
+        self.mod = _load()
+        self.tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmp, ignore_errors=True)
+
+    def _javac(self, name, text, out):
+        src_dir = Path(self.tmp) / f"src-{name}"
+        (src_dir / "p").mkdir(parents=True, exist_ok=True)
+        src = src_dir / "p" / "Outer.java"
+        src.write_text(text)
+        os.makedirs(out, exist_ok=True)
+        subprocess.run([JDK25_JAVAC, "--release", "25", "-g", "-implicit:none", "-proc:none", "-nowarn",
+                        "-d", out, str(src)], check=True, capture_output=True)
+        return str(src)
+
+    def _grade(self, shipped_text, decompiled_text):
+        ground = os.path.join(self.tmp, "ground")
+        self._javac("ship", shipped_text, ground)
+        java = self._javac("dec", decompiled_text, os.path.join(self.tmp, "scratch"))
+        return self.mod.recompile_and_grade(
+            java_file=java, class_name="Outer", classpath="",
+            ground_truth_class=os.path.join(ground, "p", "Outer.class"),
+            out_dir=os.path.join(self.tmp, "recompiled"),
+            javac_bin=JDK25_JAVAC, javap_bin=JDK25_JAVAP)
+
+    def test_identical_source_grades_every_nested_file_exact(self):
+        r = self._grade(NESTED_SRC, NESTED_SRC)
+        self.assertEqual(r["grade"], "roundtrip-exact")
+        nested = r["nested"]
+        self.assertEqual(sorted(nested["files"]), ["Outer$1.class", "Outer$1Loc.class", "Outer$Inner.class"])
+        self.assertEqual({v["grade"] for v in nested["files"].values()}, {"roundtrip-exact"})
+        self.assertEqual(nested["missing"], [])
+        self.assertEqual(nested["extra"], [])
+        self.assertTrue(self.mod.fully_proven(r["grade"], nested))
+
+    def test_nested_file_order_is_sorted_by_name(self):
+        r = self._grade(NESTED_SRC, NESTED_SRC)
+        self.assertEqual(list(r["nested"]["files"]), sorted(r["nested"]["files"]))
+
+    def test_nested_bytecode_difference_is_not_proven(self):
+        changed = NESTED_SRC.replace("public int get() { return v; }", "public int get() { return v + 1; }")
+        r = self._grade(NESTED_SRC, changed)
+        self.assertEqual(r["grade"], "roundtrip-exact")  # the outer class itself is untouched
+        self.assertEqual(r["nested"]["files"]["Outer$Inner.class"]["grade"], "compiles-mismatch")
+        self.assertTrue(r["nested"]["files"]["Outer$Inner.class"]["mismatched_methods"])
+        self.assertEqual(r["nested"]["files"]["Outer$1.class"]["grade"], "roundtrip-exact")
+        self.assertFalse(self.mod.fully_proven(r["grade"], r["nested"]))
+
+    def test_shipped_nested_file_missing_from_recompile_is_reported(self):
+        dropped = NESTED_SRC.replace("class Loc { int f() { return 7; } } return new Loc().f();", "return 7;")
+        r = self._grade(NESTED_SRC, dropped)
+        self.assertEqual(r["nested"]["missing"], ["Outer$1Loc.class"])
+        self.assertNotIn("Outer$1Loc.class", r["nested"]["files"])
+        self.assertFalse(self.mod.fully_proven("roundtrip-exact", r["nested"]))
+
+    def test_extra_nested_file_in_recompile_is_reported(self):
+        extra = NESTED_SRC.replace("public int local()", "public Runnable more() { return new Runnable() { public void run() { } }; }\n"
+                                   "    public int local()")
+        r = self._grade(NESTED_SRC, extra)
+        self.assertTrue(r["nested"]["extra"])
+        self.assertTrue(set(r["nested"]["extra"]).isdisjoint(r["nested"]["files"]))
+        self.assertFalse(self.mod.fully_proven("roundtrip-exact", r["nested"]))
+
+    def test_anonymous_numbering_drift_is_a_mismatch_not_a_proof(self):
+        two = (
+            "package p;\n"
+            "public class Outer {\n"
+            "    public Object a() { return new Object() { public String toString() { return \"a\"; } }; }\n"
+            "    public Object b() { return new Object() { public String toString() { return \"b\"; } }; }\n"
+            "}\n"
+        )
+        lines = two.splitlines(keepends=True)
+        swapped = "".join([lines[0], lines[1], lines[3], lines[2], lines[4]])  # javac numbers anonymous classes in textual order
+        r = self._grade(two, swapped)
+        # compared by file name: $1/$2 both exist on both sides but hold swapped bodies
+        self.assertEqual(sorted(r["nested"]["files"]), ["Outer$1.class", "Outer$2.class"])
+        self.assertEqual({v["grade"] for v in r["nested"]["files"].values()}, {"compiles-mismatch"})
+        self.assertFalse(self.mod.fully_proven(r["grade"], r["nested"]))
+
+    def test_no_nested_files_means_fully_proven_follows_the_outer_grade(self):
+        plain = "package p;\npublic class Outer { int f() { return 1; } }\n"
+        r = self._grade(plain, plain)
+        self.assertEqual(r["nested"], {"files": {}, "missing": [], "extra": [], "drift_suspected": False})
+        self.assertTrue(self.mod.fully_proven(r["grade"], r["nested"]))
+
+
+class TestFullyProvenAndSummary(unittest.TestCase):
+    def setUp(self):
+        self.mod = _load()
+
+    def _n(self, files=None, missing=(), extra=()):
+        return {"files": {k: {"grade": g} for k, g in (files or {}).items()},
+                "missing": list(missing), "extra": list(extra), "drift_suspected": bool(missing and extra)}
+
+    def test_requires_clean_outer(self):
+        self.assertFalse(self.mod.fully_proven("bytecode-only", self._n()))
+        self.assertFalse(self.mod.fully_proven("compiles-mismatch", self._n()))
+        for g in ("roundtrip-exact", "roundtrip-equivalent", "roundtrip-canonical", "roundtrip-canonical-t2"):
+            self.assertTrue(self.mod.fully_proven(g, self._n({"A$1.class": g})))
+
+    def test_any_unproven_missing_or_extra_nested_file_blocks(self):
+        self.assertFalse(self.mod.fully_proven("roundtrip-exact", self._n({"A$1.class": "roundtrip-exact", "A$2.class": "no-compile"})))
+        self.assertFalse(self.mod.fully_proven("roundtrip-exact", self._n(missing=["A$1.class"])))
+        self.assertFalse(self.mod.fully_proven("roundtrip-exact", self._n(extra=["A$3.class"])))
+
+    def test_summary_counts_every_shipped_nested_file_and_extras(self):
+        classes = {
+            "p/A": {"grade": "roundtrip-exact", "nested": self._n({"A$1.class": "roundtrip-exact"}), "fully_proven": True},
+            "p/B": {"grade": "roundtrip-exact", "nested": self._n({"B$1.class": "compiles-mismatch"}, missing=["B$2.class"], extra=["B$3.class"]),
+                    "fully_proven": False},
+            "p/C": {"grade": "bytecode-only"},  # legacy record, no nested data
+        }
+        s = self.mod.summarize_nested(classes)
+        self.assertEqual(s["nested_file_count"], 3)
+        self.assertEqual(s["nested_grade_counts"], {"roundtrip-exact": 1, "compiles-mismatch": 1, "missing-from-recompile": 1})
+        self.assertEqual(s["extra_nested_count"], 1)
+        self.assertEqual(s["fully_proven_count"], 1)
+        self.assertEqual(s["nested_graded_class_count"], 2)
+
+
+class TestNestedRecordIntegration(unittest.TestCase):
+    """The nested grades ride the grade-source rung's result into the class
+    record, the module JSON, --class-jobs / --regrade-nonclean, and the report."""
+
+    def setUp(self):
+        self.mod = _load()
+
+    def _module(self, td, names=("A", "B", "C")):
+        mod_dir = Path(td) / "m"
+        (mod_dir / "extracted" / "p").mkdir(parents=True)
+        (mod_dir / "vineflower" / "p").mkdir(parents=True)
+        for n in names:
+            (mod_dir / "extracted" / "p" / f"{n}.class").write_bytes(b"x")
+            (mod_dir / "extracted" / "p" / f"{n}$1.class").write_bytes(b"x")
+            (mod_dir / "extracted" / "p" / f"{n}$2.class").write_bytes(b"x")
+            (mod_dir / "vineflower" / "p" / f"{n}.java").write_text("class X {}")
+        (mod_dir / "recon.json").write_text(json.dumps({"jar_sha256": "j"}))
+        return Path(td)
+
+    def _fake_rag(self, java_file, class_name, *a, **kw):
+        nested = {"files": {f"{class_name}$1.class": {"grade": "roundtrip-exact", "mismatched_methods": []},
+                            f"{class_name}$2.class": {"grade": "compiles-mismatch", "mismatched_methods": [["m", "()V"]]}},
+                  "missing": [], "extra": [f"{class_name}$3.class"], "drift_suspected": False}
+        return {"grade": "roundtrip-exact", "first_error": None, "mismatched_methods": [], "allowlist_matches": [],
+                "nested": nested}
+
+    def test_class_record_carries_nested_and_fully_proven(self):
+        with tempfile.TemporaryDirectory() as td:
+            organized = self._module(td, names=("A",))
+            with mock.patch.object(self.mod, "recompile_and_grade", side_effect=self._fake_rag):
+                res = self.mod.grade_module("m", organized_dir=organized)
+            rec = res["classes"]["p/A"]
+            self.assertEqual(rec["grade"], "roundtrip-exact")  # top-level grade field unchanged
+            self.assertEqual(sorted(rec["nested"]["files"]), ["A$1.class", "A$2.class"])
+            self.assertEqual(rec["nested"]["extra"], ["A$3.class"])
+            self.assertIs(rec["fully_proven"], False)
+
+    def test_module_json_has_nested_summary_and_keeps_schema_version(self):
+        with tempfile.TemporaryDirectory() as td:
+            organized = self._module(td)
+            with mock.patch.object(self.mod, "recompile_and_grade", side_effect=self._fake_rag):
+                res = self.mod.grade_module("m", organized_dir=organized)
+            self.assertEqual(self.mod.SCHEMA_VERSION, 2)
+            self.assertEqual(res["nested_schema_version"], self.mod.NESTED_SCHEMA_VERSION)
+            self.assertEqual(res["nested_file_count"], 6)
+            self.assertEqual(res["nested_grade_counts"], {"roundtrip-exact": 3, "compiles-mismatch": 3})
+            self.assertEqual(res["extra_nested_count"], 3)
+            self.assertEqual(res["fully_proven_count"], 0)
+
+    def test_class_jobs_output_identical_to_serial_with_nested(self):
+        with tempfile.TemporaryDirectory() as td:
+            organized = self._module(td, names=[f"C{i:02d}" for i in range(9)])
+            with mock.patch.object(self.mod, "recompile_and_grade", side_effect=self._fake_rag):
+                serial = self.mod.grade_module("m", organized_dir=organized, class_jobs=1)
+                parallel = self.mod.grade_module("m", organized_dir=organized, class_jobs=4)
+            self.assertEqual(json.dumps(parallel, default=list), json.dumps(serial, default=list))
+
+    def test_no_compile_outer_still_lists_every_shipped_nested_file_as_unproven(self):
+        with tempfile.TemporaryDirectory() as td:
+            organized = self._module(td, names=("A",))
+            bad = {"grade": "no-compile", "first_error": "boom", "mismatched_methods": [], "allowlist_matches": []}
+            with mock.patch.object(self.mod, "recompile_and_grade", return_value=bad), \
+                 mock.patch.object(self.mod, "_decompile_one_class_with", return_value=(None, None)):
+                res = self.mod.grade_module("m", organized_dir=organized)
+            rec = res["classes"]["p/A"]
+            self.assertEqual(sorted(rec["nested"]["files"]), ["A$1.class", "A$2.class"])
+            self.assertEqual({v["grade"] for v in rec["nested"]["files"].values()}, {"not-graded"})
+            self.assertIs(rec["fully_proven"], False)
+
+    def test_legacy_json_without_nested_schema_is_not_up_to_date(self):
+        with tempfile.TemporaryDirectory() as td:
+            mod_dir = Path(td) / "m"
+            mod_dir.mkdir()
+            (mod_dir / "recon.json").write_text(json.dumps({"jar_sha256": "j"}))
+            legacy = {"module": "m", "schema_version": self.mod.SCHEMA_VERSION, "jar_sha256": "j",
+                      "primary_tree": "vineflower", "limit_per_module": None, "classes": {}}
+            (mod_dir / "fidelity.vineflower.json").write_text(json.dumps(legacy))
+            self.assertFalse(self.mod.is_module_up_to_date(mod_dir))
+            legacy["nested_schema_version"] = self.mod.NESTED_SCHEMA_VERSION
+            (mod_dir / "fidelity.vineflower.json").write_text(json.dumps(legacy))
+            self.assertTrue(self.mod.is_module_up_to_date(mod_dir))
+
+    def test_regrade_nonclean_regrades_with_nested_and_recomputes_summary(self):
+        with tempfile.TemporaryDirectory() as td:
+            mod_dir = Path(td) / "m"
+            mod_dir.mkdir()
+            ok = {"grade": "roundtrip-exact", "fully_proven": True,
+                  "nested": {"files": {"A$1.class": {"grade": "roundtrip-exact"}}, "missing": [], "extra": [], "drift_suspected": False}}
+            src = {"module": "m", "schema_version": self.mod.SCHEMA_VERSION, "jar_sha256": "j", "primary_tree": "vineflower2",
+                   "nested_schema_version": self.mod.NESTED_SCHEMA_VERSION,
+                   "class_count": 2, "grade_counts": {}, "limit_per_module": None,
+                   "classes": {"p/A": ok, "p/B": {"grade": "bytecode-only", "fully_proven": False,
+                                                  "nested": {"files": {"B$1.class": {"grade": "no-compile"}}, "missing": [], "extra": [],
+                                                             "drift_suspected": False}}}}
+            (mod_dir / "fidelity.vineflower2.json").write_text(json.dumps(src))
+
+            def grade(fqcn, classfile, **kw):
+                return fqcn, {"grade": "roundtrip-canonical", "fully_proven": True,
+                              "nested": {"files": {"B$1.class": {"grade": "roundtrip-canonical"}}, "missing": [], "extra": [],
+                                         "drift_suspected": False}}
+            out = self.mod.regrade_nonclean_module("m", organized_dir=Path(td), tree="vineflower2", grade_fn=grade)
+            self.assertEqual(out["nested_schema_version"], self.mod.NESTED_SCHEMA_VERSION)
+            self.assertEqual(out["nested_grade_counts"], {"roundtrip-exact": 1, "roundtrip-canonical": 1})
+            self.assertEqual(out["fully_proven_count"], 2)
+
+    def test_regrade_of_legacy_source_does_not_claim_nested_schema(self):
+        with tempfile.TemporaryDirectory() as td:
+            mod_dir = Path(td) / "m"
+            mod_dir.mkdir()
+            src = {"module": "m", "schema_version": self.mod.SCHEMA_VERSION, "jar_sha256": "j", "primary_tree": "vineflower2",
+                   "class_count": 2, "grade_counts": {}, "limit_per_module": None,
+                   "classes": {"p/A": {"grade": "roundtrip-exact"}, "p/B": {"grade": "bytecode-only"}}}
+            (mod_dir / "fidelity.vineflower2.json").write_text(json.dumps(src))
+            out = self.mod.regrade_nonclean_module("m", organized_dir=Path(td), tree="vineflower2",
+                                                   grade_fn=lambda f, c, **kw: (f, {"grade": "roundtrip-canonical"}))
+            self.assertNotIn("nested_schema_version", out)
+
+    def test_report_shows_nested_counts(self):
+        mr = {"module": "m", "class_count": 1, "grade_counts": {"roundtrip-exact": 1},
+              "nested_schema_version": 1, "nested_file_count": 5, "extra_nested_count": 2, "fully_proven_count": 1,
+              "nested_grade_counts": {"roundtrip-exact": 4, "compiles-mismatch": 1},
+              "classes": {"p/A": {"grade": "roundtrip-exact", "fully_proven": False,
+                                  "nested": {"files": {}, "missing": [], "extra": [], "drift_suspected": False}}}}
+        text = self.mod.generate_report([mr])
+        self.assertIn("## Nested class files", text)
+        self.assertIn("| m | 5 | 4 | 1 | 2 | 1 |", text)
+
+    def test_report_without_any_nested_data_has_no_nested_section(self):
+        mr = {"module": "m", "class_count": 1, "grade_counts": {"roundtrip-exact": 1}, "classes": {"p/A": {"grade": "roundtrip-exact"}}}
+        self.assertNotIn("## Nested class files", self.mod.generate_report([mr]))
