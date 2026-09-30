@@ -224,8 +224,10 @@ def scan_spans(files: list, helper_dir: Path, java_bin: str, classpath: str) -> 
     with tempfile.NamedTemporaryFile("w", suffix=".cp", delete=False) as cpf:
         cpf.write(classpath)
     try:
-        proc = subprocess.run([java_bin, "-Xmx2g", "-cp", str(helper_dir), "MethodSpans", cpf.name,
-                               *map(str, files)], capture_output=True, text=True, timeout=900)
+        # C1-only, serial GC: a short-lived attribution JVM spends half its CPU in the JIT otherwise
+        proc = subprocess.run([java_bin, "-Xmx2g", "-XX:TieredStopAtLevel=1", "-XX:+UseSerialGC", "-Xshare:auto",
+                               "-cp", str(helper_dir), "MethodSpans", cpf.name, *map(str, files)],
+                              capture_output=True, text=True, timeout=900)
     finally:
         Path(cpf.name).unlink()
     if proc.returncode != 0:
