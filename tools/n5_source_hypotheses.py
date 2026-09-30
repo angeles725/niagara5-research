@@ -568,6 +568,90 @@ early_return_else = _EarlyReturn(True)
 guard_return = _EarlyReturn(False)
 
 
+_RETURN_LINE = re.compile(r"^(?P<ind>[ \t]*)return (?P<expr>[^;\n]+);$", re.M)
+_BOOL_OPS = re.compile(r" (?:==|!=|<=|>=|<|>|&&|\|\||instanceof) ")
+
+
+def _unparen(expr: str) -> str:
+    """`expr` without one pair of parentheses that enclose all of it."""
+    if expr.startswith("(") and expr.endswith(")") and set(_top_level(expr)) == {"\x01"}:
+        return expr[1:-1]
+    return expr
+
+
+def _split_ternary(expr: str):
+    """(condition, then, else) of an expression whose top level is one `c ? a : b`, else None."""
+    top = _top_level(expr)
+    q = top.find(" ? ")
+    if q < 0:
+        return None
+    depth, i = 1, q + 3
+    while i < len(top):
+        if top.startswith(" ? ", i):
+            depth += 1
+            i += 3
+        elif top.startswith(" : ", i):
+            depth -= 1
+            if depth == 0:
+                return expr[:q], _unparen(expr[q + 3:i]), _unparen(expr[i + 3:])
+            i += 3
+        else:
+            i += 1
+    return None
+
+
+def _statement_position(text: str, at: int) -> bool:
+    """True when the line at `at` starts a statement: the previous non-blank line ends a block, a
+    statement or a case label -- not a braceless `if (c)` / `else` header."""
+    for line in reversed(text[:at].split("\n")[:-1]):
+        if line.strip():
+            return line.rstrip().endswith(("{", "}", ";", ":"))
+    return True
+
+
+class _ReturnRewrite:
+    """Site hypotheses on a single-line `return <expr>;`. javac compiles `return c ? a : b;` and
+    `return <boolean expression>;` with a jump to one shared `*return`; the shipped code often has
+    a `*return` per branch (`if (c) return a; return b;`), which the decompiler folds back into the
+    expression form. Each rewrite is one level; the splice keeps it only when the bytecode agrees."""
+
+    def __init__(self, kind: str):
+        self.kind = kind
+
+    def _matches(self, text: str):
+        for m in _RETURN_LINE.finditer(text):
+            expr = m.group("expr")
+            if not _statement_position(text, m.start()):
+                continue
+            if self.kind == "ternary":
+                if _split_ternary(expr) is not None:
+                    yield m
+            else:
+                top = _top_level(expr)
+                if " ? " not in top and (_BOOL_OPS.search(top) or top.startswith("!")):
+                    yield m
+
+    def sites(self, text: str) -> list:
+        return [(m.start(), m.end()) for m in self._matches(text)]
+
+    def apply(self, text: str, site: tuple) -> str:
+        for m in self._matches(text):
+            if (m.start(), m.end()) != tuple(site):
+                continue
+            ind, expr = m.group("ind"), m.group("expr")
+            if self.kind == "ternary":
+                cond, a, b = _split_ternary(expr)
+                new = f"{ind}if ({cond}) {{\n{ind}   return {a};\n{ind}}}\n\n{ind}return {b};"
+            else:
+                new = f"{ind}if ({expr}) {{\n{ind}   return true;\n{ind}}}\n\n{ind}return false;"
+            return text[:m.start()] + new + text[m.end():]
+        return text
+
+
+split_return_ternary = _ReturnRewrite("ternary")
+split_return_boolean = _ReturnRewrite("boolean")
+
+
 _RAW_PRIV = re.compile(r"\(niagara\.nre\.security\.privileged\.(PrivilegedAction|PrivilegedExceptionAction)\)(?= \()")
 
 
@@ -683,6 +767,8 @@ SITE_HYPOTHESES = {
     "expand-iinc-site": RegexSites(_expand_rewrites),
     "collapse-iinc-site": RegexSites(_collapse_rewrites),
     "lift-increments-site": RegexSites(_lift_rewrites),
+    "split-return-ternary": split_return_ternary,
+    "split-return-boolean": split_return_boolean,
 }
 
 # name -> hypothesis, in the order the splice tries them
