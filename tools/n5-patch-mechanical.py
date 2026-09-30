@@ -262,12 +262,54 @@ def fix_switch_group_scope(lines: list[str], errors: list[dict]):
     return new, patches
 
 
+_CATCH_RE = re.compile(r"^(?P<ind>\s*)(?:\} )?catch \((?:final )?[\w.<>| ?]+ (?P<var>\w+)\) \{\s*$")
+
+
+def _enclosing_catch(lines: list[str], k: int):
+    """(catch_line, end_line, param) of the innermost catch block containing line k."""
+    for j in range(k, -1, -1):
+        m = _CATCH_RE.match(lines[j])
+        if not m:
+            continue
+        ind = m.group("ind")
+        end = next((t for t in range(j + 1, len(lines))
+                    if _indent(lines[t]) == ind and lines[t].lstrip().startswith("}")), None)
+        if end is not None and j < k <= end:
+            return j, end, m.group("var")
+    return None
+
+
+def fix_catch_parameter_name(lines: list[str], errors: list[dict]):
+    """`catch (Exception e) { ... ex ... }` with `ex` undeclared -- javac: cannot find symbol.
+    Vineflower renamed the catch parameter (to dodge a clash with an enclosing name) but not
+    the uses in its body. The catch parameter is the only variable the body can mean."""
+    new = list(lines)
+    patches = []
+    seen = set()
+    for e in errors:
+        m = re.search(r"symbol:\s+variable (\w+)", "\n".join(e["detail"])) if e["message"] == "cannot find symbol" else None
+        k = e["line"] - 1
+        if not m or not 0 <= k < len(new):
+            continue
+        blk = _enclosing_catch(new, k)
+        if blk is None or (blk[0], m.group(1)) in seen or blk[2] == m.group(1):
+            continue
+        seen.add((blk[0], m.group(1)))
+        pat = re.compile(r"(?<![\w.$])%s\b" % re.escape(m.group(1)))
+        for t in range(blk[0] + 1, blk[1]):
+            new[t] = pat.sub(blk[2], new[t])
+        patches.append({"kind": "catch-parameter-name", "line": blk[0] + 1, "renamed": m.group(1), "to": blk[2],
+                        "evidence": f"javac: cannot find symbol variable {m.group(1)} inside catch ({blk[2]})"})
+    return (new, patches) if patches else None
+
+
 FIXERS: list[tuple[str, Callable]] = [
     ("pattern-binding-scope", fix_pattern_binding_scope),
     ("foreach-raw-cast", fix_foreach_raw_cast),
     ("boolean-declared-int", fix_boolean_declared_int),
     ("instanceof-generic-raw", fix_instanceof_generic_raw),
     ("switch-group-scope", fix_switch_group_scope),
+    ("catch-parameter-name", fix_catch_parameter_name),
 ]
 
 

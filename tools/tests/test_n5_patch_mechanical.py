@@ -219,6 +219,33 @@ class TestSwitchGroupRedeclaration(MechanicalCase):
         self.assertIn("case 3:\n         case 2: {", res["text"])
 
 
+class TestCatchParameterRename(MechanicalCase):
+    SRC = """public class T {
+   void g() throws Exception {}
+   void f() {
+      try {
+         this.g();
+      } catch (Exception e) {
+         System.out.println("bad: " + ex);
+         throw new RuntimeException(ex);
+      }
+   }
+}
+"""
+
+    def test_undeclared_name_in_a_catch_block_becomes_the_catch_parameter(self):
+        res = self.patch(self.SRC)
+        self.assertTrue(res["compiles"], res["residual_errors"])
+        self.assertEqual([p["kind"] for p in res["patches"]], ["catch-parameter-name"])
+        self.assertIn('"bad: " + e)', res["text"])
+        self.assertIn("new RuntimeException(e)", res["text"])
+
+    def test_name_outside_any_catch_block_is_left_alone(self):
+        src = "public class T {\n   int f() {\n      return ex;\n   }\n}\n"
+        res = self.patch(src)
+        self.assertEqual(res["patches"], [])
+
+
 def _grade_json(path: Path, classes: dict):
     path.write_text(json.dumps({"classes": classes}))
 
