@@ -35,6 +35,18 @@ class TestPure(unittest.TestCase):
     def setUp(self):
         self.mod = _load()
 
+    def test_code_distance_counts_differing_lines_and_stays_linear_for_big_methods(self):
+        a = [f"insn{i}: op{i % 7}" for i in range(10)]
+        b = list(a)
+        self.assertEqual(self.mod.code_distance(a, b), 0)
+        b[3] = "insn3: other"
+        self.assertEqual(self.mod.code_distance(a, b), 2)
+        big_a = [f"insn{i}: op{i % 50}" for i in range(2000)]
+        big_b = list(big_a)
+        big_b[10] = "insn10: x"
+        self.assertEqual(self.mod.code_distance(big_a, big_b), 2)
+        self.assertEqual(self.mod.code_distance(big_a, big_a), 0)
+
     def test_numbering_only_difference_is_recognized(self):
         a = ["insn0: new // class p/Foo$1", "insn1: invokespecial // Method p/Foo$1.\"<init>\":()V", "insn2: areturn"]
         b = [x.replace("$1", "$2") for x in a]

@@ -56,6 +56,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import collections
 import concurrent.futures
 import difflib
 import hashlib
@@ -162,13 +163,15 @@ TREE_DONOR_PREFIX = "tree:"
 HYP_DONOR_PREFIX = "hyp:"
 
 
-def code_distance(shipped_code: list, ours_code: list, cap: int = 4_000_000) -> int:
-    """Instruction lines that differ between two normalized codes (lines outside the longest
-    matching blocks); a coarse size for very large methods."""
+def code_distance(shipped_code: list, ours_code: list, cap: int = 250_000) -> int:
+    """Instruction lines that differ between two normalized codes: lines outside the longest matching
+    blocks for methods up to `cap` line pairs, else the multiset difference of the lines (a
+    linear-time bound that also shrinks as the codes converge)."""
     a = [re.sub(r"^insn\d+:\s*", "", x) for x in shipped_code]
     b = [re.sub(r"^insn\d+:\s*", "", x) for x in ours_code]
     if len(a) * len(b) > cap:
-        return abs(len(a) - len(b)) + 1
+        ca, cb = collections.Counter(a), collections.Counter(b)
+        return sum(((ca - cb) + (cb - ca)).values())
     matcher = difflib.SequenceMatcher(None, a, b, autojunk=False)
     return len(a) + len(b) - 2 * sum(blk.size for blk in matcher.get_matching_blocks())
 
