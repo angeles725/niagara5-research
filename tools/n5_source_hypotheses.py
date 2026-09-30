@@ -39,17 +39,27 @@ def _single_operand(rhs: str) -> bool:
     return depth == 0 and not _BINARY_AT_TOP.search("".join(out))
 
 
+def _compound_rewrites(text: str) -> list:
+    def sub(m: re.Match) -> str:
+        if not _single_operand(m.group("rhs")):
+            return m.group(0)
+        return f"{m.group('ind')}{m.group('lhs')} {m.group('op')}= {m.group('rhs')};"
+    return [(_CAST_FORM, sub), (_PLAIN_FORM, sub)]
+
+
+def _apply_all(text: str, rewrites: list) -> str:
+    for pattern, rewrite in rewrites:
+        text = pattern.sub(rewrite, text)
+    return text
+
+
 def compound_assign(text: str) -> str:
     """`a[i] = (byte)(a[i] | 4);` / `a[i] = a[i] + 1;` -> `a[i] |= 4;` / `a[i] += 1;`.
 
     javac compiles `a[i] op= x` with one evaluation of `a` and `i` (dup2), while the expanded
     statement evaluates them twice; the decompiler prints the expanded form for array elements.
     Only side-effect-free element expressions and a single-operand right side are rewritten."""
-    def sub(m: re.Match) -> str:
-        if not _single_operand(m.group("rhs")):
-            return m.group(0)
-        return f"{m.group('ind')}{m.group('lhs')} {m.group('op')}= {m.group('rhs')};"
-    return _PLAIN_FORM.sub(sub, _CAST_FORM.sub(sub, text))
+    return _apply_all(text, _compound_rewrites(text))
 
 
 _ARRAY_INIT = re.compile(
@@ -93,7 +103,7 @@ def _split_elements(body: str):
     return parts if all(parts) else None
 
 
-def _unfold(text: str, max_len: int) -> str:
+def _unfold_rewrites(text: str, max_len: int = 64) -> list:
     def sub(m: re.Match) -> str:
         parts = _split_elements(m.group("body"))
         if not parts or len(parts) > max_len:
@@ -102,7 +112,11 @@ def _unfold(text: str, max_len: int) -> str:
         lines = [f"{ind}{m.group('final') or ''}{m.group('type')}[] {name} = new {m.group('type')}[{len(parts)}];"]
         lines += [f"{ind}{name}[{k}] = {e};" for k, e in enumerate(parts)]
         return "\n".join(lines)
-    return _ARRAY_INIT.sub(sub, text)
+    return [(_ARRAY_INIT, sub)]
+
+
+def _unfold(text: str, max_len: int) -> str:
+    return _apply_all(text, _unfold_rewrites(text, max_len))
 
 
 def unfold_array_initializers(text: str) -> str:
@@ -141,11 +155,7 @@ _STEP_FOR = re.compile(r"^(?P<head>[ \t]*for \(.*; )(?P<v>\w+)(?P<op>\+\+|--)(?P
 _ASSIGN_STEP = re.compile(r"^(?P<ind>[ \t]*)(?P<v>\w+) = (?P=v) (?P<op>[+-]) (?P<n>\d+);[ \t]*$", re.M)
 
 
-def expand_iinc(text: str) -> str:
-    """`i++;` / `--i;` / `i += 2;` / `for (...; i++)` on an int variable -> `i = i + 1;` ...
-
-    javac emits `iinc` only for the increment forms; source written as `i = i + 1` compiles to
-    iload/iconst/iadd/istore. The decompiler normalizes every form to the increment."""
+def _expand_rewrites(text: str) -> list:
     ints = _int_names(text)
 
     def stmt(m: re.Match) -> str:
@@ -162,31 +172,37 @@ def expand_iinc(text: str) -> str:
             return m.group(0)
         v = m.group("v")
         return f"{m.group('head')}{v} = {v} {'+' if m.group('op') == '++' else '-'} 1{m.group('tail')}"
-    return _STEP_FOR.sub(loop, _STEP_STMT.sub(stmt, text))
+    return [(_STEP_STMT, stmt), (_STEP_FOR, loop)]
 
 
-def collapse_iinc(text: str) -> str:
-    """`i = i + 2;` on an int variable -> `i += 2;` (the inverse of expand_iinc for statements)."""
+def expand_iinc(text: str) -> str:
+    """`i++;` / `--i;` / `i += 2;` / `for (...; i++)` on an int variable -> `i = i + 1;` ...
+
+    javac emits `iinc` only for the increment forms; source written as `i = i + 1` compiles to
+    iload/iconst/iadd/istore. The decompiler normalizes every form to the increment."""
+    return _apply_all(text, _expand_rewrites(text))
+
+
+def _collapse_rewrites(text: str) -> list:
     ints = _int_names(text)
 
     def sub(m: re.Match) -> str:
         if m.group("v") not in ints:
             return m.group(0)
         return f"{m.group('ind')}{m.group('v')} {m.group('op')}= {m.group('n')};"
-    return _ASSIGN_STEP.sub(sub, text)
+    return [(_ASSIGN_STEP, sub)]
+
+
+def collapse_iinc(text: str) -> str:
+    """`i = i + 2;` on an int variable -> `i += 2;` (the inverse of expand_iinc for statements)."""
+    return _apply_all(text, _collapse_rewrites(text))
 
 
 _INC_IN_STMT = re.compile(r"(?<![\w.])(?:(?P<pre>\+\+|--)(?P<a>[A-Za-z_]\w*)|(?P<b>[A-Za-z_]\w*)(?P<post>\+\+|--))(?![\w(])")
 _PLAIN_STMT = re.compile(r"^(?P<ind>[ \t]*)(?P<body>[^\n{}]*;)[ \t]*$", re.M)
 
 
-def lift_increments(text: str) -> str:
-    """`x = a + ++i;` -> `i++; x = a + i;` and `out[i++] = v;` -> `out[i] = v; i++;` for int variables.
-
-    The decompiler folds an increment statement into the neighbouring expression; javac compiles
-    the folded form as iinc-inside-expression, the separate statement as a plain iinc. Only a
-    single-line statement with no conditional evaluation (?:, &&, ||, lambda) in which the variable
-    occurs exactly once is rewritten, so the evaluation order is unchanged."""
+def _lift_rewrites(text: str) -> list:
     ints = _int_names(text)
 
     def sub(m: re.Match) -> str:
@@ -205,12 +221,24 @@ def lift_increments(text: str) -> str:
         ind = m.group("ind")
         step = f"{ind}{var}{op};"
         new_body = body[:h.start()] + var + body[h.end():]
+        if new_body.strip() == var + ";":  # the statement is the increment itself
+            return m.group(0)
         if h.group("pre"):
             return f"{step}\n{ind}{new_body}"
         if re.match(r"\s*(?:return|throw)\b", body):
             return m.group(0)
         return f"{ind}{new_body}\n{step}"
-    return _PLAIN_STMT.sub(sub, text)
+    return [(_PLAIN_STMT, sub)]
+
+
+def lift_increments(text: str) -> str:
+    """`x = a + ++i;` -> `i++; x = a + i;` and `out[i++] = v;` -> `out[i] = v; i++;` for int variables.
+
+    The decompiler folds an increment statement into the neighbouring expression; javac compiles
+    the folded form as iinc-inside-expression, the separate statement as a plain iinc. Only a
+    single-line statement with no conditional evaluation (?:, &&, ||, lambda) in which the variable
+    occurs exactly once is rewritten, so the evaluation order is unchanged."""
+    return _apply_all(text, _lift_rewrites(text))
 
 
 _PRIMS = {"B": "byte", "C": "char", "D": "double", "F": "float", "I": "int", "J": "long", "S": "short", "Z": "boolean",
@@ -546,9 +574,37 @@ def restore_null_checks(text: str, ctx: dict) -> str:
 restore_null_checks.needs_context = True  # type: ignore[attr-defined]
 
 
-# name -> site hypothesis (`sites(text)` and `apply(text, site)`), used to repair a class's structure
+class RegexSites:
+    """Site view of a regex-driven text hypothesis: every match the hypothesis would rewrite is one
+    site, applicable alone (so a method that needs only some of the rewrites can be matched)."""
+
+    def __init__(self, rewrites: Callable[[str], list]):
+        self.rewrites = rewrites
+
+    def sites(self, text: str) -> list:
+        found = []
+        for i, (pattern, rewrite) in enumerate(self.rewrites(text)):
+            found += [(i, m.start(), m.end()) for m in pattern.finditer(text) if rewrite(m) != m.group(0)]
+        return sorted(found, key=lambda s: s[1])
+
+    def apply(self, text: str, site: tuple) -> str:
+        i, start, end = site
+        pattern, rewrite = self.rewrites(text)[i]
+        m = pattern.search(text, start)
+        if not m or m.start() != start or m.end() != end:
+            return text
+        return text[:start] + rewrite(m) + text[end:]
+
+
+# name -> site hypothesis (`sites(text)` and `apply(text, site)`): repairs a class's structure, and
+# with the splice's --climb the mismatching methods (one site at a time)
 SITE_HYPOTHESES = {
     "swap-if-else": swap_if_else,
+    "compound-assign-site": RegexSites(_compound_rewrites),
+    "unfold-arrays-site": RegexSites(_unfold_rewrites),
+    "expand-iinc-site": RegexSites(_expand_rewrites),
+    "collapse-iinc-site": RegexSites(_collapse_rewrites),
+    "lift-increments-site": RegexSites(_lift_rewrites),
 }
 
 # name -> hypothesis, in the order the splice tries them

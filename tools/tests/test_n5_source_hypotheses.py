@@ -153,6 +153,8 @@ class TestLiftIncrements(unittest.TestCase):
             "      return out[i++];\n",               # post-increment cannot move after a return
             "      x = ++total;\n",                   # not an int local
             "      f(++i,\n",                         # multi-line statement
+            "      i++;\n",                           # the statement is the increment itself
+            "      --i;\n",
         ):
             self.assertEqual(self.h.lift_increments(self.wrap(body)), self.wrap(body))
 
@@ -193,6 +195,40 @@ class TestSwapIfElse(unittest.TestCase):
         src = "if (!b) {\n   f(\"{\");\n} else {\n   g('}');\n}\n"
         out = self.h.swap_if_else.apply(src, self.h.swap_if_else.sites(src)[0])
         self.assertEqual(out, "if (b) {\n   g('}');\n} else {\n   f(\"{\");\n}\n")
+
+
+class TestHunkSites(unittest.TestCase):
+    """Any text hypothesis becomes a site hypothesis: each changed hunk of its variant is a site
+    that can be applied alone (so a method that needs only some of the rewrites can be matched)."""
+
+    def setUp(self):
+        self.h = _load()
+
+    SRC = ("   void f() {\n      a[0] = (byte)(a[0] | 1);\n      keep();\n      a[1] = (byte)(a[1] & 2);\n   }\n")
+
+    def test_every_changed_hunk_is_a_site_applied_alone(self):
+        hyp = self.h.SITE_HYPOTHESES["compound-assign-site"]
+        sites = hyp.sites(self.SRC)
+        self.assertEqual(len(sites), 2)
+        first = hyp.apply(self.SRC, sites[0])
+        self.assertEqual(first, self.SRC.replace("a[0] = (byte)(a[0] | 1);", "a[0] |= 1;"))
+        second = hyp.apply(self.SRC, sites[1])
+        self.assertEqual(second, self.SRC.replace("a[1] = (byte)(a[1] & 2);", "a[1] &= 2;"))
+
+    def test_no_change_means_no_sites(self):
+        self.assertEqual(self.h.SITE_HYPOTHESES["expand-iinc-site"].sites("void f() {\n}\n"), [])
+
+    def test_line_count_changing_hypotheses_work_too(self):
+        src = "   void f() {\n      int i = 0;\n      byte[] a = new byte[]{1};\n      byte[] b = new byte[]{2};\n   }\n"
+        hyp = self.h.SITE_HYPOTHESES["unfold-arrays-site"]
+        out = hyp.apply(src, hyp.sites(src)[1])
+        self.assertEqual(out, "   void f() {\n      int i = 0;\n      byte[] a = new byte[]{1};\n"
+                              "      byte[] b = new byte[1];\n      b[0] = 2;\n   }\n")
+
+    def test_expand_and_lift_sites_exist(self):
+        src = "   void f(int n) {\n      int i = 0;\n      i++;\n      g(++n);\n   }\n"
+        self.assertEqual(len(self.h.SITE_HYPOTHESES["expand-iinc-site"].sites(src)), 1)
+        self.assertEqual(len(self.h.SITE_HYPOTHESES["lift-increments-site"].sites(src)), 1)
 
 
 class TestPrivilegedVoid(unittest.TestCase):
