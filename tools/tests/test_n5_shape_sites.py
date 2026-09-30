@@ -152,5 +152,18 @@ class TestReturnTemp(ShapeSiteCase):
         self.assertEqual(self.h.SITE_HYPOTHESES["inline-return-temp"].sites(src), [])
 
 
+class TestContinueGuards(ShapeSiteCase):
+    """The loop twin of the early return: javac compiles `if (c) { continue; } A` with a jump back
+    that the decompiler's `if (!c) { A }` does not have."""
+
+    def test_guard_at_the_end_of_a_loop_body_becomes_a_continue(self):
+        self.assert_reproduces(
+            "guard-continue",
+            "   void loop(int n) {\n      for (int i = 0; i < n; i++) {\n         if (i % 2 != 0) {\n            this.f++;\n"
+            "            this.f += i;\n         }\n      }\n   }\n",
+            "   void loop(int n) {\n      for (int i = 0; i < n; i++) {\n         if (i % 2 == 0) {\n            continue;\n"
+            "         }\n         this.f++;\n         this.f += i;\n      }\n   }\n")
+
+
 if __name__ == "__main__":
     unittest.main()

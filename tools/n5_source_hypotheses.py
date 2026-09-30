@@ -519,8 +519,9 @@ class _EarlyReturn:
     """Site hypotheses at the end of a block: `early-return-else` turns `if (c) {A} else {B}` into
     `if (c) {A return;} B`, `guard-return` turns `if (c) {A}` into `if (!c) {return;} A`."""
 
-    def __init__(self, with_else: bool):
+    def __init__(self, with_else: bool, leave: str = "return;"):
         self.with_else = with_else
+        self.leave = leave  # `return;` (end of a void method) or `continue;` (end of a loop body)
 
     def _parse(self, text: str):
         for m in _IF_HEAD.finditer(text):
@@ -555,10 +556,10 @@ class _EarlyReturn:
             head = text[:m.start("cond")]
             if self.with_else:
                 b_lines = _dedent(text[open2 + 1:close2].split("\n")[1:-1])
-                new = (text[:open1 + 1] + "\n" + "\n".join(a_lines + [pad + "   return;"]) + "\n" + pad + "}\n"
+                new = (text[:open1 + 1] + "\n" + "\n".join(a_lines + [pad + "   " + self.leave]) + "\n" + pad + "}\n"
                        + "\n".join(b_lines) + text[close2 + 1:])
                 return new
-            new = (head + _negate(m.group("cond")) + text[m.end("cond"):open1 + 1] + "\n" + pad + "   return;\n" + pad
+            new = (head + _negate(m.group("cond")) + text[m.end("cond"):open1 + 1] + "\n" + pad + "   " + self.leave + "\n" + pad
                    + "}\n" + "\n".join(_dedent(a_lines)) + text[close1 + 1:])
             return new
         return text
@@ -566,6 +567,7 @@ class _EarlyReturn:
 
 early_return_else = _EarlyReturn(True)
 guard_return = _EarlyReturn(False)
+guard_continue = _EarlyReturn(False, "continue;")
 
 
 _RETURN_LINE = re.compile(r"^(?P<ind>[ \t]*)return (?P<expr>[^;\n]+);$", re.M)
@@ -822,6 +824,7 @@ SITE_HYPOTHESES = {
     "swap-if-else": swap_if_else,
     "early-return-else": early_return_else,
     "guard-return": guard_return,
+    "guard-continue": guard_continue,
     "compound-assign-site": RegexSites(_compound_rewrites),
     "unfold-arrays-site": RegexSites(_unfold_rewrites),
     "expand-iinc-site": RegexSites(_expand_rewrites),
