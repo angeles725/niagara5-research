@@ -76,6 +76,8 @@ MANIFEST_NAME = "SPLICES.json"
 MANIFEST_SCHEMA = 1
 DONOR_ENGINES = ("cfr", "procyon")
 MAX_COMBOS = 8
+CLIMB_MAX_BAD = 4
+CLIMB_MAX_BAD_EXACT = 12
 _VERDICT_RANK = {"exact": 0, "allowlist": 1, "canonical": 2}
 
 
@@ -132,10 +134,12 @@ def _is_synthetic_name(name: str) -> bool:
 # per-method verdicts (the grader's own comparison, one method at a time)
 # ---------------------------------------------------------------------------
 
-def per_method_verdicts(shipped: dict, recompiled: dict) -> tuple[dict, dict]:
+def per_method_verdicts(shipped: dict, recompiled: dict, exact: bool = False) -> tuple[dict, dict]:
     """({method key: {"verdict", "rules"}} for every shipped method, structure).
     verdict: exact | allowlist | canonical (n5_canon, rules listed) | mismatch |
-    missing (not in the recompiled class)."""
+    missing (not in the recompiled class). With `exact` (C4) an allowlist/canonical match is not
+    enough: it is reported as a `mismatch` (with its rules and `nonexact`), so every caller that
+    repairs mismatching methods repairs toward the shipped instruction stream itself."""
     diff = FID.diff_normalized_classes(shipped, recompiled)
     out = {}
     for key in shipped["methods"]:
@@ -147,11 +151,13 @@ def per_method_verdicts(shipped: dict, recompiled: dict) -> tuple[dict, dict]:
             bodies = diff["method_bodies"][key]
             hit = next((e for e in FID.ALLOWLIST if e.predicate(bodies["a"], bodies["b"])), None)
             if hit is not None:
-                out[key] = {"verdict": "allowlist", "rules": [hit.name]}
+                out[key] = ({"verdict": "mismatch", "rules": [hit.name], "body_only": bodies["body_only"],
+                             "nonexact": True} if exact else {"verdict": "allowlist", "rules": [hit.name]})
                 continue
             rules = FID._canonical_resolution(bodies)
             if rules is not None:
-                out[key] = {"verdict": "canonical", "rules": sorted(rules)}
+                out[key] = ({"verdict": "mismatch", "rules": sorted(rules), "body_only": bodies["body_only"],
+                             "nonexact": True} if exact else {"verdict": "canonical", "rules": sorted(rules)})
             else:
                 out[key] = {"verdict": "mismatch", "rules": [], "body_only": bodies["body_only"]}
     structure = {"fields_match": diff["fields_match"], "attrs_match": diff["attrs_match"],
@@ -380,9 +386,13 @@ def splice_class(fqcn: str, mod_dir: Path, tree: str, **kw) -> dict:
 def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: str, helper_dir: Path, javac_bin: str,
                   javap_bin: str, java_bin: str, tool_server: bool, donor_trees: tuple = (),
                   primary_trees: tuple = (), hypotheses: tuple = (), decompilers: tuple = DONOR_ENGINES,
-                  climb: bool = False) -> dict:
+                  climb: bool = False, exact: bool = False) -> dict:
     """{"status": "spliced", ...record, "_text": spliced} or
-    {"status": "refused"|"not-candidate", "reason", "detail"}."""
+    {"status": "refused"|"not-candidate", "reason", "detail"}. `exact` (C4): every method must
+    reach the shipped instruction stream (see per_method_verdicts) and the class must grade
+    roundtrip-exact, canonical proof is not enough."""
+    pmv = lambda a, b: per_method_verdicts(a, b, exact)  # noqa: E731
+    accept = (lambda g: g == "roundtrip-exact") if exact else FID._is_clean
     site_hyps = tuple(h for h in hypotheses if h in HYP.SITE_HYPOTHESES)
     hypotheses = tuple(h for h in hypotheses if h in HYP.HYPOTHESES)
     class_short = fqcn.rsplit("/", 1)[-1]
@@ -409,7 +419,7 @@ def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: st
     shipped_javap = FID.run_javap_verbose(str(shipped_class), javap_bin=javap_bin, tool_server=tool_server)
     shipped = FID.parse_javap_verbose(shipped_javap)
     primary_parsed, primary_javap = compiled
-    verdicts, structure = per_method_verdicts(shipped, primary_parsed)
+    verdicts, structure = pmv(shipped, primary_parsed)
     base = {"primary_tree": primary_tree}
     original_text = primary_text
     # a primary that is not the baseline tree (nor its F8 patch) and is clean as it stands is a
@@ -473,7 +483,7 @@ def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: st
                     cp = compile_parse(path, class_short, classpath, javac_bin, javap_bin, tool_server)
                     if cp is None:
                         continue
-                    cv, cs = per_method_verdicts(shipped, cp)
+                    cv, cs = pmv(shipped, cp)
                     if sc(cv, cs, cp) < sc(v, st, parsed):
                         text, parsed, v, st, path_ = cand, cp, cv, cs, path
                         applied.append(name)
@@ -520,7 +530,7 @@ def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: st
             parsed = compile_parse(path, class_short, classpath, javac_bin, javap_bin, tool_server)
             if parsed is None:
                 continue
-            alt_verdicts, alt_structure = per_method_verdicts(shipped, parsed)
+            alt_verdicts, alt_structure = pmv(shipped, parsed)
             if structure_ok(alt_structure):
                 bad = sum(1 for x in alt_verdicts.values() if x["verdict"] == "mismatch")
                 alts.append((bad, n, kind, text, path, parsed, alt_verdicts, alt_structure))
@@ -553,7 +563,7 @@ def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: st
         parsed = compile_parse(path, class_short, classpath, javac_bin, javap_bin, tool_server)
         if parsed is None:
             return False
-        new_verdicts, new_structure = per_method_verdicts(shipped, parsed)
+        new_verdicts, new_structure = pmv(shipped, parsed)
         bad = lambda v: {k for k, x in v.items() if x["verdict"] == "mismatch"}  # noqa: E731
         if not bad(new_verdicts) <= bad(verdicts) or (must_fix_clinit and clinit_key in bad(new_verdicts)):
             return False
@@ -586,14 +596,14 @@ def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: st
             adopt(reordered, "clinit-order", False)
     if climb and site_hyps and structure_ok(structure):
         n_bad = sum(1 for x in verdicts.values() if x["verdict"] == "mismatch")
-        if 0 < n_bad <= 4:
+        if 0 < n_bad <= (CLIMB_MAX_BAD_EXACT if exact else CLIMB_MAX_BAD):
             repair_by_sites(site_hyps, True)
     todo = sorted(k for k, v in verdicts.items() if v["verdict"] == "mismatch")
     if not todo and not structure["missing"] and not structure["extra"]:
         if not pre_transforms:
             return {**base, "status": "not-candidate", "reason": "already-clean", "detail": ""}
         grade = grade_text(primary_text, class_short, shipped_class, classpath, javac_bin, javap_bin, tool_server)
-        if not FID._is_clean(grade["grade"]):
+        if not accept(grade["grade"]):
             return {**base, "status": "refused", "reason": "splice-not-clean", "detail": "clinit-order only"}
         return {**base, "status": "spliced", "original_sha256": sha256_text(original_text),
                 "spliced_sha256": sha256_text(primary_text), "methods": [], "imports_added": [],
@@ -635,7 +645,7 @@ def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: st
             continue
         donor_texts[eng] = Path(src).read_text(encoding="utf-8")
         donor_files[eng] = Path(src)
-        donor_verdicts[eng] = per_method_verdicts(shipped, parsed)[0]
+        donor_verdicts[eng] = pmv(shipped, parsed)[0]
     options = {k: donor_candidates(k, donor_verdicts, engines) for k in todo}
     lacking = [k for k, v in options.items() if not v]
     if lacking:
@@ -661,7 +671,7 @@ def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: st
         if grade["grade"] == "no-compile":
             last = ("splice-no-compile", grade.get("first_error") or "")
             continue
-        if not FID._is_clean(grade["grade"]):
+        if not accept(grade["grade"]):
             last = ("splice-not-clean", ", ".join(f"{m[0]}{m[1]}" for m in grade["mismatched_methods"][:4]))
             continue
         return {**base, "status": "spliced",
@@ -680,7 +690,7 @@ def splice_module(module: str, organized_dir: Path, tree: str, out_tree: str, ta
                   helper_dir: Path, javac_bin: str, javap_bin: str, java_bin: str, tool_server: bool,
                   class_jobs: int = 1, donor_trees: tuple = (), primary_trees: tuple = (),
                   keep_existing: bool = False, hypotheses: tuple = (), decompilers: tuple = DONOR_ENGINES,
-                  climb: bool = False) -> dict:
+                  climb: bool = False, exact: bool = False) -> dict:
     mod_dir = Path(organized_dir) / module
     out_dir = mod_dir / out_tree
 
@@ -690,7 +700,7 @@ def splice_module(module: str, organized_dir: Path, tree: str, out_tree: str, ta
                                       javac_bin=javac_bin, javap_bin=javap_bin, java_bin=java_bin,
                                       tool_server=tool_server, donor_trees=tuple(donor_trees),
                                       primary_trees=tuple(primary_trees), hypotheses=tuple(hypotheses),
-                                      decompilers=tuple(decompilers), climb=climb)
+                                      decompilers=tuple(decompilers), climb=climb, exact=exact)
         except Exception as exc:  # noqa: BLE001 -- one class must not abort the module
             return fqcn, {"status": "refused", "reason": "tool-error", "detail": repr(exc)[:300]}
 
@@ -703,9 +713,10 @@ def splice_module(module: str, organized_dir: Path, tree: str, out_tree: str, ta
     old_classes = {}
     manifest_path = out_dir / MANIFEST_NAME
     if keep_existing and manifest_path.is_file():
-        # a later stage extends an earlier one: its splices survive unless re-targeted here
+        # a later stage extends an earlier one: its splices survive unless re-targeted here; an exact
+        # run (C4) only ever improves a class, so a re-targeted class keeps its splice unless replaced
         old_classes = {f: r for f, r in json.loads(manifest_path.read_text()).get("classes", {}).items()
-                       if f not in set(targets) and (out_dir / f"{f}.java").is_file()}
+                       if (exact or f not in set(targets)) and (out_dir / f"{f}.java").is_file()}
     if out_dir.is_dir():
         for old in out_dir.rglob("*.java"):
             if not (keep_existing and old.relative_to(out_dir).with_suffix("").as_posix() in old_classes):
@@ -766,6 +777,10 @@ def main(argv: Optional[list] = None) -> int:
     ap.add_argument("--climb", action="store_true",
                     help="hill-climb the primary with the site hypotheses (one site at a time, kept only when the "
                          "class structure / mismatching methods / code distance to the shipped class shrink)")
+    ap.add_argument("--exact", action="store_true",
+                    help="C4: target the shipped instruction stream itself. A canonical/allowlist-only method is a "
+                         "target, donors and climb steps must reach exact, a class is emitted only when it grades "
+                         "roundtrip-exact, and a re-targeted class keeps its earlier splice unless replaced")
     ap.add_argument("--keep-existing", action="store_true",
                     help="keep the out tree's earlier splices that are not re-targeted (extend a stage)")
     args = ap.parse_args(argv)
@@ -798,7 +813,7 @@ def main(argv: Optional[list] = None) -> int:
                                 tool_server=args.tool_server, class_jobs=args.class_jobs,
                                 donor_trees=split(args.donor_trees), primary_trees=split(args.primary_trees),
                                 keep_existing=args.keep_existing, hypotheses=hypotheses,
-                                decompilers=split(args.decompilers), climb=args.climb)
+                                decompilers=split(args.decompilers), climb=args.climb, exact=args.exact)
             reasons: dict = {}
             for r in man["refused"].values():
                 reasons[r["reason"]] = reasons.get(r["reason"], 0) + 1
