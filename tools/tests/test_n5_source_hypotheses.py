@@ -88,5 +88,39 @@ class TestUnfoldArrayInitializers(unittest.TestCase):
             self.assertEqual(self.h.unfold_array_initializers(src), src)
 
 
+class TestIincForms(unittest.TestCase):
+    """javac emits `iinc` for `i++` / `i += c` on an int local but iload/iconst/iadd/istore for
+    `i = i + c`; the decompiler prints the first form for both."""
+
+    def setUp(self):
+        self.h = _load()
+
+    SRC = ("   void f(int n) {\n      int i = 0;\n      long total = 0L;\n      i++;\n      --n;\n      i += 2;\n"
+           "      total++;\n      for (int k = 0; k < n; k++) {\n         i -= 3;\n      }\n   }\n")
+
+    def test_int_local_increments_are_expanded(self):
+        out = self.h.expand_iinc(self.SRC)
+        self.assertIn("      i = i + 1;\n", out)
+        self.assertIn("      n = n - 1;\n", out)
+        self.assertIn("      i = i + 2;\n", out)
+        self.assertIn("         i = i - 3;\n", out)
+        self.assertIn("k = k + 1) {", out)
+
+    def test_non_int_variables_are_left_alone(self):
+        out = self.h.expand_iinc(self.SRC)
+        self.assertIn("      total++;\n", out)
+
+    def test_name_declared_with_two_types_is_left_alone(self):
+        src = "   void f() {\n      int i = 0;\n      i++;\n   }\n   void g() {\n      long i = 0L;\n      i++;\n   }\n"
+        self.assertEqual(self.h.expand_iinc(src), src)
+
+    def test_collapse_is_the_inverse_for_statements(self):
+        expanded = self.h.expand_iinc(self.SRC)
+        out = self.h.collapse_iinc(expanded)
+        self.assertIn("      i += 1;\n", out)
+        self.assertIn("      n -= 1;\n", out)
+        self.assertIn("      total++;\n", out)
+
+
 if __name__ == "__main__":
     unittest.main()

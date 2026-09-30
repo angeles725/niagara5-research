@@ -121,9 +121,66 @@ def unfold_single_element_arrays(text: str) -> str:
     return _unfold(text, 1)
 
 
+_PRIM_DECL = re.compile(r"\b(int|long|short|byte|char|float|double|boolean)((?:\[\])*)\s+(\w+)\s*(?=[=;,):])")
+_REF_DECL = re.compile(r"\b[A-Z][\w.]*(?:<[^<>;=()]*>)?(?:\[\])*\s+(\w+)\s*(?=[=;,):])")
+
+
+def _int_names(text: str) -> set[str]:
+    """Names every declaration of which (parameter, local, field) is a plain `int`."""
+    kinds: dict[str, set[str]] = {}
+    for m in _PRIM_DECL.finditer(text):
+        kinds.setdefault(m.group(3), set()).add(m.group(1) + m.group(2))
+    for m in _REF_DECL.finditer(text):
+        kinds.setdefault(m.group(1), set()).add("ref")
+    return {n for n, k in kinds.items() if k == {"int"}}
+
+
+_STEP_STMT = re.compile(r"^(?P<ind>[ \t]*)(?:(?P<a>\w+)(?P<op1>\+\+|--)|(?P<op2>\+\+|--)(?P<b>\w+)|"
+                        r"(?P<c>\w+) (?P<op3>[+-])= (?P<n>-?\d+));[ \t]*$", re.M)
+_STEP_FOR = re.compile(r"^(?P<head>[ \t]*for \(.*; )(?P<v>\w+)(?P<op>\+\+|--)(?P<tail>\) \{)[ \t]*$", re.M)
+_ASSIGN_STEP = re.compile(r"^(?P<ind>[ \t]*)(?P<v>\w+) = (?P=v) (?P<op>[+-]) (?P<n>\d+);[ \t]*$", re.M)
+
+
+def expand_iinc(text: str) -> str:
+    """`i++;` / `--i;` / `i += 2;` / `for (...; i++)` on an int variable -> `i = i + 1;` ...
+
+    javac emits `iinc` only for the increment forms; source written as `i = i + 1` compiles to
+    iload/iconst/iadd/istore. The decompiler normalizes every form to the increment."""
+    ints = _int_names(text)
+
+    def stmt(m: re.Match) -> str:
+        var = m.group("a") or m.group("b") or m.group("c")
+        if var not in ints:
+            return m.group(0)
+        if m.group("c"):
+            return f"{m.group('ind')}{var} = {var} {m.group('op3')} {m.group('n')};"
+        op = m.group("op1") or m.group("op2")
+        return f"{m.group('ind')}{var} = {var} {'+' if op == '++' else '-'} 1;"
+
+    def loop(m: re.Match) -> str:
+        if m.group("v") not in ints:
+            return m.group(0)
+        v = m.group("v")
+        return f"{m.group('head')}{v} = {v} {'+' if m.group('op') == '++' else '-'} 1{m.group('tail')}"
+    return _STEP_FOR.sub(loop, _STEP_STMT.sub(stmt, text))
+
+
+def collapse_iinc(text: str) -> str:
+    """`i = i + 2;` on an int variable -> `i += 2;` (the inverse of expand_iinc for statements)."""
+    ints = _int_names(text)
+
+    def sub(m: re.Match) -> str:
+        if m.group("v") not in ints:
+            return m.group(0)
+        return f"{m.group('ind')}{m.group('v')} {m.group('op')}= {m.group('n')};"
+    return _ASSIGN_STEP.sub(sub, text)
+
+
 # name -> hypothesis, in the order the splice tries them
 HYPOTHESES: dict[str, Callable[[str], str]] = {
     "compound-assign": compound_assign,
     "unfold-single-array": unfold_single_element_arrays,
     "unfold-arrays": unfold_array_initializers,
+    "expand-iinc": expand_iinc,
+    "collapse-iinc": collapse_iinc,
 }
