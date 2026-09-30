@@ -442,5 +442,28 @@ class TestHoistArgumentTemp(ShapeSiteCase):
         self.assertEqual(hyp.sites("   void m() {\n      a.b(new X(new Y()));\n   }\n"), [])
 
 
+class TestSplitHoistDeclaration(ShapeSiteCase):
+    """The declaration of an initialized local moves up (`T x;`) and its initializer stays in place
+    (`x = e;`): javac numbers the local by the declaration, the code is executed where the assignment is."""
+
+    DECOMPILED = ("   void m() {\n      for (int i = 0; i < 3; i++) {\n         this.f += i;\n      }\n\n"
+                  "      Object a = new Object();\n      int b = this.f + 1;\n      this.o = a;\n      this.f = b;\n   }\n")
+    SHIPPED = ("   void m() {\n      for (int i = 0; i < 3; i++) {\n         this.f += i;\n      }\n\n"
+               "      int b;\n      Object a = new Object();\n      b = this.f + 1;\n      this.o = a;\n      this.f = b;\n   }\n")
+
+    def test_initialized_declaration_is_split_and_its_declaration_hoisted(self):
+        hyp = self.h.SITE_HYPOTHESES["split-hoist-declaration"]
+        self.assertFalse(exact_equal(wrap(self.DECOMPILED), wrap(self.SHIPPED)))
+        out = hyp.apply(self.DECOMPILED, hyp.sites(self.DECOMPILED)[0])       # one site: the rest is the climb's
+        self.assertEqual(out, self.SHIPPED)
+        self.assertTrue(exact_equal(wrap(out), wrap(self.SHIPPED)))
+
+    def test_only_a_single_line_initialized_declaration_after_another_declaration(self):
+        hyp = self.h.SITE_HYPOTHESES["split-hoist-declaration"]
+        self.assertEqual(hyp.sites("   void m() {\n      int b = f();\n   }\n"), [])
+        self.assertEqual(hyp.sites("   void m() {\n      Object a = f();\n      var b = g();\n   }\n"), [])
+        self.assertEqual(len(hyp.sites("   void m() {\n      Object a = f();\n      int b = g();\n   }\n")), 1)
+
+
 if __name__ == "__main__":
     unittest.main()

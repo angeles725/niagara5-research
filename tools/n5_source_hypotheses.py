@@ -750,9 +750,14 @@ HOIST_WINDOW = 4  # previous declarations of the block a declaration may be move
 
 
 class _HoistDeclaration:
-    """Site hypothesis: move an uninitialized local declaration (`T x;`) above one of the previous
-    declarations of its block. javac numbers locals in declaration order, so this permutes slots;
-    an initialized declaration is never moved (that would reorder its side effects)."""
+    """Site hypotheses: move the declaration of a local above one of the previous declarations of its
+    block. javac numbers locals in declaration order, so this permutes (and, with loops, re-uses) slots.
+    `hoist-declaration` moves an uninitialized `T x;`; `split-hoist-declaration` splits an initialized
+    `T x = e;` into the hoisted `T x;` and an in-place `x = e;` (the initializer keeps its place, so
+    nothing is reordered)."""
+
+    def __init__(self, split: bool = False):
+        self.split = split
 
     @staticmethod
     def _decls(text: str):
@@ -763,7 +768,9 @@ class _HoistDeclaration:
     def _found(self, text: str):
         decls = list(self._decls(text))
         for i, d in enumerate(decls):
-            if d.group("init") is not None:
+            if (d.group("init") is not None) != self.split:
+                continue
+            if self.split and (d.group("type") == "var" or d.group(0).lstrip().startswith("final ")):
                 continue
             ind = d.group("ind")
             reach = []
@@ -783,6 +790,11 @@ class _HoistDeclaration:
         for d, prev in self._found(text):
             if (d.start(), prev.start()) != tuple(site):
                 continue
+            if self.split:
+                hoisted = f"{d.group('ind')}{d.group('type')} {d.group('name')};"
+                assign = f"{d.group('ind')}{d.group('name')}{d.group('init')};"
+                without = text[:d.start()] + assign + text[d.end():]
+                return without[:prev.start()] + hoisted + "\n" + without[prev.start():]
             line = d.group(0)
             without = text[:d.start()] + text[d.end() + 1:]
             return without[:prev.start()] + line + "\n" + without[prev.start():]
@@ -790,6 +802,7 @@ class _HoistDeclaration:
 
 
 hoist_declaration = _HoistDeclaration()
+split_hoist_declaration = _HoistDeclaration(split=True)
 
 
 _FOR_DECL = re.compile(
@@ -1406,7 +1419,7 @@ RULE_SITES = {
     "dse": _TEMP_SITES + ("instanceof-binding", "hoist-arg-temp"),
     "peep": _TEMP_SITES + ("instanceof-binding", "hoist-arg-temp"), "r1": ("remove-null-cast",),
     "iinc": ("expand-iinc-site", "collapse-iinc-site", "lift-increments-site"),
-    "web": ("hoist-declaration", "hoist-for-var", "instanceof-binding"),
+    "web": ("hoist-declaration", "split-hoist-declaration", "hoist-for-var", "instanceof-binding"),
 }
 
 
@@ -1433,6 +1446,7 @@ SITE_HYPOTHESES = {
     "guard-return": guard_return,
     "guard-continue": guard_continue,
     "hoist-declaration": hoist_declaration,
+    "split-hoist-declaration": split_hoist_declaration,
     "hoist-for-var": hoist_for_var,
     "unguard-else": unguard_else,
     "invert-guard-return": invert_guard_return,
