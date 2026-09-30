@@ -6,6 +6,7 @@ Every fixer is tested with a real javac 25: the fixture must FAIL to compile bef
 patch (the decompiler defect) and compile after it.
 """
 import importlib.util
+import json
 import os
 import subprocess
 import sys
@@ -216,6 +217,68 @@ class TestSwitchGroupRedeclaration(MechanicalCase):
         res = self.patch(src)
         self.assertTrue(res["compiles"], res["residual_errors"])
         self.assertIn("case 3:\n         case 2: {", res["text"])
+
+
+def _grade_json(path: Path, classes: dict):
+    path.write_text(json.dumps({"classes": classes}))
+
+
+@unittest.skipUnless(HAVE_JDK, "needs JDK 25")
+class TestModuleDriver(unittest.TestCase):
+    BROKEN = """package p;
+public class Foo {
+   int f(Object c) {
+      if (!(c instanceof String var6)) {
+         var6 = "z";
+      }
+
+      return var6.length();
+   }
+}
+"""
+    OK_P = "package p;\npublic class Bar { int x; }\n"
+
+    def setUp(self):
+        self.m = _load()
+        self.td = tempfile.TemporaryDirectory()
+        self.org = Path(self.td.name)
+        mod = self.org / "mod"
+        (mod / "vineflower2" / "p").mkdir(parents=True)
+        (mod / "vineflower2p" / "p").mkdir(parents=True)
+        (mod / "vineflower2" / "p" / "Foo.java").write_text(self.BROKEN)
+        (mod / "vineflower2" / "p" / "Bar.java").write_text("package p;\nclass Bar {")
+        (mod / "vineflower2p" / "p" / "Bar.java").write_text(self.OK_P)
+        _grade_json(mod / "fidelity.vineflower2.json", {
+            "p/Foo": {"grade": "bytecode-only", "attempted": [["vineflower2", "no-compile"]]},
+            "p/Bar": {"grade": "bytecode-only", "attempted": [["vineflower2", "no-compile"]]},
+            "p/Ok": {"grade": "roundtrip-exact", "attempted": [["vineflower2", "roundtrip-exact"]]}})
+        _grade_json(mod / "fidelity.vineflower2.patched.json", {
+            "p/Bar": {"grade": "bytecode-only", "attempted": [["vineflower2", "no-compile"], ["vineflower2p", "compiles-mismatch"]]}})
+
+    def tearDown(self):
+        self.td.cleanup()
+
+    def test_population_takes_the_source_tree_and_its_own_grade(self):
+        pop = self.m.module_population(self.org / "mod")
+        self.assertEqual(pop["p/Foo"], {"tree": "vineflower2", "source_grade": "no-compile"})
+        self.assertEqual(pop["p/Bar"], {"tree": "vineflower2p", "source_grade": "compiles-mismatch"})
+        self.assertNotIn("p/Ok", pop)
+
+    def test_patch_module_writes_carried_and_patched_files_and_manifest(self):
+        spec = importlib.util.spec_from_file_location("fid_t", os.path.join(TOOLS_DIR, "n5-fidelity.py"))
+        fid = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = fid
+        spec.loader.exec_module(fid)
+        man = self.m.patch_module("mod", self.org, "vineflower2m", fid=fid, classpath="",
+                                  javac_bin=f"{JDK}/javac", tool_server=False)
+        out = self.org / "mod" / "vineflower2m"
+        self.assertEqual(sorted(man["classes"]), ["p/Foo"])
+        self.assertTrue(man["classes"]["p/Foo"]["compiles"])
+        self.assertIn("String var6;", (out / "p" / "Foo.java").read_text())
+        self.assertEqual((out / "p" / "Bar.java").read_text(), self.OK_P)  # carried from vineflower2p
+        on_disk = json.loads((out / "PATCHES.json").read_text())
+        self.assertEqual(on_disk["carried_files"], 1)
+        self.assertEqual(on_disk["classes"]["p/Foo"]["patches"][0]["kind"], "pattern-binding-scope")
 
 
 if __name__ == "__main__":

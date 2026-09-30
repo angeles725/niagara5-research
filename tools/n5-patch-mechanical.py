@@ -306,3 +306,205 @@ def patch_source(original: str, compile_fn: Callable[[str], str], fixers=None, m
     return {"text": text, "patches": patches, "compiles": not err, "rounds": rounds,
             "residual_errors": [{"line": e["line"], "message": e["message"]} for e in residual],
             "residual_error_count": len(residual)}
+
+
+# ---------------------------------------------------------------------------
+# population + module driver
+# ---------------------------------------------------------------------------
+
+import argparse
+import concurrent.futures
+import hashlib
+import importlib.util
+import json
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+TOOLS_DIR = Path(__file__).resolve().parent
+MANIFEST_NAME = "PATCHES.json"
+MANIFEST_SCHEMA = 1
+# ladder order, lowest first; a later rung wins a rank tie (see n5-fidelity.py _GRADE_RANK)
+RUNGS = ("vineflower", "vineflower2", "vineflower2.canon", "vineflower2.patched", "vineflower2.spliced")
+GRADE_RANK = {"no-compile": 0, "timeout": 0, "harness-error": 0, "compiles-mismatch": 1, "bytecode-only": 1,
+              "roundtrip-canonical-t2": 2, "roundtrip-canonical": 3, "roundtrip-equivalent": 4, "roundtrip-exact": 5}
+SOURCE_TREES = ("vineflower2p", "vineflower2")  # preferred first
+
+
+def _load_fidelity():
+    spec = importlib.util.spec_from_file_location("n5_fidelity_for_mech", TOOLS_DIR / "n5-fidelity.py")
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def sha256_text(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def module_population(mod_dir: Path) -> dict[str, dict]:
+    """{fqcn: {best_grade, tree, source_grade}} for the module's best-of-ladder
+    `bytecode-only` classes; `tree` is the source tree that is graded no-compile on the most
+    advanced rung that recorded it (vineflower2p when it has the class, else vineflower2)
+    and `source_grade` that attempt's grade. Uses the grader JSON only."""
+    recs: dict[str, dict] = {}
+    for r in RUNGS:
+        p = mod_dir / f"fidelity.{r}.json"
+        if p.is_file():
+            try:
+                recs[r] = json.loads(p.read_text())["classes"]
+            except (json.JSONDecodeError, OSError, KeyError):
+                pass
+    names = set()
+    for c in recs.values():
+        names |= set(c)
+    out = {}
+    for f in names:
+        best_grade, rung_recs = -1, {}
+        for r in RUNGS:
+            rec = recs.get(r, {}).get(f)
+            if rec is None:
+                continue
+            rung_recs[r] = rec
+            best_grade = max(best_grade, GRADE_RANK.get(rec["grade"], -1))
+        # the class's best grade is the best over the rungs; only bytecode-only classes are targets
+        best_names = [rec["grade"] for rec in rung_recs.values() if GRADE_RANK.get(rec["grade"], -1) == best_grade]
+        if "bytecode-only" not in best_names or best_grade != GRADE_RANK["bytecode-only"]:
+            continue
+        tree = next((t for t in SOURCE_TREES if (mod_dir / t / f"{f}.java").is_file()), None)
+        if tree is None:
+            continue
+        source_grade = None
+        for r in reversed(RUNGS):
+            if r in rung_recs:
+                source_grade = next((g for n, g in rung_recs[r].get("attempted", []) if n == tree), None)
+                if source_grade:
+                    break
+        out[f] = {"tree": tree, "source_grade": source_grade}
+    return out
+
+
+def make_compile_fn(fid, classpath: str, javac_bin: str, tool_server: bool, class_short: str):
+    def compile_fn(text: str) -> str:
+        with tempfile.TemporaryDirectory(prefix=f"n5mech-{class_short}-") as td:
+            src = Path(td) / "src" / f"{class_short}.java"
+            src.parent.mkdir()
+            src.write_text(text, encoding="utf-8")
+            args = ["--release", "25", "-g", "-implicit:none", "-proc:none", "-nowarn", "-Xmaxerrs", "100000",
+                    "-d", str(Path(td) / "out")]
+            if classpath:
+                args += ["-cp", classpath]
+            args.append(str(src))
+            rc, _o, e = fid._run_jdk_tool("javac", javac_bin, args, 300, tool_server)
+            return "" if rc == 0 else (e or "javac failed")
+    return compile_fn
+
+
+def patch_module(module: str, organized: Path, out_tree: str, *, fid, classpath: str, javac_bin: str,
+                 tool_server: bool, only: Optional[set] = None, class_jobs: int = 1) -> dict:
+    mod_dir = organized / module
+    pop = module_population(mod_dir)
+    targets = {f: v for f, v in pop.items() if v["source_grade"] == "no-compile" and (only is None or f in only)}
+    out_dir = mod_dir / out_tree
+    records: dict[str, dict] = {}
+
+    def one(f: str):
+        v = targets[f]
+        src = mod_dir / v["tree"] / f"{f}.java"
+        original = src.read_text(encoding="utf-8")
+        res = patch_source(original, make_compile_fn(fid, classpath, javac_bin, tool_server, src.stem))
+        rec = {"source_tree": v["tree"], "original_sha256": sha256_text(original),
+               "patched_sha256": sha256_text(res["text"]), "patches": res["patches"], "compiles": res["compiles"],
+               "residual_error_count": res["residual_error_count"], "residual_errors": res["residual_errors"][:20],
+               "rounds": res["rounds"]}
+        return f, rec, res["text"]
+
+    results = []
+    if class_jobs > 1 and len(targets) > 1:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=class_jobs) as pool:
+            results = list(pool.map(one, sorted(targets)))
+    else:
+        results = [one(f) for f in sorted(targets)]
+
+    if out_dir.is_dir():
+        shutil.rmtree(out_dir)
+    carried = 0
+    p_dir = mod_dir / "vineflower2p"
+    if p_dir.is_dir():
+        for p in p_dir.rglob("*.java"):
+            dest = out_dir / p.relative_to(p_dir)
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(p, dest)
+            carried += 1
+    for f, rec, text in results:
+        records[f] = rec
+        if rec["patches"] and rec["compiles"]:
+            dest = out_dir / f"{f}.java"
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_text(text, encoding="utf-8")
+    manifest = {"schema": MANIFEST_SCHEMA, "module": module, "tool": "tools/n5-patch-mechanical.py",
+                "carried_from": "vineflower2p", "carried_files": carried, "classes": records}
+    if records or carried:
+        out_dir.mkdir(parents=True, exist_ok=True)
+        (out_dir / MANIFEST_NAME).write_text(json.dumps(manifest, indent=1, sort_keys=True) + "\n")
+    return manifest
+
+
+def main(argv: Optional[list[str]] = None) -> int:
+    fid = _load_fidelity()
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--modules")
+    ap.add_argument("--all", action="store_true")
+    ap.add_argument("--organized-dir", default=str(fid.DEFAULT_ORGANIZED_DIR))
+    ap.add_argument("--out-tree", default="vineflower2m")
+    ap.add_argument("--modules-dir", default=str(fid.DEFAULT_MODULES_DIR))
+    ap.add_argument("--bin-ext-dir", default=str(fid.DEFAULT_BIN_EXT_DIR))
+    ap.add_argument("--jre-dir", default=str(fid.DEFAULT_JRE_DIR))
+    ap.add_argument("--bc-variant", choices=fid.BC_VARIANTS, default=fid.DEFAULT_BC_VARIANT)
+    ap.add_argument("--classpath-cache-dir", default=None)
+    ap.add_argument("--jobs", type=int, default=1)
+    ap.add_argument("--class-jobs", type=int, default=1)
+    ap.add_argument("--tool-server", action="store_true")
+    args = ap.parse_args(argv)
+    organized = Path(args.organized_dir)
+    if args.all:
+        modules = [p.name for p in sorted(organized.iterdir())
+                   if p.is_dir() and not p.name.startswith("_") and (p / "vineflower2").is_dir()]
+    elif args.modules:
+        modules = [m.strip() for m in args.modules.split(",") if m.strip()]
+    else:
+        ap.error("pass --modules a,b or --all")
+    cache = Path(args.classpath_cache_dir) if args.classpath_cache_dir \
+        else Path(tempfile.gettempdir()) / "n5-fidelity-classpath-cache"
+    classpath = fid.build_classpath(cache, Path(args.modules_dir), Path(args.bin_ext_dir), bc_variant=args.bc_variant,
+                                    jre_dir=Path(args.jre_dir) if args.jre_dir else None)
+    failed = []
+
+    def run(module: str):
+        try:
+            man = patch_module(module, organized, args.out_tree, fid=fid, classpath=classpath,
+                               javac_bin=fid.DEFAULT_JAVAC, tool_server=args.tool_server, class_jobs=args.class_jobs)
+            n_t = len(man["classes"])
+            n_p = sum(1 for r in man["classes"].values() if r["patches"])
+            n_c = sum(1 for r in man["classes"].values() if r["compiles"])
+            print(f"[{module}] targets {n_t} patched {n_p} now-compiling {n_c}", file=sys.stderr, flush=True)
+        except Exception as exc:  # noqa: BLE001 -- one module must not abort the batch
+            print(f"[{module}] FAILED: {exc!r}", file=sys.stderr, flush=True)
+            failed.append(module)
+
+    if args.jobs > 1 and len(modules) > 1:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=args.jobs) as pool:
+            list(pool.map(run, modules))
+    else:
+        for m in modules:
+            run(m)
+    fid.shutdown_tool_servers()
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
