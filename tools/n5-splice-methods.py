@@ -45,6 +45,10 @@ imports, self grade; per refused class the reason). Grade it with
   n5-fidelity.py --regrade-nonclean --tree vineflower2 --patch-tree vineflower2s
 (-> fidelity.vineflower2.spliced.json).
 
+C3d: --donor-trees adds already-decompiled trees (vineflower-cons, the v1 tree, flag-variant trees) as
+donors named `tree:<name>`; --primary-trees starts from the m/p patch stage; --keep-existing extends an
+earlier splice stage instead of replacing it (a re-run without it rebuilds the out tree).
+
 Usage:
   python3 tools/n5-splice-methods.py --targets remaining.json --tool-server --jobs 2 --class-jobs 4
     (remaining.json: [[module, fqcn], ...])
@@ -129,11 +133,14 @@ def per_method_verdicts(shipped: dict, recompiled: dict) -> tuple[dict, dict]:
     return out, structure
 
 
-def donor_candidates(key, donor_verdicts: dict) -> list:
+TREE_DONOR_PREFIX = "tree:"
+
+
+def donor_candidates(key, donor_verdicts: dict, engines: tuple = DONOR_ENGINES) -> list:
     """[(engine, verdict)] of the donors whose `key` matches the shipped method,
-    best evidence first (exact, allowlist, canonical), DONOR_ENGINES order on a tie."""
+    best evidence first (exact, allowlist, canonical), `engines` order on a tie."""
     found = []
-    for i, eng in enumerate(DONOR_ENGINES):
+    for i, eng in enumerate(engines):
         v = (donor_verdicts.get(eng) or {}).get(key)
         if v and v["verdict"] in _VERDICT_RANK:
             found.append((_VERDICT_RANK[v["verdict"]], i, eng, v))
@@ -314,12 +321,15 @@ def grade_text(text: str, class_short: str, shipped_class: Path, classpath: str,
 # ---------------------------------------------------------------------------
 
 def splice_class(fqcn: str, mod_dir: Path, tree: str, *, classpath: str, helper_dir: Path, javac_bin: str,
-                 javap_bin: str, java_bin: str, tool_server: bool) -> dict:
+                 javap_bin: str, java_bin: str, tool_server: bool, donor_trees: tuple = (),
+                 primary_trees: tuple = ()) -> dict:
     """{"status": "spliced", ...record, "_text": spliced} or
     {"status": "refused"|"not-candidate", "reason", "detail"}."""
     class_short = fqcn.rsplit("/", 1)[-1]
     shipped_class = mod_dir / "extracted" / f"{fqcn}.class"
-    primary_tree = f"{tree}p" if (mod_dir / f"{tree}p" / f"{fqcn}.java").is_file() else tree
+    # the primary is the first existing tree of primary_trees (e.g. the m/p patch stage), then
+    # <tree>p (F8), then <tree>
+    primary_tree = next((t for t in (*primary_trees, f"{tree}p") if (mod_dir / t / f"{fqcn}.java").is_file()), tree)
     primary_path = mod_dir / primary_tree / f"{fqcn}.java"
     if not primary_path.is_file() or not shipped_class.is_file():
         return {"status": "not-candidate", "reason": "no-source", "detail": str(primary_path)}
@@ -351,18 +361,26 @@ def splice_class(fqcn: str, mod_dir: Path, tree: str, *, classpath: str, helper_
 
     with tempfile.TemporaryDirectory(prefix=f"n5sd-{class_short}-") as td:
         donor_texts, donor_files, donor_verdicts = {}, {}, {}
-        for eng in DONOR_ENGINES:
-            jar = FID.DEFAULT_CFR_JAR if eng == "cfr" else FID.DEFAULT_PROCYON_JAR
-            src, _reason_ = FID._decompile_one_class_with(java_bin, eng, jar, shipped_class, Path(td) / eng)
-            if src is None:
-                continue
+        engines = (*DONOR_ENGINES, *(TREE_DONOR_PREFIX + t for t in donor_trees))
+        for eng in engines:
+            if eng.startswith(TREE_DONOR_PREFIX):
+                # an already-decompiled tree is a donor as-is (never the primary itself)
+                name = eng[len(TREE_DONOR_PREFIX):]
+                src = mod_dir / name / f"{fqcn}.java"
+                if name == primary_tree or not src.is_file():
+                    continue
+            else:
+                jar = FID.DEFAULT_CFR_JAR if eng == "cfr" else FID.DEFAULT_PROCYON_JAR
+                src, _reason_ = FID._decompile_one_class_with(java_bin, eng, jar, shipped_class, Path(td) / eng)
+                if src is None:
+                    continue
             parsed = compile_parse(Path(src), class_short, classpath, javac_bin, javap_bin, tool_server)
             if parsed is None:
                 continue
             donor_texts[eng] = Path(src).read_text(encoding="utf-8")
             donor_files[eng] = Path(src)
             donor_verdicts[eng] = per_method_verdicts(shipped, parsed)[0]
-        options = {k: donor_candidates(k, donor_verdicts) for k in todo}
+        options = {k: donor_candidates(k, donor_verdicts, engines) for k in todo}
         lacking = [k for k, v in options.items() if not v]
         if lacking:
             return {**base, "status": "refused", "reason": "no-donor", "donors_compiled": sorted(donor_verdicts),
@@ -403,7 +421,8 @@ def splice_class(fqcn: str, mod_dir: Path, tree: str, *, classpath: str, helper_
 
 def splice_module(module: str, organized_dir: Path, tree: str, out_tree: str, targets: list, *, classpath: str,
                   helper_dir: Path, javac_bin: str, javap_bin: str, java_bin: str, tool_server: bool,
-                  class_jobs: int = 1) -> dict:
+                  class_jobs: int = 1, donor_trees: tuple = (), primary_trees: tuple = (),
+                  keep_existing: bool = False) -> dict:
     mod_dir = Path(organized_dir) / module
     out_dir = mod_dir / out_tree
 
@@ -411,7 +430,8 @@ def splice_module(module: str, organized_dir: Path, tree: str, out_tree: str, ta
         try:
             return fqcn, splice_class(fqcn, mod_dir, tree, classpath=classpath, helper_dir=helper_dir,
                                       javac_bin=javac_bin, javap_bin=javap_bin, java_bin=java_bin,
-                                      tool_server=tool_server)
+                                      tool_server=tool_server, donor_trees=tuple(donor_trees),
+                                      primary_trees=tuple(primary_trees))
         except Exception as exc:  # noqa: BLE001 -- one class must not abort the module
             return fqcn, {"status": "refused", "reason": "tool-error", "detail": repr(exc)[:300]}
 
@@ -421,10 +441,17 @@ def splice_module(module: str, organized_dir: Path, tree: str, out_tree: str, ta
     with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, class_jobs)) as pool:
         results = list(pool.map(one, targets))
     FID.reap_dead_thread_tool_servers()
+    old_classes = {}
+    manifest_path = out_dir / MANIFEST_NAME
+    if keep_existing and manifest_path.is_file():
+        # a later stage extends an earlier one: its splices survive unless re-targeted here
+        old_classes = {f: r for f, r in json.loads(manifest_path.read_text()).get("classes", {}).items()
+                       if f not in set(targets) and (out_dir / f"{f}.java").is_file()}
     if out_dir.is_dir():
         for old in out_dir.rglob("*.java"):
-            old.unlink()
-    classes, refused, skipped = {}, {}, {}
+            if not (keep_existing and old.relative_to(out_dir).with_suffix("").as_posix() in old_classes):
+                old.unlink()
+    classes, refused, skipped = dict(old_classes), {}, {}
     for fqcn, rec in sorted(results):
         status = rec.pop("status")
         if status == "spliced":
@@ -440,7 +467,7 @@ def splice_module(module: str, organized_dir: Path, tree: str, out_tree: str, ta
     manifest = {"schema": MANIFEST_SCHEMA, "module": module, "source_tree": tree,
                 "tool": "tools/n5-splice-methods.py",
                 "helper_sha256": hashlib.sha256(HELPER_SRC.read_bytes()).hexdigest(),
-                "donor_engines": list(DONOR_ENGINES), "classes": classes, "refused": refused,
+                "donor_engines": [*DONOR_ENGINES, *(TREE_DONOR_PREFIX + t for t in donor_trees)], "classes": classes, "refused": refused,
                 "not_candidates": skipped}
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / MANIFEST_NAME).write_text(json.dumps(manifest, indent=1, sort_keys=True) + "\n")
@@ -463,7 +490,16 @@ def main(argv: Optional[list] = None) -> int:
     ap.add_argument("--jobs", type=int, default=1)
     ap.add_argument("--class-jobs", type=int, default=1)
     ap.add_argument("--tool-server", action="store_true")
+    ap.add_argument("--donor-trees", default="",
+                    help="comma-separated on-disk trees (organized/<mod>/<tree>/) used as extra donors after "
+                         "CFR/Procyon, e.g. vineflower-cons,vineflower")
+    ap.add_argument("--primary-trees", default="",
+                    help="comma-separated trees tried first as the primary source, e.g. vineflower2m "
+                         "(then <tree>p, then <tree>)")
+    ap.add_argument("--keep-existing", action="store_true",
+                    help="keep the out tree's earlier splices that are not re-targeted (extend a stage)")
     args = ap.parse_args(argv)
+    split = lambda v: tuple(x.strip() for x in v.split(",") if x.strip())  # noqa: E731
     by_module: dict = {}
     for module, fqcn in json.loads(Path(args.targets).read_text()):
         by_module.setdefault(module, []).append(fqcn)
@@ -484,7 +520,9 @@ def main(argv: Optional[list] = None) -> int:
             man = splice_module(module, Path(args.organized_dir), args.tree, out_tree, sorted(by_module[module]),
                                 classpath=classpath, helper_dir=helper, javac_bin=FID.DEFAULT_JAVAC,
                                 javap_bin=FID.DEFAULT_JAVAP, java_bin=FID.DEFAULT_JAVA,
-                                tool_server=args.tool_server, class_jobs=args.class_jobs)
+                                tool_server=args.tool_server, class_jobs=args.class_jobs,
+                                donor_trees=split(args.donor_trees), primary_trees=split(args.primary_trees),
+                                keep_existing=args.keep_existing)
             reasons: dict = {}
             for r in man["refused"].values():
                 reasons[r["reason"]] = reasons.get(r["reason"], 0) + 1

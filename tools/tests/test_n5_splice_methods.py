@@ -274,5 +274,92 @@ class TestEndToEnd(unittest.TestCase):
         self.assertIn("import java.util.ArrayList;", (mod_dir / "vineflower2s" / "p" / "Foo.java").read_text())
 
 
+class TestCli(unittest.TestCase):
+    def test_donor_and_primary_trees_reach_splice_module(self):
+        mod = _load()
+        with tempfile.TemporaryDirectory() as td:
+            targets = Path(td) / "t.json"
+            targets.write_text('[["m", "p/Foo"]]')
+            with mock.patch.object(mod.FID, "build_classpath", return_value=""), \
+                    mock.patch.object(mod, "compile_helper", return_value=Path(td)), \
+                    mock.patch.object(mod.FID, "shutdown_tool_servers"), \
+                    mock.patch.object(mod, "splice_module",
+                                      return_value={"classes": {}, "refused": {}, "not_candidates": {}}) as sm:
+                rc = mod.main(["--targets", str(targets), "--organized-dir", td, "--donor-trees",
+                               "vineflower-cons, vineflower", "--primary-trees", "vineflower2m", "--keep-existing"])
+        self.assertEqual(rc, 0)
+        kw = sm.call_args.kwargs
+        self.assertEqual((kw["donor_trees"], kw["primary_trees"], kw["keep_existing"]),
+                         (("vineflower-cons", "vineflower"), ("vineflower2m",), True))
+
+
+@unittest.skipUnless(_jdk(), "JDK 25 not installed")
+class TestOnDiskDonorTrees(unittest.TestCase):
+    """C3d: donors are not only CFR/Procyon: any decompile tree already on disk
+    (vineflower-cons, vineflower, a flag variant) is a donor named `tree:<name>`,
+    the primary can be the m/p patch stage, and a rerun keeps earlier splices."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load()
+        cls.td = tempfile.TemporaryDirectory()
+        cls.root = Path(cls.td.name)
+        cls.helper = cls.mod.compile_helper(cls.root / "helper", f"{JDK}/javac")
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.td.cleanup()
+
+    _module = TestEndToEnd._module
+
+    def _tree(self, mod_dir, tree, text):
+        (mod_dir / tree / "p").mkdir(parents=True, exist_ok=True)
+        (mod_dir / tree / "p" / "Foo.java").write_text(text)
+
+    def _run(self, name, mod_dir, fake, **kw):
+        with mock.patch.object(self.mod.FID, "_decompile_one_class_with", side_effect=fake):
+            return self.mod.splice_module(name, self.root / "organized", "vineflower2", "vineflower2s", ["p/Foo"],
+                                          classpath="", helper_dir=self.helper, javac_bin=f"{JDK}/javac",
+                                          javap_bin=f"{JDK}/javap", java_bin=f"{JDK}/java", tool_server=False, **kw)
+
+    def test_on_disk_tree_is_a_donor_when_cfr_and_procyon_are_not(self):
+        mod_dir, fake = self._module("tree", SHIPPED, PRIMARY, PROCYON, PROCYON)
+        self._tree(mod_dir, "vineflower-cons", SHIPPED.replace("return a - b;", "return (a - b);"))
+        man = self._run("tree", mod_dir, fake, donor_trees=["vineflower-cons"])
+        rec = man["classes"]["p/Foo"]
+        self.assertEqual([(m["name"], m["donor"], m["reason"]) for m in rec["methods"]],
+                         [("f", "tree:vineflower-cons", "exact")])
+        self.assertEqual(man["donor_engines"], ["cfr", "procyon", "tree:vineflower-cons"])
+        self.assertEqual(rec["self_grade"], "roundtrip-exact")
+
+    def test_missing_donor_tree_file_is_skipped_not_fatal(self):
+        mod_dir, fake = self._module("notree", SHIPPED, PRIMARY, PROCYON, PROCYON)
+        man = self._run("notree", mod_dir, fake, donor_trees=["vineflower-cons"])
+        self.assertEqual(man["refused"]["p/Foo"]["reason"], "no-donor")
+
+    def test_primary_preference_uses_the_patch_stage_tree(self):
+        mod_dir, fake = self._module("prim", SHIPPED, PRIMARY, CFR, PROCYON)
+        # the m stage fixed f but broke h; vineflower2 stays the graded baseline
+        self._tree(mod_dir, "vineflower2m", SHIPPED.replace("return k + 1;", "return k + 5;"))
+        man = self._run("prim", mod_dir, fake, primary_trees=["vineflower2m"])
+        rec = man["classes"]["p/Foo"]
+        self.assertEqual(rec["primary_tree"], "vineflower2m")
+        self.assertEqual([m["name"] for m in rec["methods"]], ["h"])
+
+    def test_keep_existing_carries_earlier_splices_over(self):
+        mod_dir, fake = self._module("keep", SHIPPED, PRIMARY, CFR, PROCYON)
+        first = self._run("keep", mod_dir, fake)
+        self.assertIn("p/Foo", first["classes"])
+        kept = (mod_dir / "vineflower2s" / "p" / "Foo.java").read_text()
+        # second run targets nothing that splices; without keep_existing the earlier class is wiped
+        with mock.patch.object(self.mod.FID, "_decompile_one_class_with", side_effect=fake):
+            man = self.mod.splice_module("keep", self.root / "organized", "vineflower2", "vineflower2s", [],
+                                         classpath="", helper_dir=self.helper, javac_bin=f"{JDK}/javac",
+                                         javap_bin=f"{JDK}/javap", java_bin=f"{JDK}/java", tool_server=False,
+                                         keep_existing=True)
+        self.assertEqual(sorted(man["classes"]), ["p/Foo"])
+        self.assertEqual((mod_dir / "vineflower2s" / "p" / "Foo.java").read_text(), kept)
+
+
 if __name__ == "__main__":
     unittest.main()
