@@ -184,11 +184,90 @@ def fix_instanceof_generic_raw(lines: list[str], errors: list[dict]):
     return (new, patches) if patches else None
 
 
+_LABEL_RE = re.compile(r"^\s*(?:case .*|default)\s*:\s*$")
+_REDEF_RE = re.compile(r"variable (\w+) is already defined in ")
+
+
+def _case_group(lines: list[str], k: int, ind: int):
+    """(first_label, last_label, last_stmt) of the switch group holding line k whose
+    statements sit at column `ind` (labels at ind-3), or None."""
+    lab = None
+    for j in range(k - 1, -1, -1):
+        s = lines[j]
+        if not s.strip():
+            continue
+        i = len(s) - len(s.lstrip())
+        if i < ind - 3:
+            return None
+        if i == ind - 3:
+            if _LABEL_RE.match(s):
+                lab = j
+                break
+            return None
+    if lab is None:
+        return None
+    first = lab
+    while first > 0 and _LABEL_RE.match(lines[first - 1]) and _indent(lines[first - 1]) == _indent(lines[lab]):
+        first -= 1
+    end = None
+    for j in range(lab + 1, len(lines)):
+        s = lines[j]
+        if not s.strip():
+            continue
+        i = len(s) - len(s.lstrip())
+        if i < ind:
+            break
+        end = j
+    return None if end is None else (first, lab, end)
+
+
+def fix_switch_group_scope(lines: list[str], errors: list[dict]):
+    """`variable v is already defined` where the duplicate sits in a switch group: switch
+    groups share one scope, so the original source had braces around each group (javac
+    reuses the slot). Brace every group of the switch that declares `v`."""
+    groups: dict[int, tuple] = {}
+    for e in errors:
+        m = _REDEF_RE.match(e["message"])
+        k = e["line"] - 1
+        if not m or not 0 <= k < len(lines):
+            continue
+        var = m.group(1)
+        ind = len(lines[k]) - len(lines[k].lstrip())
+        g = _case_group(lines, k, ind)
+        if g is None:
+            continue
+        groups[g[1]] = g
+        decl = re.compile(r"^\s{%d}(?:final )?[\w.<>\[\]?, ]+ %s\b\s*(?:=|;)" % (ind, re.escape(var)))
+        # earlier groups of the same switch that declare the variable
+        j = g[0] - 1
+        while j >= 0:
+            if lines[j].strip() and _indent(lines[j]) and len(_indent(lines[j])) < ind - 3:
+                break
+            if _LABEL_RE.match(lines[j]) and len(_indent(lines[j])) == ind - 3:
+                eg = _case_group(lines, j + 1, ind)
+                if eg and eg[1] == j and any(decl.match(lines[t]) for t in range(eg[1] + 1, eg[2] + 1)):
+                    groups[eg[1]] = eg
+                    j = eg[0]
+            j -= 1
+    if not groups:
+        return None
+    new = list(lines)
+    patches = []
+    for lab, first, end in sorted(((g[1], g[0], g[2]) for g in groups.values()), reverse=True):
+        ind = _indent(new[lab])
+        new.insert(end + 1, f"{ind}}}")
+        new[lab] = new[lab].rstrip() + " {"
+        patches.append({"kind": "switch-group-scope", "line": lab + 1,
+                        "evidence": "javac: variable already defined across switch groups"})
+    return new, patches
+
+
 FIXERS: list[tuple[str, Callable]] = [
     ("pattern-binding-scope", fix_pattern_binding_scope),
     ("foreach-raw-cast", fix_foreach_raw_cast),
     ("boolean-declared-int", fix_boolean_declared_int),
     ("instanceof-generic-raw", fix_instanceof_generic_raw),
+    ("switch-group-scope", fix_switch_group_scope),
 ]
 
 

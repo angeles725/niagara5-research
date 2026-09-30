@@ -181,5 +181,42 @@ public class T {
         self.assertIn("o instanceof Comparable c", res["text"])
 
 
+class TestSwitchGroupRedeclaration(MechanicalCase):
+    SRC = """public class T {
+   int f(int type, String s) {
+      int r;
+      switch (type) {
+         case 1:
+            StringBuilder sb = new StringBuilder(s);
+            r = sb.length();
+            break;
+         case 2:
+            StringBuilder sb = new StringBuilder(s + s);
+            r = sb.length();
+            break;
+         default:
+            r = 0;
+      }
+
+      return r;
+   }
+}
+"""
+
+    def test_case_groups_declaring_the_same_local_are_braced(self):
+        res = self.patch(self.SRC)
+        self.assertTrue(res["compiles"], res["residual_errors"])
+        self.assertEqual([p["kind"] for p in res["patches"]], ["switch-group-scope"] * 2)
+        self.assertIn("case 1: {", res["text"])
+        self.assertIn("case 2: {", res["text"])
+        self.assertNotIn("default: {", res["text"])
+
+    def test_stacked_labels_brace_after_the_last_label(self):
+        src = self.SRC.replace("         case 2:\n", "         case 3:\n         case 2:\n")
+        res = self.patch(src)
+        self.assertTrue(res["compiles"], res["residual_errors"])
+        self.assertIn("case 3:\n         case 2: {", res["text"])
+
+
 if __name__ == "__main__":
     unittest.main()
