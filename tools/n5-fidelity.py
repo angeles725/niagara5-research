@@ -110,6 +110,8 @@ DEFAULT_JRE_DIR = Path("/mnt/c/Program Files/Niagara/5.0.0.28/jre")
 DEFAULT_JAVAC = "/home/linuxbrew/.linuxbrew/opt/openjdk@25/bin/javac"
 DEFAULT_JIMAGE = "/home/linuxbrew/.linuxbrew/opt/openjdk@25/bin/jimage"
 DEFAULT_JAVAP = "/home/linuxbrew/.linuxbrew/opt/openjdk@25/bin/javap"
+# C2e: JDK 8 javac for shipped class-file majors <= 51 (javac 25 cannot target them); opt-in
+DEFAULT_JAVAC8 = "/usr/lib/jvm/java-8-openjdk-amd64/bin/javac"
 
 DECOMPILERS_DIR = REPO_ROOT / "tools" / "decompilers"
 DEFAULT_CFR_JAR = DECOMPILERS_DIR / "cfr-0.152.jar"
@@ -1125,6 +1127,7 @@ def select_best_decompiler(attempts: list[tuple[str, dict]]) -> dict:
     return {"best_decompiler": best_name, "grade": grade, "attempted": attempts}
 
 
+
 # ---------------------------------------------------------------------------
 # Record detail selection (C3a-G3)
 # ---------------------------------------------------------------------------
@@ -1482,6 +1485,7 @@ def recompile_and_grade(
     javap_timeout: float = DEFAULT_JAVAP_TIMEOUT_SECONDS,
     tool_server: bool = False,
     javac_release: int = 25,
+    legacy_javac: Optional[dict] = None,
 ) -> dict:
     """Recompile one decompiled .java (top-level class `class_name`, may define
     nested classes too) and grade the top-level class's .class against
@@ -1510,12 +1514,17 @@ def recompile_and_grade(
         }
 
     os.makedirs(out_dir, exist_ok=True)
-    javac_args = ["--release", str(javac_release), "-g", "-implicit:none", "-proc:none", "-nowarn", "-d", out_dir]
+    # legacy_javac (C2e) = {"bin": <JDK 8 javac>, "args": ["-source", .., "-target", ..]}: javac 8 has no
+    # --release and the tool server runs JDK 25 only, so that compile always uses a subprocess
+    release_args = legacy_javac["args"] if legacy_javac else ["--release", str(javac_release)]
+    javac_args = [*release_args, "-g", "-implicit:none", "-proc:none", "-nowarn", "-d", out_dir]
     if classpath:
         javac_args += ["-cp", classpath]
     javac_args.append(java_file)
     try:
-        javac_rc, _javac_out, javac_err = _run_jdk_tool("javac", javac_bin, javac_args, javac_timeout, tool_server)
+        javac_rc, _javac_out, javac_err = _run_jdk_tool(
+            "javac", legacy_javac["bin"] if legacy_javac else javac_bin, javac_args, javac_timeout,
+            False if legacy_javac else tool_server)
     except subprocess.TimeoutExpired:
         return {
             "grade": "timeout",
@@ -1823,6 +1832,8 @@ def _grade_one_class(
     patch_tree: Optional[str] = None,
     patch_dir: Optional[Path] = None,
     third_party: bool = False,
+    legacy_jdk8: bool = False,
+    legacy_javac8_bin: str = DEFAULT_JAVAC8,
 ) -> tuple[str, dict]:
     """Grade one top-level class (the redundancy ladder) and return
     (fqcn, record). Self-contained: uses its own temp dirs, so it is safe to
@@ -1845,9 +1856,20 @@ def _grade_one_class(
                 "docsource_available": False, "docsource_roundtrip": None,
                 "nested": ungraded_nested(str(classfile)), "fully_proven": False,
             }
+        legacy_args = (n5_classfile.legacy_javac_args_for_major(class_major)
+                       if (legacy_jdk8 and state == TYPED_RELEASE_UNSUPPORTED and os.path.isfile(legacy_javac8_bin))
+                       else None)
+        if legacy_args:
+            # C2e: javac 25 cannot target this major; the JDK 8 javac compiles it on the same ladder
+            state = None
+            rag_kw = {"legacy_javac": {"bin": legacy_javac8_bin, "args": legacy_args}}
+            compiler = "javac8 " + " ".join(legacy_args)
+        else:
+            compiler = f"javac25 --release {release}"
         if state is not None:
             return fqcn, typed_class_record(state, classfile, class_major, release)
-        rag_kw = {"javac_release": release}
+        if not legacy_args:
+            rag_kw = {"javac_release": release}
 
     docsource_java = docsource_dir / f"{fqcn}.java"
     docsource_available = docsource_java.is_file()
@@ -1939,9 +1961,6 @@ def _grade_one_class(
             # canonical evidence of the engine whose grade IS the class grade
             # (the first clean rung, else the primary tree): which methods the
             # sound canonical comparison resolved and the rules it needed
-            # canonical evidence of the engine whose grade IS the class grade
-            # (the first clean rung, else the primary tree): which methods the
-            # sound canonical comparison resolved and the rules it needed
             "canonical_methods": [list(k) for k in (_grade_source(attempted, best)[1].get("canonical_methods") or [])],
             "canonical_rules": list(_grade_source(attempted, best)[1].get("canonical_rules") or []),
             # per-engine, per-method round-trip data — NOT a merge (an unsound
@@ -1963,6 +1982,7 @@ def _grade_one_class(
         if third_party:
             record["class_major"] = class_major
             record["javac_release"] = release
+            record["compiler"] = compiler
         record["nested"] = nested
         record["fully_proven"] = fully_proven(best["grade"], nested)
         if patch_tree:
@@ -2019,6 +2039,8 @@ def grade_module(
     only_classes: Optional[set] = None,
     fallback_tree: str = "fallback",
     third_party: bool = False,
+    legacy_jdk8: bool = False,
+    legacy_javac8_bin: str = DEFAULT_JAVAC8,
 ) -> dict:
     """`primary_tree` names the decompiled source tree to grade as the FIRST
     rung of the redundancy ladder — normally "vineflower" (tools/n5-decompile.sh's
@@ -2047,6 +2069,8 @@ def grade_module(
     )
     if third_party:
         class_kwargs["third_party"] = True
+        if legacy_jdk8:
+            class_kwargs.update(legacy_jdk8=True, legacy_javac8_bin=legacy_javac8_bin)
     if patch_tree:
         class_kwargs.update(patch_tree=patch_tree, patch_dir=mod_dir / patch_tree)
     per_class = {}
@@ -3294,12 +3318,27 @@ def _cli_classpath(args) -> str:
                            bc_variant=args.bc_variant, jre_dir=Path(args.jre_dir) if args.jre_dir else None)
 
 
+def filter_third_party_targets(targets: list[dict], names: Optional[list]) -> list[dict]:
+    """Restrict third-party targets to those whose key or tree name contains any of `names`
+    (case-insensitive substring); None = no restriction. A name matching nothing is an error."""
+    if not names:
+        return targets
+    out = [t for t in targets if any(n.lower() in (t["key"] + " " + t["module"]).lower() for n in names)]
+    for n in names:
+        if not any(n.lower() in (t["key"] + " " + t["module"]).lower() for t in targets):
+            raise ValueError(f"--third-party-artifacts {n!r} matches no third-party target")
+    return out
+
+
 def _main_third_party(args, organized_dir: Path, population: dict) -> int:
     """C2b driver: grade each artifact's uncovered classes on its own tree. The classpath is the
     N5 classpath every module uses (each artifact's own jar is on it through its host module, and the
     source under compile overrides its own class -- the same way a module is graded). Artifacts
     without a decompiled tree are reported as typed gaps."""
     targets, gaps = third_party_targets(population, organized_dir)
+    restricted = bool(args.third_party_artifacts)
+    targets = filter_third_party_targets(
+        targets, [n.strip() for n in args.third_party_artifacts.split(",") if n.strip()] if restricted else None)
     classpath = _cli_classpath(args)
     jd_cli_jar = Path(args.jd_cli_jar) if args.jd_cli_jar else None
     failed: list[str] = []
@@ -3316,7 +3355,8 @@ def _main_third_party(args, organized_dir: Path, population: dict) -> int:
             result = grade_module(
                 t["module"], organized_dir=t["organized_dir"], classpath=classpath, limit=args.limit_per_module,
                 jd_cli_jar=jd_cli_jar, primary_tree=args.tree, class_jobs=args.class_jobs, tool_server=args.tool_server,
-                only_classes=t["only_classes"], fallback_tree=THIRD_PARTY_FALLBACK_TREE, third_party=True)
+                only_classes=t["only_classes"], fallback_tree=THIRD_PARTY_FALLBACK_TREE, third_party=True,
+                legacy_jdk8=args.legacy_jdk8_javac, legacy_javac8_bin=args.javac8_bin)
             fidelity_output_path(mod_dir, args.tree).write_text(json.dumps(result, indent=2, default=list) + "\n")
             print(f"[{t['module']}] {result['grade_counts']}", file=sys.stderr)
             return result
@@ -3338,6 +3378,8 @@ def _main_third_party(args, organized_dir: Path, population: dict) -> int:
               f"({g['kotlin_top_level']} Kotlin)", file=sys.stderr)
     if args.report:
         report_path = REPO_ROOT / "docs" / "decompile-fidelity-report.md"
+        if restricted:  # a restricted run must not shrink the section: report every graded artifact
+            results, gaps = load_third_party_results(organized_dir, args.tree)
         _upsert_third_party_section(report_path, results, gaps)
         print(f"wrote {report_path}", file=sys.stderr)
     if failed:
@@ -3384,6 +3426,15 @@ def main(argv: Optional[list[str]] = None) -> int:
                               "javac --release from the shipped class-file major, Kotlin = kotlin-javap-reference; "
                               "default --tree vineflower2; with --report upserts a separate "
                               "'## third-party without upstream source' section")
+    parser.add_argument("--legacy-jdk8-javac", action="store_true",
+                         help="C2e, with --third-party-uncovered: compile classes whose shipped major (<= 51) javac 25 "
+                              "cannot target with the JDK 8 javac (-source/-target by major) instead of typing them "
+                              "release-unsupported; the compiler is recorded per class. Combine with --force to "
+                              "regrade artifacts whose cached JSON predates the flag.")
+    parser.add_argument("--javac8-bin", default=DEFAULT_JAVAC8, help="JDK 8 javac for --legacy-jdk8-javac")
+    parser.add_argument("--third-party-artifacts", default=None, metavar="NAME[,NAME]",
+                         help="with --third-party-uncovered: only grade targets whose artifact key or tree name "
+                              "contains one of these case-insensitive substrings (e.g. woodstox,nimbus-jose)")
     parser.add_argument("--tree", default=None,
                          help="decompiled source tree to grade, e.g. vineflower (default) or vineflower2 — "
                               "see grade_module docstring. Output is organized/<mod>/fidelity.<tree>.json — "

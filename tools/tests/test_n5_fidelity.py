@@ -2300,6 +2300,100 @@ class TestThirdPartyClassStates(unittest.TestCase):
         self.assertFalse(self.mod.is_module_up_to_date(art, "vineflower2"))
 
 
+JDK8_JAVAC = "/usr/lib/jvm/java-8-openjdk-amd64/bin/javac"
+
+
+class TestLegacyJdk8Javac(unittest.TestCase):
+    """C2e: classes below what javac 25 can target (class major <= 51) are compiled with the
+    JDK 8 javac (`-source/-target` by shipped major) and graded on the same ladder; the compiler is
+    recorded per class. Opt-in: without the flag they stay release-unsupported."""
+
+    def setUp(self):
+        if not _jdk_available() or not os.path.isfile(JDK8_JAVAC):
+            self.skipTest("JDK 25 and JDK 8 javac required")
+        self.mod = _load()
+        self.tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmp, ignore_errors=True)
+        self.organized = Path(self.tmp) / "organized"
+
+    def _artifact(self, name="art", version="1.6"):
+        """organized/<name> with p/Old compiled by javac 8 (-source/-target <version>) as the shipped
+        class, and its own source as the vineflower2 'decompile'."""
+        art = self.organized / name
+        (art / "extracted" / "p").mkdir(parents=True)
+        (art / "vineflower2" / "p").mkdir(parents=True)
+        src = Path(self.tmp) / "Old.java"
+        src.write_text("package p; public class Old { public int f(int a) { return a + 1; } }")
+        subprocess.run([JDK8_JAVAC, "-nowarn", "-source", version, "-target", version, "-g",
+                        "-d", str(art / "extracted"), str(src)], check=True, capture_output=True)
+        (art / "vineflower2" / "p" / "Old.java").write_text(src.read_text())
+        (art / "recon.json").write_text(json.dumps({"jar_sha256": "j"}))
+        return art
+
+    def _grade(self, **kw):
+        return self.mod.grade_module("art", organized_dir=self.organized, primary_tree="vineflower2",
+                                     javac_bin=JDK25_JAVAC, javap_bin=JDK25_JAVAP, third_party=True,
+                                     **kw)["classes"]["p/Old"]
+
+    def test_third_party_targets_can_be_restricted_by_artifact_name(self):
+        targets = [{"key": "org.a:woodstox-core:7.2.0", "module": "woodstox-core-7.2.0-689f"},
+                   {"key": "org.b:nimbus-jose-jwt:10.0.2", "module": "nimbus-jose-jwt-10.0.2-960b"},
+                   {"key": "org.c:other:1", "module": "other-1-abc"}]
+        out = self.mod.filter_third_party_targets(targets, ["woodstox", "nimbus-jose"])
+        self.assertEqual([t["module"] for t in out], ["woodstox-core-7.2.0-689f", "nimbus-jose-jwt-10.0.2-960b"])
+        self.assertEqual(self.mod.filter_third_party_targets(targets, None), targets)
+        with self.assertRaises(ValueError):
+            self.mod.filter_third_party_targets(targets, ["nosuch"])
+
+    def test_legacy_args_by_shipped_major(self):
+        f = self.mod.n5_classfile.legacy_javac_args_for_major
+        self.assertEqual(f(45), ["-source", "1.3", "-target", "1.1"])
+        self.assertEqual(f(46), ["-source", "1.3", "-target", "1.2"])
+        self.assertEqual(f(47), ["-source", "1.3", "-target", "1.3"])
+        self.assertEqual(f(49), ["-source", "1.5", "-target", "1.5"])
+        self.assertEqual(f(51), ["-source", "1.7", "-target", "1.7"])
+        self.assertIsNone(f(52))
+        self.assertIsNone(f(44))
+
+    def test_without_the_opt_in_the_class_stays_release_unsupported(self):
+        self._artifact()
+        rec = self._grade()
+        self.assertEqual(rec["grade"], "release-unsupported")
+
+    def test_javac8_round_trips_a_java6_class_and_records_the_compiler(self):
+        self._artifact(version="1.6")
+        rec = self._grade(legacy_jdk8=True, legacy_javac8_bin=JDK8_JAVAC)
+        self.assertEqual(rec["grade"], "roundtrip-exact")
+        self.assertEqual(rec["class_major"], 50)
+        self.assertEqual(rec["compiler"], "javac8 -source 1.6 -target 1.6")
+
+    def test_javac8_round_trips_a_java5_class_with_tool_server_falling_back_to_subprocess(self):
+        self._artifact(version="1.5")
+        rec = self._grade(legacy_jdk8=True, legacy_javac8_bin=JDK8_JAVAC, tool_server=True)
+        self.assertEqual(rec["grade"], "roundtrip-exact")
+        self.assertEqual(rec["compiler"], "javac8 -source 1.5 -target 1.5")
+        self.mod.shutdown_tool_servers()
+
+    def test_missing_javac8_binary_keeps_the_typed_state(self):
+        self._artifact()
+        rec = self._grade(legacy_jdk8=True, legacy_javac8_bin="/nonexistent/javac")
+        self.assertEqual(rec["grade"], "release-unsupported")
+
+    def test_modern_classes_record_javac25_and_their_release(self):
+        art = self.organized / "art"
+        (art / "extracted" / "p").mkdir(parents=True)
+        (art / "vineflower2" / "p").mkdir(parents=True)
+        src = Path(self.tmp) / "Old.java"
+        src.write_text("package p; public class Old { public int f(int a) { return a + 1; } }")
+        subprocess.run([JDK25_JAVAC, "--release", "11", "-g", "-proc:none", "-nowarn", "-d", str(art / "extracted"),
+                        str(src)], check=True, capture_output=True)
+        (art / "vineflower2" / "p" / "Old.java").write_text(src.read_text())
+        (art / "recon.json").write_text(json.dumps({"jar_sha256": "j"}))
+        rec = self._grade(legacy_jdk8=True, legacy_javac8_bin=JDK8_JAVAC)
+        self.assertEqual(rec["grade"], "roundtrip-exact")
+        self.assertEqual(rec["compiler"], "javac25 --release 11")
+
+
 class TestThirdPartyTargets(unittest.TestCase):
     def setUp(self):
         self.mod = _load()

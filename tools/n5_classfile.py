@@ -30,6 +30,18 @@ def javac_release_for_major(major: int):
     return release if JAVAC_MIN_RELEASE <= release <= JAVAC_MAX_RELEASE else None
 
 
+# JDK 8 javac has no `--release`; class-file majors 45..51 map to its -source/-target pairs
+# (javac 8 has no -source below 1.3, and -target 1.1/1.2 need -source 1.3).
+_LEGACY_SOURCE_TARGET = {45: ("1.3", "1.1"), 46: ("1.3", "1.2"), 47: ("1.3", "1.3"), 48: ("1.4", "1.4"),
+                         49: ("1.5", "1.5"), 50: ("1.6", "1.6"), 51: ("1.7", "1.7")}
+
+
+def legacy_javac_args_for_major(major: int):
+    """JDK 8 javac `-source/-target` args for a shipped major javac 25 cannot target, else None."""
+    pair = _LEGACY_SOURCE_TARGET.get(major)
+    return ["-source", pair[0], "-target", pair[1]] if pair else None
+
+
 def _skip_constant_pool(data: bytes, pos: int, count: int):
     """Walk the constant pool; return (utf8 {index: str}, position after the pool)."""
     utf8: dict[int, str] = {}
