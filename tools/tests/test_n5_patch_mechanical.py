@@ -43,10 +43,22 @@ class MechanicalCase(unittest.TestCase):
     def setUp(self):
         self.m = _load()
 
-    def patch(self, text: str, cls: str = "T"):
+    def patch(self, text: str, cls: str = "T", ctx=None):
         self.assertNotEqual(javac_compile(text, cls), "", "fixture must fail to compile before the patch")
-        res = self.m.patch_source(text, lambda t: javac_compile(t, cls))
+        res = self.m.patch_source(text, lambda t: javac_compile(t, cls), ctx=ctx)
         return res
+
+    def evidence(self, shipped: str, cls: str = "T") -> dict:
+        """ctx built from the javap -v of a self-written 'shipped' class (real bytecode)."""
+        with tempfile.TemporaryDirectory() as td:
+            src = Path(td) / f"{cls}.java"
+            src.write_text(shipped, encoding="utf-8")
+            r = subprocess.run([f"{JDK}/javac", "--release", "25", "-proc:none", "-d", td + "/out", str(src)],
+                               capture_output=True, text=True)
+            assert r.returncode == 0, r.stderr
+            files = sorted(str(p) for p in Path(td, "out").rglob("*.class"))
+            out = subprocess.run([f"{JDK}/javap", "-v", "-p", *files], capture_output=True, text=True).stdout
+        return {"methodrefs": self.m.parse_methodrefs(out)}
 
 
 class TestFramework(MechanicalCase):
@@ -286,6 +298,50 @@ class TestInnerConstructorOuterArgument(MechanicalCase):
         res = self.patch(src)
         self.assertEqual(res["patches"], [])
         self.assertFalse(res["compiles"])
+
+
+class TestAmbiguousOverloadCast(MechanicalCase):
+    SHIPPED = """public class T {
+   static class Lg {
+      static void log(String s, Object[] a) {}
+      static void log(String s, Throwable t) {}
+   }
+   void f(boolean c, Exception ex) {
+      Lg.log("x", (Throwable)(c ? null : null));
+      Lg.log("y", (Throwable)null);
+   }
+}
+"""
+    DECOMPILED = SHIPPED.replace("(Throwable)(c ? null : null)", "c ? null : null").replace("(Throwable)null", "null")
+
+    def test_parse_methodrefs_reads_owner_name_and_descriptor(self):
+        refs = self.m.parse_methodrefs(self._javap_text())
+        self.assertIn(("T$Lg", "log", "(Ljava/lang/String;Ljava/lang/Throwable;)V"), refs)
+
+    def _javap_text(self):
+        with tempfile.TemporaryDirectory() as td:
+            src = Path(td) / "T.java"
+            src.write_text(self.SHIPPED)
+            subprocess.run([f"{JDK}/javac", "--release", "25", "-proc:none", "-d", td + "/out", str(src)], check=True)
+            files = sorted(str(p) for p in Path(td, "out").rglob("*.class"))
+            return subprocess.run([f"{JDK}/javap", "-v", "-p", *files], capture_output=True, text=True).stdout
+
+    def test_ambiguous_arguments_are_cast_to_the_overload_the_bytecode_calls(self):
+        res = self.patch(self.DECOMPILED, ctx=self.evidence(self.SHIPPED))
+        self.assertTrue(res["compiles"], res["residual_errors"])
+        self.assertEqual({p["kind"] for p in res["patches"]}, {"ambiguous-overload-cast"})
+        self.assertIn('Lg.log("y", (java.lang.Throwable)null);', res["text"])
+        self.assertIn('Lg.log("x", (java.lang.Throwable)(c ? null : null));', res["text"])
+
+    def test_without_bytecode_evidence_nothing_is_guessed(self):
+        res = self.patch(self.DECOMPILED, ctx={"methodrefs": set()})
+        self.assertEqual(res["patches"], [])
+
+    def test_both_overloads_in_the_bytecode_is_not_decidable(self):
+        ctx = {"methodrefs": {("T$Lg", "log", "(Ljava/lang/String;Ljava/lang/Throwable;)V"),
+                              ("T$Lg", "log", "(Ljava/lang/String;[Ljava/lang/Object;)V")}}
+        res = self.patch(self.DECOMPILED, ctx=ctx)
+        self.assertEqual(res["patches"], [])
 
 
 def _grade_json(path: Path, classes: dict):

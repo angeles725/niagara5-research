@@ -73,7 +73,7 @@ _BINDING_RE = re.compile(
     r"^(?P<ind>\s*)if \(!\((?P<expr>[\w.]+) instanceof (?P<type>[\w.<>?, \[\]]+?) (?P<var>\w+)\)\) \{\s*$")
 
 
-def fix_pattern_binding_scope(lines: list[str], errors: list[dict]):
+def fix_pattern_binding_scope(lines: list[str], errors: list[dict], ctx=None):
     """`if (!(E instanceof T v)) { ...v = X; }` then `v` used after the if: javac puts a
     negated-instanceof binding in scope after the statement only when the block cannot
     complete normally. Vineflower folds `else v = (T)E;` into the binding. Restore the
@@ -120,7 +120,7 @@ _FOREACH_RAW_RE = re.compile(
     r"(for \((?:final )?(?P<type>[\w.<>?\[\]]+) \w+ : )\((?P<raw>(?:[\w.]+\.)?(?:%s))\)" % "|".join(_RAW_ITERABLES))
 
 
-def fix_foreach_raw_cast(lines: list[str], errors: list[dict]):
+def fix_foreach_raw_cast(lines: list[str], errors: list[dict], ctx=None):
     """`for (T v : (List)expr)` -- javac: `Object cannot be converted to T`. The decompiler
     dropped the type argument of the raw cast; the loop variable's type is the element
     type the bytecode checkcasts to, so the cast becomes `(List<T>)` (boxed for a primitive)."""
@@ -144,7 +144,7 @@ def fix_foreach_raw_cast(lines: list[str], errors: list[dict]):
 _BOOL_AS_INT_RE = re.compile(r"^(?P<ind>\s*)int (?P<var>\w+) = (?P<lit>true|false);\s*$")
 
 
-def fix_boolean_declared_int(lines: list[str], errors: list[dict]):
+def fix_boolean_declared_int(lines: list[str], errors: list[dict], ctx=None):
     """`int v = false;` -- javac: `boolean cannot be converted to int`. Vineflower typed the
     local by the JVM's int slot; the source only compiles with the literal's type."""
     new = list(lines)
@@ -165,7 +165,7 @@ def fix_boolean_declared_int(lines: list[str], errors: list[dict]):
 _INSTANCEOF_GENERIC_RE = re.compile(r"instanceof (?P<raw>[\w.]+)<[^<>()]*(?:<[^<>()]*>[^<>()]*)*> (?P<var>\w+)")
 
 
-def fix_instanceof_generic_raw(lines: list[str], errors: list[dict]):
+def fix_instanceof_generic_raw(lines: list[str], errors: list[dict], ctx=None):
     """`x instanceof Comparable<T> v` -- javac: `Object cannot be safely cast to Comparable<T>`.
     instanceof is erased in the class file, so the type arguments carry no bytecode
     evidence; the raw type is the only spelling that is always legal."""
@@ -221,7 +221,7 @@ def _case_group(lines: list[str], k: int, ind: int):
     return None if end is None else (first, lab, end)
 
 
-def fix_switch_group_scope(lines: list[str], errors: list[dict]):
+def fix_switch_group_scope(lines: list[str], errors: list[dict], ctx=None):
     """`variable v is already defined` where the duplicate sits in a switch group: switch
     groups share one scope, so the original source had braces around each group (javac
     reuses the slot). Brace every group of the switch that declares `v`."""
@@ -279,7 +279,7 @@ def _enclosing_catch(lines: list[str], k: int):
     return None
 
 
-def fix_catch_parameter_name(lines: list[str], errors: list[dict]):
+def fix_catch_parameter_name(lines: list[str], errors: list[dict], ctx=None):
     """`catch (Exception e) { ... ex ... }` with `ex` undeclared -- javac: cannot find symbol.
     Vineflower renamed the catch parameter (to dodge a clash with an enclosing name) but not
     the uses in its body. The catch parameter is the only variable the body can mean."""
@@ -343,7 +343,7 @@ _CTOR_ERR_RE = re.compile(r"constructor \w+ in class [\w.$<>]+ cannot be applied
 _OUTER_THIS_RE = re.compile(r"^(?:[\w.$]+\.)?this$")
 
 
-def fix_inner_ctor_outer_arg(lines: list[str], errors: list[dict]):
+def fix_inner_ctor_outer_arg(lines: list[str], errors: list[dict], ctx=None):
     """`super(Outer.this, x)` / `new Inner(this, x)` -- javac: constructor cannot be applied
     (found one argument more than required). Vineflower prints the synthetic outer-instance
     constructor parameter of an inner class as an argument; source passes it implicitly.
@@ -384,6 +384,167 @@ def fix_inner_ctor_outer_arg(lines: list[str], errors: list[dict]):
     return text.split("\n"), patches
 
 
+_METHODREF_RE = re.compile(r"^\s*#\d+ = (?:Interface)?Methodref\s+#\d+\.#\d+\s+// +(?P<owner>[^.\s]+)\.(?P<name>\S+?):(?P<desc>\(.*\).+)$",
+                           re.M)
+
+
+def parse_methodrefs(javap_text: str) -> set:
+    """{(owner, name, descriptor)} of every (Interface)Methodref in the constant pools of a
+    `javap -v` dump (owner as an internal name, `<init>` for constructors)."""
+    return {(m.group("owner").strip('"'), m.group("name").strip('"'), m.group("desc"))
+            for m in _METHODREF_RE.finditer(javap_text)}
+
+
+def _split_top(text: str) -> list[str]:
+    out, depth, cur = [], 0, []
+    for ch in text:
+        if ch in "<([":
+            depth += 1
+        elif ch in ">)]":
+            depth -= 1
+        if ch == "," and depth == 0:
+            out.append("".join(cur).strip())
+            cur = []
+        else:
+            cur.append(ch)
+    if "".join(cur).strip():
+        out.append("".join(cur).strip())
+    return out
+
+
+def _simple_type(t: str) -> str:
+    """`java.util.Map<String,Object>[]` -> `Map[]`; varargs `X...` -> `X[]`."""
+    t = t.strip()
+    dims = t.count("[]") + (1 if t.endswith("...") else 0)
+    t = re.sub(r"<.*>", "", t.replace("...", "").replace("[]", ""))
+    return t.rsplit(".", 1)[-1] + "[]" * dims
+
+
+def _descriptor_params(desc: str) -> list[tuple[str, str]]:
+    """[(simple, qualified-source)] per parameter of a method descriptor."""
+    prims = {"Z": "boolean", "B": "byte", "C": "char", "S": "short", "I": "int", "J": "long", "F": "float", "D": "double"}
+    body = desc[1:desc.index(")")]
+    out, i = [], 0
+    while i < len(body):
+        dims = 0
+        while body[i] == "[":
+            dims += 1
+            i += 1
+        if body[i] == "L":
+            j = body.index(";", i)
+            q = body[i + 1:j].replace("/", ".").replace("$", ".")
+            i = j + 1
+        else:
+            q = prims[body[i]]
+            i += 1
+        out.append((q.rsplit(".", 1)[-1] + "[]" * dims, q + "[]" * dims))
+    return out
+
+
+_AMBIG_RE = re.compile(r"reference to (?P<name>\w+) is ambiguous")
+_BOTH_RE = re.compile(r"both (?:method|constructor) (?:<[^>]*> )?(?P<n1>\w+)\((?P<p1>.*?)\) in [\w.$]+ and "
+                      r"(?:method|constructor) (?:<[^>]*> )?(?P<n2>\w+)\((?P<p2>.*?)\) in [\w.$]+ match")
+
+
+def _call_arguments(text: str, open_paren: int):
+    """[(start, end)] of every top-level argument of the call opened at `open_paren`."""
+    spans, i, n = [], open_paren + 1, len(text)
+    depth, start = 0, None
+    while i < n:
+        ch = text[i]
+        if start is None and not ch.isspace():
+            start = i
+        if ch in "\"'":
+            q = ch
+            i += 1
+            while i < n and text[i] != q:
+                i += 2 if text[i] == "\\" else 1
+        elif ch in "([{":
+            depth += 1
+        elif ch in ")]}":
+            if depth == 0:
+                if start is not None and start < i:
+                    spans.append((start, len(text[:i].rstrip())))
+                return spans
+            depth -= 1
+        elif ch == "," and depth == 0:
+            spans.append((start, len(text[:i].rstrip())))
+            start = None
+        i += 1
+    return None
+
+
+def _methodrefs(ctx: Optional[dict]):
+    """The class's shipped Methodref set: ctx["methodrefs"], else computed once (lazily, javap -v
+    is not free) from ctx["methodrefs_fn"]."""
+    if not ctx:
+        return None
+    if "methodrefs" not in ctx and "methodrefs_fn" in ctx:
+        ctx["methodrefs"] = ctx["methodrefs_fn"]()
+    return ctx.get("methodrefs")
+
+
+def fix_ambiguous_overload_cast(lines: list[str], errors: list[dict], ctx=None):
+    """`reference to m is ambiguous` (both m(A,..) and m(B,..) match, typically a `null` or
+    conditional argument). The shipped class file's constant pool names exactly which
+    descriptor the original source bound to: when exactly ONE of javac's two candidates is a
+    Methodref of that name in the pool, the arguments at the positions where the candidates
+    differ are cast to that descriptor's parameter types."""
+    refs = _methodrefs(ctx)
+    if not refs:
+        return None
+    text = "\n".join(lines)
+    starts = _line_starts(text)
+    edits = []
+    for e in errors:
+        am = _AMBIG_RE.match(e["message"])
+        both = _BOTH_RE.search(" ".join(x.strip() for x in e["detail"]))
+        if not am or not both or e["col"] is None or e["line"] - 1 >= len(starts):
+            continue
+        name = am.group("name")
+        cands = [[_simple_type(p) for p in _split_top(both.group("p1"))],
+                 [_simple_type(p) for p in _split_top(both.group("p2"))]]
+        if len(cands[0]) != len(cands[1]):
+            continue
+        chosen = []
+        for idx, params in enumerate(cands):
+            for owner, mname, desc in refs:
+                if mname not in (name, "<init>"):
+                    continue
+                dp = _descriptor_params(desc)
+                if [d[0] for d in dp] == params:
+                    chosen.append((idx, dp))
+        uniq = {tuple(d[1] for d in dp) for _, dp in chosen}
+        if len(chosen) < 1 or len(uniq) != 1 or len({i for i, _ in chosen}) != 1:
+            continue
+        idx, dp = chosen[0]
+        off = starts[e["line"] - 1] + e["col"]
+        m = re.compile(r"[.\s]*(?:this|super|new\s+[\w.$]+|%s)\s*\(" % re.escape(name)).match(text, off) or \
+            re.compile(r"[^(]*?\b%s\s*\(" % re.escape(name)).match(text, off)
+        if not m:
+            continue
+        args = _call_arguments(text, m.end() - 1)
+        if args is None or len(args) != len(dp):
+            continue
+        other = cands[1 - idx]
+        for pos, (a, b) in enumerate(args):
+            if cands[idx][pos] == other[pos]:
+                continue
+            arg = text[a:b]
+            if arg.startswith("(" + dp[pos][1] + ")") or re.match(r"^\(\w[\w.]*(?:\[\])*\)", arg):
+                continue
+            wrapped = arg if re.match(r"^[\w.$]+(?:\(\))?$", arg) else f"({arg})"
+            edits.append((a, b, f"({dp[pos][1]}){wrapped}", e["line"], name))
+    if not edits:
+        return None
+    patches = []
+    for a, b, repl, line, name in sorted(set(edits), reverse=True):
+        text = text[:a] + repl + text[b:]
+        patches.append({"kind": "ambiguous-overload-cast", "line": line, "call": name, "cast": repl,
+                        "evidence": "javac: reference to %s is ambiguous; shipped constant pool binds one descriptor" % name})
+    return text.split("\n"), patches
+
+
 FIXERS: list[tuple[str, Callable]] = [
     ("pattern-binding-scope", fix_pattern_binding_scope),
     ("foreach-raw-cast", fix_foreach_raw_cast),
@@ -392,11 +553,15 @@ FIXERS: list[tuple[str, Callable]] = [
     ("switch-group-scope", fix_switch_group_scope),
     ("catch-parameter-name", fix_catch_parameter_name),
     ("inner-ctor-outer-arg", fix_inner_ctor_outer_arg),
+    ("ambiguous-overload-cast", fix_ambiguous_overload_cast),
 ]
 
 
-def patch_source(original: str, compile_fn: Callable[[str], str], fixers=None, max_rounds: int = MAX_ROUNDS) -> dict:
+def patch_source(original: str, compile_fn: Callable[[str], str], fixers=None, max_rounds: int = MAX_ROUNDS,
+                 ctx: Optional[dict] = None) -> dict:
     """Apply fixers driven by javac feedback. `compile_fn(text) -> ''` on success, else stderr.
+    `ctx` carries shipped-bytecode evidence for the fixers that need it: {"methodrefs": set of
+    (owner, name, descriptor)} (see parse_methodrefs).
     Returns {text, patches, compiles, residual_errors, rounds}."""
     fixers = list(FIXERS if fixers is None else fixers)
     text = original
@@ -411,7 +576,7 @@ def patch_source(original: str, compile_fn: Callable[[str], str], fixers=None, m
             if name in banned:
                 continue
             lines = text.split("\n")
-            got = fn(lines, errors)
+            got = fn(lines, errors, ctx)
             if got is None:
                 continue
             new_text = "\n".join(got[0])
@@ -529,7 +694,8 @@ def make_compile_fn(fid, classpath: str, javac_bin: str, tool_server: bool, clas
 
 
 def patch_module(module: str, organized: Path, out_tree: str, *, fid, classpath: str, javac_bin: str,
-                 tool_server: bool, only: Optional[set] = None, class_jobs: int = 1) -> dict:
+                 tool_server: bool, javap_bin: Optional[str] = None, only: Optional[set] = None, class_jobs: int = 1) -> dict:
+    javap_bin = javap_bin or fid.DEFAULT_JAVAP
     mod_dir = organized / module
     pop = module_population(mod_dir)
     targets = {f: v for f, v in pop.items() if v["source_grade"] == "no-compile" and (only is None or f in only)}
@@ -540,7 +706,17 @@ def patch_module(module: str, organized: Path, out_tree: str, *, fid, classpath:
         v = targets[f]
         src = mod_dir / v["tree"] / f"{f}.java"
         original = src.read_text(encoding="utf-8")
-        res = patch_source(original, make_compile_fn(fid, classpath, javac_bin, tool_server, src.stem))
+        top = mod_dir / "extracted" / f"{f}.class"
+
+        def methodrefs():
+            files = [top] + sorted(top.parent.glob(top.stem + "$*.class")) if top.is_file() else []
+            if not files:
+                return set()
+            rc, out, _e = fid._run_jdk_tool("javap", javap_bin, ["-v", "-p", *map(str, files)], 120, tool_server)
+            return parse_methodrefs(out)
+
+        res = patch_source(original, make_compile_fn(fid, classpath, javac_bin, tool_server, src.stem),
+                           ctx={"methodrefs_fn": methodrefs})
         rec = {"source_tree": v["tree"], "original_sha256": sha256_text(original),
                "patched_sha256": sha256_text(res["text"]), "patches": res["patches"], "compiles": res["compiles"],
                "residual_error_count": res["residual_error_count"], "residual_errors": res["residual_errors"][:20],
