@@ -122,5 +122,48 @@ class TestIincForms(unittest.TestCase):
         self.assertIn("      total++;\n", out)
 
 
+class TestRestoreNullChecks(unittest.TestCase):
+    """The decompiler drops `Objects.requireNonNull(x);` statements as if they were javac's own
+    null checks; the shipped method begins with them."""
+
+    NN = "invokestatic // Method java/util/Objects.requireNonNull:(Ljava/lang/Object;)Ljava/lang/Object;"
+
+    def setUp(self):
+        self.h = _load()
+
+    def ctx(self, text, name, desc, params, shipped, ours, static=True):
+        return {"methods": [{"name": name, "desc": desc, "params": params, "body_start": text.index("{", text.index(")"))}],
+                "shipped": {(name, desc): shipped}, "ours": {(name, desc): ours}, "static": {(name, desc): static}}
+
+    def test_prologue_checks_are_restored_for_the_right_parameters(self):
+        text = "class T {\n  static int f(int a, String s, long l, Object o) {\n    return a;\n  }\n}\n"
+        shipped = ["insn0: aload_1", "insn1: " + self.NN, "insn2: pop", "insn3: aload 4", "insn4: " + self.NN,
+                   "insn5: pop", "insn6: iload_0", "insn7: ireturn"]
+        ours = ["insn0: iload_0", "insn1: ireturn"]
+        out = self.h.restore_null_checks(text, self.ctx(text, "f", "(ILjava/lang/String;JLjava/lang/Object;)I",
+                                                        ["a", "s", "l", "o"], shipped, ours))
+        self.assertEqual(out, "class T {\n  static int f(int a, String s, long l, Object o) {\n"
+                              "    java.util.Objects.requireNonNull(s);\n    java.util.Objects.requireNonNull(o);\n"
+                              "    return a;\n  }\n}\n")
+
+    def test_instance_methods_skip_this_and_constructors_are_left_alone(self):
+        text = "class T {\n  int f(String s) {\n    return 1;\n  }\n}\n"
+        shipped = ["insn0: aload_1", "insn1: " + self.NN, "insn2: pop", "insn3: iconst_1", "insn4: ireturn"]
+        ctx = self.ctx(text, "f", "(Ljava/lang/String;)I", ["s"], shipped, ["insn0: iconst_1", "insn1: ireturn"], static=False)
+        self.assertIn("java.util.Objects.requireNonNull(s);", self.h.restore_null_checks(text, ctx))
+        text = "class T {\n  T(String s) {\n    this.x = 1;\n  }\n}\n"
+        ctx = self.ctx(text, "<init>", "(Ljava/lang/String;)V", ["s"], ["insn0: aload_1", "insn1: " + self.NN, "insn2: pop"],
+                       ["insn0: return"], static=False)
+        self.assertEqual(self.h.restore_null_checks(text, ctx), text)
+
+    def test_nothing_to_restore_when_the_recompiled_method_already_checks_or_does_not_start_with_a_check(self):
+        text = "class T {\n  static int f(String s) {\n    return 1;\n  }\n}\n"
+        chk = ["insn0: aload_0", "insn1: " + self.NN, "insn2: pop", "insn3: iconst_1", "insn4: ireturn"]
+        self.assertEqual(self.h.restore_null_checks(text, self.ctx(text, "f", "(Ljava/lang/String;)I", ["s"], chk, chk)), text)
+        plain = ["insn0: iconst_1", "insn1: ireturn"]
+        self.assertEqual(self.h.restore_null_checks(text, self.ctx(text, "f", "(Ljava/lang/String;)I", ["s"], plain, plain)),
+                         text)
+
+
 if __name__ == "__main__":
     unittest.main()

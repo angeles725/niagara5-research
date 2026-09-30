@@ -390,6 +390,24 @@ def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: st
     pre_transforms: list = ([{"kind": "primary-tree", "tree": primary_tree, "sha256": sha256_text(primary_text)}]
                             if primary_tree not in (tree, f"{tree}p") else [])
 
+    def hyp_variant(name: str) -> str:
+        """The hypothesis applied to the current primary; context hypotheses (needs_context) get the
+        attributed spans and the shipped/recompiled code of every method."""
+        fn = HYP.HYPOTHESES[name]
+        if not getattr(fn, "needs_context", False):
+            return fn(primary_text)
+        try:
+            scan = scan_spans([primary_path], helper_dir, java_bin, classpath)[str(primary_path)]
+        except Refusal:
+            return primary_text
+        if scan["errors"]:
+            return primary_text
+        return fn(primary_text, {
+            "methods": scan["methods"],
+            "shipped": {k: m["code"] for k, m in shipped["methods"].items()},
+            "ours": {k: m["code"] for k, m in primary_parsed["methods"].items()},
+            "static": {k: "ACC_STATIC" in m["flags"] for k, m in shipped["methods"].items()}})
+
     def structure_ok(st: dict) -> bool:
         return st["fields_match"] and st["attrs_match"] and not st["missing"] and not st["extra"]
 
@@ -400,7 +418,7 @@ def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: st
         alts = []
         sources = [(f"tree:{t}", (mod_dir / t / f"{fqcn}.java").read_text(encoding="utf-8"))
                    for t in donor_trees if t != primary_tree and (mod_dir / t / f"{fqcn}.java").is_file()]
-        sources += [(HYP_DONOR_PREFIX + h, HYP.HYPOTHESES[h](primary_text)) for h in hypotheses]
+        sources += [(HYP_DONOR_PREFIX + h, hyp_variant(h)) for h in hypotheses]
         for n, (kind, text) in enumerate(sources):
             if text == primary_text:
                 continue
@@ -454,7 +472,7 @@ def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: st
     if verdicts.get(clinit_key, {}).get("verdict") == "mismatch":
         # C3d: a source hypothesis that repairs the static initializer, then its recoverable order
         for h in hypotheses:
-            variant = HYP.HYPOTHESES[h](primary_text)
+            variant = hyp_variant(h)
             if variant != primary_text and adopt(variant, HYP_DONOR_PREFIX + h, True):
                 break
     if verdicts.get(clinit_key, {}).get("verdict") == "mismatch":
@@ -495,7 +513,7 @@ def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: st
     for eng in engines:
         if eng.startswith(HYP_DONOR_PREFIX):
             # a source hypothesis applied to the (possibly reordered) primary; identical text is no donor
-            variant = HYP.HYPOTHESES[eng[len(HYP_DONOR_PREFIX):]](primary_text)
+            variant = hyp_variant(eng[len(HYP_DONOR_PREFIX):])
             if variant == primary_text:
                 continue
             src = Path(td) / "hyp" / eng[len(HYP_DONOR_PREFIX):] / f"{class_short}.java"

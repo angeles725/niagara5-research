@@ -20,7 +20,7 @@ import java.util.*;
  * never a regex over source text. One JSON line per file:
  *   methods  every method/constructor declared directly in the top-level class:
  *            name ("<init>" for constructors), JVM descriptor, source offsets
- *            (start, after the modifiers, end, body start)
+ *            (start, after the modifiers, end, body start), parameter names
  *   members  "owner|name|descriptor" of every member element (incl. implicit
  *            ones: default constructor, enum values/valueOf) of every class of
  *            the top-level class's nest (the class and its member types)
@@ -228,7 +228,8 @@ public class MethodSpans {
             long after = modsEnd > s ? modsEnd : s;
             methods.add("{\"name\":" + q(mt.getName().toString()) + ",\"desc\":" + q(methodDesc(ee))
                     + ",\"start\":" + s + ",\"after_mods\":" + after + ",\"end\":" + end(mt)
-                    + ",\"body_start\":" + (mt.getBody() == null ? -1 : start(mt.getBody())) + "}");
+                    + ",\"body_start\":" + (mt.getBody() == null ? -1 : start(mt.getBody()))
+                    + ",\"params\":" + list(mt.getParameters().stream().map(p -> p.getName().toString()).toList()) + "}");
         }
 
         @Override

@@ -512,6 +512,19 @@ class TestSourceHypothesisDonors(_SpliceFixture):
         self.assertEqual(rec["methods"], [])
         self.assertEqual(rec["self_grade"], "roundtrip-exact")
 
+    def test_context_hypothesis_restores_a_dropped_null_check(self):
+        shipped = HYP_SHIPPED.replace("int keep(int a) { return a + 1; }",
+                                      "static Object keep(Object a) { java.util.Objects.requireNonNull(a); return a; }")
+        primary = shipped.replace("java.util.Objects.requireNonNull(a); ", "")
+        mod_dir, fake = self._module("hyp4", shipped, primary.replace("buf[3] |= 4;", "buf[3] = (byte)(buf[3] | 4);")
+                                     .replace("buf[3] &= -5;", "buf[3] = (byte)(buf[3] & -5);"), None, None)
+        man = self._run("hyp4", mod_dir, fake, hypotheses=["compound-assign", "restore-null-checks"])
+        rec = man["classes"]["p/Foo"]
+        self.assertEqual(sorted((m["name"], m["donor"]) for m in rec["methods"]),
+                         [("keep", "hyp:restore-null-checks"), ("set", "hyp:compound-assign")])
+        self.assertEqual(rec["self_grade"], "roundtrip-exact")
+        self.assertIn("java.util.Objects.requireNonNull(a);", (mod_dir / "vineflower2s" / "p" / "Foo.java").read_text())
+
     def test_variant_identical_to_the_primary_is_skipped(self):
         mod_dir, fake = self._module("hyp2", HYP_SHIPPED, HYP_SHIPPED.replace("a + 1", "a + 2"), None, None)
         man = self._run("hyp2", mod_dir, fake, hypotheses=["compound-assign"])

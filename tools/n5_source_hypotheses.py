@@ -176,11 +176,82 @@ def collapse_iinc(text: str) -> str:
     return _ASSIGN_STEP.sub(sub, text)
 
 
+_NN_CALL = "invokestatic // Method java/util/Objects.requireNonNull:(Ljava/lang/Object;)Ljava/lang/Object;"
+_ALOAD = re.compile(r"^aload(?:_(\d)| (\d+))$")
+
+
+def _strip_insn(line: str) -> str:
+    return re.sub(r"^insn\d+:\s*", "", line)
+
+
+def _param_slots(desc: str, static: bool) -> list[int]:
+    """First JVM local slot of each parameter of a method descriptor."""
+    slots, slot, i = [], 0 if static else 1, 1
+    while desc[i] != ")":
+        slots.append(slot)
+        wide = desc[i] in "JD"
+        while desc[i] == "[":
+            i += 1
+            wide = False
+        if desc[i] == "L":
+            i = desc.index(";", i)
+        i += 1
+        slot += 2 if wide else 1
+    return slots
+
+
+def _null_check_prologue(code: list[str]) -> list[int]:
+    """Local slots checked by the leading `aload x; Objects.requireNonNull; pop` triples."""
+    body = [_strip_insn(c) for c in code]
+    slots = []
+    i = 0
+    while i + 2 < len(body) and body[i + 1] == _NN_CALL and body[i + 2] == "pop":
+        m = _ALOAD.match(body[i])
+        if not m:
+            break
+        slots.append(int(m.group(1) or m.group(2)))
+        i += 3
+    return slots
+
+
+def restore_null_checks(text: str, ctx: dict) -> str:
+    """Insert `java.util.Objects.requireNonNull(p);` at the start of a method whose shipped code
+    begins with that call and whose recompiled code does not.
+
+    Vineflower's remove-getclass drops every `Objects.requireNonNull(x);` statement (javac emits
+    the same call for `x.new Inner()` and `x::m`, and the decompiler cannot tell them apart).
+    `ctx`: {"methods": MethodSpans methods, "shipped"/"ours": {(name, desc): normalized code},
+    "static": {(name, desc): bool}}. Constructors are skipped (`this(...)`/`super(...)` come first)."""
+    edits = []
+    for m in ctx["methods"]:
+        key = (m["name"], m["desc"])
+        if m["name"] == "<init>" or m["body_start"] < 0 or key not in ctx["shipped"] or key not in ctx["ours"]:
+            continue
+        wanted = _null_check_prologue(ctx["shipped"][key])
+        if not wanted or _null_check_prologue(ctx["ours"][key]) == wanted:
+            continue
+        static = ctx["static"].get(key, False)
+        by_slot = dict(zip(_param_slots(m["desc"], static), m["params"]))
+        if any(sl not in by_slot for sl in wanted):
+            continue
+        open_brace = m["body_start"]
+        line_start = text.rfind("\n", 0, open_brace) + 1
+        indent = re.match(r"[ \t]*", text[line_start:]).group(0) + "  "
+        edits.append((open_brace + 1, "".join(f"\n{indent}java.util.Objects.requireNonNull({by_slot[sl]});" for sl in wanted)))
+    for at, add in sorted(edits, reverse=True):
+        text = text[:at] + add + text[at:]
+    return text
+
+
+restore_null_checks.needs_context = True  # type: ignore[attr-defined]
+
+
 # name -> hypothesis, in the order the splice tries them
-HYPOTHESES: dict[str, Callable[[str], str]] = {
+HYPOTHESES: dict[str, Callable[..., str]] = {
     "compound-assign": compound_assign,
     "unfold-single-array": unfold_single_element_arrays,
     "unfold-arrays": unfold_array_initializers,
     "expand-iinc": expand_iinc,
     "collapse-iinc": collapse_iinc,
+    "restore-null-checks": restore_null_checks,
 }
