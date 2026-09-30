@@ -110,6 +110,10 @@ Task IDs are C<n> (completion). "N4"/"N5" always mean Niagara 4 / Niagara 5, nev
   JSON is unchanged; C1b final run covers everything); run the vineflower2p + vineflower2m stages over _bin-ext in C2a-G1;
   C3a-G3 + C3b-G4 are one tooling task after C2b releases n5-fidelity.py.
 
+- 2026-09-30 user decision: close the session once C2, C3, C4 and C5 are done (C1b final regrade runs before C5), leaving
+  everything clean for a new session (no worktrees/processes left, branches merged/deleted, memory + resume point saved).
+  The frontier research chain moves to the NEW session.
+
 ## Next step
 C3b slice reviews -> merge; C2b result -> review; then C3a-G3/C3b-G4 tooling, C3d (C3a-G1 + C3b-G1 + one-method splice), C2a-G1, C4, C1b, C5.
 C1b (full --force regrade) is deferred until the C2/C3 tool changes land, so it runs once.
