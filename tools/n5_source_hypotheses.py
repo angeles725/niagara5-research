@@ -1297,8 +1297,9 @@ class _HoistArgumentTemp:
             typ = arg[len("new "):arg.index("(")].strip()
             if "<>" in typ:
                 typ = "var"
-            new_expr = expr[:a] + (" " if expr[a:b].startswith(" ") else "") + "argTmp" + expr[b:]
-            return text[:m.start()] + f"{ind}{typ} argTmp = {arg};\n{ind}{new_expr};" + text[m.end():]
+            name = f"argTmp{text.count(chr(10), 0, m.start())}"  # unique per line, so several sites of a block coexist
+            new_expr = expr[:a] + (" " if expr[a:b].startswith(" ") else "") + name + expr[b:]
+            return text[:m.start()] + f"{ind}{typ} {name} = {arg};\n{ind}{new_expr};" + text[m.end():]
         return text
 
 
