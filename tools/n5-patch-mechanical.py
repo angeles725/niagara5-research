@@ -657,6 +657,26 @@ def fix_twr_field_resource(lines: list[str], errors: list[dict], ctx=None):
     return (new, patches) if patches else None
 
 
+_PROTECTED_RE = re.compile(r"^[\w.$]+ has protected access in [\w.$]+$")
+
+
+def fix_protected_member_import(lines: list[str], errors: list[dict], ctx=None):
+    """`import pkg.Outer.Inner;` -- javac: Inner has protected access in Outer. A protected
+    member class is not importable from another package, but a subclass sees it by its
+    simple name as an inherited member; the original source had no such import."""
+    drop = {}
+    for e in errors:
+        k = e["line"] - 1
+        if _PROTECTED_RE.match(e["message"]) and 0 <= k < len(lines) and re.match(r"^import [\w.$]+;\s*$", lines[k]):
+            drop[k] = e["message"]
+    if not drop:
+        return None
+    new = [x for i, x in enumerate(lines) if i not in drop]
+    patches = [{"kind": "protected-member-import", "line": k + 1, "import": lines[k].strip(),
+                "evidence": "javac: " + msg} for k, msg in sorted(drop.items())]
+    return new, patches
+
+
 FIXERS: list[tuple[str, Callable]] = [
     ("pattern-binding-scope", fix_pattern_binding_scope),
     ("foreach-raw-cast", fix_foreach_raw_cast),
@@ -664,6 +684,7 @@ FIXERS: list[tuple[str, Callable]] = [
     ("instanceof-generic-raw", fix_instanceof_generic_raw),
     ("switch-group-scope", fix_switch_group_scope),
     ("catch-parameter-name", fix_catch_parameter_name),
+    ("protected-member-import", fix_protected_member_import),
     ("inner-ctor-outer-arg", fix_inner_ctor_outer_arg),
     ("ambiguous-overload-cast", fix_ambiguous_overload_cast),
     ("switch-yield-statement", fix_switch_yield_statement),

@@ -28,13 +28,19 @@ def _load():
     return mod
 
 
-def javac_compile(text: str, cls: str = "T") -> str:
-    """'' when `text` compiles, else javac's stderr."""
+def javac_compile(text: str, cls: str = "T", extra: dict = None) -> str:
+    """'' when `text` compiles, else javac's stderr. `extra`: {relative path: source} compiled along."""
     with tempfile.TemporaryDirectory() as td:
         src = Path(td) / f"{cls}.java"
         src.write_text(text, encoding="utf-8")
+        others = []
+        for rel, body in (extra or {}).items():
+            p = Path(td) / "lib" / rel
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(body, encoding="utf-8")
+            others.append(str(p))
         r = subprocess.run([f"{JDK}/javac", "--release", "25", "-proc:none", "-nowarn", "-Xmaxerrs", "1000",
-                            "-d", str(Path(td) / "out"), str(src)], capture_output=True, text=True)
+                            "-d", str(Path(td) / "out"), str(src), *others], capture_output=True, text=True)
         return "" if r.returncode == 0 else r.stderr
 
 
@@ -43,9 +49,9 @@ class MechanicalCase(unittest.TestCase):
     def setUp(self):
         self.m = _load()
 
-    def patch(self, text: str, cls: str = "T", ctx=None):
-        self.assertNotEqual(javac_compile(text, cls), "", "fixture must fail to compile before the patch")
-        res = self.m.patch_source(text, lambda t: javac_compile(t, cls), ctx=ctx)
+    def patch(self, text: str, cls: str = "T", ctx=None, extra: dict = None):
+        self.assertNotEqual(javac_compile(text, cls, extra), "", "fixture must fail to compile before the patch")
+        res = self.m.patch_source(text, lambda t: javac_compile(t, cls, extra), ctx=ctx)
         return res
 
     def evidence(self, shipped: str, cls: str = "T") -> dict:
@@ -441,6 +447,37 @@ public class T implements Closeable {
         self.assertEqual([p["kind"] for p in res["patches"]], ["twr-field-resource"] * 2)
         self.assertIn("Writer w1_res = this.w1;", res["text"])
         self.assertIn("Closeable w2_res = this.w2;", res["text"])
+
+
+class TestProtectedMemberImport(MechanicalCase):
+    BASE = {"pkg/Base.java": """package pkg;
+public class Base {
+   protected class Model { public Model() {} }
+   protected static class Row { }
+}
+"""}
+    SRC = """import pkg.Base;
+import pkg.Base.Model;
+import pkg.Base.Row;
+
+public class T extends Base {
+   Object f() {
+      return new Model();
+   }
+
+   Row g() {
+      return null;
+   }
+}
+"""
+
+    def test_import_of_a_protected_member_class_is_removed(self):
+        res = self.patch(self.SRC, extra=self.BASE)
+        self.assertTrue(res["compiles"], res["residual_errors"])
+        self.assertEqual([p["kind"] for p in res["patches"]], ["protected-member-import"] * 2)
+        self.assertNotIn("import pkg.Base.Model;", res["text"])
+        self.assertNotIn("import pkg.Base.Row;", res["text"])
+        self.assertIn("import pkg.Base;", res["text"])
 
 
 def _grade_json(path: Path, classes: dict):
