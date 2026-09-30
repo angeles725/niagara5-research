@@ -351,5 +351,32 @@ class TestSwitchCaseOrder(ShapeSiteCase):
         self.assertEqual(self.h.reorder_switch_cases(named, ctx), named)
 
 
+class TestSplitOrCondition(ShapeSiteCase):
+    """javac compiles `if (a) { T } if (b) { T }` with two copies of T; the decompiler merges them into
+    `if (a || b) { T }`, whose single copy bisimulation-minimizes the shipped code (rule `min`)."""
+
+    def test_leaving_block_is_duplicated_per_operand(self):
+        self.assert_reproduces(
+            "split-or-condition",
+            "   void m(int a, int b) {\n      if (a > 0 || b > 0) {\n         throw new RuntimeException(\"x\");\n"
+            "      }\n\n      this.f = 1;\n   }\n",
+            "   void m(int a, int b) {\n      if (a > 0) {\n         throw new RuntimeException(\"x\");\n      }\n\n"
+            "      if (b > 0) {\n         throw new RuntimeException(\"x\");\n      }\n\n      this.f = 1;\n   }\n")
+
+    def test_three_operands_split_to_a_fixed_point(self):
+        src = ("   void m(int a, int b, int c) {\n      if (a > 0 || b > 0 || c > 0) {\n         return;\n      }\n\n"
+               "      this.f = 1;\n   }\n")
+        out = self.apply_all("split-or-condition", src)
+        self.assertEqual(out.count("return;"), 3)
+        self.assertNotIn("||", out)
+
+    def test_only_a_leaving_block_with_a_top_level_or_is_a_site(self):
+        hyp = self.h.SITE_HYPOTHESES["split-or-condition"]
+        self.assertEqual(hyp.sites("   void m() {\n      if (a() || b()) {\n         f();\n      }\n   }\n"), [])
+        self.assertEqual(hyp.sites("   void m() {\n      if (a() && (b() || c())) {\n         return;\n      }\n   }\n"), [])
+        self.assertEqual(hyp.sites("   void m() {\n      if (a() || b()) {\n         return;\n      } else {\n         f();\n"
+                                   "      }\n   }\n"), [])
+
+
 if __name__ == "__main__":
     unittest.main()

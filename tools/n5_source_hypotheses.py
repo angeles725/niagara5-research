@@ -1067,6 +1067,46 @@ def _reordered_switch(text: str, head, default_at, keys_at):
 reorder_switch_cases.needs_context = True  # type: ignore[attr-defined]
 
 
+SPLIT_OR_MAX_LINES = 6  # longest leaving block duplicated per operand
+
+
+class _SplitOrCondition:
+    """Site hypothesis: `if (a || b) { L }` (L short and leaving) -> `if (a) { L } if (b) { L }`. The
+    decompiler merges the duplicated blocks the shipped code has (bisimulation, rule `min`)."""
+
+    def _parse(self, text: str):
+        for m in _IF_HEAD.finditer(text):
+            top = _top_level(m.group("cond"))
+            cut = top.find(" || ")
+            if cut < 0:
+                continue
+            open1 = m.end() - 1
+            close1 = _match_brace(text, open1)
+            if close1 < 0 or text.startswith("} else", close1):
+                continue
+            a_lines = text[open1 + 1:close1].split("\n")[1:-1]
+            if not a_lines or len(a_lines) > SPLIT_OR_MAX_LINES or not _leaves(a_lines):
+                continue
+            ind = len(m.group(0)) - len(m.group(0).lstrip())
+            yield (m.start(), close1 + 1), m, cut, open1, close1, a_lines, ind
+
+    def sites(self, text: str) -> list:
+        return [span for span, *_ in self._parse(text)]
+
+    def apply(self, text: str, site: tuple) -> str:
+        for span, m, cut, open1, close1, a_lines, ind in self._parse(text):
+            if span != tuple(site):
+                continue
+            cond, pad = m.group("cond"), " " * ind
+            body = "\n".join(a_lines)
+            new = (f"{pad}if ({cond[:cut]}) {{\n{body}\n{pad}}}\n\n{pad}if ({cond[cut + 4:]}) {{\n{body}\n{pad}}}")
+            return text[:m.start()] + new + text[close1 + 1:]
+        return text
+
+
+split_or_condition = _SplitOrCondition()
+
+
 _RAW_PRIV = re.compile(r"\(niagara\.nre\.security\.privileged\.(PrivilegedAction|PrivilegedExceptionAction)\)(?= \()")
 
 
@@ -1187,7 +1227,8 @@ remove_null_cast = RegexSites(_null_cast_rewrites)
 # canonical rules (tools/n5_canon.py) -> the site hypotheses that can explain them: the climb of an
 # `exact` splice only tries these for a method that was proven by those rules
 _LAYOUT_SITES = ("split-return-ternary", "split-return-boolean", "guard-return", "guard-continue",
-                 "early-return-else", "swap-if-else", "unguard-else", "invert-guard-return", "return-out-of-try")
+                 "early-return-else", "swap-if-else", "unguard-else", "invert-guard-return", "return-out-of-try",
+                 "split-or-condition")
 _TEMP_SITES = ("introduce-return-temp", "inline-return-temp", "compound-assign-site", "lift-increments-site")
 RULE_SITES = {
     "tail": _LAYOUT_SITES, "min": _LAYOUT_SITES, "inl": _LAYOUT_SITES, "merge": _LAYOUT_SITES,
@@ -1227,6 +1268,7 @@ SITE_HYPOTHESES = {
     "invert-guard-return": invert_guard_return,
     "instanceof-binding": instanceof_binding,
     "return-out-of-try": return_out_of_try,
+    "split-or-condition": split_or_condition,
     "compound-assign-site": RegexSites(_compound_rewrites),
     "unfold-arrays-site": RegexSites(_unfold_rewrites),
     "expand-iinc-site": RegexSites(_expand_rewrites),
@@ -1244,7 +1286,7 @@ SITE_HYPOTHESES = {
 # those make one pass)
 for _name in ("split-return-ternary", "split-return-boolean", "guard-return", "guard-continue", "unguard-else",
               "early-return-else", "hoist-declaration", "hoist-for-var", "introduce-return-temp",
-              "inline-return-temp", "remove-null-cast", "invert-guard-return", "instanceof-binding", "return-out-of-try"):
+              "inline-return-temp", "remove-null-cast", "invert-guard-return", "instanceof-binding", "return-out-of-try", "split-or-condition"):
     SITE_HYPOTHESES[_name].fixpoint = True
 
 
