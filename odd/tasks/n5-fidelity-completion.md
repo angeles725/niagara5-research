@@ -43,7 +43,7 @@ Task IDs are C<n> (completion). "N4"/"N5" always mean Niagara 4 / Niagara 5, nev
 - [ ] C2b Grade third-party classes without proven upstream source (~14.6k: 38 identified artifacts incl. woodstox 735,
       nimbus-jose 203, mssql-jdbc 166, paho 109 vendor-modified; unidentified jxbrowser 5,914, prosys-opc-ua 4,591, swt 959)
       on organized/_lib-inf-3p trees; per-jar --release; Kotlin (~3.6k) uses javap as the verified representation (B125).
-- [ ] C3a Extend the F8 doPrivileged patch tree to the 109 bytecode-only `reference to doPrivileged is ambiguous` classes.
+- [x] C3a (e248220, 624f772; review-54c9da1651ae379a approved; merged da9797a; 23 patcher tests + make test 666 OK) Extend the F8 doPrivileged patch tree to the 109 bytecode-only `reference to doPrivileged is ambiguous` classes.
 - [ ] C3b Mechanical patches: anonymous-class-with-arguments (12), generic Object->String casts (12), `no suitable method` overload casts (22).
 - [ ] C3c Split `cannot find symbol` (67) by missing symbol kind and patch the mechanical sub-classes.
 - [ ] C3d Per-method splice with more donors / hand edits for the 103 one-method and 18 two-to-three-method mismatches
@@ -88,6 +88,15 @@ Task IDs are C<n> (completion). "N4"/"N5" always mean Niagara 4 / Niagara 5, nev
   Child gap C2a-G1: bin/ext got only the base rung — apply F8 doPrivileged patch, F9 splice, and the v1 tree to _bin-ext
   (fold into C3a/C3d once those land) so it is graded on the same best-of ladder as modules.
 
+- C3a result (grader JSON fidelity.vineflower2.patched.json, 46 modules regraded, backup organized/_evidence/c3a-backup/):
+  ambiguity resolved in all 109; proven 0 -> 5 (1 exact, 4 canonical); compiles-mismatch 81 -> 83; no-compile 25 -> 21;
+  missing vineflower2p rung 3 -> 0. The "doPrivileged ambiguous" label was stale for 104 (81 already compiled on the patched rung).
+  Child gaps: C3a-G1 83 compile-but-mismatch (26 with 0 mismatched methods -> class-level attribute difference; <clinit> 14, doRun 8);
+  C3a-G2 21 unrelated javac errors (cannot find symbol 6, bad operand 3, inference 3, already-defined 2, unreachable 2, ...);
+  C3a-G3 decision (parent, by recommendation): on a rank tie the best-of record must carry the first_error/mismatch of the
+  most-advanced ladder rung (spliced > patched > canon > base), with every rung's error kept, so labels are not stale.
+  Implement in n5-fidelity.py after C2b lands (same file).
+
 ## Next step
-C3a result -> review -> merge into feature branch; then C3b/C3c.
+C2b result -> review; C3b+C3c+C3a-G2 mechanical patch writer (worktree c3b); then C3a-G3 + C3a-G1/C3d.
 C1b (full --force regrade) is deferred until the C2/C3 tool changes land, so it runs once.
