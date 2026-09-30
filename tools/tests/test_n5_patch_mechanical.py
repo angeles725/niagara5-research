@@ -344,6 +344,77 @@ class TestAmbiguousOverloadCast(MechanicalCase):
         self.assertEqual(res["patches"], [])
 
 
+class TestSwitchExpressionToStatement(MechanicalCase):
+    SRC = """public class T {
+   String f(int k, boolean c) {
+      String s = "a";
+
+      s = switch (k) {
+         case 1 -> "one";
+         case 2, 3 -> {
+            if (c) {
+               yield s + ":x";
+            }
+         }
+         default -> {
+            try {
+               yield s.trim();
+            } catch (RuntimeException e) {
+            }
+         }
+      };
+      return s;
+   }
+}
+"""
+
+    def test_switch_expression_whose_arms_may_not_yield_becomes_a_statement(self):
+        res = self.patch(self.SRC)
+        self.assertTrue(res["compiles"], res["residual_errors"])
+        self.assertEqual([p["kind"] for p in res["patches"]], ["switch-yield-statement"])
+        self.assertIn("      switch (k) {", res["text"])
+        self.assertIn('case 1 -> s = "one";', res["text"])
+        self.assertIn('s = s + ":x";', res["text"])
+        self.assertNotIn("yield", res["text"])
+        self.assertIn("      }\n      return s;", res["text"])
+
+    def test_nested_switch_expression_is_left_alone(self):
+        src = self.SRC.replace('"one"', "switch (k) { case 1 -> \"a\"; default -> \"b\"; }")
+        res = self.patch(src)
+        self.assertEqual(res["patches"], [])
+
+
+class TestEmptyStatementLoopExit(MechanicalCase):
+    SRC = """import java.util.*;
+public class T {
+   int f(Iterator<String> it) {
+      int n = 0;
+
+      while (true) {
+         if (!it.hasNext()) {
+            ;
+         } else {
+            n += it.next().length();
+         }
+      }
+
+      return n;
+   }
+}
+"""
+
+    def test_lone_empty_statement_in_an_endless_loop_becomes_break(self):
+        res = self.patch(self.SRC)
+        self.assertTrue(res["compiles"], res["residual_errors"])
+        self.assertEqual([p["kind"] for p in res["patches"]], ["loop-exit-break"])
+        self.assertIn("            break;", res["text"])
+
+    def test_two_empty_statements_are_ambiguous_and_left_alone(self):
+        src = self.SRC.replace("n += it.next().length();", ";")
+        res = self.patch(src)
+        self.assertEqual(res["patches"], [])
+
+
 def _grade_json(path: Path, classes: dict):
     path.write_text(json.dumps({"classes": classes}))
 

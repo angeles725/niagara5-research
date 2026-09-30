@@ -545,6 +545,88 @@ def fix_ambiguous_overload_cast(lines: list[str], errors: list[dict], ctx=None):
     return text.split("\n"), patches
 
 
+_SWITCH_EXPR_RE = re.compile(r"^(?P<ind>\s*)(?P<var>[\w.$\[\]]+) = switch \((?P<sel>.*)\) \{\s*$")
+
+
+def fix_switch_yield_statement(lines: list[str], errors: list[dict], ctx=None):
+    """`x = switch (e) { ... -> { if (c) { yield v; } } ... };` -- javac: switch rule completes
+    without providing a value. Vineflower wrapped a switch STATEMENT whose arms assign `x`
+    in a switch expression. Restore the statement: `switch (e) { ... x = v; ... }`. Only
+    when the switch has no nested switch and every `yield`/arm expression is rewritten."""
+    bad = [e["line"] - 1 for e in errors if e["message"] == "switch rule completes without providing a value"]
+    if not bad:
+        return None
+    new = list(lines)
+    patches = []
+    done = set()
+    for b in bad:
+        head = next((j for j in range(b, -1, -1) if _SWITCH_EXPR_RE.match(new[j])), None)
+        if head is None or head in done:
+            continue
+        m = _SWITCH_EXPR_RE.match(new[head])
+        ind = m.group("ind")
+        end = next((t for t in range(head + 1, len(new)) if new[t] == f"{ind}}};" or new[t].rstrip() == f"{ind}}};"), None)
+        if end is None or end < b:
+            continue
+        body = new[head + 1:end]
+        if any(re.search(r"\bswitch \(", x) for x in body):
+            continue
+        var = m.group("var")
+        arm_ind = ind + "   "
+        out = []
+        ok = True
+        for x in body:
+            if re.match(r"^\s*yield ", x):
+                x = re.sub(r"yield ", f"{var} = ", x, count=1)
+            elif x.startswith(arm_ind) and re.match(r"^\s*(?:case .*|default) -> ", x) and not x.rstrip().endswith("{"):
+                mm = re.match(r"^(\s*(?:case .*?|default) -> )(?!throw )(.*;)\s*$", x)
+                if mm:
+                    x = f"{mm.group(1)}{var} = {mm.group(2)}"
+                elif not re.match(r"^\s*(?:case .*?|default) -> throw ", x):
+                    ok = False
+            out.append(x)
+        if not ok:
+            continue
+        new[head + 1:end] = out
+        new[head] = f"{ind}switch ({m.group('sel')}) {{"
+        new[end] = f"{ind}}}"
+        done.add(head)
+        patches.append({"kind": "switch-yield-statement", "line": head + 1, "variable": var,
+                        "evidence": "javac: switch rule completes without providing a value"})
+    return (new, patches) if patches else None
+
+
+def fix_loop_exit_break(lines: list[str], errors: list[dict], ctx=None):
+    """`unreachable statement` right after `while (true) { ... ; ... }`: Vineflower lost the
+    `break` of a duplicated-finally loop exit and left an empty statement. When the endless
+    loop directly before the unreachable statement holds exactly one empty statement `;`
+    on its own line, that is the exit."""
+    new = list(lines)
+    patches = []
+    for e in errors:
+        if e["message"] != "unreachable statement":
+            continue
+        k = e["line"] - 1
+        # the closing brace of the loop is the previous non-blank line
+        c = k - 1
+        while c >= 0 and not new[c].strip():
+            c -= 1
+        if c < 0 or new[c].strip() != "}":
+            continue
+        ind = _indent(new[c])
+        w = next((j for j in range(c - 1, -1, -1) if _indent(new[j]) == ind and new[j].strip()
+                  and not new[j].lstrip().startswith("}")), None)
+        if w is None or new[w].strip() != "while (true) {":
+            continue
+        semis = [j for j in range(w + 1, c) if new[j].strip() == ";"]
+        if len(semis) != 1:
+            continue
+        new[semis[0]] = _indent(new[semis[0]]) + "break;"
+        patches.append({"kind": "loop-exit-break", "line": semis[0] + 1,
+                        "evidence": "javac: unreachable statement after an endless loop with one empty statement"})
+    return (new, patches) if patches else None
+
+
 FIXERS: list[tuple[str, Callable]] = [
     ("pattern-binding-scope", fix_pattern_binding_scope),
     ("foreach-raw-cast", fix_foreach_raw_cast),
@@ -554,6 +636,8 @@ FIXERS: list[tuple[str, Callable]] = [
     ("catch-parameter-name", fix_catch_parameter_name),
     ("inner-ctor-outer-arg", fix_inner_ctor_outer_arg),
     ("ambiguous-overload-cast", fix_ambiguous_overload_cast),
+    ("switch-yield-statement", fix_switch_yield_statement),
+    ("loop-exit-break", fix_loop_exit_break),
 ]
 
 
