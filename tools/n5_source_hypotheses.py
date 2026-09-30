@@ -350,6 +350,18 @@ def declared_local_types(text: str, ctx: dict) -> str:
 declared_local_types.needs_context = True  # type: ignore[attr-defined]
 
 
+_RAW_PRIV = re.compile(r"\(niagara\.nre\.security\.privileged\.(PrivilegedAction|PrivilegedExceptionAction)\)(?= \()")
+
+
+def privileged_void(text: str) -> str:
+    """`(PrivilegedAction) () -> {..}` -> `(PrivilegedAction<Void>) () -> {..}`.
+
+    The doPrivileged patch (F8) cast the lambda to the raw interface when it could not name the type
+    argument; javac then infers an Object-returning lambda, while the shipped lambda returns Void
+    (`return null;`). Only the raw, lambda-following casts are rewritten."""
+    return _RAW_PRIV.sub(lambda m: f"(niagara.nre.security.privileged.{m.group(1)}<Void>)", text)
+
+
 _NN_CALL = "invokestatic // Method java/util/Objects.requireNonNull:(Ljava/lang/Object;)Ljava/lang/Object;"
 _ALOAD = re.compile(r"^aload(?:_(\d)| (\d+))$")
 
@@ -430,4 +442,5 @@ HYPOTHESES: dict[str, Callable[..., str]] = {
     "restore-null-checks": restore_null_checks,
     "lift-increments": lift_increments,
     "declared-local-types": declared_local_types,
+    "privileged-void": privileged_void,
 }

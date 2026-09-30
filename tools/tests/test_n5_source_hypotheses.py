@@ -157,6 +157,27 @@ class TestLiftIncrements(unittest.TestCase):
             self.assertEqual(self.h.lift_increments(self.wrap(body)), self.wrap(body))
 
 
+class TestPrivilegedVoid(unittest.TestCase):
+    """A raw `(PrivilegedAction)` cast makes javac infer an Object-returning lambda; the shipped
+    lambda returns Void."""
+
+    def setUp(self):
+        self.h = _load()
+
+    def test_raw_privileged_casts_get_a_void_argument(self):
+        src = ("      SecurityUtil.doPrivileged((niagara.nre.security.privileged.PrivilegedExceptionAction) () -> {\n"
+               "      SecurityUtil.doPrivileged((niagara.nre.security.privileged.PrivilegedAction) () -> {\n")
+        out = self.h.privileged_void(src)
+        self.assertIn("(niagara.nre.security.privileged.PrivilegedExceptionAction<Void>) () -> {", out)
+        self.assertIn("(niagara.nre.security.privileged.PrivilegedAction<Void>) () -> {", out)
+
+    def test_parameterized_and_two_argument_forms_are_left_alone(self):
+        src = ("      f((niagara.nre.security.privileged.PrivilegedAction<String>) () -> {\n"
+               "      f((niagara.nre.security.privileged.PrivilegedSingleExceptionAction<Void, IOException>) () -> {\n"
+               "      f((niagara.nre.security.privileged.PrivilegedAction) x);\n")
+        self.assertEqual(self.h.privileged_void(src), src.replace("PrivilegedAction) x", "PrivilegedAction) x"))
+
+
 JAVAP = """  public niagara.serial.BISerialPort open(java.lang.String) throws java.lang.Exception;
     descriptor: (Ljava/lang/String;)Lniagara/serial/BISerialPort;
     flags: (0x0001) ACC_PUBLIC
