@@ -652,6 +652,47 @@ split_return_ternary = _ReturnRewrite("ternary")
 split_return_boolean = _ReturnRewrite("boolean")
 
 
+_PLAIN_VALUE = re.compile(r"^(?:[\w.$]+|\"[^\"]*\")$")
+_TEMP_RETURN = re.compile(
+    r"^(?P<ind>[ \t]*)(?:final )?[\w.$<>\[\]?, ]+ (?P<name>\w+) = (?P<expr>[^;\n]+);\n(?P=ind)return (?P=name);$", re.M)
+
+
+class _ReturnTemp:
+    """Site hypotheses on the temporary of `T t = <expr>; return t;`. javac keeps the store/load pair
+    for it (the shipped code has it when the original source had the local); the decompiler folds it
+    into `return <expr>;`. `introduce` adds the local, `inline` removes one the decompiler kept."""
+
+    def __init__(self, introduce: bool):
+        self.introduce = introduce
+
+    def _matches(self, text: str):
+        if self.introduce:
+            for m in _RETURN_LINE.finditer(text):
+                expr = m.group("expr")
+                if _PLAIN_VALUE.match(expr) or " -> " in expr or not _statement_position(text, m.start()):
+                    continue
+                yield m
+        else:
+            yield from _TEMP_RETURN.finditer(text)
+
+    def sites(self, text: str) -> list:
+        return [(m.start(), m.end()) for m in self._matches(text)]
+
+    def apply(self, text: str, site: tuple) -> str:
+        for m in self._matches(text):
+            if (m.start(), m.end()) != tuple(site):
+                continue
+            ind, expr = m.group("ind"), m.group("expr")
+            new = (f"{ind}var retTmp = {expr};\n{ind}return retTmp;" if self.introduce
+                   else f"{ind}return {expr};")
+            return text[:m.start()] + new + text[m.end():]
+        return text
+
+
+introduce_return_temp = _ReturnTemp(True)
+inline_return_temp = _ReturnTemp(False)
+
+
 _RAW_PRIV = re.compile(r"\(niagara\.nre\.security\.privileged\.(PrivilegedAction|PrivilegedExceptionAction)\)(?= \()")
 
 
@@ -789,6 +830,8 @@ SITE_HYPOTHESES = {
     "split-return-ternary": split_return_ternary,
     "split-return-boolean": split_return_boolean,
     "remove-null-cast": remove_null_cast,
+    "introduce-return-temp": introduce_return_temp,
+    "inline-return-temp": inline_return_temp,
 }
 
 # name -> hypothesis, in the order the splice tries them

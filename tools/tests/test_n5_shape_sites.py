@@ -127,5 +127,30 @@ class TestRemoveNullCast(ShapeSiteCase):
         self.assertEqual(self.h.SITE_HYPOTHESES["remove-null-cast"].sites(src), [])
 
 
+class TestReturnTemp(ShapeSiteCase):
+    """`T t = <expr>; return t;` compiles with an astore/aload pair the decompiler's `return <expr>;`
+    lacks (and the reverse when the decompiler keeps a temporary the shipped code does not have)."""
+
+    def test_temporary_is_introduced_before_the_return(self):
+        self.assert_reproduces(
+            "introduce-return-temp",
+            "   String m(Object x) {\n      return (String)x;\n   }\n",
+            "   String m(Object x) {\n      String t = (String)x;\n      return t;\n   }\n")
+
+    def test_temporary_is_removed_before_the_return(self):
+        self.assert_reproduces(
+            "inline-return-temp",
+            "   String m(Object x) {\n      String var2 = (String)x;\n      return var2;\n   }\n",
+            "   String m(Object x) {\n      return (String)x;\n   }\n")
+
+    def test_plain_names_and_constants_are_not_sites_for_the_introduction(self):
+        src = "   int m(int x) {\n      return x;\n   }\n   int n() {\n      return 4;\n   }\n   void o() {\n      return;\n   }\n"
+        self.assertEqual(self.h.SITE_HYPOTHESES["introduce-return-temp"].sites(src), [])
+
+    def test_only_a_temporary_declared_right_before_is_inlined(self):
+        src = "   String m() {\n      String t = f();\n      g();\n      return t;\n   }\n"
+        self.assertEqual(self.h.SITE_HYPOTHESES["inline-return-temp"].sites(src), [])
+
+
 if __name__ == "__main__":
     unittest.main()
