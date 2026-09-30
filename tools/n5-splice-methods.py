@@ -384,16 +384,49 @@ def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: st
     primary_parsed, primary_javap = compiled
     verdicts, structure = per_method_verdicts(shipped, primary_parsed)
     base = {"primary_tree": primary_tree}
-    non_synth = [k for k in structure["missing"] + structure["extra"] if not _is_synthetic_name(k[0])]
-    if not structure["fields_match"] or not structure["attrs_match"] or non_synth:
-        return {**base, "status": "refused", "reason": "structural-mismatch",
-                "detail": f"fields={structure['fields_match']} attrs={structure['attrs_match']} "
-                          f"members={[list(k) for k in non_synth][:4]}"}
     original_text = primary_text
     # a primary that is not the baseline tree (nor its F8 patch) and is clean as it stands is a
     # result in itself; the baseline being clean is not (the class is then not a target)
     pre_transforms: list = ([{"kind": "primary-tree", "tree": primary_tree, "sha256": sha256_text(primary_text)}]
                             if primary_tree not in (tree, f"{tree}p") else [])
+
+    def structure_ok(st: dict) -> bool:
+        return st["fields_match"] and st["attrs_match"] and not st["missing"] and not st["extra"]
+
+    if not structure_ok(structure):
+        # C3d: lambda numbering, accessors, nest attributes... cannot be spliced method by method;
+        # the first alternative source (donor tree, source hypothesis) that restores the class
+        # structure with the fewest mismatching methods becomes the primary
+        alts = []
+        sources = [(f"tree:{t}", (mod_dir / t / f"{fqcn}.java").read_text(encoding="utf-8"))
+                   for t in donor_trees if t != primary_tree and (mod_dir / t / f"{fqcn}.java").is_file()]
+        sources += [(HYP_DONOR_PREFIX + h, HYP.HYPOTHESES[h](primary_text)) for h in hypotheses]
+        for n, (kind, text) in enumerate(sources):
+            if text == primary_text:
+                continue
+            path = Path(td) / "alt" / str(n) / f"{class_short}.java"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text, encoding="utf-8")
+            parsed = compile_parse(path, class_short, classpath, javac_bin, javap_bin, tool_server)
+            if parsed is None:
+                continue
+            alt_verdicts, alt_structure = per_method_verdicts(shipped, parsed)
+            if structure_ok(alt_structure):
+                bad = sum(1 for x in alt_verdicts.values() if x["verdict"] == "mismatch")
+                alts.append((bad, n, kind, text, path, parsed, alt_verdicts, alt_structure))
+        if alts:
+            _bad, _n, kind, primary_text, primary_path, primary_parsed, verdicts, structure = min(alts, key=lambda a: a[:2])
+            if kind.startswith("tree:"):
+                primary_tree = kind[len("tree:"):]
+                pre_transforms.append({"kind": "primary-tree", "tree": primary_tree, "sha256": sha256_text(primary_text)})
+            else:
+                pre_transforms.append({"kind": kind, "sha256": sha256_text(primary_text)})
+            base = {"primary_tree": primary_tree}
+    non_synth = [k for k in structure["missing"] + structure["extra"] if not _is_synthetic_name(k[0])]
+    if not structure["fields_match"] or not structure["attrs_match"] or non_synth:
+        return {**base, "status": "refused", "reason": "structural-mismatch",
+                "detail": f"fields={structure['fields_match']} attrs={structure['attrs_match']} "
+                          f"members={[list(k) for k in non_synth][:4]}"}
     clinit_key = ("<clinit>", "()V")
 
     def adopt(text: str, kind: str, must_fix_clinit: bool) -> bool:

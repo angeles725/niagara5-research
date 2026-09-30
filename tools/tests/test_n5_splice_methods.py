@@ -518,5 +518,55 @@ class TestSourceHypothesisDonors(_SpliceFixture):
         self.assertEqual(man["refused"]["p/Foo"]["reason"], "no-donor")
 
 
+LAMBDA_SHIPPED = """package p;
+import java.util.function.Function;
+import java.util.function.Supplier;
+public class Foo {
+  static Object f(boolean b) {
+    if (b) {
+      return (Supplier<String>) () -> "a";
+    } else {
+      return (Function<String, Integer>) s -> s.length();
+    }
+  }
+  static int g(int a) { return a + 1; }
+}
+"""
+# the decompiler negated the condition and swapped the branches: javac numbers the lambdas the other way round
+LAMBDA_PRIMARY = LAMBDA_SHIPPED.replace("""    if (b) {
+      return (Supplier<String>) () -> "a";
+    } else {
+      return (Function<String, Integer>) s -> s.length();
+    }""", """    if (!b) {
+      return (Function<String, Integer>) s -> s.length();
+    } else {
+      return (Supplier<String>) () -> "a";
+    }""")
+
+
+@unittest.skipUnless(_jdk(), "JDK 25 not installed")
+class TestStructuralPrimarySearch(_SpliceFixture):
+    """C3d: a primary whose class structure differs from the shipped class (lambda numbering,
+    accessors) can only be replaced as a whole: the first alternative tree that restores the
+    structure becomes the primary, then the method splice continues from it."""
+
+    def test_alternative_tree_restoring_the_structure_becomes_the_primary(self):
+        mod_dir, fake = self._module("lam", LAMBDA_SHIPPED, LAMBDA_PRIMARY, None, None)
+        self._tree(mod_dir, "vineflower-cons", LAMBDA_SHIPPED)
+        man = self._run("lam", mod_dir, fake, donor_trees=["vineflower-cons"])
+        rec = man["classes"]["p/Foo"]
+        self.assertEqual(rec["self_grade"], "roundtrip-exact")
+        self.assertEqual([(t["kind"], t["tree"]) for t in rec["pre_transforms"]], [("primary-tree", "vineflower-cons")])
+        self.assertEqual((mod_dir / "vineflower2s" / "p" / "Foo.java").read_text(), LAMBDA_SHIPPED)
+
+    def test_structure_that_no_alternative_restores_is_never_written(self):
+        mod_dir, fake = self._module("lam2", LAMBDA_SHIPPED, LAMBDA_PRIMARY, None, None)
+        self._tree(mod_dir, "vineflower-cons", LAMBDA_PRIMARY)
+        man = self._run("lam2", mod_dir, fake, donor_trees=["vineflower-cons"])
+        self.assertIn("p/Foo", man["refused"])
+        self.assertNotIn("p/Foo", man["classes"])
+        self.assertFalse((mod_dir / "vineflower2s" / "p" / "Foo.java").exists())
+
+
 if __name__ == "__main__":
     unittest.main()
