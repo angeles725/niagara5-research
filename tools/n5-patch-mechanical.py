@@ -112,8 +112,83 @@ def fix_pattern_binding_scope(lines: list[str], errors: list[dict]):
     return new, patches
 
 
+_BOXED = {"int": "Integer", "long": "Long", "short": "Short", "byte": "Byte", "char": "Character",
+          "boolean": "Boolean", "float": "Float", "double": "Double"}
+_RAW_ITERABLES = ("List", "Set", "Collection", "Iterable", "ArrayList", "LinkedList", "HashSet", "LinkedHashSet",
+                  "TreeSet", "SortedSet", "Vector", "Queue", "Deque", "ArrayDeque")
+_FOREACH_RAW_RE = re.compile(
+    r"(for \((?:final )?(?P<type>[\w.<>?\[\]]+) \w+ : )\((?P<raw>(?:[\w.]+\.)?(?:%s))\)" % "|".join(_RAW_ITERABLES))
+
+
+def fix_foreach_raw_cast(lines: list[str], errors: list[dict]):
+    """`for (T v : (List)expr)` -- javac: `Object cannot be converted to T`. The decompiler
+    dropped the type argument of the raw cast; the loop variable's type is the element
+    type the bytecode checkcasts to, so the cast becomes `(List<T>)` (boxed for a primitive)."""
+    new = list(lines)
+    patches = []
+    for e in errors:
+        if not re.match(r"incompatible types: (?:java\.lang\.)?Object cannot be converted to ", e["message"]):
+            continue
+        k = e["line"] - 1
+        m = _FOREACH_RAW_RE.search(new[k]) if 0 <= k < len(new) else None
+        if not m:
+            continue
+        typ = m.group("type")
+        arg = _BOXED.get(typ, typ)
+        new[k] = new[k][:m.start()] + f"{m.group(1)}({m.group('raw')}<{arg}>)" + new[k][m.end():]
+        patches.append({"kind": "foreach-raw-cast", "line": e["line"], "element_type": arg,
+                        "evidence": "javac: " + e["message"]})
+    return (new, patches) if patches else None
+
+
+_BOOL_AS_INT_RE = re.compile(r"^(?P<ind>\s*)int (?P<var>\w+) = (?P<lit>true|false);\s*$")
+
+
+def fix_boolean_declared_int(lines: list[str], errors: list[dict]):
+    """`int v = false;` -- javac: `boolean cannot be converted to int`. Vineflower typed the
+    local by the JVM's int slot; the source only compiles with the literal's type."""
+    new = list(lines)
+    patches = []
+    for e in errors:
+        if e["message"] != "incompatible types: boolean cannot be converted to int":
+            continue
+        k = e["line"] - 1
+        m = _BOOL_AS_INT_RE.match(new[k]) if 0 <= k < len(new) else None
+        if not m:
+            continue
+        new[k] = f"{m.group('ind')}boolean {m.group('var')} = {m.group('lit')};"
+        patches.append({"kind": "boolean-declared-int", "line": e["line"], "variable": m.group("var"),
+                        "evidence": "javac: " + e["message"]})
+    return (new, patches) if patches else None
+
+
+_INSTANCEOF_GENERIC_RE = re.compile(r"instanceof (?P<raw>[\w.]+)<[^<>()]*(?:<[^<>()]*>[^<>()]*)*> (?P<var>\w+)")
+
+
+def fix_instanceof_generic_raw(lines: list[str], errors: list[dict]):
+    """`x instanceof Comparable<T> v` -- javac: `Object cannot be safely cast to Comparable<T>`.
+    instanceof is erased in the class file, so the type arguments carry no bytecode
+    evidence; the raw type is the only spelling that is always legal."""
+    new = list(lines)
+    patches = []
+    for e in errors:
+        if not re.search(r"cannot be safely cast to ", e["message"]):
+            continue
+        k = e["line"] - 1
+        m = _INSTANCEOF_GENERIC_RE.search(new[k]) if 0 <= k < len(new) else None
+        if not m:
+            continue
+        new[k] = new[k][:m.start()] + f"instanceof {m.group('raw')} {m.group('var')}" + new[k][m.end():]
+        patches.append({"kind": "instanceof-generic-raw", "line": e["line"], "variable": m.group("var"),
+                        "evidence": "javac: " + e["message"]})
+    return (new, patches) if patches else None
+
+
 FIXERS: list[tuple[str, Callable]] = [
     ("pattern-binding-scope", fix_pattern_binding_scope),
+    ("foreach-raw-cast", fix_foreach_raw_cast),
+    ("boolean-declared-int", fix_boolean_declared_int),
+    ("instanceof-generic-raw", fix_instanceof_generic_raw),
 ]
 
 
