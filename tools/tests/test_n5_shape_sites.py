@@ -378,5 +378,19 @@ class TestSplitOrCondition(ShapeSiteCase):
                                    "      }\n   }\n"), [])
 
 
+class TestElseIfChainReturns(ShapeSiteCase):
+    """The early return of a void method's last `if` also applies to an `else if` chain: javac puts
+    a `return` (not a jump to the end) at the end of every branch that has one."""
+
+    def test_else_if_chain_at_the_end_returns_per_branch(self):
+        self.assert_reproduces(
+            "early-return-else",
+            "   void m(int x) {\n      if (x == 1) {\n         this.f = 1;\n         this.f = 2;\n      } else if (x == 2) {\n"
+            "         this.f = 3;\n         this.f = 4;\n      } else {\n         this.f = 5;\n         this.f = 6;\n      }\n   }\n",
+            "   void m(int x) {\n      if (x == 1) {\n         this.f = 1;\n         this.f = 2;\n         return;\n      }\n"
+            "      if (x == 2) {\n         this.f = 3;\n         this.f = 4;\n         return;\n      }\n"
+            "      this.f = 5;\n      this.f = 6;\n   }\n")
+
+
 if __name__ == "__main__":
     unittest.main()

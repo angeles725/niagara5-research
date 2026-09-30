@@ -515,6 +515,27 @@ def _dedent(lines: list[str]) -> list[str]:
     return [l[3:] if l.startswith("   ") else l for l in lines]
 
 
+_IF_OPEN = re.compile(r"if \(.*\) \{$", re.M)
+
+
+def _chain_end(text: str, at: int) -> int:
+    """Offset just past the last block of the `if (..) {..} else if (..) {..} else {..}` chain whose
+    first `if` starts at `at` (-1 when it is not a well-formed chain)."""
+    m = _IF_OPEN.match(text, at)
+    if m is None:
+        return -1
+    close = _match_brace(text, m.end() - 1)
+    while close >= 0 and text.startswith("} else", close):
+        if text.startswith("} else {", close):
+            close = _match_brace(text, close + len("} else "))
+            break
+        m = _IF_OPEN.match(text, close + len("} else "))
+        if m is None:
+            return -1
+        close = _match_brace(text, m.end() - 1)
+    return close + 1 if close >= 0 else -1
+
+
 class _EarlyReturn:
     """Site hypotheses at the end of a block: `early-return-else` turns `if (c) {A} else {B}` into
     `if (c) {A return;} B`, `guard-return` turns `if (c) {A}` into `if (!c) {return;} A`."""
@@ -532,6 +553,13 @@ class _EarlyReturn:
             ind = len(m.group(0)) - len(m.group(0).lstrip())
             a_lines = text[open1 + 1:close1].split("\n")[1:-1]
             if self.with_else:
+                if text.startswith("} else if (", close1):
+                    # an `else if` chain: the rest of the chain is the fall-through statement
+                    chain_end = _chain_end(text, close1 + len("} else "))
+                    if chain_end < 0 or not _ends_a_block(text, chain_end - 1, ind) or _leaves(a_lines):
+                        continue
+                    yield (m.start(), chain_end), m, open1, close1, close1 + len("} else "), None, ind
+                    continue
                 if not text.startswith("} else {", close1):
                     continue
                 open2 = close1 + len("} else ")
@@ -554,6 +582,10 @@ class _EarlyReturn:
             pad = " " * ind
             a_lines = text[open1 + 1:close1].split("\n")[1:-1]
             head = text[:m.start("cond")]
+            if self.with_else and close2 is None:
+                # `} else if (d) {..}` -> `return; }` + `if (d) {..}` at the same indentation
+                return (text[:open1 + 1] + "\n" + "\n".join(a_lines + [pad + "   " + self.leave]) + "\n" + pad + "}\n"
+                        + pad + text[open2:span[1]] + text[span[1]:])
             if self.with_else:
                 b_lines = _dedent(text[open2 + 1:close2].split("\n")[1:-1])
                 new = (text[:open1 + 1] + "\n" + "\n".join(a_lines + [pad + "   " + self.leave]) + "\n" + pad + "}\n"
