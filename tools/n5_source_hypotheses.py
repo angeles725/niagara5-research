@@ -756,6 +756,19 @@ class RegexSites:
         return text[:start] + rewrite(m) + text[end:]
 
 
+_NULL_CAST = re.compile(r"\((?:[A-Za-z_][\w.$]*(?:<[^()]*>)?(?:\[\])*)\)null\b")
+
+
+def _null_cast_rewrites(text: str) -> list:
+    """`(T)null` -> `null`. The decompiler keeps the cast to steer overload resolution and javac then
+    emits `checkcast T` after `aconst_null`; the shipped code, compiled from a plain `null`, does
+    not (a cast of null is a no-op, JVMS 6.5)."""
+    return [(_NULL_CAST, lambda m: "null")]
+
+
+remove_null_cast = RegexSites(_null_cast_rewrites)
+
+
 def site_pos(site: tuple) -> int:
     """Source offset of a site: RegexSites sites are (pattern index, start, end), every other site is
     a (start, end) span."""
@@ -775,6 +788,7 @@ SITE_HYPOTHESES = {
     "lift-increments-site": RegexSites(_lift_rewrites),
     "split-return-ternary": split_return_ternary,
     "split-return-boolean": split_return_boolean,
+    "remove-null-cast": remove_null_cast,
 }
 
 # name -> hypothesis, in the order the splice tries them

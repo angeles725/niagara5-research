@@ -104,5 +104,28 @@ class TestSplitReturnBoolean(ShapeSiteCase):
         self.assertEqual(self.h.SITE_HYPOTHESES["split-return-boolean"].sites(src), [])
 
 
+class TestRemoveNullCast(ShapeSiteCase):
+    """The decompiler keeps `(T) null` to steer overload resolution; javac then emits `checkcast T`
+    after `aconst_null`, which the shipped code does not have."""
+
+    def test_argument_cast_is_dropped(self):
+        self.assert_reproduces(
+            "remove-null-cast",
+            "   static void n(int a, String s) {\n   }\n   void g() {\n      n(4, (String)null);\n   }\n",
+            "   static void n(int a, String s) {\n   }\n   void g() {\n      n(4, null);\n   }\n")
+
+    def test_generic_and_array_casts(self):
+        src = ("   void g(java.util.List<String> l) {\n      h((java.util.List<String>)null, (byte[])null, "
+               "(Object)null);\n   }\n")
+        sites = self.h.SITE_HYPOTHESES["remove-null-cast"].sites(src)
+        self.assertEqual(len(sites), 3)
+        out = self.apply_all("remove-null-cast", src)
+        self.assertIn("h(null, null, null);", out)
+
+    def test_casts_of_other_things_are_left_alone(self):
+        src = "   void g(Object o) {\n      h((String)o, (String)nullable(), (int)nullCount);\n   }\n"
+        self.assertEqual(self.h.SITE_HYPOTHESES["remove-null-cast"].sites(src), [])
+
+
 if __name__ == "__main__":
     unittest.main()
