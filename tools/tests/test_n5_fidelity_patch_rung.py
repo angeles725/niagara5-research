@@ -114,6 +114,95 @@ class TestPatchRung(unittest.TestCase):
             self.assertFalse(rec["patched"])
 
 
+@unittest.skipUnless(os.path.isfile(JAVAC) and os.path.isfile(JAVAP), "JDK 25 not installed")
+class TestRecordDetailFollowsMostAdvancedRung(unittest.TestCase):
+    """C3a-G3: the record's first_error / mismatch detail belongs to the most advanced rung at the
+    best rank, never to a stale lower rung; every rung's own error stays in rung_errors."""
+
+    def setUp(self):
+        self.mod = _load()
+        self.helper = TestPatchRung._grade
+
+    def _grade(self, fx, decompile=(None, None)):
+        return self.helper(self, fx, decompile=decompile)
+
+    def test_patched_rung_that_compiles_supersedes_the_stale_primary_error(self):
+        with tempfile.TemporaryDirectory() as td:
+            fx = _Fixture(td, BROKEN, WRONG)
+            rec, _ = self._grade(fx)
+            self.assertEqual(rec["grade"], "bytecode-only")
+            self.assertIsNone(rec["first_error"])
+            self.assertEqual(rec["detail_rung"], "vineflower2p")
+            self.assertEqual(rec["mismatched_methods"], [["f", "(II)I"]])
+            self.assertIn("vineflower2", rec["rung_errors"])
+            self.assertNotIn("vineflower2p", rec["rung_errors"])
+
+    def test_proven_class_carries_no_first_error_from_a_lower_rung(self):
+        with tempfile.TemporaryDirectory() as td:
+            fx = _Fixture(td, BROKEN, GOOD)
+            rec, _ = self._grade(fx)
+            self.assertEqual(rec["grade"], "roundtrip-exact")
+            self.assertIsNone(rec["first_error"])
+            self.assertIn("vineflower2", rec["rung_errors"])
+
+    def test_no_compile_everywhere_reports_the_most_advanced_rung_error(self):
+        with tempfile.TemporaryDirectory() as td:
+            fx = _Fixture(td, "package p;\npublic class Foo { int x = \"s\"; }\n", BROKEN)
+            rec, _ = self._grade(fx)
+            self.assertEqual(rec["detail_rung"], "vineflower2p")
+            self.assertEqual(rec["first_error"], rec["rung_errors"]["vineflower2p"])
+            self.assertNotEqual(rec["rung_errors"]["vineflower2"], rec["rung_errors"]["vineflower2p"])
+
+
+class TestMergeBestOfRecords(unittest.TestCase):
+    """The cross-JSON best-of (fidelity.<rung>.json files): rank first, a tie goes to the most
+    advanced rung (spliced > patched > canon > vineflower2 > vineflower)."""
+
+    def setUp(self):
+        self.mod = _load()
+
+    def rec(self, grade, err=None, mm=()):
+        return {"grade": grade, "first_error": err, "mismatched_methods": [list(m) for m in mm]}
+
+    def test_tie_goes_to_the_most_advanced_rung_and_keeps_every_error(self):
+        out = self.mod.merge_best_of_records({
+            "vineflower": self.rec("no-compile", "v1 err"),
+            "vineflower2": self.rec("no-compile", "reference to doPrivileged is ambiguous"),
+            "vineflower2.patched": self.rec("no-compile", "cannot find symbol"),
+        })
+        self.assertEqual(out["first_error"], "cannot find symbol")
+        self.assertEqual(out["detail_rung"], "vineflower2.patched")
+        self.assertEqual(out["rung_errors"], {"vineflower": "v1 err",
+                                              "vineflower2": "reference to doPrivileged is ambiguous",
+                                              "vineflower2.patched": "cannot find symbol"})
+
+    def test_higher_rank_beats_advancement(self):
+        out = self.mod.merge_best_of_records({
+            "vineflower2": self.rec("compiles-mismatch", None, [("m", "()V")]),
+            "vineflower2.spliced": self.rec("no-compile", "boom"),
+        })
+        self.assertEqual(out["detail_rung"], "vineflower2")
+        self.assertIsNone(out["first_error"])
+        self.assertEqual(out["mismatched_methods"], [["m", "()V"]])
+        self.assertEqual(out["rung_errors"], {"vineflower2.spliced": "boom"})
+
+    def test_spliced_wins_a_mismatch_tie(self):
+        out = self.mod.merge_best_of_records({
+            "vineflower2.patched": self.rec("compiles-mismatch", None, [("a", "()V")]),
+            "vineflower2.spliced": self.rec("compiles-mismatch", None, [("b", "()V")]),
+        })
+        self.assertEqual(out["detail_rung"], "vineflower2.spliced")
+        self.assertEqual(out["mismatched_methods"], [["b", "()V"]])
+
+    def test_proven_record_has_no_first_error(self):
+        out = self.mod.merge_best_of_records({
+            "vineflower2": self.rec("no-compile", "old"),
+            "vineflower2.canon": self.rec("roundtrip-canonical"),
+        })
+        self.assertIsNone(out["first_error"])
+        self.assertEqual(out["rung_errors"], {"vineflower2": "old"})
+
+
 class TestRegradeWithPatchTree(unittest.TestCase):
     def setUp(self):
         self.mod = _load()

@@ -1125,6 +1125,48 @@ def select_best_decompiler(attempts: list[tuple[str, dict]]) -> dict:
     return {"best_decompiler": best_name, "grade": grade, "attempted": attempts}
 
 
+# ---------------------------------------------------------------------------
+# Record detail selection (C3a-G3)
+# ---------------------------------------------------------------------------
+
+# cross-JSON ladder rungs, least to most advanced (the fidelity.<rung>.json files of one module)
+BEST_OF_RUNGS = ("vineflower", "vineflower2", "vineflower2.canon", "vineflower2.patched", "vineflower2.spliced")
+
+
+def _detail_index(attempted: list[tuple[str, dict]], patch_tree: Optional[str]) -> int:
+    """Index in `attempted` of the rung whose detail (first_error, mismatched methods) describes the
+    class: the best-ranked grade, a rank tie going to the most advanced rung (the patch/splice tree,
+    then the primary tree, then the CFR/Procyon/JD-CLI fallbacks in ladder order)."""
+    def key(i: int):
+        name, res = attempted[i]
+        advancement = 2 if patch_tree and name == patch_tree else (1 if i == 0 else 0)
+        return (_GRADE_RANK.get(res["grade"], -1), advancement, -i)
+    return max(range(len(attempted)), key=key)
+
+
+def merge_best_of_records(rung_records: dict[str, dict]) -> dict:
+    """Best-of over one class's per-rung records ({rung: record}, rung names from BEST_OF_RUNGS):
+    the highest grade rank wins, a tie goes to the most advanced rung. The returned copy carries
+    that rung's first_error / mismatch detail (`detail_rung` names it) and `rung_errors`, every
+    rung's own first_error, so a lower rung's stale error never labels a better-graded class."""
+    if not rung_records:
+        raise ValueError("merge_best_of_records needs at least one rung record")
+    order = {r: i for i, r in enumerate(BEST_OF_RUNGS)}
+    names = sorted(rung_records, key=lambda r: order.get(r, -1))
+    win = max(names, key=lambda r: (_GRADE_RANK.get(rung_records[r]["grade"], -1), order.get(r, -1)))
+    out = dict(rung_records[win])
+    errors: dict[str, str] = {}
+    for r in names:
+        rec = rung_records[r]
+        if rec.get("first_error"):
+            errors[r] = rec["first_error"]
+        for sub, err in (rec.get("rung_errors") or {}).items():
+            errors.setdefault(f"{r}/{sub}" if sub != r else r, err)
+    out["detail_rung"] = win
+    out["rung_errors"] = errors
+    return out
+
+
 def compute_consensus(attempted: list[tuple[str, dict]]) -> dict:
     reaching = [name for name, result in attempted if _is_clean(result["grade"])]
     return {"reaching_roundtrip": reaching, "count": len(reaching)}
@@ -1875,6 +1917,7 @@ def _grade_one_class(
 
         best = select_best_decompiler(attempted)
         consensus = compute_consensus(attempted)
+        detail_i = _detail_index(attempted, patch_tree)
 
         if docsource_available:
             with tempfile.TemporaryDirectory() as ds_td:
@@ -1885,10 +1928,17 @@ def _grade_one_class(
             "grade": best["grade"],
             "best_decompiler": best["best_decompiler"],
             "attempted": [(n, r["grade"]) for n, r in attempted],
-            "first_error": next((r.get("first_error") for _, r in attempted if r["grade"] == "no-compile"), None),
-            "mismatched_methods": [list(k) for k in (attempted[0][1].get("mismatched_methods") or [])],
-            "raw_mismatched_methods": [list(k) for k in (attempted[0][1].get("raw_mismatched_methods") or [])],
-            "allowlist_matches": attempted[0][1].get("allowlist_matches", []),
+            # C3a-G3: the detail rung is the best-ranked, most advanced attempt; its first_error is
+            # None once that rung compiled, and every rung's own error stays in rung_errors
+            "first_error": attempted[detail_i][1].get("first_error") if _GRADE_RANK.get(attempted[detail_i][1]["grade"], -1) == 0 else None,
+            "detail_rung": attempted[detail_i][0],
+            "rung_errors": {n: r["first_error"] for n, r in attempted if r.get("first_error")},
+            "mismatched_methods": [list(k) for k in (attempted[detail_i][1].get("mismatched_methods") or [])],
+            "raw_mismatched_methods": [list(k) for k in (attempted[detail_i][1].get("raw_mismatched_methods") or [])],
+            "allowlist_matches": attempted[detail_i][1].get("allowlist_matches", []),
+            # canonical evidence of the engine whose grade IS the class grade
+            # (the first clean rung, else the primary tree): which methods the
+            # sound canonical comparison resolved and the rules it needed
             # canonical evidence of the engine whose grade IS the class grade
             # (the first clean rung, else the primary tree): which methods the
             # sound canonical comparison resolved and the rules it needed
