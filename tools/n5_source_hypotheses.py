@@ -695,6 +695,56 @@ introduce_return_temp = _ReturnTemp(True)
 inline_return_temp = _ReturnTemp(False)
 
 
+_DECL_LINE = re.compile(
+    r"^(?P<ind>[ \t]*)(?:final )?(?P<type>[A-Za-z_][\w.$]*(?:<[^;=()]*>)?(?:\[\])*) (?P<name>\w+)(?P<init> = [^\n]*)?;$", re.M)
+_NOT_A_TYPE = {"return", "throw", "break", "continue", "new", "else", "case", "yield", "assert", "goto", "package",
+               "import"}
+HOIST_WINDOW = 4  # previous declarations of the block a declaration may be moved above
+
+
+class _HoistDeclaration:
+    """Site hypothesis: move an uninitialized local declaration (`T x;`) above one of the previous
+    declarations of its block. javac numbers locals in declaration order, so this permutes slots;
+    an initialized declaration is never moved (that would reorder its side effects)."""
+
+    @staticmethod
+    def _decls(text: str):
+        for m in _DECL_LINE.finditer(text):
+            if m.group("type") not in _NOT_A_TYPE:
+                yield m
+
+    def _found(self, text: str):
+        decls = list(self._decls(text))
+        for i, d in enumerate(decls):
+            if d.group("init") is not None:
+                continue
+            ind = d.group("ind")
+            reach = []
+            for prev in reversed(decls[:i]):
+                between = text[prev.start():d.start()].split("\n")
+                if any(l.strip() and len(l) - len(l.lstrip()) < len(ind) for l in between[1:]):
+                    break  # left the block
+                if prev.group("ind") == ind:
+                    reach.append(prev)
+            for prev in reach[:HOIST_WINDOW]:
+                yield d, prev
+
+    def sites(self, text: str) -> list:
+        return [(d.start(), prev.start()) for d, prev in self._found(text)]
+
+    def apply(self, text: str, site: tuple) -> str:
+        for d, prev in self._found(text):
+            if (d.start(), prev.start()) != tuple(site):
+                continue
+            line = d.group(0)
+            without = text[:d.start()] + text[d.end() + 1:]
+            return without[:prev.start()] + line + "\n" + without[prev.start():]
+        return text
+
+
+hoist_declaration = _HoistDeclaration()
+
+
 _RAW_PRIV = re.compile(r"\(niagara\.nre\.security\.privileged\.(PrivilegedAction|PrivilegedExceptionAction)\)(?= \()")
 
 
@@ -825,6 +875,7 @@ SITE_HYPOTHESES = {
     "early-return-else": early_return_else,
     "guard-return": guard_return,
     "guard-continue": guard_continue,
+    "hoist-declaration": hoist_declaration,
     "compound-assign-site": RegexSites(_compound_rewrites),
     "unfold-arrays-site": RegexSites(_unfold_rewrites),
     "expand-iinc-site": RegexSites(_expand_rewrites),

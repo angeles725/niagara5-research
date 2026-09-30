@@ -165,5 +165,30 @@ class TestContinueGuards(ShapeSiteCase):
             "         }\n         this.f++;\n         this.f += i;\n      }\n   }\n")
 
 
+class TestHoistDeclaration(ShapeSiteCase):
+    """javac numbers locals in declaration order. The decompiler declares an assigned-later local
+    right before its first branch; the shipped source often declared it earlier, which permutes the
+    slots of every local declared in between."""
+
+    DECOMPILED = ("   void m(boolean s) {\n      Object body = new Object();\n      int code;\n      if (s) {\n"
+                  "         code = 200;\n      } else {\n         code = 403;\n      }\n\n      this.f = code;\n"
+                  "      this.o = body;\n   }\n")
+    SHIPPED = ("   void m(boolean s) {\n      int code;\n      Object body = new Object();\n      if (s) {\n"
+               "         code = 200;\n      } else {\n         code = 403;\n      }\n\n      this.f = code;\n"
+               "      this.o = body;\n   }\n")
+
+    def test_declaration_moves_above_the_previous_declaration(self):
+        self.assert_reproduces("hoist-declaration", self.DECOMPILED, self.SHIPPED)
+
+    def test_only_uninitialized_declarations_move_and_never_out_of_their_block(self):
+        hyp = self.h.SITE_HYPOTHESES["hoist-declaration"]
+        self.assertEqual(hyp.sites(self.SHIPPED), [])          # nothing precedes `int code;`
+        nested = ("   void m(boolean s) {\n      Object a = f();\n      if (s) {\n         int b;\n         b = 1;\n"
+                  "      }\n   }\n")
+        self.assertEqual(hyp.sites(nested), [])                # `Object a` is in the enclosing block
+        init = "   void m() {\n      Object a = f();\n      int b = 3;\n   }\n"
+        self.assertEqual(hyp.sites(init), [])                  # initialized: moving it would reorder effects
+
+
 if __name__ == "__main__":
     unittest.main()
