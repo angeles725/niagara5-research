@@ -303,6 +303,87 @@ def fix_catch_parameter_name(lines: list[str], errors: list[dict]):
     return (new, patches) if patches else None
 
 
+def _line_starts(text: str) -> list[int]:
+    starts = [0]
+    for i, ch in enumerate(text):
+        if ch == "\n":
+            starts.append(i + 1)
+    return starts
+
+
+def _first_argument_span(text: str, open_paren: int):
+    """(start, end) of the first call argument after `(` at `open_paren`, `end` at the
+    delimiting `,` or `)`; skips nested brackets, string and char literals. None when
+    the call has no arguments or the text is malformed."""
+    i, depth, n = open_paren + 1, 0, len(text)
+    while i < n and text[i].isspace():
+        i += 1
+    start = i
+    while i < n:
+        ch = text[i]
+        if ch in "\"'":
+            q = ch
+            i += 1
+            while i < n and text[i] != q:
+                i += 2 if text[i] == "\\" else 1
+        elif ch in "([{":
+            depth += 1
+        elif ch in ")]}":
+            if depth == 0:
+                return (start, i) if ch == ")" and i > start else None
+            depth -= 1
+        elif ch == "," and depth == 0:
+            return start, i
+        i += 1
+    return None
+
+
+_CTOR_ERR_RE = re.compile(r"constructor \w+ in class [\w.$<>]+ cannot be applied to given types;|"
+                          r"no suitable constructor found for ")
+_OUTER_THIS_RE = re.compile(r"^(?:[\w.$]+\.)?this$")
+
+
+def fix_inner_ctor_outer_arg(lines: list[str], errors: list[dict]):
+    """`super(Outer.this, x)` / `new Inner(this, x)` -- javac: constructor cannot be applied
+    (found one argument more than required). Vineflower prints the synthetic outer-instance
+    constructor parameter of an inner class as an argument; source passes it implicitly.
+    Only a first argument that is `this` / `Outer.this` is dropped."""
+    text = "\n".join(lines)
+    starts = _line_starts(text)
+    edits = []
+    for e in errors:
+        if not _CTOR_ERR_RE.match(e["message"]) or e["col"] is None or e["line"] - 1 >= len(starts):
+            continue
+        detail = "\n".join(e["detail"])
+        req = re.search(r"required: (.*)", detail)
+        fnd = re.search(r"found:\s+(.*)", detail)
+        if req and fnd:
+            n_req = 0 if req.group(1).strip() == "no arguments" else len(req.group(1).split(","))
+            if len(fnd.group(1).split(",")) != n_req + 1:
+                continue
+        off = starts[e["line"] - 1] + e["col"]
+        m = re.compile(r"(?:super|this|new\s+[\w.$]+(?:<[^()]*>)?)\s*\(").match(text, off)
+        if not m:
+            continue
+        span = _first_argument_span(text, m.end() - 1)
+        if span is None or not _OUTER_THIS_RE.match(text[span[0]:span[1]].strip()):
+            continue
+        end = span[1]
+        if text[end] == ",":
+            end += 1
+            while text[end] in " \t":
+                end += 1
+        edits.append((span[0], end, e["line"], text[span[0]:span[1]].strip()))
+    if not edits:
+        return None
+    patches = []
+    for a, b, line, arg in sorted(set(edits), reverse=True):
+        text = text[:a] + text[b:]
+        patches.append({"kind": "inner-ctor-outer-arg", "line": line, "dropped": arg,
+                        "evidence": "javac: constructor cannot be applied (outer instance passed explicitly)"})
+    return text.split("\n"), patches
+
+
 FIXERS: list[tuple[str, Callable]] = [
     ("pattern-binding-scope", fix_pattern_binding_scope),
     ("foreach-raw-cast", fix_foreach_raw_cast),
@@ -310,6 +391,7 @@ FIXERS: list[tuple[str, Callable]] = [
     ("instanceof-generic-raw", fix_instanceof_generic_raw),
     ("switch-group-scope", fix_switch_group_scope),
     ("catch-parameter-name", fix_catch_parameter_name),
+    ("inner-ctor-outer-arg", fix_inner_ctor_outer_arg),
 ]
 
 

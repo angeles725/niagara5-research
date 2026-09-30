@@ -246,6 +246,48 @@ class TestCatchParameterRename(MechanicalCase):
         self.assertEqual(res["patches"], [])
 
 
+class TestInnerConstructorOuterArgument(MechanicalCase):
+    SRC = """public class T {
+   class Inner { Inner(String s) {} }
+   class Inner0 { Inner0() {} }
+   class Sub extends Inner {
+      Sub(String s) {
+         super(T.this, s);
+      }
+   }
+
+   Inner mk() {
+      return new Inner(this, "a");
+   }
+
+   Inner0 mk0() {
+      return new Inner0(this);
+   }
+}
+"""
+
+    def test_synthetic_outer_instance_argument_is_dropped(self):
+        res = self.patch(self.SRC)
+        self.assertTrue(res["compiles"], res["residual_errors"])
+        self.assertEqual({p["kind"] for p in res["patches"]}, {"inner-ctor-outer-arg"})
+        self.assertEqual(len(res["patches"]), 3)
+        self.assertIn("super(s);", res["text"])
+        self.assertIn('new Inner("a")', res["text"])
+        self.assertIn("new Inner0();", res["text"])
+
+    def test_first_argument_that_is_not_an_outer_this_is_kept(self):
+        src = """public class T {
+   class Inner { Inner(String s) {} }
+   Inner mk(T other) {
+      return new Inner(other, "a");
+   }
+}
+"""
+        res = self.patch(src)
+        self.assertEqual(res["patches"], [])
+        self.assertFalse(res["compiles"])
+
+
 def _grade_json(path: Path, classes: dict):
     path.write_text(json.dumps({"classes": classes}))
 
