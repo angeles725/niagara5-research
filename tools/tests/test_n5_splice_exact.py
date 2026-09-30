@@ -114,6 +114,24 @@ class TestSiteDonors(ExactBase):
         out = (mod_dir / "vineflower2s/p/Foo.java").read_text()
         self.assertIn("return x == 7;", out)                # method `ok` was already exact
 
+    def test_cheap_donors_that_settle_every_method_stop_the_search(self):
+        """C4: on-disk trees come first in exact mode; once every mismatching method has an exact
+        donor, no site variant is compiled and no decompiler is run."""
+        mod_dir, _ = self._module("lazy", SHIPPED_TWO, PRIMARY_TWO, None, None)
+        (mod_dir / "vf-alt" / "p").mkdir(parents=True)
+        (mod_dir / "vf-alt" / "p" / "Foo.java").write_text(SHIPPED_TWO)
+        compiled = []
+        real = self.mod.compile_parse
+
+        def spy(path, *a, **k):
+            compiled.append(str(path))
+            return real(path, *a, **k)
+        with mock.patch.object(self.mod, "compile_parse", side_effect=spy):
+            man = self._exact("lazy", mod_dir, exact=True, hypotheses=("split-return-boolean",),
+                              donor_trees=("vf-alt",))
+        self.assertEqual([m["donor"] for m in man["classes"]["p/Foo"]["methods"]], ["tree:vf-alt", "tree:vf-alt"])
+        self.assertFalse([c for c in compiled if "/site/" in c], compiled)
+
 
 SHIPPED_TWO = SHIPPED.replace("  int b(int x)", """  boolean ok(int x) {
     return x == 7;

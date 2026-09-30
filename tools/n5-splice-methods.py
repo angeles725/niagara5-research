@@ -462,14 +462,20 @@ def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: st
                        for k in mism if k in parsed["methods"] and k in shipped["methods"])
         return bad_structure, len(mism), dist
 
+    span_cache: dict = {}
+
     def mismatching_spans(path: Path, v: dict) -> Optional[list]:
         """Source spans of the methods that still mismatch (the climb only tries sites inside them);
         None when the attribution fails, then every site is tried."""
-        try:
-            scan = scan_spans([path], helper_dir, java_bin, classpath)[str(path)]
-        except Refusal:
-            return None
-        if scan["errors"]:
+        cached = span_cache.get(str(path))
+        if cached is None:
+            try:
+                scan = scan_spans([path], helper_dir, java_bin, classpath)[str(path)]
+            except Refusal:
+                scan = None
+            cached = span_cache[str(path)] = scan
+        scan = cached
+        if scan is None or scan["errors"]:
             return None
         found = [_find_method(scan, k[0], k[1], class_short) for k, x in v.items() if x["verdict"] == "mismatch"]
         if not found or any(m is None for m in found):
@@ -664,6 +670,11 @@ def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: st
                                                        if x["verdict"] == "mismatch"]) if exact else ())
         engines = (*decompilers, *(TREE_DONOR_PREFIX + t for t in donor_trees),
                    *(HYP_DONOR_PREFIX + h for h in hypotheses), *(SITE_DONOR_PREFIX + h for h in site_donors))
+        if exact:
+            # C4: cheapest first (no compile of a new text for an on-disk tree, no decompiler JVM), and
+            # the search stops as soon as every mismatching method has an exact donor
+            engines = (*(TREE_DONOR_PREFIX + t for t in donor_trees), *(HYP_DONOR_PREFIX + h for h in hypotheses),
+                       *(SITE_DONOR_PREFIX + h for h in site_donors), *decompilers)
         for eng in engines:
             if eng.startswith(SITE_DONOR_PREFIX):
                 variant = site_variant(eng[len(SITE_DONOR_PREFIX):])
@@ -697,6 +708,8 @@ def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: st
             donor_texts[eng] = Path(src).read_text(encoding="utf-8")
             donor_files[eng] = Path(src)
             donor_verdicts[eng] = pmv(shipped, parsed)[0]
+            if exact and all(donor_candidates(k, donor_verdicts, engines) for k in todo):
+                break
         options = {k: donor_candidates(k, donor_verdicts, engines) for k in todo}
         lacking = [k for k, v in options.items() if not v]
         if lacking:
