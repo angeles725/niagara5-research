@@ -817,6 +817,104 @@ class _UnguardElse:
 unguard_else = _UnguardElse()
 
 
+_RETURN_OR_THROW = re.compile(r"^\s*(?:return\b[^;]*|throw\b[^;]*);$")
+_RETURN_STMT = re.compile(r"^(?P<ind>[ \t]*)return (?P<expr>[^;\n]+);$")
+
+
+def _block_rest(text: str, after: int, ind: int):
+    """(end offset, text) of the statements that follow the statement ending at `after`, up to the
+    closing brace of the enclosing block (a line indented less than `ind`)."""
+    rest_end, pos = after, after
+    for line in text[after:].split("\n")[1:]:
+        pos += len(line) + 1
+        if line.strip() and len(line) - len(line.lstrip()) < ind:
+            break
+        rest_end = pos
+    return rest_end, text[after:rest_end].strip("\n")
+
+
+class _InvertGuardReturn:
+    """Site hypothesis: `if (c) { A return y; } return x;` -> `if (!c) { return x; } A return y;`. javac
+    emits the early `return x`; the decompiler folds it into the trailing return."""
+
+    def _parse(self, text: str):
+        for m in _IF_HEAD.finditer(text):
+            open1 = m.end() - 1
+            close1 = _match_brace(text, open1)
+            if close1 < 0 or text.startswith("} else", close1):
+                continue
+            ind = len(m.group(0)) - len(m.group(0).lstrip())
+            a_lines = text[open1 + 1:close1].split("\n")[1:-1]
+            if not a_lines or not _RETURN_OR_THROW.match(next((l for l in reversed(a_lines) if l.strip()), "")):
+                continue
+            rest_end, rest = _block_rest(text, close1 + 1, ind)
+            lines = [l for l in rest.split("\n") if l.strip()]
+            ret = _RETURN_STMT.match(lines[0]) if len(lines) == 1 else None
+            if ret is None or len(ret.group("ind")) != ind:
+                continue
+            yield (m.start(), rest_end), m, open1, close1, rest_end, ret.group("expr"), a_lines, ind
+
+    def sites(self, text: str) -> list:
+        return [span for span, *_ in self._parse(text)]
+
+    def apply(self, text: str, site: tuple) -> str:
+        for span, m, open1, close1, rest_end, expr, a_lines, ind in self._parse(text):
+            if span != tuple(site):
+                continue
+            pad = " " * ind
+            new = (text[:m.start("cond")] + _negate(m.group("cond")) + text[m.end("cond"):open1 + 1] + "\n"
+                   + pad + "   return " + expr + ";\n" + pad + "}\n" + "\n".join(_dedent(a_lines)) + "\n")
+            return new + text[rest_end:].lstrip("\n") if text[rest_end:].strip() else new
+        return text
+
+
+invert_guard_return = _InvertGuardReturn()
+
+_INSTANCEOF_COND = re.compile(r"^(?P<neg>!\()?(?P<x>[A-Za-z_]\w*) instanceof (?P<t>[\w.$]+(?:<[^()]*>)?)\)?$")
+
+
+class _InstanceofBinding:
+    """Site hypothesis: `if (x instanceof T) { .. (T)x .. }` -> `if (x instanceof T x_p) { .. x_p .. }`
+    (and the negated guard, whose binding is in scope for the rest of the block). The decompiler drops
+    the pattern binding whose store/load javac keeps."""
+
+    def _parse(self, text: str):
+        for m in _IF_HEAD.finditer(text):
+            cm = _INSTANCEOF_COND.match(m.group("cond"))
+            if cm is None or (cm.group("neg") is None) != (not m.group("cond").startswith("!(")):
+                continue
+            x, t, negated = cm.group("x"), cm.group("t"), cm.group("neg") is not None
+            cast = re.compile(r"\(" + re.escape(t) + r"\)" + re.escape(x) + r"\b")
+            open1 = m.end() - 1
+            close1 = _match_brace(text, open1)
+            if close1 < 0:
+                continue
+            ind = len(m.group(0)) - len(m.group(0).lstrip())
+            if negated:
+                if text.startswith("} else", close1) or not _leaves(text[open1 + 1:close1].split("\n")[1:-1]):
+                    continue
+                lo, hi = close1 + 1, _block_rest(text, close1 + 1, ind)[0]
+            else:
+                lo, hi = open1 + 1, close1
+            if cast.search(text[lo:hi]):
+                yield (m.start(), close1 + 1), m, x, t, negated, cast, lo, hi
+
+    def sites(self, text: str) -> list:
+        return [span for span, *_ in self._parse(text)]
+
+    def apply(self, text: str, site: tuple) -> str:
+        for span, m, x, t, negated, cast, lo, hi in self._parse(text):
+            if span != tuple(site):
+                continue
+            name = f"{x}_p"
+            cond = f"!({x} instanceof {t} {name})" if negated else f"{x} instanceof {t} {name}"
+            return (text[:m.start("cond")] + cond + text[m.end("cond"):lo] + cast.sub(name, text[lo:hi]) + text[hi:])
+        return text
+
+
+instanceof_binding = _InstanceofBinding()
+
+
 _RAW_PRIV = re.compile(r"\(niagara\.nre\.security\.privileged\.(PrivilegedAction|PrivilegedExceptionAction)\)(?= \()")
 
 
@@ -937,15 +1035,15 @@ remove_null_cast = RegexSites(_null_cast_rewrites)
 # canonical rules (tools/n5_canon.py) -> the site hypotheses that can explain them: the climb of an
 # `exact` splice only tries these for a method that was proven by those rules
 _LAYOUT_SITES = ("split-return-ternary", "split-return-boolean", "guard-return", "guard-continue",
-                 "early-return-else", "swap-if-else", "unguard-else")
+                 "early-return-else", "swap-if-else", "unguard-else", "invert-guard-return")
 _TEMP_SITES = ("introduce-return-temp", "inline-return-temp", "compound-assign-site", "lift-increments-site")
 RULE_SITES = {
     "tail": _LAYOUT_SITES, "min": _LAYOUT_SITES, "inl": _LAYOUT_SITES, "merge": _LAYOUT_SITES,
     "thread": _LAYOUT_SITES, "const": _LAYOUT_SITES, "cov": _LAYOUT_SITES, "cmp0": _LAYOUT_SITES,
     "cmp1": _LAYOUT_SITES, "boolmat": ("split-return-boolean", "split-return-ternary"),
-    "dse": _TEMP_SITES, "peep": _TEMP_SITES, "r1": ("remove-null-cast",),
+    "dse": _TEMP_SITES + ("instanceof-binding",), "peep": _TEMP_SITES + ("instanceof-binding",), "r1": ("remove-null-cast",),
     "iinc": ("expand-iinc-site", "collapse-iinc-site", "lift-increments-site"),
-    "web": ("hoist-declaration", "hoist-for-var"),
+    "web": ("hoist-declaration", "hoist-for-var", "instanceof-binding"),
 }
 
 
@@ -974,6 +1072,8 @@ SITE_HYPOTHESES = {
     "hoist-declaration": hoist_declaration,
     "hoist-for-var": hoist_for_var,
     "unguard-else": unguard_else,
+    "invert-guard-return": invert_guard_return,
+    "instanceof-binding": instanceof_binding,
     "compound-assign-site": RegexSites(_compound_rewrites),
     "unfold-arrays-site": RegexSites(_unfold_rewrites),
     "expand-iinc-site": RegexSites(_expand_rewrites),
@@ -991,7 +1091,7 @@ SITE_HYPOTHESES = {
 # those make one pass)
 for _name in ("split-return-ternary", "split-return-boolean", "guard-return", "guard-continue", "unguard-else",
               "early-return-else", "hoist-declaration", "hoist-for-var", "introduce-return-temp",
-              "inline-return-temp", "remove-null-cast"):
+              "inline-return-temp", "remove-null-cast", "invert-guard-return", "instanceof-binding"):
     SITE_HYPOTHESES[_name].fixpoint = True
 
 

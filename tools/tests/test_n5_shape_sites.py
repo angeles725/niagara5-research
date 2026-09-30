@@ -249,5 +249,51 @@ class TestHoistForVariable(ShapeSiteCase):
         self.assertEqual(hyp.sites("   void m() {\n      for (Object o : list) {\n      }\n   }\n"), [])
 
 
+class TestInvertGuardReturn(ShapeSiteCase):
+    """`if (c) { A return y; } return x;` -> `if (!c) { return x; } A return y;`: javac emits the early
+    `return x` where the decompiler folds it into the trailing one."""
+
+    def test_trailing_return_becomes_the_guard(self):
+        self.assert_reproduces(
+            "invert-guard-return",
+            "   int m(int a, int b) {\n      if (a > 0 && b > 0) {\n         this.f = 1;\n         this.f = 2;\n"
+            "         return 1;\n      }\n\n      return 0;\n   }\n",
+            "   int m(int a, int b) {\n      if (!(a > 0 && b > 0)) {\n         return 0;\n      }\n"
+            "      this.f = 1;\n      this.f = 2;\n      return 1;\n   }\n")
+
+    def test_needs_a_leaving_block_and_an_immediately_following_return(self):
+        hyp = self.h.SITE_HYPOTHESES["invert-guard-return"]
+        self.assertEqual(hyp.sites("   int m(int a) {\n      if (a > 0) {\n         f();\n      }\n\n      return 0;\n   }\n"), [])
+        self.assertEqual(hyp.sites("   int m(int a) {\n      if (a > 0) {\n         return 1;\n      }\n\n      f();\n"
+                                   "      return 0;\n   }\n"), [])
+
+
+class TestPatternBinding(ShapeSiteCase):
+    """The decompiler writes `if (x instanceof T) { ... (T)x ... }`; the shipped code used a pattern
+    binding (`x instanceof T t`), whose astore/aload pair javac keeps."""
+
+    def test_cast_of_the_tested_name_becomes_a_binding(self):
+        self.assert_reproduces(
+            "instanceof-binding",
+            "   Object m(Object s) {\n      if (s instanceof String) {\n         return (String)s;\n      }\n\n"
+            "      return null;\n   }\n",
+            "   Object m(Object s) {\n      if (s instanceof String t) {\n         return t;\n      }\n\n"
+            "      return null;\n   }\n")
+
+    def test_negated_test_binds_for_the_rest_of_the_block(self):
+        self.assert_reproduces(
+            "instanceof-binding",
+            "   Object m(Object s) {\n      if (!(s instanceof String)) {\n         return null;\n      }\n\n"
+            "      this.f = ((String)s).length();\n      return s;\n   }\n",
+            "   Object m(Object s) {\n      if (!(s instanceof String t)) {\n         return null;\n      }\n\n"
+            "      this.f = t.length();\n      return s;\n   }\n")
+
+    def test_only_a_plain_name_with_a_cast_in_the_scope_is_a_site(self):
+        hyp = self.h.SITE_HYPOTHESES["instanceof-binding"]
+        self.assertEqual(hyp.sites("   void m(Object s) {\n      if (s instanceof String) {\n         f();\n      }\n   }\n"), [])
+        self.assertEqual(hyp.sites("   void m(Object s) {\n      if (g() instanceof String) {\n         f((String)g());\n"
+                                   "      }\n   }\n"), [])
+
+
 if __name__ == "__main__":
     unittest.main()
