@@ -99,6 +99,14 @@ class TestSplitReturnTernary(ShapeSiteCase):
             "   int g(int x) {\n      return x > 0 ? 1 : (x < -5 ? 2 : 3);\n   }\n",
             "   int g(int x) {\n      if (x > 0) {\n         return 1;\n      }\n      if (x < -5) {\n         return 2;\n      }\n      return 3;\n   }\n")
 
+    def test_a_ternary_the_decompiler_wrapped_over_several_lines(self):
+        self.assert_reproduces(
+            "split-return-ternary",
+            "   Object b(Object x, Object y) {\n      return x != null && !x.toString().isEmpty()\n         ? x.toString()\n"
+            "         : y;\n   }\n",
+            "   Object b(Object x, Object y) {\n      if (x != null && !x.toString().isEmpty()) {\n"
+            "         return x.toString();\n      }\n      return y;\n   }\n")
+
     def test_braceless_control_header_is_not_a_site(self):
         src = "   int g(int x) {\n      if (x > 0)\n         return x > 3 ? 1 : 2;\n      return 0;\n   }\n"
         self.assertEqual(self.h.SITE_HYPOTHESES["split-return-ternary"].sites(src), [])

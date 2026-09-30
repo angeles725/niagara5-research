@@ -201,6 +201,9 @@ def main(argv: Optional[list] = None) -> int:
     p.add_argument("--class-jobs", type=int, default=1)
     p.add_argument("--tool-server", action="store_true")
     p.add_argument("--classpath-cache-dir", default=None)
+    p.add_argument("--modules-dir", default=str(FID.DEFAULT_MODULES_DIR),
+                   help="a local copy of the module jars is much faster than the default install on /mnt/c")
+    p.add_argument("--bin-ext-dir", default=str(FID.DEFAULT_BIN_EXT_DIR))
     p = sub.add_parser("recount")
     p.add_argument("--before", required=True)
     args = ap.parse_args(argv)
@@ -225,7 +228,7 @@ def main(argv: Optional[list] = None) -> int:
         print(json.dumps({**out, "improved": len(out["improved"]), "regressed": out["regressed"]}, indent=1))
         return 1 if out["regressed"] or out["missing"] else 0
     cache = Path(args.classpath_cache_dir) if args.classpath_cache_dir else Path(tempfile.gettempdir()) / "n5-fidelity-classpath-cache"
-    classpath = FID.build_classpath(cache, Path(FID.DEFAULT_MODULES_DIR), Path(FID.DEFAULT_BIN_EXT_DIR),
+    classpath = FID.build_classpath(cache, Path(args.modules_dir), Path(args.bin_ext_dir),
                                     jre_dir=Path(FID.DEFAULT_JRE_DIR))
     targets = by_module(json.loads(Path(args.targets).read_text()))
     failed = []

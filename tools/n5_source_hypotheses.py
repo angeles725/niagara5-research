@@ -602,7 +602,21 @@ guard_return = _EarlyReturn(False)
 guard_continue = _EarlyReturn(False, "continue;")
 
 
-_RETURN_LINE = re.compile(r"^(?P<ind>[ \t]*)return (?P<expr>[^;\n]+);$", re.M)
+_RETURN_LINE = re.compile(r"^(?P<ind>[ \t]*)return (?P<expr>[^;]{1,800});$", re.M)
+RETURN_MAX_LINES = 6
+
+
+def _clean_expr(expr: str):
+    """The expression of a `return <expr>;` on one line (the decompiler wraps long expressions over
+    several), or None when it is not a plain expression (too long, a text block, unbalanced)."""
+    if expr.count("\n") >= RETURN_MAX_LINES or '"""' in expr:
+        return None
+    one = re.sub(r"[ \t]*\n[ \t]*", " ", expr).strip()
+    opens = sum(one.count(c) for c in "([{")
+    closes = sum(one.count(c) for c in ")]}")
+    return one if one and opens == closes else None
+
+
 _BOOL_OPS = re.compile(r" (?:==|!=|<=|>=|<|>|&&|\|\||instanceof) ")
 
 
@@ -654,8 +668,8 @@ class _ReturnRewrite:
 
     def _matches(self, text: str):
         for m in _RETURN_LINE.finditer(text):
-            expr = m.group("expr")
-            if not _statement_position(text, m.start()):
+            expr = _clean_expr(m.group("expr"))
+            if expr is None or not _statement_position(text, m.start()):
                 continue
             if self.kind == "ternary":
                 if _split_ternary(expr) is not None:
@@ -672,7 +686,7 @@ class _ReturnRewrite:
         for m in self._matches(text):
             if (m.start(), m.end()) != tuple(site):
                 continue
-            ind, expr = m.group("ind"), m.group("expr")
+            ind, expr = m.group("ind"), _clean_expr(m.group("expr"))
             if self.kind == "ternary":
                 cond, a, b = _split_ternary(expr)
                 new = f"{ind}if ({cond}) {{\n{ind}   return {a};\n{ind}}}\n\n{ind}return {b};"
@@ -702,8 +716,9 @@ class _ReturnTemp:
     def _matches(self, text: str):
         if self.introduce:
             for m in _RETURN_LINE.finditer(text):
-                expr = m.group("expr")
-                if _PLAIN_VALUE.match(expr) or " -> " in expr or not _statement_position(text, m.start()):
+                expr = _clean_expr(m.group("expr"))
+                if (expr is None or _PLAIN_VALUE.match(expr) or " -> " in expr
+                        or not _statement_position(text, m.start())):
                     continue
                 yield m
         else:
@@ -716,7 +731,7 @@ class _ReturnTemp:
         for m in self._matches(text):
             if (m.start(), m.end()) != tuple(site):
                 continue
-            ind, expr = m.group("ind"), m.group("expr")
+            ind, expr = m.group("ind"), _clean_expr(m.group("expr")) if self.introduce else m.group("expr")
             new = (f"{ind}var retTmp = {expr};\n{ind}return retTmp;" if self.introduce
                    else f"{ind}return {expr};")
             return text[:m.start()] + new + text[m.end():]
@@ -1145,8 +1160,8 @@ class _WrapBooleanTernary:
 
     def _matches(self, text: str):
         for m in _RETURN_LINE.finditer(text):
-            expr = m.group("expr")
-            if (expr in ("true", "false") or re.fullmatch(r"-?\d+", expr) or " ? " in _top_level(expr)
+            expr = _clean_expr(m.group("expr"))
+            if (expr is None or expr in ("true", "false") or re.fullmatch(r"-?\d+", expr) or " ? " in _top_level(expr)
                     or " -> " in expr or not _statement_position(text, m.start())):
                 continue
             yield m
@@ -1157,7 +1172,7 @@ class _WrapBooleanTernary:
     def apply(self, text: str, site: tuple) -> str:
         for m in self._matches(text):
             if (m.start(), m.end()) == tuple(site):
-                expr = m.group("expr")
+                expr = _clean_expr(m.group("expr"))
                 if any(op in _top_level(expr) for op in (" && ", " || ", " == ", " != ", " < ", " > ", " <= ", " >= ")):
                     expr = f"({expr})"
                 return text[:m.start()] + f"{m.group('ind')}return {expr} ? true : false;" + text[m.end():]
