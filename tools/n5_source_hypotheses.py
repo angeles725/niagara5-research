@@ -1139,6 +1139,58 @@ class _SplitOrCondition:
 split_or_condition = _SplitOrCondition()
 
 
+class _WrapBooleanTernary:
+    """Tier-2 site hypothesis: `return <expr>;` -> `return <expr> ? true : false;` (rule `boolmat`: the
+    shipped code materializes the boolean with branches)."""
+
+    def _matches(self, text: str):
+        for m in _RETURN_LINE.finditer(text):
+            expr = m.group("expr")
+            if (expr in ("true", "false") or re.fullmatch(r"-?\d+", expr) or " ? " in _top_level(expr)
+                    or " -> " in expr or not _statement_position(text, m.start())):
+                continue
+            yield m
+
+    def sites(self, text: str) -> list:
+        return [(m.start(), m.end()) for m in self._matches(text)]
+
+    def apply(self, text: str, site: tuple) -> str:
+        for m in self._matches(text):
+            if (m.start(), m.end()) == tuple(site):
+                expr = m.group("expr")
+                if any(op in _top_level(expr) for op in (" && ", " || ", " == ", " != ", " < ", " > ", " <= ", " >= ")):
+                    expr = f"({expr})"
+                return text[:m.start()] + f"{m.group('ind')}return {expr} ? true : false;" + text[m.end():]
+        return text
+
+
+wrap_boolean_ternary = _WrapBooleanTernary()
+
+_IF_SIMPLE = re.compile(r"^(?P<ind>[ \t]*)(?:\} else )?if \((?P<cond>!?[\w.$]+(?:\([^()]*\))?(?:\.[\w$]+(?:\([^()]*\))?)*)\) \{$", re.M)
+
+
+class _EqTrue:
+    """Tier-2 site hypothesis: `if (x)` -> `if (x == true)` for a plain name/call (rule `cmp1`: javac
+    compares with `iconst_1; if_icmp..` instead of testing the value)."""
+
+    def _matches(self, text: str):
+        for m in _IF_SIMPLE.finditer(text):
+            if not m.group("cond").startswith("!"):
+                yield m
+
+    def sites(self, text: str) -> list:
+        return [m.span("cond") for m in self._matches(text)]
+
+    def apply(self, text: str, site: tuple) -> str:
+        for m in self._matches(text):
+            if m.span("cond") == tuple(site):
+                return text[:m.end("cond")] + " == true" + text[m.end("cond"):]
+        return text
+
+
+eq_true = _EqTrue()
+
+
 _RAW_PRIV = re.compile(r"\(niagara\.nre\.security\.privileged\.(PrivilegedAction|PrivilegedExceptionAction)\)(?= \()")
 
 
@@ -1265,7 +1317,8 @@ _TEMP_SITES = ("introduce-return-temp", "inline-return-temp", "compound-assign-s
 RULE_SITES = {
     "tail": _LAYOUT_SITES, "min": _LAYOUT_SITES, "inl": _LAYOUT_SITES, "merge": _LAYOUT_SITES,
     "thread": _LAYOUT_SITES, "const": _LAYOUT_SITES, "cov": _LAYOUT_SITES, "cmp0": _LAYOUT_SITES,
-    "cmp1": _LAYOUT_SITES, "boolmat": ("split-return-boolean", "split-return-ternary"),
+    "cmp1": _LAYOUT_SITES + ("eq-true",),
+    "boolmat": ("split-return-boolean", "split-return-ternary", "wrap-boolean-ternary"),
     "dse": _TEMP_SITES + ("instanceof-binding",), "peep": _TEMP_SITES + ("instanceof-binding",), "r1": ("remove-null-cast",),
     "iinc": ("expand-iinc-site", "collapse-iinc-site", "lift-increments-site"),
     "web": ("hoist-declaration", "hoist-for-var", "instanceof-binding"),
@@ -1301,6 +1354,8 @@ SITE_HYPOTHESES = {
     "instanceof-binding": instanceof_binding,
     "return-out-of-try": return_out_of_try,
     "split-or-condition": split_or_condition,
+    "wrap-boolean-ternary": wrap_boolean_ternary,
+    "eq-true": eq_true,
     "compound-assign-site": RegexSites(_compound_rewrites),
     "unfold-arrays-site": RegexSites(_unfold_rewrites),
     "expand-iinc-site": RegexSites(_expand_rewrites),
@@ -1318,7 +1373,7 @@ SITE_HYPOTHESES = {
 # those make one pass)
 for _name in ("split-return-ternary", "split-return-boolean", "guard-return", "guard-continue", "unguard-else",
               "early-return-else", "hoist-declaration", "hoist-for-var", "introduce-return-temp",
-              "inline-return-temp", "remove-null-cast", "invert-guard-return", "instanceof-binding", "return-out-of-try", "split-or-condition"):
+              "inline-return-temp", "remove-null-cast", "invert-guard-return", "instanceof-binding", "return-out-of-try", "split-or-condition", "wrap-boolean-ternary", "eq-true"):
     SITE_HYPOTHESES[_name].fixpoint = True
 
 

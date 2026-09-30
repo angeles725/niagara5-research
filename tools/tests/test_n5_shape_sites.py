@@ -392,5 +392,28 @@ class TestElseIfChainReturns(ShapeSiteCase):
             "      this.f = 5;\n      this.f = 6;\n   }\n")
 
 
+class TestBooleanMaterialization(ShapeSiteCase):
+    """Tier-2 shapes (n5_canon `boolmat`, `cmp1`): a boolean written as `x ? true : false` or compared
+    with `== true` compiles to branches the plain value does not have."""
+
+    def test_boolean_ternary_materialization(self):
+        self.assert_reproduces(
+            "wrap-boolean-ternary",
+            "   boolean m() {\n      return this.z;\n   }\n",
+            "   boolean m() {\n      return this.z ? true : false;\n   }\n")
+
+    def test_comparison_with_true(self):
+        self.assert_reproduces(
+            "eq-true",
+            "   int m(boolean q) {\n      if (q) {\n         return 1;\n      }\n\n      return 2;\n   }\n",
+            "   int m(boolean q) {\n      if (q == true) {\n         return 1;\n      }\n\n      return 2;\n   }\n")
+
+    def test_literals_and_compound_conditions_are_not_sites(self):
+        self.assertEqual(self.h.SITE_HYPOTHESES["wrap-boolean-ternary"].sites("   boolean m() {\n      return true;\n   }\n"), [])
+        eq = self.h.SITE_HYPOTHESES["eq-true"]
+        self.assertEqual(eq.sites("   void m() {\n      if (a && b) {\n         f();\n      }\n   }\n"), [])
+        self.assertEqual(eq.sites("   void m() {\n      if (x == true) {\n         f();\n      }\n   }\n"), [])
+
+
 if __name__ == "__main__":
     unittest.main()
