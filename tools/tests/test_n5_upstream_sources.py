@@ -2439,6 +2439,62 @@ class TestUncoveredPopulation(unittest.TestCase):
         self.assertEqual(rec["mirror_gap_artifacts"][0]["classdiff_binary_total"], 2)
         self.assertEqual(rec["mirror_gap_artifacts"][0]["real_class_count"], 3)
 
+    def _etc_m2_manifest(self, td, sha=None):
+        modules_dir, binext_dir, install_dir = self._dirs(td)
+        rel = "etc/m2/repository/g/k/1/k-1.jar"
+        os.makedirs(os.path.dirname(os.path.join(install_dir, rel)))
+        jar = _jar_bytes({"k/A.class": b"1", "k/A$1.class": b"2", "k/B.class": b"3"})
+        with open(os.path.join(install_dir, rel), "wb") as f:
+            f.write(jar)
+        occ = {"kind": "etc/m2", "name": rel}
+        if sha is not None:
+            occ["binary_sha256"] = sha
+        return (modules_dir, binext_dir, install_dir), {"artifacts": [
+            {"groupId": "g", "artifactId": "k", "version": "1", "status": "fetched",
+             "classdiff": {"binary_total": 2}, "occurrences": [occ]}], "unidentified": []}, jar
+
+    def test_headline_coverage_reads_etc_m2_from_the_install_dir(self):
+        # C2c: run_all_third_party_coverage fell back to classdiff's top-level total for etc/m2 jars
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            (modules_dir, binext_dir, install_dir), manifest, _ = self._etc_m2_manifest(td)
+            cov = m.run_all_third_party_coverage(manifest, modules_dir, binext_dir, install_dir)
+        self.assertEqual(cov["classes_total"], 3)
+        self.assertEqual(manifest["artifacts"][0]["class_count"], 3)
+        self.assertEqual(cov["classes_uncounted_no_mirror"], 0)
+
+    def test_headline_total_equals_the_population_total(self):
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            (modules_dir, binext_dir, install_dir), manifest, _ = self._etc_m2_manifest(td)
+            cov = m.run_all_third_party_coverage(manifest, modules_dir, binext_dir, install_dir)
+            pop = m.compute_uncovered_population(manifest, modules_dir, binext_dir, install_dir)
+        self.assertEqual(cov["classes_total"], pop["summary"]["classes_total"])
+        self.assertEqual(cov["classes_with_upstream_source"], pop["summary"]["classes_covered"])
+
+    def test_install_dir_jar_with_a_mismatching_recorded_sha256_is_not_trusted(self):
+        import hashlib
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            (modules_dir, binext_dir, install_dir), manifest, jar = self._etc_m2_manifest(td, sha="0" * 64)
+            cov = m.run_all_third_party_coverage(manifest, modules_dir, binext_dir, install_dir)
+            self.assertEqual(cov["classes_total"], 2)  # classdiff fallback, bytes rejected
+            (modules_dir, binext_dir, install_dir), manifest, jar = self._etc_m2_manifest(
+                os.path.join(td, "ok"), sha=hashlib.sha256(_jar_bytes({"k/A.class": b"1", "k/A$1.class": b"2", "k/B.class": b"3"})).hexdigest())
+            cov = m.run_all_third_party_coverage(manifest, modules_dir, binext_dir, install_dir)
+            self.assertEqual(cov["classes_total"], 3)
+
+    def test_report_carries_the_reproducibility_note(self):
+        # C2b-G6: the authoritative population is a separate, gitignored-data run
+        m = _load()
+        manifest = {"artifacts": [], "unidentified": []}
+        text = m.render_report(manifest, all_third_party_coverage={
+            "classes_with_upstream_source": 1, "classes_total": 2,
+            "classes_uncounted_no_mirror": 0, "artifacts_with_proof_but_unreadable_sources_jar": 0})
+        self.assertIn("Reproducibility", text)
+        self.assertIn("uncovered-population", text)
+        self.assertIn("gitignored", text)
+
     def test_unreadable_jar_is_reported_never_silently_dropped(self):
         m = _load()
         with tempfile.TemporaryDirectory() as td:

@@ -1110,7 +1110,7 @@ def proven_entries(art: dict, real_entries) -> set:
 
 
 def run_all_third_party_coverage(manifest: dict, mirror_modules_dir=MIRROR_MODULES_DIR,
-                                  mirror_binext_dir=MIRROR_BINEXT_DIR) -> dict:
+                                  mirror_binext_dir=MIRROR_BINEXT_DIR, install_dir=N5_INSTALL_DIR) -> dict:
     """T26a headline fix, tightened by an orchestrator follow-up review (2026-09-28): the
     class-coverage percentage must state BOTH its numerator and denominator in ONE consistent
     UNIT, over ALL third-party classes (identified + unidentified), not only artifacts with a
@@ -1168,7 +1168,7 @@ def run_all_third_party_coverage(manifest: dict, mirror_modules_dir=MIRROR_MODUL
     unreadable_sources_jar = 0
     for art in manifest["artifacts"]:
         occurrences = art.get("occurrences") or []
-        binary_bytes = (load_binary_bytes_from_mirror(occurrences[0], mirror_modules_dir, mirror_binext_dir)
+        binary_bytes = (_population_bytes(occurrences[0], mirror_modules_dir, mirror_binext_dir, install_dir)
                          if occurrences else None)
         if binary_bytes is None:
             cd = art.get("classdiff")
@@ -1200,7 +1200,7 @@ def run_all_third_party_coverage(manifest: dict, mirror_modules_dir=MIRROR_MODUL
                       "sources_jar_path is not readable -- contributing 0 to covered, not "
                       "silently", file=sys.stderr)
     for u in manifest.get("unidentified", []):
-        binary_bytes = load_binary_bytes_from_mirror(u, mirror_modules_dir, mirror_binext_dir)
+        binary_bytes = _population_bytes(u, mirror_modules_dir, mirror_binext_dir, install_dir)
         if binary_bytes is None:
             uncounted_no_mirror += 1
             u["class_count"] = None
@@ -1226,13 +1226,21 @@ def _art_key(art: dict) -> str:
 
 def _population_bytes(occ: dict, modules_dir, binext_dir, install_dir) -> Optional[bytes]:
     """Jar bytes of an occurrence: the jar mirror first; the mirror carries no `etc/m2` jars, so
-    those are read from the N5 install (`install_dir`, None = not available)."""
+    those are read from the N5 install (`install_dir`, None = not available), and verified against
+    the occurrence's recorded `binary_sha256` when it has one (a mismatching jar is never trusted).
+    Shared by the report headline (run_all_third_party_coverage) and compute_uncovered_population,
+    so both count the same bytes."""
     data = load_binary_bytes_from_mirror(occ, modules_dir, binext_dir)
     if data is None and occ.get("kind") == "etc/m2" and install_dir is not None:
         try:
             data = (Path(install_dir) / occ["name"]).read_bytes()
         except OSError:
-            data = None
+            return None
+        expected = occ.get("binary_sha256")
+        if expected and hashlib.sha256(data).hexdigest() != expected:
+            print(f"n5-upstream-sources: {occ['name']} in the install does not match its recorded "
+                  "binary_sha256 -- not trusted", file=sys.stderr)
+            return None
     return data
 
 
@@ -1719,6 +1727,18 @@ def render_report(manifest: dict, paho_result: Optional[dict] = None,
                 )
             lines.append("Caveat on the \"ALL\" claim above: " + "; ".join(caveat) + ".")
             lines.append("")
+        lines.append(
+            "Reproducibility (C2b-G6): the headline above and the authoritative uncovered population "
+            "(`n5-upstream-sources.py uncovered-population`, the population the fidelity grader "
+            "targets) use the same unit and proof rule and must agree. Run `uncovered-population` "
+            "first and compare its `classes_total`/`classes_covered` with this headline before "
+            "trusting either. Both read the shipped jars from the local jar mirror and, for the "
+            "`etc/m2` jars the mirror lacks, from the N5 install (verified against the recorded "
+            "`binary_sha256` when one exists); `organized/_upstream-sources/` (manifest, sources "
+            "jars, `uncovered-population.json`) is gitignored, so a fresh checkout must regenerate "
+            "it before this report can be reproduced."
+        )
+        lines.append("")
     lines.append("## Fetch status counts")
     lines.append("")
     lines.append("| status | count |")
