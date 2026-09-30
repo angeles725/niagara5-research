@@ -385,25 +385,48 @@ def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: st
     original_text = primary_text
     pre_transforms: list = []
     clinit_key = ("<clinit>", "()V")
+
+    def adopt(text: str, kind: str, must_fix_clinit: bool) -> bool:
+        """Make `text` the primary when it compiles and leaves no method worse (its mismatching
+        methods are a subset of the current ones, and <clinit> is fixed when it must be)."""
+        nonlocal primary_text, primary_path, primary_parsed, verdicts, structure
+        path = Path(td) / "pre" / f"{len(pre_transforms)}" / f"{class_short}.java"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+        parsed = compile_parse(path, class_short, classpath, javac_bin, javap_bin, tool_server)
+        if parsed is None:
+            return False
+        new_verdicts, new_structure = per_method_verdicts(shipped, parsed)
+        bad = lambda v: {k for k, x in v.items() if x["verdict"] == "mismatch"}  # noqa: E731
+        if not bad(new_verdicts) <= bad(verdicts) or (must_fix_clinit and clinit_key in bad(new_verdicts)):
+            return False
+        if new_structure["missing"] or new_structure["extra"] or not new_structure["fields_match"] \
+                or not new_structure["attrs_match"]:
+            return False
+        primary_text, primary_path, primary_parsed = text, path, parsed
+        verdicts, structure = new_verdicts, new_structure
+        pre_transforms.append({"kind": kind, "sha256": sha256_text(text)})
+        return True
+
     if verdicts.get(clinit_key, {}).get("verdict") == "mismatch":
-        # C3d: the static-initializer order is recoverable from the shipped <clinit>
+        # C3d: a source hypothesis that repairs the static initializer, then its recoverable order
+        for h in hypotheses:
+            variant = HYP.HYPOTHESES[h](primary_text)
+            if variant != primary_text and adopt(variant, HYP_DONOR_PREFIX + h, True):
+                break
+    if verdicts.get(clinit_key, {}).get("verdict") == "mismatch":
         try:
             scan = scan_spans([primary_path], helper_dir, java_bin, classpath)[str(primary_path)]
             if scan["errors"]:
                 raise CLINIT.Unsupported(f"attribution: {scan['errors'][0]}")
+            primary_javap = compile_parse(primary_path, class_short, classpath, javac_bin, javap_bin, tool_server,
+                                          raw=True)[1]
             reordered = CLINIT.reorder_clinit(primary_text, scan["inits"], shipped["methods"][clinit_key]["code"],
                                               primary_javap, primary_parsed["methods"][clinit_key]["code"])
         except (CLINIT.Unsupported, Refusal):
             reordered = None
         if reordered is not None:
-            new_path = Path(td) / "reordered" / f"{class_short}.java"
-            new_path.parent.mkdir(exist_ok=True)
-            new_path.write_text(reordered, encoding="utf-8")
-            new_compiled = compile_parse(new_path, class_short, classpath, javac_bin, javap_bin, tool_server)
-            if new_compiled is not None:
-                primary_text, primary_path, primary_parsed = reordered, new_path, new_compiled
-                verdicts, structure = per_method_verdicts(shipped, primary_parsed)
-                pre_transforms.append({"kind": "clinit-order", "sha256": sha256_text(reordered)})
+            adopt(reordered, "clinit-order", False)
     todo = sorted(k for k, v in verdicts.items() if v["verdict"] == "mismatch")
     if not todo and not structure["missing"] and not structure["extra"]:
         if not pre_transforms:

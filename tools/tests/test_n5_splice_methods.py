@@ -469,6 +469,17 @@ class TestSourceHypothesisDonors(_SpliceFixture):
         self.assertIn("buf[3] |= 4;", out)
         self.assertEqual(man["donor_engines"][-1], "hyp:compound-assign")
 
+    def test_hypothesis_fixing_a_static_initializer_is_adopted_as_a_pre_transform(self):
+        shipped = HYP_SHIPPED.replace("  int keep", "  static final byte[] T = new byte[2];\n  static {\n    T[1] |= 4;\n  }\n  int keep")
+        primary = HYP_PRIMARY.replace("  int keep", "  static final byte[] T = new byte[2];\n  static {\n"
+                                                      "    T[1] = (byte)(T[1] | 4);\n  }\n  int keep")
+        mod_dir, fake = self._module("hyp3", shipped, primary, None, None)
+        man = self._run("hyp3", mod_dir, fake, hypotheses=["compound-assign"])
+        rec = man["classes"]["p/Foo"]
+        self.assertEqual([t["kind"] for t in rec["pre_transforms"]], ["hyp:compound-assign"])
+        self.assertEqual(rec["methods"], [])
+        self.assertEqual(rec["self_grade"], "roundtrip-exact")
+
     def test_variant_identical_to_the_primary_is_skipped(self):
         mod_dir, fake = self._module("hyp2", HYP_SHIPPED, HYP_SHIPPED.replace("a + 1", "a + 2"), None, None)
         man = self._run("hyp2", mod_dir, fake, hypotheses=["compound-assign"])
