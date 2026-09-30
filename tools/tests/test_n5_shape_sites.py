@@ -295,5 +295,28 @@ class TestPatternBinding(ShapeSiteCase):
                                    "      }\n   }\n"), [])
 
 
+class TestReturnOutOfTry(ShapeSiteCase):
+    """The decompiler returns from inside the `try` (`return r;` as its last statement); javac compiled
+    the shipped `try { .. } catch (..) { throw .. } return r;` with the return after the handlers."""
+
+    def test_trailing_return_of_the_try_body_moves_after_the_handlers(self):
+        self.assert_reproduces(
+            "return-out-of-try",
+            "   Object m(Object x) {\n      Object r = x;\n      try {\n         this.f = 1;\n         return r;\n"
+            "      } catch (RuntimeException e) {\n         throw new IllegalStateException(\"bad\");\n      }\n   }\n",
+            "   Object m(Object x) {\n      Object r = x;\n      try {\n         this.f = 1;\n"
+            "      } catch (RuntimeException e) {\n         throw new IllegalStateException(\"bad\");\n      }\n\n"
+            "      return r;\n   }\n")
+
+    def test_not_a_site_when_a_handler_falls_through_or_a_finally_exists(self):
+        hyp = self.h.SITE_HYPOTHESES["return-out-of-try"]
+        falls = ("   Object m(Object x) {\n      try {\n         f();\n         return x;\n      } catch (RuntimeException e) {\n"
+                 "         g();\n      }\n\n      return null;\n   }\n")
+        self.assertEqual(hyp.sites(falls), [])
+        fin = ("   Object m(Object x) {\n      try {\n         f();\n         return x;\n      } finally {\n         g();\n"
+               "      }\n   }\n")
+        self.assertEqual(hyp.sites(fin), [])
+
+
 if __name__ == "__main__":
     unittest.main()

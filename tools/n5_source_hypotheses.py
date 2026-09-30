@@ -915,6 +915,58 @@ class _InstanceofBinding:
 instanceof_binding = _InstanceofBinding()
 
 
+_TRY_HEAD = re.compile(r"^(?P<ind>[ \t]*)try \{$", re.M)
+_CATCH_HEAD = "} catch ("
+
+
+class _ReturnOutOfTry:
+    """Site hypothesis: `try { A return r; } catch (..) { .. leaves }` -> `try { A } catch (..) { .. }
+    return r;` for a plain `r` and handlers that all leave. javac compiles the shipped return after the
+    handlers; the decompiler incorporates it into the `try` body."""
+
+    def _parse(self, text: str):
+        for m in _TRY_HEAD.finditer(text):
+            open1 = m.end() - 1
+            close = _match_brace(text, open1)
+            if close < 0:
+                continue
+            body = text[open1 + 1:close].split("\n")[1:-1]
+            last = next((l for l in reversed(body) if l.strip()), "")
+            ret = _RETURN_STMT.match(last)
+            if ret is None or not _PLAIN_VALUE.match(ret.group("expr")):
+                continue
+            ind, ok, n_catch = len(m.group("ind")), True, 0
+            while text.startswith(_CATCH_HEAD, close):
+                c_open = text.index("{", close)
+                c_close = _match_brace(text, c_open)
+                if c_close < 0 or not _leaves(text[c_open + 1:c_close].split("\n")[1:-1]):
+                    ok = False
+                    break
+                n_catch += 1
+                close = c_close
+            if not ok or not n_catch or text.startswith("} finally", close):
+                continue
+            yield (m.start(), close + 1), m, open1, ret, ind
+
+    def sites(self, text: str) -> list:
+        return [span for span, *_ in self._parse(text)]
+
+    def apply(self, text: str, site: tuple) -> str:
+        for span, m, open1, ret, ind in self._parse(text):
+            if span != tuple(site):
+                continue
+            block = text[span[0]:span[1]]
+            line_at = block.rindex(ret.group(0))
+            cut = block[:line_at].rstrip(" \t")
+            rest = block[line_at + len(ret.group(0)):].lstrip("\n")
+            return (text[:span[0]] + cut + rest + "\n\n" + " " * ind + "return " + ret.group("expr") + ";"
+                    + text[span[1]:])
+        return text
+
+
+return_out_of_try = _ReturnOutOfTry()
+
+
 _RAW_PRIV = re.compile(r"\(niagara\.nre\.security\.privileged\.(PrivilegedAction|PrivilegedExceptionAction)\)(?= \()")
 
 
@@ -1035,7 +1087,7 @@ remove_null_cast = RegexSites(_null_cast_rewrites)
 # canonical rules (tools/n5_canon.py) -> the site hypotheses that can explain them: the climb of an
 # `exact` splice only tries these for a method that was proven by those rules
 _LAYOUT_SITES = ("split-return-ternary", "split-return-boolean", "guard-return", "guard-continue",
-                 "early-return-else", "swap-if-else", "unguard-else", "invert-guard-return")
+                 "early-return-else", "swap-if-else", "unguard-else", "invert-guard-return", "return-out-of-try")
 _TEMP_SITES = ("introduce-return-temp", "inline-return-temp", "compound-assign-site", "lift-increments-site")
 RULE_SITES = {
     "tail": _LAYOUT_SITES, "min": _LAYOUT_SITES, "inl": _LAYOUT_SITES, "merge": _LAYOUT_SITES,
@@ -1074,6 +1126,7 @@ SITE_HYPOTHESES = {
     "unguard-else": unguard_else,
     "invert-guard-return": invert_guard_return,
     "instanceof-binding": instanceof_binding,
+    "return-out-of-try": return_out_of_try,
     "compound-assign-site": RegexSites(_compound_rewrites),
     "unfold-arrays-site": RegexSites(_unfold_rewrites),
     "expand-iinc-site": RegexSites(_expand_rewrites),
@@ -1091,7 +1144,7 @@ SITE_HYPOTHESES = {
 # those make one pass)
 for _name in ("split-return-ternary", "split-return-boolean", "guard-return", "guard-continue", "unguard-else",
               "early-return-else", "hoist-declaration", "hoist-for-var", "introduce-return-temp",
-              "inline-return-temp", "remove-null-cast", "invert-guard-return", "instanceof-binding"):
+              "inline-return-temp", "remove-null-cast", "invert-guard-return", "instanceof-binding", "return-out-of-try"):
     SITE_HYPOTHESES[_name].fixpoint = True
 
 
