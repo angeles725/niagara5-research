@@ -627,6 +627,36 @@ def fix_loop_exit_break(lines: list[str], errors: list[dict], ctx=None):
     return (new, patches) if patches else None
 
 
+_TWR_RE = re.compile(r"variable (\w+) used as a try-with-resources resource neither final nor effectively final")
+
+
+def fix_twr_field_resource(lines: list[str], errors: list[dict], ctx=None):
+    """`try (this.f; ...)` where the field is reassigned in the body -- javac: neither final nor
+    effectively final. The original bound the field to a resource local; the local's name
+    has no bytecode effect, its type is the field's declared type."""
+    new = list(lines)
+    patches = []
+    for e in errors:
+        m = _TWR_RE.match(e["message"])
+        k = e["line"] - 1
+        if not m or not 0 <= k < len(new):
+            continue
+        name = m.group(1)
+        mm = re.match(r"^(\s*)this\.%s;\s*$" % re.escape(name), new[k])
+        if not mm:
+            continue
+        decl = re.compile(r"^\s+(?:(?:private|protected|public|static|final|volatile|transient) )*"
+                          r"(?P<type>[\w.$<>\[\]?, ]+?) %s\s*(?:=.*)?;\s*$" % re.escape(name))
+        types = {d.group("type") for d in map(decl.match, new) if d and not d.group("type").startswith(("return", "this"))}
+        if len(types) != 1:
+            continue
+        typ = types.pop()
+        new[k] = f"{mm.group(1)}{typ} {name}_res = this.{name};"
+        patches.append({"kind": "twr-field-resource", "line": e["line"], "field": name, "type": typ,
+                        "evidence": "javac: " + e["message"]})
+    return (new, patches) if patches else None
+
+
 FIXERS: list[tuple[str, Callable]] = [
     ("pattern-binding-scope", fix_pattern_binding_scope),
     ("foreach-raw-cast", fix_foreach_raw_cast),
@@ -638,6 +668,7 @@ FIXERS: list[tuple[str, Callable]] = [
     ("ambiguous-overload-cast", fix_ambiguous_overload_cast),
     ("switch-yield-statement", fix_switch_yield_statement),
     ("loop-exit-break", fix_loop_exit_break),
+    ("twr-field-resource", fix_twr_field_resource),
 ]
 
 

@@ -415,6 +415,34 @@ public class T {
         self.assertEqual(res["patches"], [])
 
 
+class TestTryWithResourcesField(MechanicalCase):
+    SRC = """import java.io.*;
+public class T implements Closeable {
+   private Writer w1 = new StringWriter();
+   protected Closeable w2 = new StringWriter();
+   private Writer out;
+
+   public void close() throws IOException {
+      try (
+         this.w1;
+         this.w2;
+         Writer closing = this.out;
+      ) {
+         this.w1 = null;
+         this.out = null;
+      }
+   }
+}
+"""
+
+    def test_field_resources_become_typed_locals(self):
+        res = self.patch(self.SRC)
+        self.assertTrue(res["compiles"], res["residual_errors"])
+        self.assertEqual([p["kind"] for p in res["patches"]], ["twr-field-resource"] * 2)
+        self.assertIn("Writer w1_res = this.w1;", res["text"])
+        self.assertIn("Closeable w2_res = this.w2;", res["text"])
+
+
 def _grade_json(path: Path, classes: dict):
     path.write_text(json.dumps({"classes": classes}))
 
