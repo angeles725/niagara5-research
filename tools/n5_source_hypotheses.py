@@ -455,6 +455,8 @@ def _negate(cond: str) -> str:
         m = _CMP.match(cond)
         if m and not top.startswith("!") and len(re.findall(r" (?:==|!=|<=|>=|<|>) ", top)) == 1:
             return f"{m.group('l')} {_INV[m.group('op')]} {m.group('r')}"
+    if not cond.startswith("!") and not re.search(r"\s", top):
+        return f"!{cond}"  # a plain name, field access or call
     return f"!({cond})"
 
 
@@ -490,6 +492,80 @@ class _SwapIfElse:
 
 
 swap_if_else = _SwapIfElse()
+
+
+def _leaves(block_lines: list[str]) -> bool:
+    """True when the last statement of a block leaves it (return/throw/break/continue)."""
+    for line in reversed(block_lines):
+        if line.strip():
+            return bool(re.match(r"\s*(?:return|throw|break|continue)\b", line))
+    return False
+
+
+def _ends_a_block(text: str, after: int, indent: int) -> bool:
+    """True when the next non-blank line after `after` closes an enclosing block (a `}` indented less
+    than `indent`), i.e. the statement that ended at `after` is the last one of its block."""
+    for line in text[after:].split("\n")[1:]:
+        if line.strip():
+            return line.strip().startswith("}") and len(line) - len(line.lstrip()) < indent
+    return False
+
+
+def _dedent(lines: list[str]) -> list[str]:
+    return [l[3:] if l.startswith("   ") else l for l in lines]
+
+
+class _EarlyReturn:
+    """Site hypotheses at the end of a block: `early-return-else` turns `if (c) {A} else {B}` into
+    `if (c) {A return;} B`, `guard-return` turns `if (c) {A}` into `if (!c) {return;} A`."""
+
+    def __init__(self, with_else: bool):
+        self.with_else = with_else
+
+    def _parse(self, text: str):
+        for m in _IF_HEAD.finditer(text):
+            open1 = m.end() - 1
+            close1 = _match_brace(text, open1)
+            if close1 < 0:
+                continue
+            ind = len(m.group(0)) - len(m.group(0).lstrip())
+            a_lines = text[open1 + 1:close1].split("\n")[1:-1]
+            if self.with_else:
+                if not text.startswith("} else {", close1):
+                    continue
+                open2 = close1 + len("} else ")
+                close2 = _match_brace(text, open2)
+                if close2 < 0 or not _ends_a_block(text, close2, ind) or _leaves(a_lines):
+                    continue
+                yield (m.start(), close2 + 1), m, open1, close1, open2, close2, ind
+            else:
+                if text.startswith("} else", close1) or not _ends_a_block(text, close1, ind):
+                    continue
+                yield (m.start(), close1 + 1), m, open1, close1, None, None, ind
+
+    def sites(self, text: str) -> list:
+        return [span for span, *_ in self._parse(text)]
+
+    def apply(self, text: str, site: tuple) -> str:
+        for span, m, open1, close1, open2, close2, ind in self._parse(text):
+            if span != tuple(site):
+                continue
+            pad = " " * ind
+            a_lines = text[open1 + 1:close1].split("\n")[1:-1]
+            head = text[:m.start("cond")]
+            if self.with_else:
+                b_lines = _dedent(text[open2 + 1:close2].split("\n")[1:-1])
+                new = (text[:open1 + 1] + "\n" + "\n".join(a_lines + [pad + "   return;"]) + "\n" + pad + "}\n"
+                       + "\n".join(b_lines) + text[close2 + 1:])
+                return new
+            new = (head + _negate(m.group("cond")) + text[m.end("cond"):open1 + 1] + "\n" + pad + "   return;\n" + pad
+                   + "}\n" + "\n".join(_dedent(a_lines)) + text[close1 + 1:])
+            return new
+        return text
+
+
+early_return_else = _EarlyReturn(True)
+guard_return = _EarlyReturn(False)
 
 
 _RAW_PRIV = re.compile(r"\(niagara\.nre\.security\.privileged\.(PrivilegedAction|PrivilegedExceptionAction)\)(?= \()")
@@ -600,6 +676,8 @@ class RegexSites:
 # with the splice's --climb the mismatching methods (one site at a time)
 SITE_HYPOTHESES = {
     "swap-if-else": swap_if_else,
+    "early-return-else": early_return_else,
+    "guard-return": guard_return,
     "compound-assign-site": RegexSites(_compound_rewrites),
     "unfold-arrays-site": RegexSites(_unfold_rewrites),
     "expand-iinc-site": RegexSites(_expand_rewrites),

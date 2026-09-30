@@ -231,6 +231,42 @@ class TestHunkSites(unittest.TestCase):
         self.assertEqual(len(self.h.SITE_HYPOTHESES["lift-increments-site"].sites(src)), 1)
 
 
+class TestEarlyReturnSites(unittest.TestCase):
+    """javac compiles `if (c) { A return; } B` with a `return` where the decompiler's `if (c) { A }
+    else { B }` jumps over the else branch; both forms are common at the end of a void method."""
+
+    def setUp(self):
+        self.h = _load()
+
+    ELSE = ("   void f(boolean c) {\n      log();\n      if (c) {\n         a();\n         b();\n      } else {\n"
+            "         d();\n      }\n   }\n")
+    GUARD = ("   void f(boolean c) {\n      log();\n      if (c) {\n         a();\n         if (c2()) {\n            b();\n"
+             "         }\n      }\n   }\n")
+
+    def test_else_branch_at_the_end_becomes_the_fall_through(self):
+        hyp = self.h.SITE_HYPOTHESES["early-return-else"]
+        sites = hyp.sites(self.ELSE)
+        self.assertEqual(len(sites), 1)
+        self.assertEqual(hyp.apply(self.ELSE, sites[0]),
+                         "   void f(boolean c) {\n      log();\n      if (c) {\n         a();\n         b();\n         return;\n"
+                         "      }\n      d();\n   }\n")
+
+    def test_guard_at_the_end_becomes_an_early_return(self):
+        hyp = self.h.SITE_HYPOTHESES["guard-return"]
+        sites = hyp.sites(self.GUARD)
+        self.assertEqual(len(sites), 2)          # the outer `if (c)` and the nested `if (c2())`
+        out = hyp.apply(self.GUARD, sites[0])
+        self.assertEqual(out, "   void f(boolean c) {\n      log();\n      if (!c) {\n         return;\n      }\n"
+                              "      a();\n      if (c2()) {\n         b();\n      }\n   }\n")
+
+    def test_not_at_the_end_of_a_block_or_already_leaving(self):
+        mid = "   void f(boolean c) {\n      if (c) {\n         a();\n      } else {\n         d();\n      }\n\n      after();\n   }\n"
+        self.assertEqual(self.h.SITE_HYPOTHESES["early-return-else"].sites(mid), [])
+        self.assertEqual(self.h.SITE_HYPOTHESES["guard-return"].sites(mid.replace("} else {\n         d();\n      }", "}")), [])
+        leaving = self.ELSE.replace("b();", "return;")
+        self.assertEqual(self.h.SITE_HYPOTHESES["early-return-else"].sites(leaving), [])
+
+
 class TestPrivilegedVoid(unittest.TestCase):
     """A raw `(PrivilegedAction)` cast makes javac infer an Object-returning lambda; the shipped
     lambda returns Void."""
