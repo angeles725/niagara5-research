@@ -44,8 +44,8 @@ Task IDs are C<n> (completion). "N4"/"N5" always mean Niagara 4 / Niagara 5, nev
       nimbus-jose 203, mssql-jdbc 166, paho 109 vendor-modified; unidentified jxbrowser 5,914, prosys-opc-ua 4,591, swt 959)
       on organized/_lib-inf-3p trees; per-jar --release; Kotlin (~3.6k) uses javap as the verified representation (B125).
 - [x] C3a (e248220, 624f772; review-54c9da1651ae379a approved; merged da9797a; 23 patcher tests + make test 666 OK) Extend the F8 doPrivileged patch tree to the 109 bytecode-only `reference to doPrivileged is ambiguous` classes.
-- [ ] C3b Mechanical patches: anonymous-class-with-arguments (12), generic Object->String casts (12), `no suitable method` overload casts (22).
-- [ ] C3c Split `cannot find symbol` (67) by missing symbol kind and patch the mechanical sub-classes.
+- [x] C3b (11 commits cf50de5..1e39ba0, tools/n5-patch-mechanical.py, tree vineflower2m; 24 tests, make test 737 OK) Mechanical patches: anonymous-class-with-arguments (12), generic Object->String casts (12), `no suitable method` overload casts (22).
+- [x] C3c (same stage as C3b) Split `cannot find symbol` (67) by missing symbol kind and patch the mechanical sub-classes.
 - [ ] C3d Per-method splice with more donors / hand edits for the 103 one-method and 18 two-to-three-method mismatches
       (`<clinit>` is the top mismatched method: 166 of 602).
 - [ ] C3e Hand reconstruction of the long tail (~220 compile errors + 4 many-method mismatches), prioritised by module use.
@@ -97,6 +97,19 @@ Task IDs are C<n> (completion). "N4"/"N5" always mean Niagara 4 / Niagara 5, nev
   most-advanced ladder rung (spliced > patched > canon > base), with every rung's error kept, so labels are not stale.
   Implement in n5-fidelity.py after C2b lands (same file).
 
+- C3b/C3c/C3a-G2 result (grader best-of over 14,307 top-level, 56 modules regraded with --patch-tree vineflower2m, backup
+  organized/_evidence/c3b-backup/): before exact 10,307 / equiv 24 / canon 3,309 / t2 70 / bo 597 = 13,710 (95.83%);
+  after 10,319 / 24 / 3,349 / 70 / 545 = 13,762 (96.19%). +52 proven (12 exact, 40 canonical), 0 regressions.
+  170 no-compile targets: 90 compile after patching (52 proven, 38 mismatch), 79 still fail. Top fixers by proven:
+  inner-ctor-outer-arg 20, pattern-binding-scope 19, protected-member-import 14. Map labels for anonymous-with-arguments (12)
+  and `no suitable` (22) were stale (record-level first_error from CFR/Procyon rungs): recomputed 0 and 3.
+  Child gaps: C3b-G1 38 compile-but-mismatch (overlaps C3a-G1; try rename vs brace for switch-group); C3b-G2 declare
+  condition-assigned varN from the shipped LocalVariableTable; C3b-G3 six bacnet export descriptors + inherited raw fields;
+  C3b-G4 patcher should read a baseline population automatically.
+  Parent decisions (by recommendation): the 190 modules without an m-patched class are not regraded now (their patched
+  JSON is unchanged; C1b final run covers everything); run the vineflower2p + vineflower2m stages over _bin-ext in C2a-G1;
+  C3a-G3 + C3b-G4 are one tooling task after C2b releases n5-fidelity.py.
+
 ## Next step
-C2b result -> review; C3b+C3c+C3a-G2 mechanical patch writer (worktree c3b); then C3a-G3 + C3a-G1/C3d.
+C3b slice reviews -> merge; C2b result -> review; then C3a-G3/C3b-G4 tooling, C3d (C3a-G1 + C3b-G1 + one-method splice), C2a-G1, C4, C1b, C5.
 C1b (full --force regrade) is deferred until the C2/C3 tool changes land, so it runs once.
