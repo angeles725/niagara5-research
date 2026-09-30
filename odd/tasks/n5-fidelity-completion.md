@@ -40,9 +40,12 @@ Task IDs are C<n> (completion). "N4"/"N5" always mean Niagara 4 / Niagara 5, nev
 - [ ] C1b Full regrade with nested files on the best-of trees; report "fully proven (outer + nested)" per module.
 - [x] C2a (code 03df7d1 reviewed: lineage review-e1d0c2509715fd09 approved+acknowledged; 174 tests OK; run 2026-09-29: 501/587 = 85.35% proven) Grade the 6 Tridium bin/ext jars (nre 704, niagarad 255, niagaraAnnotationProcessors 51, niagara-remote-client 8,
       securityBridge 2, splash 2 classes; trees already in organized/_bin-ext/*/vineflower2, no fidelity JSON yet). ~600 top-level.
-- [ ] C2b Grade third-party classes without proven upstream source (~14.6k: 38 identified artifacts incl. woodstox 735,
+- [x] C2b (c84b22a review-c7952c9610dddba9, 32d7c3e review-fb240cea1c278fe9, 80ee769 passive; make test 702 OK; run 8h16m) Grade third-party classes without proven upstream source (~14.6k: 38 identified artifacts incl. woodstox 735,
       nimbus-jose 203, mssql-jdbc 166, paho 109 vendor-modified; unidentified jxbrowser 5,914, prosys-opc-ua 4,591, swt 959)
       on organized/_lib-inf-3p trees; per-jar --release; Kotlin (~3.6k) uses javap as the verified representation (B125).
+- [ ] C2c Fix upstream coverage loader for etc/m2 + regenerate docs/upstream-sources-report.md (C2b-G1).
+- [ ] C2d Decompile + grade the 3,997 uncovered third-party classes without a tree (C2b-G2; audit C2b-G4).
+- [ ] C2e Grade the 62 release-unsupported classes with JDK 8 javac (C2b-G3).
 - [x] C3a (e248220, 624f772; review-54c9da1651ae379a approved; merged da9797a; 23 patcher tests + make test 666 OK) Extend the F8 doPrivileged patch tree to the 109 bytecode-only `reference to doPrivileged is ambiguous` classes.
 - [x] C3b (11 commits cf50de5..1e39ba0, tools/n5-patch-mechanical.py, tree vineflower2m; 24 tests, make test 737 OK) Mechanical patches: anonymous-class-with-arguments (12), generic Object->String casts (12), `no suitable method` overload casts (22).
 - [x] C3c (same stage as C3b) Split `cannot find symbol` (67) by missing symbol kind and patch the mechanical sub-classes.
@@ -113,6 +116,21 @@ Task IDs are C<n> (completion). "N4"/"N5" always mean Niagara 4 / Niagara 5, nev
 - 2026-09-30 user decision: close the session once C2, C3, C4 and C5 are done (C1b final regrade runs before C5), leaving
   everything clean for a new session (no worktrees/processes left, branches merged/deleted, memory + resume point saved).
   The frontier research chain moves to the NEW session.
+
+- C2b result: reconciliation = the 1,590 gap is exactly 4 etc/m2 artifacts the jar mirror lacks (report fell back to classdiff
+  top-level totals with 0 covered). Authoritative population (`n5-upstream-sources.py uncovered-population`): 79,241 third-party
+  classes, 63,538 covered, 15,703 uncovered in 50 jars (9,295 top-level, 959 Kotlin). Graded 27 trees / 5,297 top-level:
+  exact 3,087, equivalent 12, canonical 201, t2 3, bytecode-only 1,507, kotlin-javap-reference 425, release-unsupported 62
+  -> proven 3,303 (62.4%; 68.7% of decompile-gradable), fully proven 3,232. prosys 1,891/48/1,178; swt 429/68/155;
+  woodstox 384/57/45 (+52 release-unsupported); xml-apis-ext 185/-/7; mssql 58/5/49; paho 49/6/41; nimbus 42/13/23.
+  Child gaps and parent decisions (by recommendation):
+  C2b-G1 docs/upstream-sources-report.md headline undercounts (mirror loader lacks etc/m2) -> FIX (install-dir fallback + regenerate),
+    correcting a published number is required; task C2c.
+  C2b-G2 3,997 uncovered top-level classes have no decompiled tree (jxbrowser 2,691 + javafx/swing/swt variants, kotlin-stdlib
+    2.4.10 430, kotlin-reflect 453, okhttp/okio, bc*, byte-buddy, jackson etc/m2) -> decompile + grade; task C2d.
+  C2b-G3 62 release-unsupported (major <= 51) -> grade with the installed JDK 8 javac (/usr/lib/jvm/java-8-openjdk-amd64); task C2e.
+  C2b-G4 --release N API restriction may cause false bytecode-only; audit sample in C2d. C2b-G5 C3-style patches on the 1,507
+  third-party bytecode-only after Tridium work. C2b-G6 reproducibility note (run uncovered-population first) -> report text.
 
 ## Next step
 C3b slice reviews -> merge; C2b result -> review; then C3a-G3/C3b-G4 tooling, C3d (C3a-G1 + C3b-G1 + one-method splice), C2a-G1, C4, C1b, C5.
