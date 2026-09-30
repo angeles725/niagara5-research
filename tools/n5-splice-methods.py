@@ -379,8 +379,8 @@ def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: st
         return {"status": "not-candidate", "reason": "primary-no-compile", "detail": candidates[0]}
     if any(ord(ch) > 0xFFFF for ch in primary_text):
         return {"status": "refused", "reason": "non-bmp", "detail": "javac offsets are UTF-16"}
-    shipped = FID.parse_javap_verbose(FID.run_javap_verbose(str(shipped_class), javap_bin=javap_bin,
-                                                            tool_server=tool_server))
+    shipped_javap = FID.run_javap_verbose(str(shipped_class), javap_bin=javap_bin, tool_server=tool_server)
+    shipped = FID.parse_javap_verbose(shipped_javap)
     primary_parsed, primary_javap = compiled
     verdicts, structure = per_method_verdicts(shipped, primary_parsed)
     base = {"primary_tree": primary_tree}
@@ -406,7 +406,9 @@ def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: st
             "methods": scan["methods"],
             "shipped": {k: m["code"] for k, m in shipped["methods"].items()},
             "ours": {k: m["code"] for k, m in primary_parsed["methods"].items()},
-            "static": {k: "ACC_STATIC" in m["flags"] for k, m in shipped["methods"].items()}})
+            "static": {k: "ACC_STATIC" in m["flags"] for k, m in shipped["methods"].items()},
+            "lvt": HYP.lvt_types(shipped_javap),
+            "mismatched": {k for k, x in verdicts.items() if x["verdict"] == "mismatch"}})
 
     def structure_ok(st: dict) -> bool:
         return st["fields_match"] and st["attrs_match"] and not st["missing"] and not st["extra"]

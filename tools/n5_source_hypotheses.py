@@ -213,6 +213,143 @@ def lift_increments(text: str) -> str:
     return _PLAIN_STMT.sub(sub, text)
 
 
+_PRIMS = {"B": "byte", "C": "char", "D": "double", "F": "float", "I": "int", "J": "long", "S": "short", "Z": "boolean",
+          "V": "void"}
+
+
+def _sig_type(sig: str, i: int = 0) -> tuple[str, int]:
+    """Java source text of the JVM type/generic signature starting at sig[i], and the next index."""
+    ch = sig[i]
+    if ch in _PRIMS:
+        return _PRIMS[ch], i + 1
+    if ch == "[":
+        inner, j = _sig_type(sig, i + 1)
+        return inner + "[]", j
+    if ch == "T":
+        end = sig.index(";", i)
+        return sig[i + 1:end], end + 1
+    if ch == "*":
+        return "?", i + 1
+    if ch in "+-":
+        inner, j = _sig_type(sig, i + 1)
+        return ("? extends " if ch == "+" else "? super ") + inner, j
+    assert ch == "L", sig
+    out, j = [], i + 1
+    while True:
+        k = j
+        while sig[k] not in ";<.":
+            k += 1
+        out.append(sig[j:k].replace("/", ".").replace("$", "."))
+        j = k
+        if sig[j] == "<":
+            args, j = [], j + 1
+            while sig[j] != ">":
+                a, j = _sig_type(sig, j)
+                args.append(a)
+            out.append("<" + ", ".join(args) + ">")
+            j += 1
+        if sig[j] == ";":
+            return "".join(out), j + 1
+        out.append(".")  # inner class of a parameterized type
+        j += 1
+
+
+_LVT_ROW = re.compile(r"^\s+(\d+)\s+(\d+)\s+(\d+)\s+(\S+)\s+(\S+)\s*$")
+_MEMBER_MODS = {"public", "private", "protected", "static", "final", "synchronized", "native", "abstract",
+                "strictfp", "default"}
+
+
+def lvt_types(javap_text: str) -> dict:
+    """{(method name, descriptor): {local name: Java type text or None}} from a `javap -v -p` listing.
+    The generic signature (LocalVariableTypeTable) wins over the erased descriptor; a name declared
+    with different types in one method maps to None (ambiguous)."""
+    out: dict = {}
+    key = None
+    kind = None
+    seen: dict = {}
+    types: dict = {}
+    lines = javap_text.splitlines()
+
+    def flush():
+        if key is not None:
+            merged = {}
+            for (slot, start, name), t in types.items():
+                merged.setdefault(name, set()).add(t)
+            out[key] = {n: (next(iter(ts)) if len(ts) == 1 else None) for n, ts in merged.items()}
+    for n, line in enumerate(lines):
+        if re.match(r"^  \S", line) and line.rstrip().endswith(";") and n + 1 < len(lines) \
+                and lines[n + 1].strip().startswith("descriptor:"):
+            flush()
+            head = line.strip().rstrip(";")
+            desc = lines[n + 1].split("descriptor:", 1)[1].strip()
+            if head == "static {}":
+                name = "<clinit>"
+            else:
+                toks = [t for t in head.split("(", 1)[0].split() if t not in _MEMBER_MODS]
+                name = "<init>" if len(toks) == 1 else toks[-1]
+            key, kind, types = (name, desc), None, {}
+            continue
+        st = line.strip()
+        if st.startswith("LocalVariableTable:"):
+            kind = "d"
+        elif st.startswith("LocalVariableTypeTable:"):
+            kind = "s"
+        elif kind and (m := _LVT_ROW.match(line)):
+            slot_key = (int(m.group(3)), int(m.group(1)), m.group(4))
+            if kind == "d":
+                if slot_key not in types:
+                    types[slot_key] = None if m.group(5) == "?" else _sig_type(m.group(5))[0]
+            else:
+                types[slot_key] = _sig_type(m.group(5))[0]
+        elif kind and st and not st.startswith("Start"):
+            kind = None
+    flush()
+    return out
+
+
+_LOCAL_DECL = re.compile(r"^(?P<ind>[ \t]*)(?P<final>final )?(?P<type>var|[A-Za-z_][\w.]*(?:<[^;=()]*>)?(?:\[\])*) "
+                         r"(?P<name>[A-Za-z_]\w*)(?P<rest> = [^\n]*| ?;)$", re.M)
+_INTERSECTION = re.compile(r"^ = \((?P<a>[\w.<>?, ]+) & (?P<b>[\w.<>?, ]+)\)")
+
+
+def _erased_simple(t: str) -> str:
+    base = re.sub(r"<.*>", "", t)
+    dims = base.count("[]")
+    return base.replace("[]", "").rsplit(".", 1)[-1] + "[]" * dims
+
+
+def declared_local_types(text: str, ctx: dict) -> str:
+    """Give the locals of the currently mismatching methods the type of the shipped LocalVariableTable.
+
+    The decompiler prints `var x = (A & B)expr` for a variable whose class it cannot pin down and
+    sometimes a narrower/wider declared type than the original; the type changes which casts javac
+    emits. `ctx`: {"methods": MethodSpans methods, "lvt": lvt_types(shipped), "mismatched": {(name, desc)}}."""
+    edits = []
+    for m in ctx["methods"]:
+        key = (m["name"], m["desc"])
+        types = ctx["lvt"].get(key)
+        if key not in ctx["mismatched"] or not types or m["body_start"] < 0:
+            continue
+        seg_start, seg_end = m["body_start"], m["end"]
+        for d in _LOCAL_DECL.finditer(text, seg_start, seg_end):
+            want = types.get(d.group("name"))
+            have = d.group("type")
+            if not want or want in ("this",):
+                continue
+            rest = d.group("rest")
+            if have == "var":
+                rest = _INTERSECTION.sub(lambda i: f" = ({want})", rest, count=1)
+            elif _erased_simple(have) == _erased_simple(want):
+                continue
+            edits.append((d.start(), d.end(), f"{d.group('ind')}{d.group('final') or ''}{want} {d.group('name')}{rest}"))
+    for s0, e0, new in sorted(edits, reverse=True):
+        text = text[:s0] + new + text[e0:]
+    return text
+
+
+declared_local_types.needs_context = True  # type: ignore[attr-defined]
+
+
 _NN_CALL = "invokestatic // Method java/util/Objects.requireNonNull:(Ljava/lang/Object;)Ljava/lang/Object;"
 _ALOAD = re.compile(r"^aload(?:_(\d)| (\d+))$")
 
@@ -292,4 +429,5 @@ HYPOTHESES: dict[str, Callable[..., str]] = {
     "collapse-iinc": collapse_iinc,
     "restore-null-checks": restore_null_checks,
     "lift-increments": lift_increments,
+    "declared-local-types": declared_local_types,
 }

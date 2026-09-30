@@ -525,6 +525,18 @@ class TestSourceHypothesisDonors(_SpliceFixture):
         self.assertEqual(rec["self_grade"], "roundtrip-exact")
         self.assertIn("java.util.Objects.requireNonNull(a);", (mod_dir / "vineflower2s" / "p" / "Foo.java").read_text())
 
+    def test_lvt_declared_type_hypothesis_fixes_a_mismatching_local(self):
+        shipped = HYP_SHIPPED.replace("int keep(int a) { return a + 1; }",
+                                      "static int keep(java.util.List<String> a) {\n    java.util.Collection<String> c = a;\n"
+                                      "    return c.size();\n  }")
+        primary = shipped.replace("java.util.Collection<String> c = a;", "java.util.List<String> c = a;").replace(
+            "buf[3] |= 4;", "buf[3] = (byte)(buf[3] | 4);").replace("buf[3] &= -5;", "buf[3] = (byte)(buf[3] & -5);")
+        mod_dir, fake = self._module("hyp5", shipped, primary, None, None)
+        man = self._run("hyp5", mod_dir, fake, hypotheses=["compound-assign", "declared-local-types"])
+        rec = man["classes"]["p/Foo"]
+        self.assertIn(("keep", "hyp:declared-local-types"), [(m["name"], m["donor"]) for m in rec["methods"]])
+        self.assertEqual(rec["self_grade"], "roundtrip-exact")
+
     def test_variant_identical_to_the_primary_is_skipped(self):
         mod_dir, fake = self._module("hyp2", HYP_SHIPPED, HYP_SHIPPED.replace("a + 1", "a + 2"), None, None)
         man = self._run("hyp2", mod_dir, fake, hypotheses=["compound-assign"])

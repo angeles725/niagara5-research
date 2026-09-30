@@ -157,6 +157,74 @@ class TestLiftIncrements(unittest.TestCase):
             self.assertEqual(self.h.lift_increments(self.wrap(body)), self.wrap(body))
 
 
+JAVAP = """  public niagara.serial.BISerialPort open(java.lang.String) throws java.lang.Exception;
+    descriptor: (Ljava/lang/String;)Lniagara/serial/BISerialPort;
+    flags: (0x0001) ACC_PUBLIC
+    Code:
+      stack=5, locals=5, args_size=2
+         0: return
+      LineNumberTable:
+        line 10: 0
+      LocalVariableTable:
+        Start  Length  Slot  Name   Signature
+            0     460     0  this   Lniagara/serial/BSerialHelper;
+            0     460     1 owner   Ljava/lang/String;
+           10     450     2 platSvc   Lniagara/serial/BISerialService;
+           47      39     4 items   Ljava/util/List;
+           36      50     3     e   Ljava/lang/Exception;
+           98      39     3     e   Ljava/lang/RuntimeException;
+      LocalVariableTypeTable:
+        Start  Length  Slot  Name   Signature
+           47      39     4 items   Ljava/util/List<Lniagara/sys/BValue;>;
+  static {};
+    descriptor: ()V
+    Code:
+      LocalVariableTable:
+        Start  Length  Slot  Name   Signature
+            0      1     0     i   I
+"""
+
+
+class TestDeclaredLocalTypes(unittest.TestCase):
+    """The shipped LocalVariableTable says what each local was declared as; the decompiler prints
+    `var x = (A & B)expr` or a narrower/wider type than the original declaration."""
+
+    def setUp(self):
+        self.h = _load()
+
+    def test_lvt_types_are_read_per_method_with_generics(self):
+        lvt = self.h.lvt_types(JAVAP)
+        self.assertEqual(lvt[("open", "(Ljava/lang/String;)Lniagara/serial/BISerialPort;")], {
+            "this": "niagara.serial.BSerialHelper", "owner": "java.lang.String", "platSvc": "niagara.serial.BISerialService",
+            "items": "java.util.List<niagara.sys.BValue>", "e": None})
+        self.assertEqual(lvt[("<clinit>", "()V")], {"i": "int"})
+
+    def ctx(self, text):
+        key = ("open", "(Ljava/lang/String;)Lniagara/serial/BISerialPort;")
+        return {"methods": [{"name": key[0], "desc": key[1], "body_start": text.index("{", text.index(")")),
+                             "end": len(text) - 2}], "lvt": self.h.lvt_types(JAVAP), "mismatched": {key}}
+
+    SRC = ("class T {\n   public BISerialPort open(String owner) {\n"
+           "      var platSvc = (BComponent & BISerialService)Sys.getService(BISerialService.TYPE);\n"
+           "      ArrayList<BValue> items = new ArrayList<>();\n"
+           "      Exception e = null;\n   }\n}\n")
+
+    def test_var_with_intersection_cast_takes_the_declared_type(self):
+        out = self.h.declared_local_types(self.SRC, self.ctx(self.SRC))
+        self.assertIn("      niagara.serial.BISerialService platSvc = (niagara.serial.BISerialService)Sys.getService("
+                      "BISerialService.TYPE);\n", out)
+
+    def test_differing_declared_type_is_replaced_and_agreeing_or_ambiguous_ones_are_kept(self):
+        out = self.h.declared_local_types(self.SRC, self.ctx(self.SRC))
+        self.assertIn("      java.util.List<niagara.sys.BValue> items = new ArrayList<>();\n", out)
+        self.assertIn("      Exception e = null;\n", out)      # two entries with different types: ambiguous
+
+    def test_methods_that_do_not_mismatch_are_left_alone(self):
+        ctx = self.ctx(self.SRC)
+        ctx["mismatched"] = set()
+        self.assertEqual(self.h.declared_local_types(self.SRC, ctx), self.SRC)
+
+
 class TestRestoreNullChecks(unittest.TestCase):
     """The decompiler drops `Objects.requireNonNull(x);` statements as if they were javac's own
     null checks; the shipped method begins with them."""
