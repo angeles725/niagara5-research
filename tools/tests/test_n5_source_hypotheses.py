@@ -53,5 +53,40 @@ class TestCompoundAssign(unittest.TestCase):
         self.assertEqual(out, "   void f() {\n      a[0] |= 1;\n      int x = 2;\n      a[1] &= 2;\n   }\n")
 
 
+class TestUnfoldArrayInitializers(unittest.TestCase):
+    """javac compiles `T[] a = {x}` as newarray/dup/index/value/store; source that was `a = new T[1];
+    a[0] = x;` compiles as newarray/store/load/index/value/store. The decompiler folds the second
+    into the first form."""
+
+    def setUp(self):
+        self.h = _load()
+
+    def test_single_element_initializer_is_unfolded(self):
+        self.assertEqual(
+            self.h.unfold_single_element_arrays("      byte[] bytes = new byte[]{(byte)(val & 0xFF)};\n"),
+            "      byte[] bytes = new byte[1];\n      bytes[0] = (byte)(val & 0xFF);\n")
+        self.assertEqual(self.h.unfold_single_element_arrays("      final boolean[] result = new boolean[]{false};\n"),
+                         "      final boolean[] result = new boolean[1];\n      result[0] = false;\n")
+
+    def test_every_element_is_assigned_in_order(self):
+        self.assertEqual(self.h.unfold_array_initializers("   int[] a = new int[]{1, f(2, 3), \"x,y\".length()};\n"),
+                         "   int[] a = new int[3];\n   a[0] = 1;\n   a[1] = f(2, 3);\n   a[2] = \"x,y\".length();\n")
+
+    def test_only_single_element_variant_keeps_longer_initializers(self):
+        src = "      int[] a = new int[]{1, 2};\n"
+        self.assertEqual(self.h.unfold_single_element_arrays(src), src)
+
+    def test_left_alone(self):
+        for src in (
+            "      int[][] a = new int[][]{{1}};\n",                 # nested initializer
+            "      List<String> a = new ArrayList<>();\n",
+            "      return new int[]{1};\n",                          # not a local declaration
+            "      this.a = new int[]{1};\n",
+            "      int[] a = new int[]{};\n",                        # empty
+            "      Object[] a = new String[]{\"s\"};\n",              # element type differs from the declaration
+        ):
+            self.assertEqual(self.h.unfold_array_initializers(src), src)
+
+
 if __name__ == "__main__":
     unittest.main()
