@@ -27,16 +27,34 @@ def _javac_available() -> bool:
     return Path(f"{JDK}/javac").is_file() and Path(f"{JDK}/javap").is_file()
 
 
-def code_of(java: str, cls: str = "T") -> str:
-    """`javap -c -p` of a class compiled by javac 25, constant-pool indices and line tables dropped."""
+_FID = None
+
+
+def _fid():
+    global _FID
+    if _FID is None:
+        spec = importlib.util.spec_from_file_location("n5_fidelity_for_shape_tests", TOOLS_DIR / "n5-fidelity.py")
+        _FID = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = _FID
+        spec.loader.exec_module(_FID)
+    return _FID
+
+
+def graded(java: str, cls: str = "T") -> dict:
+    """The grader's parse of a class compiled by javac 25 (`javap -v -p`)."""
     with tempfile.TemporaryDirectory() as td:
         (Path(td) / f"{cls}.java").write_text(java)
         subprocess.run([f"{JDK}/javac", "--release", "25", "-g", "-d", td, str(Path(td) / f"{cls}.java")],
                        check=True, capture_output=True)
-        out = subprocess.run([f"{JDK}/javap", "-c", "-p", "-cp", td, cls], check=True, capture_output=True,
-                             text=True).stdout
-    out = "\n".join(l for l in out.splitlines() if not l.startswith("Compiled from"))
-    return re.sub(r"#\d+", "#", out)
+        out = subprocess.run([f"{JDK}/javap", "-v", "-p", str(Path(td) / f"{cls}.class")], check=True,
+                             capture_output=True, text=True).stdout
+    return _fid().parse_javap_verbose(out)
+
+
+def exact_equal(a: str, b: str) -> bool:
+    """True when the grader's exact normalizer finds no difference between the two sources' classes."""
+    d = _fid().diff_normalized_classes(graded(a), graded(b))
+    return not d["mismatched_methods"] and not d["missing_methods"] and not d["extra_methods"]
 
 
 def wrap(body: str) -> str:
@@ -61,11 +79,11 @@ class ShapeSiteCase(unittest.TestCase):
         return text
 
     def assert_reproduces(self, name: str, decompiled: str, shipped: str):
-        """decompiled (vineflower shape) != shipped (javac shape) under javac 25, and the site
+        """decompiled (vineflower shape) != shipped (javac shape) under the grader\'s exact normalizer, and the site
         hypothesis maps the first onto bytecode equal to the second."""
-        self.assertNotEqual(code_of(wrap(decompiled)), code_of(wrap(shipped)), "fixture must start different")
+        self.assertFalse(exact_equal(wrap(decompiled), wrap(shipped)), "fixture must start different")
         out = self.apply_all(name, decompiled)
-        self.assertEqual(code_of(wrap(out)), code_of(wrap(shipped)))
+        self.assertTrue(exact_equal(wrap(out), wrap(shipped)))
 
 
 class TestSplitReturnTernary(ShapeSiteCase):
@@ -170,10 +188,12 @@ class TestHoistDeclaration(ShapeSiteCase):
     right before its first branch; the shipped source often declared it earlier, which permutes the
     slots of every local declared in between."""
 
-    DECOMPILED = ("   void m(boolean s) {\n      Object body = new Object();\n      int code;\n      if (s) {\n"
+    DECOMPILED = ("   void m(boolean s) {\n      for (int i = 0; i < 3; i++) {\n         this.f += i;\n      }\n\n"
+                  "      Object body = new Object();\n      int code;\n      if (s) {\n"
                   "         code = 200;\n      } else {\n         code = 403;\n      }\n\n      this.f = code;\n"
                   "      this.o = body;\n   }\n")
-    SHIPPED = ("   void m(boolean s) {\n      int code;\n      Object body = new Object();\n      if (s) {\n"
+    SHIPPED = ("   void m(boolean s) {\n      for (int i = 0; i < 3; i++) {\n         this.f += i;\n      }\n\n"
+               "      int code;\n      Object body = new Object();\n      if (s) {\n"
                "         code = 200;\n      } else {\n         code = 403;\n      }\n\n      this.f = code;\n"
                "      this.o = body;\n   }\n")
 
