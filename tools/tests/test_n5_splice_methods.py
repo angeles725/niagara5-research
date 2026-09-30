@@ -291,6 +291,21 @@ class TestCli(unittest.TestCase):
         kw = sm.call_args.kwargs
         self.assertEqual((kw["donor_trees"], kw["primary_trees"], kw["keep_existing"]),
                          (("vineflower-cons", "vineflower"), ("vineflower2m",), True))
+        self.assertEqual(kw["hypotheses"], ())
+
+    def test_hypotheses_flag_names_or_expands_all(self):
+        mod = _load()
+        for arg, want in (("compound-assign", ("compound-assign",)), ("all", tuple(mod.HYP.HYPOTHESES))):
+            with tempfile.TemporaryDirectory() as td:
+                targets = Path(td) / "t.json"
+                targets.write_text('[["m", "p/Foo"]]')
+                with mock.patch.object(mod.FID, "build_classpath", return_value=""), \
+                        mock.patch.object(mod, "compile_helper", return_value=Path(td)), \
+                        mock.patch.object(mod.FID, "shutdown_tool_servers"), \
+                        mock.patch.object(mod, "splice_module",
+                                          return_value={"classes": {}, "refused": {}, "not_candidates": {}}) as sm:
+                    mod.main(["--targets", str(targets), "--organized-dir", td, "--hypotheses", arg])
+            self.assertEqual(sm.call_args.kwargs["hypotheses"], want)
 
 
 @unittest.skipUnless(_jdk(), "JDK 25 not installed")
@@ -420,6 +435,44 @@ class TestClinitOrderPreTransform(_SpliceFixture):
         mod_dir, fake = self._module("clinit3", CLINIT_SHIPPED, primary, CLINIT_SHIPPED, None)
         man = self._run("clinit3", mod_dir, fake)
         self.assertEqual(man["refused"]["p/Foo"]["reason"], "clinit")
+
+
+HYP_SHIPPED = """package p;
+public class Foo {
+  byte[] buf = new byte[4];
+  void set(boolean on) {
+    if (on) {
+      buf[3] |= 4;
+    } else {
+      buf[3] &= -5;
+    }
+  }
+  int keep(int a) { return a + 1; }
+}
+"""
+HYP_PRIMARY = HYP_SHIPPED.replace("buf[3] |= 4;", "buf[3] = (byte)(buf[3] | 4);").replace(
+    "buf[3] &= -5;", "buf[3] = (byte)(buf[3] & -5);")
+
+
+@unittest.skipUnless(_jdk(), "JDK 25 not installed")
+class TestSourceHypothesisDonors(_SpliceFixture):
+    """C3d: a source hypothesis (tools/n5_source_hypotheses.py) applied to the primary is one more
+    donor named `hyp:<name>`; its methods count only when their recompiled Code matches."""
+
+    def test_compound_assign_variant_donates_the_methods_it_fixes(self):
+        mod_dir, fake = self._module("hyp", HYP_SHIPPED, HYP_PRIMARY, None, None)
+        man = self._run("hyp", mod_dir, fake, hypotheses=["compound-assign"])
+        rec = man["classes"]["p/Foo"]
+        self.assertEqual([(m["name"], m["donor"]) for m in rec["methods"]], [("set", "hyp:compound-assign")])
+        self.assertEqual(rec["self_grade"], "roundtrip-exact")
+        out = (mod_dir / "vineflower2s" / "p" / "Foo.java").read_text()
+        self.assertIn("buf[3] |= 4;", out)
+        self.assertEqual(man["donor_engines"][-1], "hyp:compound-assign")
+
+    def test_variant_identical_to_the_primary_is_skipped(self):
+        mod_dir, fake = self._module("hyp2", HYP_SHIPPED, HYP_SHIPPED.replace("a + 1", "a + 2"), None, None)
+        man = self._run("hyp2", mod_dir, fake, hypotheses=["compound-assign"])
+        self.assertEqual(man["refused"]["p/Foo"]["reason"], "no-donor")
 
 
 if __name__ == "__main__":

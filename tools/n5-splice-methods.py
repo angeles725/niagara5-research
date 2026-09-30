@@ -98,6 +98,18 @@ def _load_clinit():
 CLINIT = _load_clinit()
 
 
+def _load_hypotheses():
+    spec = importlib.util.spec_from_file_location("n5_source_hypotheses_for_splice",
+                                                  TOOLS_DIR / "n5_source_hypotheses.py")
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+HYP = _load_hypotheses()
+
+
 class Refusal(Exception):
     def __init__(self, reason: str, detail: str = ""):
         super().__init__(f"{reason}: {detail}")
@@ -145,6 +157,7 @@ def per_method_verdicts(shipped: dict, recompiled: dict) -> tuple[dict, dict]:
 
 
 TREE_DONOR_PREFIX = "tree:"
+HYP_DONOR_PREFIX = "hyp:"
 
 
 def donor_candidates(key, donor_verdicts: dict, engines: tuple = DONOR_ENGINES) -> list:
@@ -342,7 +355,7 @@ def splice_class(fqcn: str, mod_dir: Path, tree: str, **kw) -> dict:
 
 def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: str, helper_dir: Path, javac_bin: str,
                   javap_bin: str, java_bin: str, tool_server: bool, donor_trees: tuple = (),
-                  primary_trees: tuple = ()) -> dict:
+                  primary_trees: tuple = (), hypotheses: tuple = ()) -> dict:
     """{"status": "spliced", ...record, "_text": spliced} or
     {"status": "refused"|"not-candidate", "reason", "detail"}."""
     class_short = fqcn.rsplit("/", 1)[-1]
@@ -411,9 +424,18 @@ def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: st
         return {**base, "status": "refused", "reason": "structural-mismatch", "detail": "synthetic members only"}
 
     donor_texts, donor_files, donor_verdicts = {}, {}, {}
-    engines = (*DONOR_ENGINES, *(TREE_DONOR_PREFIX + t for t in donor_trees))
+    engines = (*DONOR_ENGINES, *(TREE_DONOR_PREFIX + t for t in donor_trees),
+               *(HYP_DONOR_PREFIX + h for h in hypotheses))
     for eng in engines:
-        if eng.startswith(TREE_DONOR_PREFIX):
+        if eng.startswith(HYP_DONOR_PREFIX):
+            # a source hypothesis applied to the (possibly reordered) primary; identical text is no donor
+            variant = HYP.HYPOTHESES[eng[len(HYP_DONOR_PREFIX):]](primary_text)
+            if variant == primary_text:
+                continue
+            src = Path(td) / "hyp" / eng[len(HYP_DONOR_PREFIX):] / f"{class_short}.java"
+            src.parent.mkdir(parents=True, exist_ok=True)
+            src.write_text(variant, encoding="utf-8")
+        elif eng.startswith(TREE_DONOR_PREFIX):
             # an already-decompiled tree is a donor as-is (never the primary itself)
             name = eng[len(TREE_DONOR_PREFIX):]
             src = mod_dir / name / f"{fqcn}.java"
@@ -473,7 +495,7 @@ def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: st
 def splice_module(module: str, organized_dir: Path, tree: str, out_tree: str, targets: list, *, classpath: str,
                   helper_dir: Path, javac_bin: str, javap_bin: str, java_bin: str, tool_server: bool,
                   class_jobs: int = 1, donor_trees: tuple = (), primary_trees: tuple = (),
-                  keep_existing: bool = False) -> dict:
+                  keep_existing: bool = False, hypotheses: tuple = ()) -> dict:
     mod_dir = Path(organized_dir) / module
     out_dir = mod_dir / out_tree
 
@@ -482,7 +504,7 @@ def splice_module(module: str, organized_dir: Path, tree: str, out_tree: str, ta
             return fqcn, splice_class(fqcn, mod_dir, tree, classpath=classpath, helper_dir=helper_dir,
                                       javac_bin=javac_bin, javap_bin=javap_bin, java_bin=java_bin,
                                       tool_server=tool_server, donor_trees=tuple(donor_trees),
-                                      primary_trees=tuple(primary_trees))
+                                      primary_trees=tuple(primary_trees), hypotheses=tuple(hypotheses))
         except Exception as exc:  # noqa: BLE001 -- one class must not abort the module
             return fqcn, {"status": "refused", "reason": "tool-error", "detail": repr(exc)[:300]}
 
@@ -518,7 +540,8 @@ def splice_module(module: str, organized_dir: Path, tree: str, out_tree: str, ta
     manifest = {"schema": MANIFEST_SCHEMA, "module": module, "source_tree": tree,
                 "tool": "tools/n5-splice-methods.py",
                 "helper_sha256": hashlib.sha256(HELPER_SRC.read_bytes()).hexdigest(),
-                "donor_engines": [*DONOR_ENGINES, *(TREE_DONOR_PREFIX + t for t in donor_trees)], "classes": classes, "refused": refused,
+                "donor_engines": [*DONOR_ENGINES, *(TREE_DONOR_PREFIX + t for t in donor_trees),
+                                  *(HYP_DONOR_PREFIX + h for h in hypotheses)], "classes": classes, "refused": refused,
                 "not_candidates": skipped}
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / MANIFEST_NAME).write_text(json.dumps(manifest, indent=1, sort_keys=True) + "\n")
@@ -547,10 +570,17 @@ def main(argv: Optional[list] = None) -> int:
     ap.add_argument("--primary-trees", default="",
                     help="comma-separated trees tried first as the primary source, e.g. vineflower2m "
                          "(then <tree>p, then <tree>)")
+    ap.add_argument("--hypotheses", default="",
+                    help="comma-separated source hypotheses of tools/n5_source_hypotheses.py used as donors "
+                         "(\"all\" = every one)")
     ap.add_argument("--keep-existing", action="store_true",
                     help="keep the out tree's earlier splices that are not re-targeted (extend a stage)")
     args = ap.parse_args(argv)
     split = lambda v: tuple(x.strip() for x in v.split(",") if x.strip())  # noqa: E731
+    hypotheses = tuple(HYP.HYPOTHESES) if args.hypotheses.strip() == "all" else split(args.hypotheses)
+    unknown = [h for h in hypotheses if h not in HYP.HYPOTHESES]
+    if unknown:
+        ap.error(f"unknown hypothesis {unknown}; known: {sorted(HYP.HYPOTHESES)}")
     by_module: dict = {}
     for module, fqcn in json.loads(Path(args.targets).read_text()):
         by_module.setdefault(module, []).append(fqcn)
@@ -573,7 +603,7 @@ def main(argv: Optional[list] = None) -> int:
                                 javap_bin=FID.DEFAULT_JAVAP, java_bin=FID.DEFAULT_JAVA,
                                 tool_server=args.tool_server, class_jobs=args.class_jobs,
                                 donor_trees=split(args.donor_trees), primary_trees=split(args.primary_trees),
-                                keep_existing=args.keep_existing)
+                                keep_existing=args.keep_existing, hypotheses=hypotheses)
             reasons: dict = {}
             for r in man["refused"].values():
                 reasons[r["reason"]] = reasons.get(r["reason"], 0) + 1
