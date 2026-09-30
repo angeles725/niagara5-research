@@ -596,6 +596,25 @@ def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: st
         pre_transforms.append({"kind": kind, "sha256": sha256_text(text)})
         return True
 
+    def site_variant(name: str) -> str:
+        """C4: the site hypothesis applied to every one of its sites inside the mismatching methods
+        (last site first, so earlier offsets stay valid); a site an earlier edit made stale is skipped."""
+        hyp = HYP.SITE_HYPOTHESES[name]
+        spans = mismatching_spans(primary_path, verdicts)
+        found = hyp.sites(primary_text)
+        if spans is not None:
+            found = [x for x in found if any(a <= HYP.site_pos(x) < b for a, b in spans)]
+        text = primary_text
+        for site in sorted(found, key=HYP.site_pos, reverse=True):
+            text = hyp.apply(text, site)
+        return text
+
+    if exact and verdicts.get(clinit_key, {}).get("verdict") == "mismatch":
+        # C4: a site hypothesis (applied to all its sites) that explains the static initializer's rules
+        for h in HYP.sites_for_rules(site_hyps, [verdicts[clinit_key]["rules"]]):
+            variant = site_variant(h)
+            if variant != primary_text and adopt(variant, "site:" + h, True):
+                break
     if verdicts.get(clinit_key, {}).get("verdict") == "mismatch":
         # C3d: a source hypothesis that repairs the static initializer, then its recoverable order
         for h in hypotheses:
@@ -619,19 +638,6 @@ def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: st
         n_bad = sum(1 for x in verdicts.values() if x["verdict"] == "mismatch")
         if 0 < n_bad <= CLIMB_MAX_BAD:
             repair_by_sites(site_hyps, True)
-
-    def site_variant(name: str) -> str:
-        """C4: the site hypothesis applied to every one of its sites inside the mismatching methods
-        (last site first, so earlier offsets stay valid); a site an earlier edit made stale is skipped."""
-        hyp = HYP.SITE_HYPOTHESES[name]
-        spans = mismatching_spans(primary_path, verdicts)
-        found = hyp.sites(primary_text)
-        if spans is not None:
-            found = [x for x in found if any(a <= HYP.site_pos(x) < b for a, b in spans)]
-        text = primary_text
-        for site in sorted(found, key=HYP.site_pos, reverse=True):
-            text = hyp.apply(text, site)
-        return text
 
     def finish() -> dict:
         todo = sorted(k for k, v in verdicts.items() if v["verdict"] == "mismatch")

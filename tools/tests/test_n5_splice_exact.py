@@ -134,6 +134,30 @@ PRIMARY_TWO = PRIMARY.replace("  int b(int x)", """  boolean ok(int x) {
   int b(int x)""")
 
 
+CLINIT_SHIPPED = """package p;
+public class Foo {
+  static int hits;
+  static void n(int a, String s) {
+    hits += a;
+  }
+  static {
+    n(4, null);
+  }
+}
+"""
+CLINIT_PRIMARY = CLINIT_SHIPPED.replace("n(4, null);", "n(4, (String)null);")
+
+
+class TestClinitSites(ExactBase):
+    def test_site_hypothesis_repairs_a_canonical_only_static_initializer(self):
+        mod_dir, _ = self._module("clinitsite", CLINIT_SHIPPED, CLINIT_PRIMARY, None, None)
+        man = self._exact("clinitsite", mod_dir, exact=True, hypotheses=("remove-null-cast",))
+        rec = man["classes"]["p/Foo"]
+        self.assertEqual(rec["self_grade"], "roundtrip-exact")
+        self.assertEqual([t["kind"] for t in rec["pre_transforms"]], ["site:remove-null-cast"])
+        self.assertIn("n(4, null);", (mod_dir / "vineflower2s/p/Foo.java").read_text())
+
+
 class TestRuleTargetedSites(ExactBase):
     """A method whose canonical proof needed only `tail` is never offered the declaration-order or
     null-cast repairs: the climb tries only the site hypotheses that can explain the rules found."""
