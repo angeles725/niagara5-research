@@ -771,14 +771,18 @@ def sha256_text(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
-def module_population(mod_dir: Path) -> dict[str, dict]:
+def module_population(mod_dir: Path, patched_json: Optional[Path] = None) -> dict[str, dict]:
     """{fqcn: {best_grade, tree, source_grade}} for the module's best-of-ladder
     `bytecode-only` classes; `tree` is the source tree that is graded no-compile on the most
     advanced rung that recorded it (vineflower2p when it has the class, else vineflower2)
-    and `source_grade` that attempt's grade. Uses the grader JSON only."""
+    and `source_grade` that attempt's grade. Uses the grader JSON only. `patched_json` replaces the
+    module's live fidelity.vineflower2.patched.json (a regrade of the output tree rewrites it, so a
+    rerun must read the pre-regrade copy)."""
     recs: dict[str, dict] = {}
     for r in RUNGS:
         p = mod_dir / f"fidelity.{r}.json"
+        if r == "vineflower2.patched" and patched_json is not None:
+            p = Path(patched_json)
         if p.is_file():
             try:
                 recs[r] = json.loads(p.read_text())["classes"]
@@ -830,10 +834,11 @@ def make_compile_fn(fid, classpath: str, javac_bin: str, tool_server: bool, clas
 
 
 def patch_module(module: str, organized: Path, out_tree: str, *, fid, classpath: str, javac_bin: str,
-                 tool_server: bool, javap_bin: Optional[str] = None, only: Optional[set] = None, class_jobs: int = 1) -> dict:
+                 tool_server: bool, javap_bin: Optional[str] = None, baseline_dir: Optional[Path] = None, only: Optional[set] = None, class_jobs: int = 1) -> dict:
     javap_bin = javap_bin or fid.DEFAULT_JAVAP
     mod_dir = organized / module
-    pop = module_population(mod_dir)
+    baseline = Path(baseline_dir) / module / "fidelity.vineflower2.patched.json" if baseline_dir else None
+    pop = module_population(mod_dir, patched_json=baseline)
     targets = {f: v for f, v in pop.items() if v["source_grade"] == "no-compile" and (only is None or f in only)}
     out_dir = mod_dir / out_tree
     records: dict[str, dict] = {}
@@ -902,6 +907,9 @@ def main(argv: Optional[list[str]] = None) -> int:
     ap.add_argument("--jre-dir", default=str(fid.DEFAULT_JRE_DIR))
     ap.add_argument("--bc-variant", choices=fid.BC_VARIANTS, default=fid.DEFAULT_BC_VARIANT)
     ap.add_argument("--classpath-cache-dir", default=None)
+    ap.add_argument("--baseline-patched-dir", default=None,
+                    help="<dir>/<module>/fidelity.vineflower2.patched.json: pre-regrade patched-rung JSONs "
+                         "(population is read from these, so a rerun after an m-tree regrade is stable)")
     ap.add_argument("--jobs", type=int, default=1)
     ap.add_argument("--class-jobs", type=int, default=1)
     ap.add_argument("--tool-server", action="store_true")
@@ -923,7 +931,8 @@ def main(argv: Optional[list[str]] = None) -> int:
     def run(module: str):
         try:
             man = patch_module(module, organized, args.out_tree, fid=fid, classpath=classpath,
-                               javac_bin=fid.DEFAULT_JAVAC, tool_server=args.tool_server, class_jobs=args.class_jobs)
+                               javac_bin=fid.DEFAULT_JAVAC, tool_server=args.tool_server, class_jobs=args.class_jobs,
+                               baseline_dir=Path(args.baseline_patched_dir) if args.baseline_patched_dir else None)
             n_t = len(man["classes"])
             n_p = sum(1 for r in man["classes"].values() if r["patches"])
             n_c = sum(1 for r in man["classes"].values() if r["compiles"])

@@ -525,6 +525,20 @@ public class Foo {
         self.assertEqual(pop["p/Bar"], {"tree": "vineflower2p", "source_grade": "compiles-mismatch"})
         self.assertNotIn("p/Ok", pop)
 
+    def test_baseline_dir_overrides_the_patched_rung_json(self):
+        """After an m-tree regrade the live patched JSON has the class clean; a rerun of the
+        patcher must keep seeing the pre-m state, so the patched rung can be read elsewhere."""
+        mod = self.org / "mod"
+        _grade_json(mod / "fidelity.vineflower2.patched.json", {
+            "p/Bar": {"grade": "roundtrip-exact", "attempted": [["vineflower2p", "roundtrip-exact"]]}})
+        self.assertNotIn("p/Bar", self.m.module_population(mod))
+        base = self.org / "baseline" / "mod"
+        base.mkdir(parents=True)
+        _grade_json(base / "fidelity.vineflower2.patched.json", {
+            "p/Bar": {"grade": "bytecode-only", "attempted": [["vineflower2p", "compiles-mismatch"]]}})
+        pop = self.m.module_population(mod, patched_json=base / "fidelity.vineflower2.patched.json")
+        self.assertEqual(pop["p/Bar"]["tree"], "vineflower2p")
+
     def test_patch_module_writes_carried_and_patched_files_and_manifest(self):
         spec = importlib.util.spec_from_file_location("fid_t", os.path.join(TOOLS_DIR, "n5-fidelity.py"))
         fid = importlib.util.module_from_spec(spec)
