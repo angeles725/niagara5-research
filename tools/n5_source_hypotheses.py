@@ -176,6 +176,43 @@ def collapse_iinc(text: str) -> str:
     return _ASSIGN_STEP.sub(sub, text)
 
 
+_INC_IN_STMT = re.compile(r"(?<![\w.])(?:(?P<pre>\+\+|--)(?P<a>[A-Za-z_]\w*)|(?P<b>[A-Za-z_]\w*)(?P<post>\+\+|--))(?![\w(])")
+_PLAIN_STMT = re.compile(r"^(?P<ind>[ \t]*)(?P<body>[^\n{}]*;)[ \t]*$", re.M)
+
+
+def lift_increments(text: str) -> str:
+    """`x = a + ++i;` -> `i++; x = a + i;` and `out[i++] = v;` -> `out[i] = v; i++;` for int variables.
+
+    The decompiler folds an increment statement into the neighbouring expression; javac compiles
+    the folded form as iinc-inside-expression, the separate statement as a plain iinc. Only a
+    single-line statement with no conditional evaluation (?:, &&, ||, lambda) in which the variable
+    occurs exactly once is rewritten, so the evaluation order is unchanged."""
+    ints = _int_names(text)
+
+    def sub(m: re.Match) -> str:
+        body = m.group("body")
+        if re.match(r"\s*(?:if|while|for|switch|else|do|case|default|try|catch|synchronized)\b", body) \
+                or re.search(r"\?|&&|\|\||->", body):
+            return m.group(0)
+        hits = list(_INC_IN_STMT.finditer(body))
+        if len(hits) != 1:
+            return m.group(0)
+        h = hits[0]
+        var = h.group("a") or h.group("b")
+        if var not in ints or len(re.findall(r"(?<![\w.])%s(?!\w)" % re.escape(var), body)) != 1:
+            return m.group(0)
+        op = h.group("pre") or h.group("post")
+        ind = m.group("ind")
+        step = f"{ind}{var}{op};"
+        new_body = body[:h.start()] + var + body[h.end():]
+        if h.group("pre"):
+            return f"{step}\n{ind}{new_body}"
+        if re.match(r"\s*(?:return|throw)\b", body):
+            return m.group(0)
+        return f"{ind}{new_body}\n{step}"
+    return _PLAIN_STMT.sub(sub, text)
+
+
 _NN_CALL = "invokestatic // Method java/util/Objects.requireNonNull:(Ljava/lang/Object;)Ljava/lang/Object;"
 _ALOAD = re.compile(r"^aload(?:_(\d)| (\d+))$")
 
@@ -254,4 +291,5 @@ HYPOTHESES: dict[str, Callable[..., str]] = {
     "expand-iinc": expand_iinc,
     "collapse-iinc": collapse_iinc,
     "restore-null-checks": restore_null_checks,
+    "lift-increments": lift_increments,
 }

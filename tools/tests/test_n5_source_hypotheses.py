@@ -122,6 +122,41 @@ class TestIincForms(unittest.TestCase):
         self.assertIn("      total++;\n", out)
 
 
+class TestLiftIncrements(unittest.TestCase):
+    """`gen = base + ++i;` compiles with the increment inside the expression; source that had
+    `i++;` as its own statement compiles differently. The decompiler folds the statement into
+    the expression that uses it."""
+
+    def setUp(self):
+        self.h = _load()
+
+    def wrap(self, body):
+        return "   void f(int n) {\n      int i = 0;\n" + body + "   }\n"
+
+    def test_pre_increment_moves_before_the_statement(self):
+        self.assertEqual(self.h.lift_increments(self.wrap("      gen = base + ++i;\n")),
+                         self.wrap("      i++;\n      gen = base + i;\n"))
+        self.assertEqual(self.h.lift_increments(self.wrap("      return sb.append(buf[--i]);\n")),
+                         self.wrap("      i--;\n      return sb.append(buf[i]);\n"))
+
+    def test_post_increment_moves_after_the_statement(self):
+        self.assertEqual(self.h.lift_increments(self.wrap("      out[i++] = v;\n")),
+                         self.wrap("      out[i] = v;\n      i++;\n"))
+
+    def test_left_alone(self):
+        for body in (
+            "      a[i] = ++i;\n",                    # i is read twice: evaluation order matters
+            "      x = ok && ++i > 0;\n",             # conditional evaluation
+            "      x = ok ? ++i : 0;\n",
+            "      while (--i > 0) {\n",              # re-evaluated each iteration
+            "      if (--i == -1) {\n",               # control header: not a plain statement
+            "      return out[i++];\n",               # post-increment cannot move after a return
+            "      x = ++total;\n",                   # not an int local
+            "      f(++i,\n",                         # multi-line statement
+        ):
+            self.assertEqual(self.h.lift_increments(self.wrap(body)), self.wrap(body))
+
+
 class TestRestoreNullChecks(unittest.TestCase):
     """The decompiler drops `Objects.requireNonNull(x);` statements as if they were javac's own
     null checks; the shipped method begins with them."""
