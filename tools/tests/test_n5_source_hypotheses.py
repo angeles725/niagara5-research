@@ -157,6 +157,44 @@ class TestLiftIncrements(unittest.TestCase):
             self.assertEqual(self.h.lift_increments(self.wrap(body)), self.wrap(body))
 
 
+class TestSwapIfElse(unittest.TestCase):
+    """Vineflower negates a condition and swaps the branches; javac numbers lambdas and anonymous
+    classes in source order, so the swap changes their names. Each `if (c) {A} else {B}` is a site."""
+
+    def setUp(self):
+        self.h = _load()
+
+    SRC = ("void f(boolean b, int n) {\n"
+           "   if (!b) {\n      one();\n   } else {\n      if (n != 3) {\n         two();\n      } else {\n         three();\n      }\n   }\n"
+           "   if (n > 1) {\n      four();\n   }\n"
+           "   if (b && n > 2) {\n      five();\n   } else {\n      six(\"}\");\n   }\n}\n")
+
+    def test_sites_are_the_if_else_statements_outermost_first(self):
+        sites = self.h.swap_if_else.sites(self.SRC)
+        conds = [self.SRC[a:b] for a, b in sites]
+        self.assertEqual(conds, ["!b", "n != 3", "b && n > 2"])
+
+    def test_swap_negates_the_condition_and_exchanges_the_branches(self):
+        out = self.h.swap_if_else.apply(self.SRC, self.h.swap_if_else.sites(self.SRC)[0])
+        self.assertIn("   if (b) {\n      if (n != 3) {", out)
+        self.assertIn("   } else {\n      one();\n   }\n   if (n > 1)", out)
+
+    def test_negations(self):
+        neg = self.h._negate
+        self.assertEqual(neg("!b"), "b")
+        self.assertEqual(neg("!(a && b)"), "a && b")
+        self.assertEqual(neg("!x.isEmpty()"), "x.isEmpty()")
+        self.assertEqual(neg("n != 3"), "n == 3")
+        self.assertEqual(neg("n >= 3"), "n < 3")
+        self.assertEqual(neg("a && b"), "!(a && b)")
+        self.assertEqual(neg("!a && b"), "!(!a && b)")
+
+    def test_a_branch_text_with_braces_in_strings_is_balanced_correctly(self):
+        src = "if (!b) {\n   f(\"{\");\n} else {\n   g('}');\n}\n"
+        out = self.h.swap_if_else.apply(src, self.h.swap_if_else.sites(src)[0])
+        self.assertEqual(out, "if (b) {\n   g('}');\n} else {\n   f(\"{\");\n}\n")
+
+
 class TestPrivilegedVoid(unittest.TestCase):
     """A raw `(PrivilegedAction)` cast makes javac infer an Object-returning lambda; the shipped
     lambda returns Void."""

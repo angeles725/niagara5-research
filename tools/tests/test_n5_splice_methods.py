@@ -296,7 +296,8 @@ class TestCli(unittest.TestCase):
 
     def test_hypotheses_flag_names_or_expands_all(self):
         mod = _load()
-        for arg, want in (("compound-assign", ("compound-assign",)), ("all", tuple(mod.HYP.HYPOTHESES))):
+        for arg, want in (("compound-assign", ("compound-assign",)),
+                          ("all", (*mod.HYP.HYPOTHESES, *mod.HYP.SITE_HYPOTHESES))):
             with tempfile.TemporaryDirectory() as td:
                 targets = Path(td) / "t.json"
                 targets.write_text('[["m", "p/Foo"]]')
@@ -583,6 +584,15 @@ class TestStructuralPrimarySearch(_SpliceFixture):
         self.assertEqual(rec["self_grade"], "roundtrip-exact")
         self.assertEqual([(t["kind"], t["tree"]) for t in rec["pre_transforms"]], [("primary-tree", "vineflower-cons")])
         self.assertEqual((mod_dir / "vineflower2s" / "p" / "Foo.java").read_text(), LAMBDA_SHIPPED)
+
+    def test_site_hypothesis_repairs_the_structure_site_by_site(self):
+        mod_dir, fake = self._module("lam3", LAMBDA_SHIPPED, LAMBDA_PRIMARY, None, None)
+        man = self._run("lam3", mod_dir, fake, hypotheses=["swap-if-else"])
+        rec = man["classes"]["p/Foo"]
+        self.assertEqual(rec["self_grade"], "roundtrip-exact")
+        self.assertEqual([t["kind"] for t in rec["pre_transforms"]], ["site:swap-if-else"])
+        self.assertEqual(rec["pre_transforms"][0]["sites"], 1)
+        self.assertIn("if (b) {", (mod_dir / "vineflower2s" / "p" / "Foo.java").read_text())
 
     def test_structure_that_no_alternative_restores_is_never_written(self):
         mod_dir, fake = self._module("lam2", LAMBDA_SHIPPED, LAMBDA_PRIMARY, None, None)

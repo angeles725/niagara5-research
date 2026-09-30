@@ -350,6 +350,120 @@ def declared_local_types(text: str, ctx: dict) -> str:
 declared_local_types.needs_context = True  # type: ignore[attr-defined]
 
 
+def _match_brace(text: str, open_at: int) -> int:
+    """Index of the `}` matching the `{` at open_at, skipping string/char literals and comments
+    (-1 when unbalanced)."""
+    depth, i, n = 0, open_at, len(text)
+    while i < n:
+        ch = text[i]
+        if ch in "\"'":
+            q = ch
+            if text.startswith('\"\"\"', i):
+                i = text.find('\"\"\"', i + 3)
+                if i < 0:
+                    return -1
+                i += 3
+                continue
+            i += 1
+            while i < n and text[i] != q:
+                i += 2 if text[i] == "\\" else 1
+        elif text.startswith("//", i):
+            i = text.find("\n", i)
+            if i < 0:
+                return -1
+        elif text.startswith("/*", i):
+            i = text.find("*/", i)
+            if i < 0:
+                return -1
+            i += 1
+        elif ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                return i
+        i += 1
+    return -1
+
+
+_TOP_OPS = re.compile(r" (?:&&|\|\||\?|:) ")
+_CMP = re.compile(r"^(?P<l>.+?) (?P<op>==|!=|<=|>=|<|>) (?P<r>.+)$")
+_INV = {"==": "!=", "!=": "==", "<": ">=", ">=": "<", ">": "<=", "<=": ">"}
+
+
+def _top_level(text: str) -> str:
+    """`text` with everything inside brackets, parentheses and string literals blanked out."""
+    out, depth, quote = [], 0, None
+    for ch in text:
+        if quote:
+            if ch == quote:
+                quote = None
+            out.append("\x01")
+        elif ch in "\"'":
+            quote = ch
+            out.append("\x01")
+        elif ch in "([{":
+            depth += 1
+            out.append("\x01")
+        elif ch in ")]}":
+            depth -= 1
+            out.append("\x01")
+        else:
+            out.append(ch if depth == 0 else "\x01")
+    return "".join(out)
+
+
+def _negate(cond: str) -> str:
+    """The logical negation of a condition, undoing a leading `!` or flipping a comparison when the
+    condition has no top-level && / || / ?:, else `!(cond)`."""
+    top = _top_level(cond)
+    if not _TOP_OPS.search(top):
+        if cond.startswith("!") and not re.search(r" (?:==|!=|<=|>=|<|>) ", top):
+            rest = cond[1:]
+            if rest.startswith("(") and set(_top_level(rest)) == {"\x01"}:
+                return rest[1:-1]
+            if not re.search(r"\s", top[1:]):
+                return rest
+        m = _CMP.match(cond)
+        if m and not top.startswith("!") and len(re.findall(r" (?:==|!=|<=|>=|<|>) ", top)) == 1:
+            return f"{m.group('l')} {_INV[m.group('op')]} {m.group('r')}"
+    return f"!({cond})"
+
+
+_IF_HEAD = re.compile(r"^[ \t]*if \((?P<cond>.*)\) \{$", re.M)
+
+
+class _SwapIfElse:
+    """Site hypothesis: exchange the branches of an `if (c) {A} else {B}` and negate `c`."""
+
+    @staticmethod
+    def _parse(text: str):
+        for m in _IF_HEAD.finditer(text):
+            open1 = m.end() - 1
+            close1 = _match_brace(text, open1)
+            if close1 < 0 or not text.startswith("} else {", close1):
+                continue
+            open2 = close1 + len("} else ") 
+            close2 = _match_brace(text, open2)
+            if close2 < 0:
+                continue
+            yield (m.start("cond"), m.end("cond")), open1, close1, open2, close2
+
+    def sites(self, text: str) -> list:
+        return [cond for cond, *_ in self._parse(text)]
+
+    def apply(self, text: str, site: tuple) -> str:
+        for cond, open1, close1, open2, close2 in self._parse(text):
+            if cond == tuple(site):
+                a, b = text[open1 + 1:close1], text[open2 + 1:close2]
+                return (text[:cond[0]] + _negate(text[cond[0]:cond[1]]) + text[cond[1]:open1 + 1] + b
+                        + text[close1:open2 + 1] + a + text[close2:])
+        return text
+
+
+swap_if_else = _SwapIfElse()
+
+
 _RAW_PRIV = re.compile(r"\(niagara\.nre\.security\.privileged\.(PrivilegedAction|PrivilegedExceptionAction)\)(?= \()")
 
 
@@ -431,6 +545,11 @@ def restore_null_checks(text: str, ctx: dict) -> str:
 
 restore_null_checks.needs_context = True  # type: ignore[attr-defined]
 
+
+# name -> site hypothesis (`sites(text)` and `apply(text, site)`), used to repair a class's structure
+SITE_HYPOTHESES = {
+    "swap-if-else": swap_if_else,
+}
 
 # name -> hypothesis, in the order the splice tries them
 HYPOTHESES: dict[str, Callable[..., str]] = {

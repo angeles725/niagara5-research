@@ -358,6 +358,8 @@ def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: st
                   primary_trees: tuple = (), hypotheses: tuple = (), decompilers: tuple = DONOR_ENGINES) -> dict:
     """{"status": "spliced", ...record, "_text": spliced} or
     {"status": "refused"|"not-candidate", "reason", "detail"}."""
+    site_hyps = tuple(h for h in hypotheses if h in HYP.SITE_HYPOTHESES)
+    hypotheses = tuple(h for h in hypotheses if h in HYP.HYPOTHESES)
     class_short = fqcn.rsplit("/", 1)[-1]
     shipped_class = mod_dir / "extracted" / f"{fqcn}.class"
     # the primary is the first existing tree of primary_trees (e.g. the m/p patch stage), then
@@ -413,6 +415,46 @@ def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: st
     def structure_ok(st: dict) -> bool:
         return st["fields_match"] and st["attrs_match"] and not st["missing"] and not st["extra"]
 
+    def score(v: dict, st: dict) -> tuple:
+        bad_structure = len(st["missing"]) + len(st["extra"]) + (not st["fields_match"]) + (not st["attrs_match"])
+        return bad_structure, sum(1 for x in v.values() if x["verdict"] == "mismatch")
+
+    def repair_structure_by_sites(max_rounds: int = 8, max_sites: int = 40) -> bool:
+        """Greedy site repair: apply the single site whose swap lowers (structure differences,
+        mismatching methods); repeat. Kept only when the class structure ends up matching."""
+        nonlocal primary_text, primary_path, primary_parsed, verdicts, structure
+        text, parsed, v, st = primary_text, primary_parsed, verdicts, structure
+        applied: list = []
+        for _round in range(max_rounds):
+            improved = False
+            for name in site_hyps:
+                hyp = HYP.SITE_HYPOTHESES[name]
+                for n, site in enumerate(hyp.sites(text)[:max_sites]):
+                    cand = hyp.apply(text, site)
+                    path = Path(td) / "site" / f"{len(applied)}-{n}" / f"{class_short}.java"
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_text(cand, encoding="utf-8")
+                    cp = compile_parse(path, class_short, classpath, javac_bin, javap_bin, tool_server)
+                    if cp is None:
+                        continue
+                    cv, cs = per_method_verdicts(shipped, cp)
+                    if score(cv, cs) < score(v, st):
+                        text, parsed, v, st, primary_path_ = cand, cp, cv, cs, path
+                        applied.append(name)
+                        improved = True
+                        break
+                if improved:
+                    break
+            if not improved or structure_ok(st):
+                break
+        if not applied or not structure_ok(st):
+            return False
+        primary_text, primary_parsed, verdicts, structure = text, parsed, v, st
+        primary_path = primary_path_
+        pre_transforms.append({"kind": "site:" + applied[0] if len(set(applied)) == 1 else "site:mixed",
+                               "sites": len(applied), "sha256": sha256_text(text)})
+        return True
+
     if not structure_ok(structure):
         # C3d: lambda numbering, accessors, nest attributes... cannot be spliced method by method;
         # the first alternative source (donor tree, source hypothesis) that restores the class
@@ -442,6 +484,10 @@ def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: st
             else:
                 pre_transforms.append({"kind": kind, "sha256": sha256_text(primary_text)})
             base = {"primary_tree": primary_tree}
+        elif site_hyps:
+            repaired = repair_structure_by_sites()
+            if repaired:
+                base = {"primary_tree": primary_tree}
     non_synth = [k for k in structure["missing"] + structure["extra"] if not _is_synthetic_name(k[0])]
     if not structure["fields_match"] or not structure["attrs_match"] or non_synth:
         return {**base, "status": "refused", "reason": "structural-mismatch",
@@ -628,7 +674,8 @@ def splice_module(module: str, organized_dir: Path, tree: str, out_tree: str, ta
                 "tool": "tools/n5-splice-methods.py",
                 "helper_sha256": hashlib.sha256(HELPER_SRC.read_bytes()).hexdigest(),
                 "donor_engines": [*decompilers, *(TREE_DONOR_PREFIX + t for t in donor_trees),
-                                  *(HYP_DONOR_PREFIX + h for h in hypotheses)], "classes": classes, "refused": refused,
+                                  *(HYP_DONOR_PREFIX + h for h in hypotheses if h in HYP.HYPOTHESES),
+                                  *("site:" + h for h in hypotheses if h in HYP.SITE_HYPOTHESES)], "classes": classes, "refused": refused,
                 "not_candidates": skipped}
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / MANIFEST_NAME).write_text(json.dumps(manifest, indent=1, sort_keys=True) + "\n")
@@ -667,10 +714,11 @@ def main(argv: Optional[list] = None) -> int:
                     help="keep the out tree's earlier splices that are not re-targeted (extend a stage)")
     args = ap.parse_args(argv)
     split = lambda v: tuple(x.strip() for x in v.split(",") if x.strip())  # noqa: E731
-    hypotheses = tuple(HYP.HYPOTHESES) if args.hypotheses.strip() == "all" else split(args.hypotheses)
-    unknown = [h for h in hypotheses if h not in HYP.HYPOTHESES]
+    known = (*HYP.HYPOTHESES, *HYP.SITE_HYPOTHESES)
+    hypotheses = known if args.hypotheses.strip() == "all" else split(args.hypotheses)
+    unknown = [h for h in hypotheses if h not in known]
     if unknown:
-        ap.error(f"unknown hypothesis {unknown}; known: {sorted(HYP.HYPOTHESES)}")
+        ap.error(f"unknown hypothesis {unknown}; known: {sorted(known)}")
     by_module: dict = {}
     for module, fqcn in json.loads(Path(args.targets).read_text()):
         by_module.setdefault(module, []).append(fqcn)
