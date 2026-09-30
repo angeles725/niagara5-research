@@ -967,6 +967,106 @@ class _ReturnOutOfTry:
 return_out_of_try = _ReturnOutOfTry()
 
 
+_SWITCH_INSN = re.compile(r"^insn(?P<pos>\d+): (?:table|lookup)switch \{(?P<body>.*)\}$")
+_SWITCH_ENTRY = re.compile(r"(?P<key>default|-?\d+):rel(?P<off>[+-]\d+)")
+_SWITCH_HEAD = re.compile(r"^(?P<ind>[ \t]*)switch \(.*\) \{$", re.M)
+_CASE_LABEL = re.compile(r"^(?P<ind>[ \t]*)(?P<label>case [^:\n]+|default):$")
+
+
+def _shipped_switches(code: list) -> list:
+    """[(default target, {key: target})] of every switch of a normalized code, targets as absolute
+    instruction positions, in code order."""
+    found = []
+    for line in code:
+        m = _SWITCH_INSN.match(line)
+        if m:
+            pos = int(m.group("pos"))
+            targets = {e.group("key"): pos + int(e.group("off")) for e in _SWITCH_ENTRY.finditer(m.group("body"))}
+            found.append((targets.pop("default", None), {int(k): v for k, v in targets.items()}))
+    return found
+
+
+def _case_key(label: str):
+    lit = label[len("case "):].strip()
+    if re.fullmatch(r"-?\d+", lit):
+        return int(lit)
+    if re.fullmatch(r"'(?:[^'\\]|\\.)'", lit) and len(lit) == 3:
+        return ord(lit[1])
+    return None
+
+
+def reorder_switch_cases(text: str, ctx: dict) -> str:
+    """Put the case groups of every switch of a mismatching method in the order of the shipped code.
+
+    javac lays the case blocks out in source order; the decompiler sorts them. The shipped
+    `tableswitch`/`lookupswitch` targets give the original order: a group goes where its first key's
+    shipped target lies, `default` where the shipped default target lies. Only integer/char labels
+    (whose keys the bytecode shows) are handled; the i-th switch of the source is matched to the
+    i-th switch of the method's code. `ctx` as for restore_null_checks."""
+    edits = []
+    for m in ctx["methods"]:
+        key = (m["name"], m["desc"])
+        if key not in ctx["mismatched"] or key not in ctx["shipped"] or key not in ctx["ours"]:
+            continue
+        ship, ours = _shipped_switches(ctx["shipped"][key]), _shipped_switches(ctx["ours"][key])
+        heads = [h for h in _SWITCH_HEAD.finditer(text) if m["start"] <= h.start() < m["end"]]
+        if not ship or len(ship) != len(ours) or len(heads) != len(ship):
+            continue
+        for head, (default_at, keys_at) in zip(heads, ship):
+            edit = _reordered_switch(text, head, default_at, keys_at)
+            if edit is not None:
+                edits.append(edit)
+    for lo, hi, new in sorted(edits, reverse=True):
+        text = text[:lo] + new + text[hi:]
+    return text
+
+
+def _reordered_switch(text: str, head, default_at, keys_at):
+    """(start, end, new text) of the case groups of one switch in shipped order, or None."""
+    open_at = head.end() - 1
+    close = _match_brace(text, open_at)
+    if close < 0:
+        return None
+    lines = text[open_at + 1:close].split("\n")[1:-1]
+    base = len(head.group("ind")) + 3
+    groups, cur = [], None
+    for line in lines:
+        lm = _CASE_LABEL.match(line)
+        if lm and len(lm.group("ind")) == base:
+            if cur is None or cur["body"]:
+                cur = {"labels": [], "body": []}
+                groups.append(cur)
+            cur["labels"].append(lm.group("label"))
+        elif cur is None:
+            return None
+        else:
+            cur["body"].append(line)
+    if len(groups) < 2:
+        return None
+
+    def place(g):
+        for label in g["labels"]:
+            if label == "default":
+                return default_at
+            k = _case_key(label)
+            if k is None or k not in keys_at:
+                return None
+            return keys_at[k]
+        return None
+
+    order = [place(g) for g in groups]
+    if any(o is None for o in order) or order == sorted(order):
+        return None
+    new_lines = [l for g in sorted(groups, key=place)
+                 for l in (*[f"{' ' * base}{lab}:" for lab in g["labels"]], *g["body"])]
+    start = open_at + 1 + len(text[open_at + 1:close].split("\n")[0]) + 1
+    end = close - len(text[:close].rsplit("\n", 1)[1]) - 1
+    return start, end, "\n".join(new_lines)
+
+
+reorder_switch_cases.needs_context = True  # type: ignore[attr-defined]
+
+
 _RAW_PRIV = re.compile(r"\(niagara\.nre\.security\.privileged\.(PrivilegedAction|PrivilegedExceptionAction)\)(?= \()")
 
 
@@ -1159,4 +1259,5 @@ HYPOTHESES: dict[str, Callable[..., str]] = {
     "lift-increments": lift_increments,
     "declared-local-types": declared_local_types,
     "privileged-void": privileged_void,
+    "reorder-switch-cases": reorder_switch_cases,
 }

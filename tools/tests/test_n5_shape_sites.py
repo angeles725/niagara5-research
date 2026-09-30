@@ -318,5 +318,38 @@ class TestReturnOutOfTry(ShapeSiteCase):
         self.assertEqual(hyp.sites(fin), [])
 
 
+class TestSwitchCaseOrder(ShapeSiteCase):
+    """javac lays the case blocks out in source order; the decompiler sorts them. The shipped
+    tableswitch targets tell the original order."""
+
+    SHIPPED = ("   int m(int x) {\n      switch (x) {\n         case 301:\n            return 0;\n         case 304:\n"
+               "            return 2;\n         case 302:\n            return 1;\n         default:\n            return 3;\n"
+               "      }\n   }\n")
+    DECOMPILED = ("   int m(int x) {\n      switch (x) {\n         case 301:\n            return 0;\n         case 302:\n"
+                  "            return 1;\n         case 304:\n            return 2;\n         default:\n            return 3;\n"
+                  "      }\n   }\n")
+
+    def ctx_for(self, decompiled: str, shipped: str, name: str = "m", desc: str = "(I)I"):
+        key = (name, desc)
+        start = decompiled.index("   int m(") if False else decompiled.index(f" {name}(")
+        return {"methods": [{"name": name, "desc": desc, "start": start, "end": len(decompiled), "body_start": start}],
+                "shipped": {key: graded(wrap(shipped))["methods"][key]["code"]},
+                "ours": {key: graded(wrap(decompiled))["methods"][key]["code"]},
+                "mismatched": {key}}
+
+    def test_case_groups_follow_the_shipped_layout(self):
+        self.assertFalse(exact_equal(wrap(self.DECOMPILED), wrap(self.SHIPPED)))
+        out = self.h.reorder_switch_cases(self.DECOMPILED, self.ctx_for(self.DECOMPILED, self.SHIPPED))
+        self.assertEqual(out, self.SHIPPED)
+        self.assertTrue(exact_equal(wrap(out), wrap(self.SHIPPED)))
+
+    def test_already_ordered_and_unmappable_labels_are_left_alone(self):
+        ctx = self.ctx_for(self.SHIPPED, self.SHIPPED)
+        self.assertEqual(self.h.reorder_switch_cases(self.SHIPPED, ctx), self.SHIPPED)
+        named = self.DECOMPILED.replace("case 304:", "case Foo.BAR:")
+        ctx = self.ctx_for(self.DECOMPILED, self.SHIPPED)
+        self.assertEqual(self.h.reorder_switch_cases(named, ctx), named)
+
+
 if __name__ == "__main__":
     unittest.main()
