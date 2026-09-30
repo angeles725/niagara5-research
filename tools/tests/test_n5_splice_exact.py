@@ -94,6 +94,46 @@ class TestClimbScope(ExactBase):
         self.assertEqual(man["classes"]["p/Foo"]["self_grade"], "roundtrip-exact")
 
 
+class TestSiteDonors(ExactBase):
+    """In exact mode every relevant site hypothesis, applied to all its sites inside the
+    mismatching methods, is one whole-text donor (`site:<name>`): one compile per hypothesis and the
+    method splice keeps exactly the methods that reach the shipped code."""
+
+    def test_site_hypothesis_is_a_donor_without_the_climb(self):
+        mod_dir, _ = self._module("sitedonor", SHIPPED_TWO, PRIMARY_TWO, None, None)
+        man = self._exact("sitedonor", mod_dir, exact=True, hypotheses=("split-return-boolean", "hoist-declaration"))
+        rec = man["classes"]["p/Foo"]
+        self.assertEqual(rec["self_grade"], "roundtrip-exact")
+        self.assertEqual([(m["name"], m["donor"], m["reason"]) for m in rec["methods"]],
+                         [("a", "site:split-return-boolean", "exact"), ("c", "site:split-return-boolean", "exact")])
+        self.assertIn("site:split-return-boolean", man["donor_engines"])
+
+    def test_sites_outside_the_mismatching_methods_stay_untouched(self):
+        mod_dir, _ = self._module("siteout", SHIPPED_TWO, PRIMARY_TWO, None, None)
+        self._exact("siteout", mod_dir, exact=True, hypotheses=("split-return-boolean",))
+        out = (mod_dir / "vineflower2s/p/Foo.java").read_text()
+        self.assertIn("return x == 7;", out)                # method `ok` was already exact
+
+
+SHIPPED_TWO = SHIPPED.replace("  int b(int x)", """  boolean ok(int x) {
+    return x == 7;
+  }
+  boolean c(int x) {
+    if (x > 2 && x < 9) {
+      return true;
+    }
+    return false;
+  }
+  int b(int x)""")
+PRIMARY_TWO = PRIMARY.replace("  int b(int x)", """  boolean ok(int x) {
+    return x == 7;
+  }
+  boolean c(int x) {
+    return x > 2 && x < 9;
+  }
+  int b(int x)""")
+
+
 class TestRuleTargetedSites(ExactBase):
     """A method whose canonical proof needed only `tail` is never offered the declaration-order or
     null-cast repairs: the climb tries only the site hypotheses that can explain the rules found."""
