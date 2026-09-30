@@ -61,6 +61,7 @@ import hashlib
 import importlib.util
 import itertools
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -158,6 +159,14 @@ def per_method_verdicts(shipped: dict, recompiled: dict) -> tuple[dict, dict]:
 
 TREE_DONOR_PREFIX = "tree:"
 HYP_DONOR_PREFIX = "hyp:"
+
+
+def numbering_only(shipped_code: list, ours_code: list) -> bool:
+    """True when two normalized codes are equal once anonymous-class numbers (`Foo$1`) are ignored:
+    javac numbers anonymous classes in source order, so a reordered source differs only by them."""
+    strip = lambda code: [re.sub(r"\$\d+\b", "$N", line) for line in code]  # noqa: E731
+    return len(shipped_code) == len(ours_code) and strip(shipped_code) == strip(ours_code) \
+        and shipped_code != ours_code
 
 
 def donor_candidates(key, donor_verdicts: dict, engines: tuple = DONOR_ENGINES) -> list:
@@ -445,15 +454,23 @@ def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: st
                         break
                 if improved:
                     break
-            if not improved or structure_ok(st):
+            if not improved or (structure_ok(st) and score(v, st)[1] == 0):
                 break
-        if not applied or not structure_ok(st):
+        if not applied or not structure_ok(st) or not score(v, st) < score(verdicts, structure):
             return False
         primary_text, primary_parsed, verdicts, structure = text, parsed, v, st
         primary_path = primary_path_
         pre_transforms.append({"kind": "site:" + applied[0] if len(set(applied)) == 1 else "site:mixed",
                                "sites": len(applied), "sha256": sha256_text(text)})
         return True
+
+    def numbering_mismatch() -> bool:
+        return any(v["verdict"] == "mismatch" and k in primary_parsed["methods"] and k in shipped["methods"]
+                   and numbering_only(shipped["methods"][k]["code"], primary_parsed["methods"][k]["code"])
+                   for k, v in verdicts.items())
+
+    if structure_ok(structure) and site_hyps and numbering_mismatch():
+        repair_structure_by_sites()
 
     if not structure_ok(structure):
         # C3d: lambda numbering, accessors, nest attributes... cannot be spliced method by method;

@@ -35,6 +35,13 @@ class TestPure(unittest.TestCase):
     def setUp(self):
         self.mod = _load()
 
+    def test_numbering_only_difference_is_recognized(self):
+        a = ["insn0: new // class p/Foo$1", "insn1: invokespecial // Method p/Foo$1.\"<init>\":()V", "insn2: areturn"]
+        b = [x.replace("$1", "$2") for x in a]
+        self.assertTrue(self.mod.numbering_only(a, b))
+        self.assertFalse(self.mod.numbering_only(a, b + ["insn3: return"]))
+        self.assertFalse(self.mod.numbering_only(a, [x.replace("areturn", "return") for x in b]))
+
     def test_donors_prefer_exact_then_engine_order(self):
         m = ("f", "(I)I")
         verdicts = {"cfr": {m: {"verdict": "canonical", "rules": ["tail"]}},
