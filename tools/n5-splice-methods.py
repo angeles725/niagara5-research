@@ -57,6 +57,7 @@ from __future__ import annotations
 
 import argparse
 import concurrent.futures
+import difflib
 import hashlib
 import importlib.util
 import itertools
@@ -159,6 +160,17 @@ def per_method_verdicts(shipped: dict, recompiled: dict) -> tuple[dict, dict]:
 
 TREE_DONOR_PREFIX = "tree:"
 HYP_DONOR_PREFIX = "hyp:"
+
+
+def code_distance(shipped_code: list, ours_code: list, cap: int = 4_000_000) -> int:
+    """Instruction lines that differ between two normalized codes (lines outside the longest
+    matching blocks); a coarse size for very large methods."""
+    a = [re.sub(r"^insn\d+:\s*", "", x) for x in shipped_code]
+    b = [re.sub(r"^insn\d+:\s*", "", x) for x in ours_code]
+    if len(a) * len(b) > cap:
+        return abs(len(a) - len(b)) + 1
+    matcher = difflib.SequenceMatcher(None, a, b, autojunk=False)
+    return len(a) + len(b) - 2 * sum(blk.size for blk in matcher.get_matching_blocks())
 
 
 def numbering_only(shipped_code: list, ours_code: list) -> bool:
@@ -364,7 +376,8 @@ def splice_class(fqcn: str, mod_dir: Path, tree: str, **kw) -> dict:
 
 def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: str, helper_dir: Path, javac_bin: str,
                   javap_bin: str, java_bin: str, tool_server: bool, donor_trees: tuple = (),
-                  primary_trees: tuple = (), hypotheses: tuple = (), decompilers: tuple = DONOR_ENGINES) -> dict:
+                  primary_trees: tuple = (), hypotheses: tuple = (), decompilers: tuple = DONOR_ENGINES,
+                  climb: bool = False) -> dict:
     """{"status": "spliced", ...record, "_text": spliced} or
     {"status": "refused"|"not-candidate", "reason", "detail"}."""
     site_hyps = tuple(h for h in hypotheses if h in HYP.SITE_HYPOTHESES)
@@ -424,22 +437,33 @@ def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: st
     def structure_ok(st: dict) -> bool:
         return st["fields_match"] and st["attrs_match"] and not st["missing"] and not st["extra"]
 
-    def score(v: dict, st: dict) -> tuple:
+    def score(v: dict, st: dict, parsed: Optional[dict] = None) -> tuple:
+        """(structure differences, mismatching methods, instruction distance to the shipped code): lower
+        is better; the distance is only measured when `parsed` is given (the climb)."""
         bad_structure = len(st["missing"]) + len(st["extra"]) + (not st["fields_match"]) + (not st["attrs_match"])
-        return bad_structure, sum(1 for x in v.values() if x["verdict"] == "mismatch")
+        mism = [k for k, x in v.items() if x["verdict"] == "mismatch"]
+        dist = 0
+        if parsed is not None:
+            dist = sum(code_distance(shipped["methods"][k]["code"], parsed["methods"][k]["code"])
+                       for k in mism if k in parsed["methods"] and k in shipped["methods"])
+        return bad_structure, len(mism), dist
 
-    def repair_structure_by_sites(max_rounds: int = 8, max_sites: int = 40) -> bool:
-        """Greedy site repair: apply the single site whose swap lowers (structure differences,
-        mismatching methods); repeat. Kept only when the class structure ends up matching."""
+    def repair_by_sites(names: tuple, use_distance: bool, max_rounds: int = 8, max_sites: int = 30) -> bool:
+        """Greedy site repair: apply the single site that lowers the score, repeat. Kept only when the
+        score ends strictly lower (and, for a structure repair, the class structure matches)."""
         nonlocal primary_text, primary_path, primary_parsed, verdicts, structure
-        text, parsed, v, st = primary_text, primary_parsed, verdicts, structure
+        sc = lambda vv, ss, pp: score(vv, ss, pp if use_distance else None)  # noqa: E731
+        text, parsed, v, st, path_ = primary_text, primary_parsed, verdicts, structure, primary_path
+        start_score = sc(v, st, parsed)
         applied: list = []
         for _round in range(max_rounds):
             improved = False
-            for name in site_hyps:
+            for name in names:
                 hyp = HYP.SITE_HYPOTHESES[name]
                 for n, site in enumerate(hyp.sites(text)[:max_sites]):
                     cand = hyp.apply(text, site)
+                    if cand == text:
+                        continue
                     path = Path(td) / "site" / f"{len(applied)}-{n}" / f"{class_short}.java"
                     path.parent.mkdir(parents=True, exist_ok=True)
                     path.write_text(cand, encoding="utf-8")
@@ -447,22 +471,26 @@ def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: st
                     if cp is None:
                         continue
                     cv, cs = per_method_verdicts(shipped, cp)
-                    if score(cv, cs) < score(v, st):
-                        text, parsed, v, st, primary_path_ = cand, cp, cv, cs, path
+                    if sc(cv, cs, cp) < sc(v, st, parsed):
+                        text, parsed, v, st, path_ = cand, cp, cv, cs, path
                         applied.append(name)
                         improved = True
                         break
                 if improved:
                     break
-            if not improved or (structure_ok(st) and score(v, st)[1] == 0):
+            if not improved or (structure_ok(st) and sc(v, st, parsed)[1] == 0):
                 break
-        if not applied or not structure_ok(st) or not score(v, st) < score(verdicts, structure):
+        if not applied or not sc(v, st, parsed) < start_score:
             return False
-        primary_text, primary_parsed, verdicts, structure = text, parsed, v, st
-        primary_path = primary_path_
-        pre_transforms.append({"kind": "site:" + applied[0] if len(set(applied)) == 1 else "site:mixed",
-                               "sites": len(applied), "sha256": sha256_text(text)})
+        if not use_distance and not structure_ok(st):
+            return False
+        primary_text, primary_parsed, verdicts, structure, primary_path = text, parsed, v, st, path_
+        kind = ("climb:" if use_distance else "site:") + (applied[0] if len(set(applied)) == 1 else "mixed")
+        pre_transforms.append({"kind": kind, "sites": len(applied), "sha256": sha256_text(text)})
         return True
+
+    def repair_structure_by_sites() -> bool:
+        return repair_by_sites(site_hyps, False)
 
     def numbering_mismatch() -> bool:
         return any(v["verdict"] == "mismatch" and k in primary_parsed["methods"] and k in shipped["methods"]
@@ -553,6 +581,10 @@ def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: st
             reordered = None
         if reordered is not None:
             adopt(reordered, "clinit-order", False)
+    if climb and site_hyps and structure_ok(structure):
+        n_bad = sum(1 for x in verdicts.values() if x["verdict"] == "mismatch")
+        if 0 < n_bad <= 4:
+            repair_by_sites(site_hyps, True)
     todo = sorted(k for k, v in verdicts.items() if v["verdict"] == "mismatch")
     if not todo and not structure["missing"] and not structure["extra"]:
         if not pre_transforms:
@@ -644,7 +676,8 @@ def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: st
 def splice_module(module: str, organized_dir: Path, tree: str, out_tree: str, targets: list, *, classpath: str,
                   helper_dir: Path, javac_bin: str, javap_bin: str, java_bin: str, tool_server: bool,
                   class_jobs: int = 1, donor_trees: tuple = (), primary_trees: tuple = (),
-                  keep_existing: bool = False, hypotheses: tuple = (), decompilers: tuple = DONOR_ENGINES) -> dict:
+                  keep_existing: bool = False, hypotheses: tuple = (), decompilers: tuple = DONOR_ENGINES,
+                  climb: bool = False) -> dict:
     mod_dir = Path(organized_dir) / module
     out_dir = mod_dir / out_tree
 
@@ -654,7 +687,7 @@ def splice_module(module: str, organized_dir: Path, tree: str, out_tree: str, ta
                                       javac_bin=javac_bin, javap_bin=javap_bin, java_bin=java_bin,
                                       tool_server=tool_server, donor_trees=tuple(donor_trees),
                                       primary_trees=tuple(primary_trees), hypotheses=tuple(hypotheses),
-                                      decompilers=tuple(decompilers))
+                                      decompilers=tuple(decompilers), climb=climb)
         except Exception as exc:  # noqa: BLE001 -- one class must not abort the module
             return fqcn, {"status": "refused", "reason": "tool-error", "detail": repr(exc)[:300]}
 
@@ -727,6 +760,9 @@ def main(argv: Optional[list] = None) -> int:
     ap.add_argument("--hypotheses", default="",
                     help="comma-separated source hypotheses of tools/n5_source_hypotheses.py used as donors "
                          "(\"all\" = every one)")
+    ap.add_argument("--climb", action="store_true",
+                    help="hill-climb the primary with the site hypotheses (one site at a time, kept only when the "
+                         "class structure / mismatching methods / code distance to the shipped class shrink)")
     ap.add_argument("--keep-existing", action="store_true",
                     help="keep the out tree's earlier splices that are not re-targeted (extend a stage)")
     args = ap.parse_args(argv)
@@ -759,7 +795,7 @@ def main(argv: Optional[list] = None) -> int:
                                 tool_server=args.tool_server, class_jobs=args.class_jobs,
                                 donor_trees=split(args.donor_trees), primary_trees=split(args.primary_trees),
                                 keep_existing=args.keep_existing, hypotheses=hypotheses,
-                                decompilers=split(args.decompilers))
+                                decompilers=split(args.decompilers), climb=args.climb)
             reasons: dict = {}
             for r in man["refused"].values():
                 reasons[r["reason"]] = reasons.get(r["reason"], 0) + 1

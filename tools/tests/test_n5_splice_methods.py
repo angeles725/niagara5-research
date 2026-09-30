@@ -299,6 +299,7 @@ class TestCli(unittest.TestCase):
         self.assertEqual((kw["donor_trees"], kw["primary_trees"], kw["keep_existing"]),
                          (("vineflower-cons", "vineflower"), ("vineflower2m",), True))
         self.assertEqual(kw["hypotheses"], ())
+        self.assertFalse(kw["climb"])
         self.assertEqual(kw["decompilers"], ("cfr", "procyon"))
 
     def test_hypotheses_flag_names_or_expands_all(self):
@@ -544,6 +545,25 @@ class TestSourceHypothesisDonors(_SpliceFixture):
         rec = man["classes"]["p/Foo"]
         self.assertIn(("keep", "hyp:declared-local-types"), [(m["name"], m["donor"]) for m in rec["methods"]])
         self.assertEqual(rec["self_grade"], "roundtrip-exact")
+
+    def test_climb_applies_only_the_sites_a_method_needs(self):
+        # the original expanded one statement and compounded the other: all-or-nothing cannot match it
+        shipped = HYP_SHIPPED.replace("    if (on) {\n      buf[3] |= 4;\n    } else {\n      buf[3] &= -5;\n    }\n",
+                                      "    buf[3] |= 4;\n    buf[2] = (byte)(buf[2] & 1);\n")
+        primary = shipped.replace("buf[3] |= 4;", "buf[3] = (byte)(buf[3] | 4);")
+        mod_dir, fake = self._module("climb", shipped, primary, None, None)
+        man = self._run("climb", mod_dir, fake, hypotheses=["compound-assign-site"], climb=True)
+        rec = man["classes"]["p/Foo"]
+        self.assertEqual(rec["self_grade"], "roundtrip-exact")
+        self.assertEqual([t["kind"] for t in rec["pre_transforms"]], ["climb:compound-assign-site"])
+        self.assertEqual(rec["pre_transforms"][0]["sites"], 1)
+        out = (mod_dir / "vineflower2s" / "p" / "Foo.java").read_text()
+        self.assertIn("buf[3] |= 4;", out)
+        self.assertIn("buf[2] = (byte)(buf[2] & 1);", out)
+        # without --climb the same hypothesis list leaves the class alone
+        mod_dir, fake = self._module("climb2", shipped, primary, None, None)
+        man = self._run("climb2", mod_dir, fake, hypotheses=["compound-assign-site"])
+        self.assertNotIn("p/Foo", man["classes"])
 
     def test_variant_identical_to_the_primary_is_skipped(self):
         mod_dir, fake = self._module("hyp2", HYP_SHIPPED, HYP_SHIPPED.replace("a + 1", "a + 2"), None, None)
