@@ -210,5 +210,44 @@ class TestHoistDeclaration(ShapeSiteCase):
         self.assertEqual(hyp.sites(init), [])                  # initialized: moving it would reorder effects
 
 
+class TestUnguardElse(ShapeSiteCase):
+    """The inverse of the early return: javac compiles `if (c) { REST } else { throw }` with the
+    throw last, the decompiler's `if (!c) { throw } REST` puts it first."""
+
+    def test_guard_becomes_the_if_branch_with_a_leaving_else(self):
+        self.assert_reproduces(
+            "unguard-else",
+            "   void m(Object x) {\n      if (!(x instanceof String)) {\n         throw new IllegalStateException(\"bad\");\n"
+            "      }\n\n      this.f = 1;\n      this.f = 2;\n   }\n",
+            "   void m(Object x) {\n      if (x instanceof String) {\n         this.f = 1;\n         this.f = 2;\n"
+            "      } else {\n         throw new IllegalStateException(\"bad\");\n      }\n   }\n")
+
+    def test_only_a_leaving_guard_followed_by_statements_is_a_site(self):
+        hyp = self.h.SITE_HYPOTHESES["unguard-else"]
+        self.assertEqual(hyp.sites("   void m() {\n      if (c()) {\n         a();\n      }\n\n      b();\n   }\n"), [])
+        self.assertEqual(hyp.sites("   void m() {\n      if (c()) {\n         return;\n      }\n   }\n"), [])
+        self.assertEqual(hyp.sites("   void m() {\n      if (c()) {\n         return;\n      } else {\n         a();\n"
+                                   "      }\n\n      b();\n   }\n"), [])
+
+
+class TestHoistForVariable(ShapeSiteCase):
+    """A `for` variable declared before the loop keeps its slot after it; the decompiler's
+    `for (int i = ...)` frees the slot for the next local."""
+
+    def test_for_variable_is_declared_before_the_loop(self):
+        self.assert_reproduces(
+            "hoist-for-var",
+            "   void m() {\n      for (int col = 0; col < 3; col++) {\n         this.f += col;\n      }\n\n"
+            "      Object t = new Object();\n      this.o = t;\n   }\n",
+            "   void m() {\n      int col;\n      for (col = 0; col < 3; col++) {\n         this.f += col;\n      }\n\n"
+            "      Object t = new Object();\n      this.o = t;\n   }\n")
+
+    def test_only_single_variable_for_declarations_are_sites(self):
+        hyp = self.h.SITE_HYPOTHESES["hoist-for-var"]
+        self.assertEqual(len(hyp.sites("   void m() {\n      for (int a = 0; a < 3; a++) {\n      }\n   }\n")), 1)
+        self.assertEqual(hyp.sites("   void m() {\n      for (int a = 0, b = 1; a < 3; a++) {\n      }\n   }\n"), [])
+        self.assertEqual(hyp.sites("   void m() {\n      for (Object o : list) {\n      }\n   }\n"), [])
+
+
 if __name__ == "__main__":
     unittest.main()

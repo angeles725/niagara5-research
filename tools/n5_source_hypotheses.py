@@ -745,6 +745,78 @@ class _HoistDeclaration:
 hoist_declaration = _HoistDeclaration()
 
 
+_FOR_DECL = re.compile(
+    r"^(?P<ind>[ \t]*)for \((?P<type>[A-Za-z_][\w.$]*(?:<[^;=()]*>)?(?:\[\])*) (?P<name>\w+) = (?P<init>[^;\n]+);", re.M)
+
+
+class _HoistForVariable:
+    """Site hypothesis: `for (T i = e; ...)` -> `T i;` + `for (i = e; ...)`. A loop variable declared
+    before the loop keeps its slot after it, the `for` scope frees it for the next local."""
+
+    def _matches(self, text: str):
+        for m in _FOR_DECL.finditer(text):
+            if "," not in _top_level(m.group("init")):
+                yield m
+
+    def sites(self, text: str) -> list:
+        return [(m.start(), m.end()) for m in self._matches(text)]
+
+    def apply(self, text: str, site: tuple) -> str:
+        for m in self._matches(text):
+            if (m.start(), m.end()) == tuple(site):
+                ind = m.group("ind")
+                new = f"{ind}{m.group('type')} {m.group('name')};\n{ind}for ({m.group('name')} = {m.group('init')};"
+                return text[:m.start()] + new + text[m.end():]
+        return text
+
+
+hoist_for_var = _HoistForVariable()
+
+
+class _UnguardElse:
+    """Site hypothesis: `if (g) { L } REST` (L leaves) -> `if (!g) { REST } else { L }`. javac puts the
+    else branch last, so the shipped `if (c) { REST } else { throw }` differs from the decompiler's
+    early-throw guard."""
+
+    def _parse(self, text: str):
+        for m in _IF_HEAD.finditer(text):
+            open1 = m.end() - 1
+            close1 = _match_brace(text, open1)
+            if close1 < 0 or text.startswith("} else", close1):
+                continue
+            ind = len(m.group(0)) - len(m.group(0).lstrip())
+            a_lines = text[open1 + 1:close1].split("\n")[1:-1]
+            if not _leaves(a_lines):
+                continue
+            rest_end, pos = close1 + 1, close1 + 1
+            for line in text[close1 + 1:].split("\n")[1:]:
+                pos += len(line) + 1
+                if line.strip() and len(line) - len(line.lstrip()) < ind:
+                    break
+                rest_end = pos
+            rest = text[close1 + 1:rest_end].strip("\n")
+            if not rest.strip():
+                continue
+            yield (m.start(), close1 + 1), m, open1, close1, close1 + 1, rest_end, rest.split("\n"), a_lines, ind
+
+    def sites(self, text: str) -> list:
+        return [span for span, *_ in self._parse(text)]
+
+    def apply(self, text: str, site: tuple) -> str:
+        for span, m, open1, close1, rest_from, rest_end, rest, a_lines, ind in self._parse(text):
+            if span != tuple(site):
+                continue
+            pad = " " * ind
+            moved = ["   " + l if l.strip() else l for l in rest]
+            new = (text[:m.start("cond")] + _negate(m.group("cond")) + text[m.end("cond"):open1 + 1] + "\n"
+                   + "\n".join(moved) + "\n" + pad + "} else {\n" + "\n".join(a_lines) + "\n" + pad + "}\n")
+            return new + text[rest_end:]
+        return text
+
+
+unguard_else = _UnguardElse()
+
+
 _RAW_PRIV = re.compile(r"\(niagara\.nre\.security\.privileged\.(PrivilegedAction|PrivilegedExceptionAction)\)(?= \()")
 
 
@@ -865,7 +937,7 @@ remove_null_cast = RegexSites(_null_cast_rewrites)
 # canonical rules (tools/n5_canon.py) -> the site hypotheses that can explain them: the climb of an
 # `exact` splice only tries these for a method that was proven by those rules
 _LAYOUT_SITES = ("split-return-ternary", "split-return-boolean", "guard-return", "guard-continue",
-                 "early-return-else", "swap-if-else")
+                 "early-return-else", "swap-if-else", "unguard-else")
 _TEMP_SITES = ("introduce-return-temp", "inline-return-temp", "compound-assign-site", "lift-increments-site")
 RULE_SITES = {
     "tail": _LAYOUT_SITES, "min": _LAYOUT_SITES, "inl": _LAYOUT_SITES, "merge": _LAYOUT_SITES,
@@ -873,7 +945,7 @@ RULE_SITES = {
     "cmp1": _LAYOUT_SITES, "boolmat": ("split-return-boolean", "split-return-ternary"),
     "dse": _TEMP_SITES, "peep": _TEMP_SITES, "r1": ("remove-null-cast",),
     "iinc": ("expand-iinc-site", "collapse-iinc-site", "lift-increments-site"),
-    "web": ("hoist-declaration",),
+    "web": ("hoist-declaration", "hoist-for-var"),
 }
 
 
@@ -900,6 +972,8 @@ SITE_HYPOTHESES = {
     "guard-return": guard_return,
     "guard-continue": guard_continue,
     "hoist-declaration": hoist_declaration,
+    "hoist-for-var": hoist_for_var,
+    "unguard-else": unguard_else,
     "compound-assign-site": RegexSites(_compound_rewrites),
     "unfold-arrays-site": RegexSites(_unfold_rewrites),
     "expand-iinc-site": RegexSites(_expand_rewrites),
