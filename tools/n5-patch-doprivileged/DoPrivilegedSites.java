@@ -72,10 +72,14 @@ public class DoPrivilegedSites {
             for (Tree t : ct.getImplementsClause()) supers.add(t.toString());
             StringJoiner sj = new StringJoiner(",", "[", "]");
             for (String x : supers) sj.add(q(x));
+            StringJoiner ctors = new StringJoiner(",", "[", "]");
+            for (Tree m : ct.getMembers()) {
+                if (m instanceof MethodTree mt && mt.getName().contentEquals("<init>")) ctors.add(memberJson(m));
+            }
             classes.add("{\"id\":" + id + ",\"parent\":" + (classStack.isEmpty() ? -1 : classStack.peek())
                     + ",\"kind\":" + q(kind) + ",\"name\":" + q(ct.getSimpleName().toString())
                     + ",\"declkind\":" + q(ct.getKind().toString())
-                    + ",\"start\":" + start(ct) + ",\"supers\":" + sj + "}");
+                    + ",\"start\":" + start(ct) + ",\"supers\":" + sj + ",\"ctors\":" + ctors + "}");
             classStack.push(id);
             memberStack.push("null");
             lambdaDepth.push(0);
@@ -103,7 +107,8 @@ public class DoPrivilegedSites {
                 for (VariableTree p : mt.getParameters()) ps.add(q(p.getType().toString()));
                 boolean st = mt.getModifiers().getFlags().contains(javax.lang.model.element.Modifier.STATIC);
                 return "{\"kind\":" + q(ctor ? "ctor" : "method") + ",\"name\":" + q(mt.getName().toString())
-                        + ",\"params\":" + ps + ",\"static\":" + st + "}";
+                        + ",\"params\":" + ps + ",\"static\":" + st
+                        + (ctor ? ",\"delegates\":" + delegatesToThis(mt) : "") + "}";
             }
             if (m instanceof BlockTree bt) {
                 return "{\"kind\":" + q(bt.isStatic() ? "clinit" : "instinit") + "}";
@@ -113,6 +118,16 @@ public class DoPrivilegedSites {
                 return "{\"kind\":" + q(st ? "clinit" : "instinit") + ",\"field\":" + q(vt.getName().toString()) + "}";
             }
             return "{\"kind\":\"other\"}";
+        }
+
+        /** true when the constructor's first statement is `this(...)`: such a constructor runs no initializers. */
+        static boolean delegatesToThis(MethodTree mt) {
+            if (mt.getBody() == null || mt.getBody().getStatements().isEmpty()) return false;
+            StatementTree first = mt.getBody().getStatements().get(0);
+            return first instanceof ExpressionStatementTree es
+                    && es.getExpression() instanceof MethodInvocationTree mi
+                    && mi.getMethodSelect() instanceof IdentifierTree id
+                    && id.getName().contentEquals("this");
         }
 
         @Override
@@ -139,7 +154,7 @@ public class DoPrivilegedSites {
             if ("doPrivileged".equals(name)) {
                 String argKind = "none";
                 long as = -1, ae = -1;
-                if (mi.getArguments().size() == 1) {
+                if (mi.getArguments().size() >= 1) {
                     ExpressionTree arg = mi.getArguments().get(0);
                     argKind = arg.getKind().toString();
                     as = start(arg);

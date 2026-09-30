@@ -393,5 +393,217 @@ class TestEndToEnd(unittest.TestCase):
         self.assertEqual((self.tree / "Shipped.java").read_text(), _strip_casts(SHIPPED))
 
 
+# ---------------------------------------------------------------------------
+# C3a: causes the F8 patcher left unpatched in the real N5 tree
+# ---------------------------------------------------------------------------
+
+PA = NP + "PrivilegedAction"
+PEA = NP + "PrivilegedExceptionAction"
+PSEA = NP + "PrivilegedSingleExceptionAction"
+
+C3A_SOURCES = {
+    # bridge method: run()Ljava/lang/Void; plus the synthetic run()Ljava/lang/Object;
+    "Bridge": f"""package demo;
+
+import niagara.nre.util.SecurityUtil;
+
+public class Bridge {{
+   static class Act implements {PEA}<Void> {{
+      public Void run() throws Exception {{
+         SecurityUtil.doPrivileged(({PA}<java.lang.String>) () -> "x");
+         return null;
+      }}
+   }}
+}}
+""",
+    # field initializers, an instance initializer and a constructor body share <init>
+    "InitOne": f"""package demo;
+
+import niagara.nre.util.SecurityUtil;
+
+public class InitOne {{
+   private final String a = SecurityUtil.doPrivileged(({PA}<java.lang.String>) () -> "a");
+   private Integer b;
+   {{
+      this.b = SecurityUtil.doPrivileged(({PA}<java.lang.Integer>) () -> 1);
+   }}
+
+   public InitOne() {{
+      SecurityUtil.doPrivileged(({PA}<java.lang.Long>) () -> 2L);
+   }}
+}}
+""",
+    # two constructors that call super(): the initializer code is duplicated in both
+    "InitTwo": f"""package demo;
+
+import niagara.nre.util.SecurityUtil;
+
+public class InitTwo {{
+   private final String a = SecurityUtil.doPrivileged(({PA}<java.lang.String>) () -> "a");
+
+   public InitTwo() {{
+   }}
+
+   public InitTwo(int x) {{
+      this();
+   }}
+
+   public InitTwo(String s) {{
+   }}
+}}
+""",
+    # the original source had a result cast the decompiler dropped
+    "ResultCast": f"""package demo;
+
+import niagara.nre.util.SecurityUtil;
+
+public class ResultCast {{
+   static byte[] key() {{
+      return (byte[]) SecurityUtil.doPrivileged(({PEA}<java.lang.Object>) () -> new byte[1]);
+   }}
+}}
+""",
+    # a thrown type javac names by its simple name although the source never imports it
+    "Unimported": f"""package demo;
+
+import niagara.nre.util.SecurityUtil;
+
+public class Unimported {{
+   public String h(java.io.File file) throws java.io.IOException {{
+      return SecurityUtil.doPrivileged(({PSEA}<java.lang.String, java.io.IOException>) file::getCanonicalPath);
+   }}
+}}
+""",
+    "Ctx": """package demo;
+
+public class Ctx {
+   public Object go(java.security.AccessControlContext ctx) throws Exception {
+      return java.security.AccessController.doPrivileged(
+         (java.security.PrivilegedExceptionAction<java.lang.Object>) () -> {
+            return null;
+         }, ctx);
+   }
+}
+""",
+}
+C3A_DROPPED = {"ResultCast": ("(byte[]) ",)}
+_C3A_CAST_RE = re.compile(r"\((?:niagara\.nre\.security\.privileged|java\.security)\.Privileged\w+(?:<[^()]*?>)?\) ")
+
+
+def _c3a_decompiled(name):
+    text = C3A_SOURCES[name]
+    for drop in C3A_DROPPED.get(name, ()):
+        text = text.replace(drop, "")
+    return _C3A_CAST_RE.sub("", text)
+
+
+class TestC3aCauses(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load()
+        cls.fid = cls.mod._load_fidelity()
+        cls.td = tempfile.TemporaryDirectory()
+        root = Path(cls.td.name)
+        stub_src = root / "stubsrc"
+        for rel, text in STUBS.items():
+            (stub_src / rel).parent.mkdir(parents=True, exist_ok=True)
+            (stub_src / rel).write_text(text)
+        cls.stubs = root / "stubs"
+        subprocess.run([f"{JDK}/javac", "--release", "25", "-d", str(cls.stubs),
+                        *map(str, stub_src.rglob("*.java"))], check=True, capture_output=True)
+        cls.shipped_src = root / "shipped" / "demo"
+        cls.shipped_src.mkdir(parents=True)
+        cls.extracted = root / "mod" / "extracted"
+        cls.tree = root / "mod" / "vineflower2" / "demo"
+        cls.tree.mkdir(parents=True)
+        for name, text in C3A_SOURCES.items():
+            (cls.shipped_src / f"{name}.java").write_text(text)
+            (cls.tree / f"{name}.java").write_text(_c3a_decompiled(name))
+        subprocess.run([f"{JDK}/javac", "--release", "25", "-g", "-nowarn", "-cp", str(cls.stubs), "-d",
+                        str(cls.extracted), *map(str, cls.shipped_src.glob("*.java"))],
+                       check=True, capture_output=True)
+        cls.helper = cls.mod.compile_helper(root / "helper", f"{JDK}/javac")
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.td.cleanup()
+
+    def _patch(self, name):
+        src = self.tree / f"{name}.java"
+        scan = self.mod.scan_sources([src], self.helper, f"{JDK}/java")[str(src)]
+        return self.mod.patch_class(f"demo/{name}", src, self.extracted, scan, classpath=str(self.stubs),
+                                    fid=self.fid, javac_bin=f"{JDK}/javac", javap_bin=f"{JDK}/javap",
+                                    tool_server=False, max_iterations=4)
+
+    def _grade(self, name, rec):
+        patched = Path(self.td.name) / "patched" / "demo" / f"{name}.java"
+        patched.parent.mkdir(parents=True, exist_ok=True)
+        patched.write_text(rec["_text"])
+        res = self.fid.recompile_and_grade(str(patched), name, str(self.stubs),
+                                           str(self.extracted / "demo" / f"{name}.class"),
+                                           str(Path(self.td.name) / "rg" / name), f"{JDK}/javac", f"{JDK}/javap")
+        return res["grade"]
+
+    def test_bridge_method_is_not_a_second_overload(self):
+        rec = self._patch("Bridge")
+        self.assertEqual(rec["refused"], [])
+        self.assertTrue(rec["compiles"])
+        self.assertEqual(rec["_text"], C3A_SOURCES["Bridge"])
+        self.assertEqual(self._grade("Bridge", rec), "roundtrip-exact")
+
+    def test_initializer_sites_match_the_constructor_prefix(self):
+        rec = self._patch("InitOne")
+        self.assertEqual(rec["refused"], [])
+        self.assertTrue(rec["compiles"])
+        self.assertEqual(rec["_text"], C3A_SOURCES["InitOne"])
+        self.assertEqual({p["scope"] for p in rec["patches"]}, {"method", "init"})
+        self.assertEqual(self._grade("InitOne", rec), "roundtrip-exact")
+
+    def test_initializer_duplicated_across_constructors(self):
+        rec = self._patch("InitTwo")
+        self.assertEqual(rec["refused"], [])
+        self.assertEqual(rec["_text"], C3A_SOURCES["InitTwo"])
+        self.assertEqual(self._grade("InitTwo", rec), "roundtrip-exact")
+
+    def test_dropped_result_cast_is_restored_from_the_checkcast(self):
+        rec = self._patch("ResultCast")
+        self.assertTrue(rec["compiles"], rec["residual_errors"])
+        self.assertIn("return (byte[]) SecurityUtil.doPrivileged(", rec["_text"])
+        self.assertEqual([p["result_cast"] for p in rec["patches"]], ["byte[]"])
+        self.assertEqual(self._grade("ResultCast", rec), "roundtrip-exact")
+
+    def test_result_cast_is_not_applied_to_a_call_with_a_selection(self):
+        text = "x = SecurityUtil.doPrivileged(a).trim();"
+        self.assertFalse(self.mod.result_cast_applicable(text, text.index("SecurityUtil"), text.index(".trim")))
+        text = "x = SecurityUtil.doPrivileged(a)[0];"
+        self.assertFalse(self.mod.result_cast_applicable(text, text.index("SecurityUtil"), text.index("[0]")))
+        text = "x = SecurityUtil.doPrivileged(a);"
+        self.assertTrue(self.mod.result_cast_applicable(text, text.index("SecurityUtil"), text.index(";")))
+
+    def test_thrown_type_is_qualified_when_the_source_does_not_import_it(self):
+        rec = self._patch("Unimported")
+        self.assertTrue(rec["compiles"], rec["residual_errors"])
+        self.assertIn(f"{PSEA}<java.lang.String, java.io.IOException>) file::", rec["_text"])
+        self.assertEqual(self._grade("Unimported", rec), "roundtrip-exact")
+
+    def test_qualifier_keeps_visible_names_and_qualifies_the_rest(self):
+        known = {"java.io.IOException", "java.lang.Exception", "a.b.Custom", "java.net.URISyntaxException"}
+        src = "package a.b;\nimport java.io.IOException;\nclass X {}\n"
+        q = self.mod._make_qualifier(src, "a.b", known.__contains__)
+        self.assertEqual(q("IOException"), "IOException")           # single-type import
+        self.assertEqual(q("Exception"), "Exception")               # java.lang
+        self.assertEqual(q("Custom"), "Custom")                     # same package
+        self.assertEqual(q("URISyntaxException"), "java.net.URISyntaxException")
+        self.assertEqual(q("Nowhere"), "Nowhere")                   # unresolvable: unchanged
+        self.assertEqual(q("x.Y"), "x.Y")
+
+    def test_access_controller_two_argument_form(self):
+        rec = self._patch("Ctx")
+        self.assertEqual(rec["refused"], [])
+        self.assertTrue(rec["compiles"], rec["residual_errors"])
+        self.assertEqual(rec["_text"], C3A_SOURCES["Ctx"])
+        self.assertEqual(self._grade("Ctx", rec), "roundtrip-exact")
+
+
 if __name__ == "__main__":
     unittest.main()
