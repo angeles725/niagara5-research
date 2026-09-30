@@ -486,7 +486,9 @@ def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: st
         for _round in range(max_rounds):
             improved = False
             spans = mismatching_spans(path_, v) if use_distance else None
-            for name in names:
+            round_names = (HYP.sites_for_rules(names, [x["rules"] for x in v.values() if x["verdict"] == "mismatch"])
+                           if use_distance else names)
+            for name in round_names:
                 hyp = HYP.SITE_HYPOTHESES[name]
                 sites = hyp.sites(text)
                 if spans is not None:

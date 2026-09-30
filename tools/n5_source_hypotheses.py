@@ -862,6 +862,30 @@ def _null_cast_rewrites(text: str) -> list:
 remove_null_cast = RegexSites(_null_cast_rewrites)
 
 
+# canonical rules (tools/n5_canon.py) -> the site hypotheses that can explain them: the climb of an
+# `exact` splice only tries these for a method that was proven by those rules
+_LAYOUT_SITES = ("split-return-ternary", "split-return-boolean", "guard-return", "guard-continue",
+                 "early-return-else", "swap-if-else")
+_TEMP_SITES = ("introduce-return-temp", "inline-return-temp", "compound-assign-site", "lift-increments-site")
+RULE_SITES = {
+    "tail": _LAYOUT_SITES, "min": _LAYOUT_SITES, "inl": _LAYOUT_SITES, "merge": _LAYOUT_SITES,
+    "thread": _LAYOUT_SITES, "const": _LAYOUT_SITES, "cov": _LAYOUT_SITES, "cmp0": _LAYOUT_SITES,
+    "cmp1": _LAYOUT_SITES, "boolmat": ("split-return-boolean", "split-return-ternary"),
+    "dse": _TEMP_SITES, "peep": _TEMP_SITES, "r1": ("remove-null-cast",),
+    "iinc": ("expand-iinc-site", "collapse-iinc-site", "lift-increments-site"),
+    "web": ("hoist-declaration",),
+}
+
+
+def sites_for_rules(names: tuple, rule_sets: list) -> tuple:
+    """`names` narrowed to the hypotheses that can explain the rules of the mismatching methods
+    (`rule_sets`: one rule list per method); a method without rules (a true mismatch) keeps them all."""
+    if not rule_sets or any(not rules for rules in rule_sets):
+        return tuple(names)
+    wanted = {n for rules in rule_sets for r in rules for n in RULE_SITES.get(r, names)}
+    return tuple(n for n in names if n in wanted)
+
+
 def site_pos(site: tuple) -> int:
     """Source offset of a site: RegexSites sites are (pattern index, start, end), every other site is
     a (start, end) span."""

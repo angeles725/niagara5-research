@@ -94,5 +94,28 @@ class TestClimbScope(ExactBase):
         self.assertEqual(man["classes"]["p/Foo"]["self_grade"], "roundtrip-exact")
 
 
+class TestRuleTargetedSites(ExactBase):
+    """A method whose canonical proof needed only `tail` is never offered the declaration-order or
+    null-cast repairs: the climb tries only the site hypotheses that can explain the rules found."""
+
+    def test_only_hypotheses_matching_the_rules_of_a_mismatching_method_are_tried(self):
+        mod_dir, _ = self._module("rules", SHIPPED, PRIMARY, None, None)
+        tried = []
+        hyps = self.mod.HYP.SITE_HYPOTHESES
+        names = ("hoist-declaration", "remove-null-cast", "split-return-boolean")
+        for n in names:
+            self.addCleanup(hyps[n].__dict__.pop, "sites", None)
+
+            def sites(text, _orig=type(hyps[n]).sites.__get__(hyps[n]), _n=n):
+                tried.append(_n)
+                return _orig(text)
+            hyps[n].sites = sites
+        man = self._exact("rules", mod_dir, exact=True, climb=True, hypotheses=names)
+        self.assertEqual(man["classes"]["p/Foo"]["self_grade"], "roundtrip-exact")
+        self.assertIn("split-return-boolean", tried)
+        self.assertNotIn("hoist-declaration", tried)
+        self.assertNotIn("remove-null-cast", tried)
+
+
 if __name__ == "__main__":
     unittest.main()
