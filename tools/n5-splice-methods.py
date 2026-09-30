@@ -87,6 +87,17 @@ def _load_fidelity():
 FID = _load_fidelity()
 
 
+def _load_clinit():
+    spec = importlib.util.spec_from_file_location("n5_clinit_order_for_splice", TOOLS_DIR / "n5_clinit_order.py")
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+CLINIT = _load_clinit()
+
+
 class Refusal(Exception):
     def __init__(self, reason: str, detail: str = ""):
         super().__init__(f"{reason}: {detail}")
@@ -291,7 +302,9 @@ def plan_splice(primary_text: str, primary: dict, donors: dict, assignment: dict
 # ---------------------------------------------------------------------------
 
 def compile_parse(java_file: Path, class_short: str, classpath: str, javac_bin: str, javap_bin: str,
-                  tool_server: bool) -> Optional[dict]:
+                  tool_server: bool, raw: bool = False):
+    """The parsed javap of the recompiled class (None when it does not compile);
+    (parsed, javap text) with raw=True."""
     with tempfile.TemporaryDirectory(prefix=f"n5sp-{class_short}-") as td:
         args = ["--release", "25", "-g", "-implicit:none", "-proc:none", "-nowarn", "-d", td]
         if classpath:
@@ -301,8 +314,8 @@ def compile_parse(java_file: Path, class_short: str, classpath: str, javac_bin: 
         found = list(Path(td).rglob(f"{class_short}.class"))
         if rc != 0 or not found:
             return None
-        return FID.parse_javap_verbose(FID.run_javap_verbose(str(found[0]), javap_bin=javap_bin,
-                                                             tool_server=tool_server))
+        text = FID.run_javap_verbose(str(found[0]), javap_bin=javap_bin, tool_server=tool_server)
+        return (FID.parse_javap_verbose(text), text) if raw else FID.parse_javap_verbose(text)
 
 
 def grade_text(text: str, class_short: str, shipped_class: Path, classpath: str, javac_bin: str,
@@ -320,9 +333,16 @@ def grade_text(text: str, class_short: str, shipped_class: Path, classpath: str,
 # one class, one module
 # ---------------------------------------------------------------------------
 
-def splice_class(fqcn: str, mod_dir: Path, tree: str, *, classpath: str, helper_dir: Path, javac_bin: str,
-                 javap_bin: str, java_bin: str, tool_server: bool, donor_trees: tuple = (),
-                 primary_trees: tuple = ()) -> dict:
+def splice_class(fqcn: str, mod_dir: Path, tree: str, **kw) -> dict:
+    """{"status": "spliced", ...record, "_text": spliced} or
+    {"status": "refused"|"not-candidate", "reason", "detail"} (see _splice_class)."""
+    with tempfile.TemporaryDirectory(prefix=f"n5sd-{fqcn.rsplit('/', 1)[-1]}-") as td:
+        return _splice_class(fqcn, mod_dir, tree, td, **kw)
+
+
+def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: str, helper_dir: Path, javac_bin: str,
+                  javap_bin: str, java_bin: str, tool_server: bool, donor_trees: tuple = (),
+                  primary_trees: tuple = ()) -> dict:
     """{"status": "spliced", ...record, "_text": spliced} or
     {"status": "refused"|"not-candidate", "reason", "detail"}."""
     class_short = fqcn.rsplit("/", 1)[-1]
@@ -338,9 +358,10 @@ def splice_class(fqcn: str, mod_dir: Path, tree: str, *, classpath: str, helper_
         return {"status": "refused", "reason": "non-bmp", "detail": "javac offsets are UTF-16"}
     shipped = FID.parse_javap_verbose(FID.run_javap_verbose(str(shipped_class), javap_bin=javap_bin,
                                                             tool_server=tool_server))
-    primary_parsed = compile_parse(primary_path, class_short, classpath, javac_bin, javap_bin, tool_server)
-    if primary_parsed is None:
+    compiled = compile_parse(primary_path, class_short, classpath, javac_bin, javap_bin, tool_server, raw=True)
+    if compiled is None:
         return {"status": "not-candidate", "reason": "primary-no-compile", "detail": primary_tree}
+    primary_parsed, primary_javap = compiled
     verdicts, structure = per_method_verdicts(shipped, primary_parsed)
     base = {"primary_tree": primary_tree}
     non_synth = [k for k in structure["missing"] + structure["extra"] if not _is_synthetic_name(k[0])]
@@ -348,9 +369,39 @@ def splice_class(fqcn: str, mod_dir: Path, tree: str, *, classpath: str, helper_
         return {**base, "status": "refused", "reason": "structural-mismatch",
                 "detail": f"fields={structure['fields_match']} attrs={structure['attrs_match']} "
                           f"members={[list(k) for k in non_synth][:4]}"}
+    original_text = primary_text
+    pre_transforms: list = []
+    clinit_key = ("<clinit>", "()V")
+    if verdicts.get(clinit_key, {}).get("verdict") == "mismatch":
+        # C3d: the static-initializer order is recoverable from the shipped <clinit>
+        try:
+            scan = scan_spans([primary_path], helper_dir, java_bin, classpath)[str(primary_path)]
+            if scan["errors"]:
+                raise CLINIT.Unsupported(f"attribution: {scan['errors'][0]}")
+            reordered = CLINIT.reorder_clinit(primary_text, scan["inits"], shipped["methods"][clinit_key]["code"],
+                                              primary_javap, primary_parsed["methods"][clinit_key]["code"])
+        except (CLINIT.Unsupported, Refusal):
+            reordered = None
+        if reordered is not None:
+            new_path = Path(td) / "reordered" / f"{class_short}.java"
+            new_path.parent.mkdir(exist_ok=True)
+            new_path.write_text(reordered, encoding="utf-8")
+            new_compiled = compile_parse(new_path, class_short, classpath, javac_bin, javap_bin, tool_server)
+            if new_compiled is not None:
+                primary_text, primary_path, primary_parsed = reordered, new_path, new_compiled
+                verdicts, structure = per_method_verdicts(shipped, primary_parsed)
+                pre_transforms.append({"kind": "clinit-order", "sha256": sha256_text(reordered)})
     todo = sorted(k for k, v in verdicts.items() if v["verdict"] == "mismatch")
     if not todo and not structure["missing"] and not structure["extra"]:
-        return {**base, "status": "not-candidate", "reason": "already-clean", "detail": ""}
+        if not pre_transforms:
+            return {**base, "status": "not-candidate", "reason": "already-clean", "detail": ""}
+        grade = grade_text(primary_text, class_short, shipped_class, classpath, javac_bin, javap_bin, tool_server)
+        if not FID._is_clean(grade["grade"]):
+            return {**base, "status": "refused", "reason": "splice-not-clean", "detail": "clinit-order only"}
+        return {**base, "status": "spliced", "original_sha256": sha256_text(original_text),
+                "spliced_sha256": sha256_text(primary_text), "methods": [], "imports_added": [],
+                "pre_transforms": pre_transforms, "self_grade": grade["grade"],
+                "canonical_rules": grade.get("canonical_rules", []), "_text": primary_text}
     for k in todo:
         if k[0] == "<clinit>":
             return {**base, "status": "refused", "reason": "clinit", "detail": f"{k[0]}{k[1]}"}
@@ -359,64 +410,64 @@ def splice_class(fqcn: str, mod_dir: Path, tree: str, *, classpath: str, helper_
     if not todo:
         return {**base, "status": "refused", "reason": "structural-mismatch", "detail": "synthetic members only"}
 
-    with tempfile.TemporaryDirectory(prefix=f"n5sd-{class_short}-") as td:
-        donor_texts, donor_files, donor_verdicts = {}, {}, {}
-        engines = (*DONOR_ENGINES, *(TREE_DONOR_PREFIX + t for t in donor_trees))
-        for eng in engines:
-            if eng.startswith(TREE_DONOR_PREFIX):
-                # an already-decompiled tree is a donor as-is (never the primary itself)
-                name = eng[len(TREE_DONOR_PREFIX):]
-                src = mod_dir / name / f"{fqcn}.java"
-                if name == primary_tree or not src.is_file():
-                    continue
-            else:
-                jar = FID.DEFAULT_CFR_JAR if eng == "cfr" else FID.DEFAULT_PROCYON_JAR
-                src, _reason_ = FID._decompile_one_class_with(java_bin, eng, jar, shipped_class, Path(td) / eng)
-                if src is None:
-                    continue
-            parsed = compile_parse(Path(src), class_short, classpath, javac_bin, javap_bin, tool_server)
-            if parsed is None:
+    donor_texts, donor_files, donor_verdicts = {}, {}, {}
+    engines = (*DONOR_ENGINES, *(TREE_DONOR_PREFIX + t for t in donor_trees))
+    for eng in engines:
+        if eng.startswith(TREE_DONOR_PREFIX):
+            # an already-decompiled tree is a donor as-is (never the primary itself)
+            name = eng[len(TREE_DONOR_PREFIX):]
+            src = mod_dir / name / f"{fqcn}.java"
+            if name == primary_tree or not src.is_file():
                 continue
-            donor_texts[eng] = Path(src).read_text(encoding="utf-8")
-            donor_files[eng] = Path(src)
-            donor_verdicts[eng] = per_method_verdicts(shipped, parsed)[0]
-        options = {k: donor_candidates(k, donor_verdicts, engines) for k in todo}
-        lacking = [k for k, v in options.items() if not v]
-        if lacking:
-            return {**base, "status": "refused", "reason": "no-donor", "donors_compiled": sorted(donor_verdicts),
-                    "detail": ", ".join(f"{k[0]}{k[1]}" for k in lacking[:4])}
-        used = sorted({eng for v in options.values() for eng, _ in v})
+        else:
+            jar = FID.DEFAULT_CFR_JAR if eng == "cfr" else FID.DEFAULT_PROCYON_JAR
+            src, _reason_ = FID._decompile_one_class_with(java_bin, eng, jar, shipped_class, Path(td) / eng)
+            if src is None:
+                continue
+        parsed = compile_parse(Path(src), class_short, classpath, javac_bin, javap_bin, tool_server)
+        if parsed is None:
+            continue
+        donor_texts[eng] = Path(src).read_text(encoding="utf-8")
+        donor_files[eng] = Path(src)
+        donor_verdicts[eng] = per_method_verdicts(shipped, parsed)[0]
+    options = {k: donor_candidates(k, donor_verdicts, engines) for k in todo}
+    lacking = [k for k, v in options.items() if not v]
+    if lacking:
+        return {**base, "status": "refused", "reason": "no-donor", "donors_compiled": sorted(donor_verdicts),
+                "detail": ", ".join(f"{k[0]}{k[1]}" for k in lacking[:4])}
+    used = sorted({eng for v in options.values() for eng, _ in v})
+    try:
+        scans = scan_spans([primary_path] + [donor_files[e] for e in used], helper_dir, java_bin, classpath)
+    except Refusal as r:
+        return {**base, "status": "refused", "reason": r.reason, "detail": r.detail}
+    primary_scan = scans[str(primary_path)]
+    donors = {e: (donor_texts[e], scans[str(donor_files[e])]) for e in used}
+    full_decl = {k: not verdicts[k].get("body_only", True) for k in todo}
+    last = None
+    for combo in itertools.islice(itertools.product(*(options[k] for k in todo)), MAX_COMBOS):
+        assignment = {k: eng for k, (eng, _v) in zip(todo, combo)}
         try:
-            scans = scan_spans([primary_path] + [donor_files[e] for e in used], helper_dir, java_bin, classpath)
+            text, imports = plan_splice(primary_text, primary_scan, donors, assignment, full_decl, class_short)
         except Refusal as r:
-            return {**base, "status": "refused", "reason": r.reason, "detail": r.detail}
-        primary_scan = scans[str(primary_path)]
-        donors = {e: (donor_texts[e], scans[str(donor_files[e])]) for e in used}
-        full_decl = {k: not verdicts[k].get("body_only", True) for k in todo}
-        last = None
-        for combo in itertools.islice(itertools.product(*(options[k] for k in todo)), MAX_COMBOS):
-            assignment = {k: eng for k, (eng, _v) in zip(todo, combo)}
-            try:
-                text, imports = plan_splice(primary_text, primary_scan, donors, assignment, full_decl, class_short)
-            except Refusal as r:
-                last = (r.reason, r.detail)
-                continue
-            grade = grade_text(text, class_short, shipped_class, classpath, javac_bin, javap_bin, tool_server)
-            if grade["grade"] == "no-compile":
-                last = ("splice-no-compile", grade.get("first_error") or "")
-                continue
-            if not FID._is_clean(grade["grade"]):
-                last = ("splice-not-clean", ", ".join(f"{m[0]}{m[1]}" for m in grade["mismatched_methods"][:4]))
-                continue
-            return {**base, "status": "spliced",
-                    "original_sha256": sha256_text(primary_text), "spliced_sha256": sha256_text(text),
-                    "methods": [{"name": k[0], "descriptor": k[1], "donor": eng, "reason": _reason(v),
-                                 "donor_sha256": sha256_text(donor_texts[eng]),
-                                 "span": "declaration" if full_decl[k] else "after-modifiers"}
-                                for k, (eng, v) in zip(todo, combo)],
-                    "imports_added": imports, "self_grade": grade["grade"],
-                    "canonical_rules": grade.get("canonical_rules", []), "_text": text}
-        return {**base, "status": "refused", "reason": last[0], "detail": last[1][:300]}
+            last = (r.reason, r.detail)
+            continue
+        grade = grade_text(text, class_short, shipped_class, classpath, javac_bin, javap_bin, tool_server)
+        if grade["grade"] == "no-compile":
+            last = ("splice-no-compile", grade.get("first_error") or "")
+            continue
+        if not FID._is_clean(grade["grade"]):
+            last = ("splice-not-clean", ", ".join(f"{m[0]}{m[1]}" for m in grade["mismatched_methods"][:4]))
+            continue
+        return {**base, "status": "spliced",
+                "original_sha256": sha256_text(original_text), "spliced_sha256": sha256_text(text),
+                    **({"pre_transforms": pre_transforms} if pre_transforms else {}),
+                "methods": [{"name": k[0], "descriptor": k[1], "donor": eng, "reason": _reason(v),
+                             "donor_sha256": sha256_text(donor_texts[eng]),
+                             "span": "declaration" if full_decl[k] else "after-modifiers"}
+                            for k, (eng, v) in zip(todo, combo)],
+                "imports_added": imports, "self_grade": grade["grade"],
+                "canonical_rules": grade.get("canonical_rules", []), "_text": text}
+    return {**base, "status": "refused", "reason": last[0], "detail": last[1][:300]}
 
 
 def splice_module(module: str, organized_dir: Path, tree: str, out_tree: str, targets: list, *, classpath: str,

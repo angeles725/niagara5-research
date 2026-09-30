@@ -294,10 +294,8 @@ class TestCli(unittest.TestCase):
 
 
 @unittest.skipUnless(_jdk(), "JDK 25 not installed")
-class TestOnDiskDonorTrees(unittest.TestCase):
-    """C3d: donors are not only CFR/Procyon: any decompile tree already on disk
-    (vineflower-cons, vineflower, a flag variant) is a donor named `tree:<name>`,
-    the primary can be the m/p patch stage, and a rerun keeps earlier splices."""
+class _SpliceFixture(unittest.TestCase):
+    """Shared fixture of the C3d splice tests: real javac, fake CFR/Procyon."""
 
     @classmethod
     def setUpClass(cls):
@@ -321,6 +319,13 @@ class TestOnDiskDonorTrees(unittest.TestCase):
             return self.mod.splice_module(name, self.root / "organized", "vineflower2", "vineflower2s", ["p/Foo"],
                                           classpath="", helper_dir=self.helper, javac_bin=f"{JDK}/javac",
                                           javap_bin=f"{JDK}/javap", java_bin=f"{JDK}/java", tool_server=False, **kw)
+
+
+@unittest.skipUnless(_jdk(), "JDK 25 not installed")
+class TestOnDiskDonorTrees(_SpliceFixture):
+    """C3d: donors are not only CFR/Procyon: any decompile tree already on disk
+    (vineflower-cons, vineflower, a flag variant) is a donor named `tree:<name>`,
+    the primary can be the m/p patch stage, and a rerun keeps earlier splices."""
 
     def test_on_disk_tree_is_a_donor_when_cfr_and_procyon_are_not(self):
         mod_dir, fake = self._module("tree", SHIPPED, PRIMARY, PROCYON, PROCYON)
@@ -359,6 +364,62 @@ class TestOnDiskDonorTrees(unittest.TestCase):
                                          keep_existing=True)
         self.assertEqual(sorted(man["classes"]), ["p/Foo"])
         self.assertEqual((mod_dir / "vineflower2s" / "p" / "Foo.java").read_text(), kept)
+
+
+CLINIT_SHIPPED = """package p;
+public class Foo {
+  static java.util.List<String> log = new java.util.ArrayList<>();
+  static {
+    log.add("a");
+  }
+  static int x = log.size();
+  static int f(int a, int b) { return a - b; }
+}
+"""
+# decompiler style: the field initializer hoisted before the static block; f wrong
+CLINIT_PRIMARY = """package p;
+public class Foo {
+  static java.util.List<String> log = new java.util.ArrayList<>();
+  static int x = log.size();
+  static int f(int a, int b) { return b - a; }
+  static {
+    log.add("a");
+  }
+}
+"""
+
+
+@unittest.skipUnless(_jdk(), "JDK 25 not installed")
+class TestClinitOrderPreTransform(_SpliceFixture):
+    """C3d: a mismatching <clinit> is no longer refused when the static-initializer order is the
+    only difference; the reordered source is the primary the method splice starts from."""
+
+    def test_clinit_order_and_method_splice_together(self):
+        cfr = CLINIT_SHIPPED
+        mod_dir, fake = self._module("clinit", CLINIT_SHIPPED, CLINIT_PRIMARY, cfr, None)
+        man = self._run("clinit", mod_dir, fake)
+        rec = man["classes"]["p/Foo"]
+        self.assertEqual(rec["self_grade"], "roundtrip-exact")
+        self.assertEqual([m["name"] for m in rec["methods"]], ["f"])
+        self.assertEqual([t["kind"] for t in rec["pre_transforms"]], ["clinit-order"])
+        out = (mod_dir / "vineflower2s" / "p" / "Foo.java").read_text()
+        self.assertIn("static int x;", out)
+        self.assertEqual(rec["original_sha256"], self.mod.sha256_text(CLINIT_PRIMARY))
+        self.assertRegex(rec["pre_transforms"][0]["sha256"], r"^[0-9a-f]{64}$")
+
+    def test_clinit_order_alone_is_a_splice_with_no_donor_methods(self):
+        primary = CLINIT_PRIMARY.replace("return b - a;", "return a - b;")
+        mod_dir, fake = self._module("clinit2", CLINIT_SHIPPED, primary, None, None)
+        man = self._run("clinit2", mod_dir, fake)
+        rec = man["classes"]["p/Foo"]
+        self.assertEqual(rec["methods"], [])
+        self.assertEqual(rec["self_grade"], "roundtrip-exact")
+
+    def test_unfixable_clinit_is_still_refused(self):
+        primary = CLINIT_PRIMARY.replace('log.add("a")', 'log.add("zz")')
+        mod_dir, fake = self._module("clinit3", CLINIT_SHIPPED, primary, CLINIT_SHIPPED, None)
+        man = self._run("clinit3", mod_dir, fake)
+        self.assertEqual(man["refused"]["p/Foo"]["reason"], "clinit")
 
 
 if __name__ == "__main__":
