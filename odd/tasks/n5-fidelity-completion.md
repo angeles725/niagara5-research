@@ -43,13 +43,13 @@ Task IDs are C<n> (completion). "N4"/"N5" always mean Niagara 4 / Niagara 5, nev
 - [x] C2b (c84b22a review-c7952c9610dddba9, 32d7c3e review-fb240cea1c278fe9, 80ee769 passive; make test 702 OK; run 8h16m) Grade third-party classes without proven upstream source (~14.6k: 38 identified artifacts incl. woodstox 735,
       nimbus-jose 203, mssql-jdbc 166, paho 109 vendor-modified; unidentified jxbrowser 5,914, prosys-opc-ua 4,591, swt 959)
       on organized/_lib-inf-3p trees; per-jar --release; Kotlin (~3.6k) uses javap as the verified representation (B125).
-- [ ] C2c Fix upstream coverage loader for etc/m2 + regenerate docs/upstream-sources-report.md (C2b-G1).
+- [x] C2c (15aa01f review-4909f06f0c2e2261; report f02c89b: 63,538/79,241 = 80.2%) Fix upstream coverage loader for etc/m2 + regenerate docs/upstream-sources-report.md (C2b-G1).
 - [ ] C2d Decompile + grade the 3,997 uncovered third-party classes without a tree (C2b-G2; audit C2b-G4).
-- [ ] C2e Grade the 62 release-unsupported classes with JDK 8 javac (C2b-G3).
+- [x] C2e (9f8c367 review-42c252c99b42b763; 59/62 proven with JDK 8 javac, --legacy-jdk8-javac) Grade the 62 release-unsupported classes with JDK 8 javac (C2b-G3).
 - [x] C3a (e248220, 624f772; review-54c9da1651ae379a approved; merged da9797a; 23 patcher tests + make test 666 OK) Extend the F8 doPrivileged patch tree to the 109 bytecode-only `reference to doPrivileged is ambiguous` classes.
 - [x] C3b (11 commits cf50de5..1e39ba0, tools/n5-patch-mechanical.py, tree vineflower2m; 24 tests, make test 737 OK) Mechanical patches: anonymous-class-with-arguments (12), generic Object->String casts (12), `no suitable method` overload casts (22).
 - [x] C3c (same stage as C3b) Split `cannot find symbol` (67) by missing symbol kind and patch the mechanical sub-classes.
-- [ ] C3d Per-method splice with more donors / hand edits for the 103 one-method and 18 two-to-three-method mismatches
+- [x] C3d (23 commits ff7012c..6bf863b, 12 reviewed slices; make test 803 OK) Per-method splice with more donors / hand edits for the 103 one-method and 18 two-to-three-method mismatches
       (`<clinit>` is the top mismatched method: 166 of 602).
 - [ ] C3e Hand reconstruction of the long tail (~220 compile errors + 4 many-method mismatches), prioritised by module use.
 - [ ] C4 Push canonical-only classes toward byte-exact where source-controllable: expression-level rules (r1 503, iinc 21,
@@ -132,6 +132,17 @@ Task IDs are C<n> (completion). "N4"/"N5" always mean Niagara 4 / Niagara 5, nev
   C2b-G4 --release N API restriction may cause false bytecode-only; audit sample in C2d. C2b-G5 C3-style patches on the 1,507
   third-party bytecode-only after Tridium work. C2b-G6 reproducibility note (run uncovered-population first) -> report text.
 
+- C3a-G3 done (b885808, review-3ab6acefdaf7e654): per-record detail_rung + rung_errors; merge_best_of_records() for cross-JSON
+  consumers (C3a-G3-G1: existing JSON keeps old first_error until the C1b regrade).
+- C3d result (best-of recount, 0 rank regressions over 14,307): exact 10,345 / eq 25 / canon 3,513 / t2 72 / bytecode-only 352
+  -> 13,955 proven (97.54%, +193 all via spliced rung vineflower2s; 182 fully proven). Mechanisms: vineflower-cons donor 60,
+  clinit order 29, vf2v-ir0 16, source hypotheses (compound-assign, unfold arrays, lift increments, iinc), LVT local types 5,
+  structure repair + climb ~24, pattern-matching-off primary 12 (no-compile -> proven). Brace-all won C3b-G1 (5 clean vs 4/3).
+  Residual 352 = 63 no-compile + 289 mismatch (191 single-method), organized/_evidence/c3d/residual.tsv.
+  Child gaps: C3d-G1 generalize patch_output_label (--patch-label) in n5-fidelity.py; C3d-G2 LVT slot/scope AST reconstruction
+  (largest family); C3d-G3 lambda/anonymous/access$ numbering via declaration reordering; C3d-G4 checkcast on intersection
+  casts/varargs; C3d-G5 iinc inside expressions; vineflower2m tree not regenerated with brace-all.
+
 ## Next step
-C3b slice reviews -> merge; C2b result -> review; then C3a-G3/C3b-G4 tooling, C3d (C3a-G1 + C3b-G1 + one-method splice), C2a-G1, C4, C1b, C5.
+C2d running (decompile + grade 3,997 third-party classes). Then C2a-G1 (bin/ext stages) + C3d-G1, C4, C3e/C3d-G2 as time allows, C1b, C5, close.
 C1b (full --force regrade) is deferred until the C2/C3 tool changes land, so it runs once.
