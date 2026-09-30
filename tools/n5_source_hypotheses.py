@@ -1206,6 +1206,75 @@ class _EqTrue:
 eq_true = _EqTrue()
 
 
+_CALL_STMT = re.compile(r"^(?P<ind>[ \t]*)(?P<expr>[A-Za-z_][^;\n]*\));$", re.M)
+_STMT_KEYWORDS = ("return ", "throw ", "yield ", "assert ", "if ", "for ", "while ", "switch ", "synchronized ", "new ")
+
+
+def _last_call_args(expr: str):
+    """[(start, end)] of the arguments of the outermost last call of `expr` (which ends with `)`), or
+    None. Brackets and string/char literals are skipped."""
+    depth, stack, commas, quote, i = 0, [], {}, None, 0
+    while i < len(expr):
+        ch = expr[i]
+        if quote:
+            if ch == "\\":
+                i += 1
+            elif ch == quote:
+                quote = None
+        elif ch in "\"'":
+            quote = ch
+        elif ch in "([{":
+            stack.append(i)
+            commas[i] = []
+        elif ch in ")]}":
+            if not stack:
+                return None
+            opened = stack.pop()
+            if not stack and ch == ")" and i == len(expr) - 1:
+                bounds = [opened + 1, *[c + 1 for c in commas[opened]], i + 1]
+                return [(bounds[k], bounds[k + 1] - 1) for k in range(len(bounds) - 1)]
+        elif ch == "," and stack:
+            commas[stack[-1]].append(i)
+        i += 1
+    return None
+
+
+class _HoistArgumentTemp:
+    """Site hypothesis: `recv.m(a, new T(..))` -> `T argTmp = new T(..); recv.m(a, argTmp);`. The shipped
+    code kept the argument in a local; the decompiler inlines it."""
+
+    def _matches(self, text: str):
+        for m in _CALL_STMT.finditer(text):
+            expr = m.group("expr")
+            if expr.startswith(_STMT_KEYWORDS) or "=" in _top_level(expr) or "->" in expr or "{" in expr:
+                continue
+            args = _last_call_args(expr)
+            for n, (a, b) in enumerate(args or []):
+                arg = expr[a:b].strip()
+                if arg.startswith("new ") and not re.search(r"\bnew\b", arg[3:]) and arg.endswith(")"):
+                    yield m, args, n
+
+    def sites(self, text: str) -> list:
+        return [(m.start(), n) for m, _args, n in self._matches(text)]
+
+    def apply(self, text: str, site: tuple) -> str:
+        for m, args, n in self._matches(text):
+            if (m.start(), n) != tuple(site):
+                continue
+            expr, ind = m.group("expr"), m.group("ind")
+            a, b = args[n]
+            arg = expr[a:b].strip()
+            typ = arg[len("new "):arg.index("(")].strip()
+            if "<>" in typ:
+                typ = "var"
+            new_expr = expr[:a] + (" " if expr[a:b].startswith(" ") else "") + "argTmp" + expr[b:]
+            return text[:m.start()] + f"{ind}{typ} argTmp = {arg};\n{ind}{new_expr};" + text[m.end():]
+        return text
+
+
+hoist_arg_temp = _HoistArgumentTemp()
+
+
 _RAW_PRIV = re.compile(r"\(niagara\.nre\.security\.privileged\.(PrivilegedAction|PrivilegedExceptionAction)\)(?= \()")
 
 
@@ -1334,7 +1403,8 @@ RULE_SITES = {
     "thread": _LAYOUT_SITES, "const": _LAYOUT_SITES, "cov": _LAYOUT_SITES, "cmp0": _LAYOUT_SITES,
     "cmp1": _LAYOUT_SITES + ("eq-true",),
     "boolmat": ("split-return-boolean", "split-return-ternary", "wrap-boolean-ternary"),
-    "dse": _TEMP_SITES + ("instanceof-binding",), "peep": _TEMP_SITES + ("instanceof-binding",), "r1": ("remove-null-cast",),
+    "dse": _TEMP_SITES + ("instanceof-binding", "hoist-arg-temp"),
+    "peep": _TEMP_SITES + ("instanceof-binding", "hoist-arg-temp"), "r1": ("remove-null-cast",),
     "iinc": ("expand-iinc-site", "collapse-iinc-site", "lift-increments-site"),
     "web": ("hoist-declaration", "hoist-for-var", "instanceof-binding"),
 }
@@ -1371,6 +1441,7 @@ SITE_HYPOTHESES = {
     "split-or-condition": split_or_condition,
     "wrap-boolean-ternary": wrap_boolean_ternary,
     "eq-true": eq_true,
+    "hoist-arg-temp": hoist_arg_temp,
     "compound-assign-site": RegexSites(_compound_rewrites),
     "unfold-arrays-site": RegexSites(_unfold_rewrites),
     "expand-iinc-site": RegexSites(_expand_rewrites),

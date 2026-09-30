@@ -423,5 +423,24 @@ class TestBooleanMaterialization(ShapeSiteCase):
         self.assertEqual(eq.sites("   void m() {\n      if (x == true) {\n         f();\n      }\n   }\n"), [])
 
 
+class TestHoistArgumentTemp(ShapeSiteCase):
+    """A `new T(..)` argument the original source kept in a local (`T t = new T(..); call(t);`): the
+    local's store/load pair, and the order of evaluation, are in the shipped code."""
+
+    def test_new_argument_moves_into_a_local_before_the_statement(self):
+        self.assert_reproduces(
+            "hoist-arg-temp",
+            "   void m(java.util.List<Object> l) {\n      l.add(new Object());\n   }\n",
+            "   void m(java.util.List<Object> l) {\n      Object argTmp = new Object();\n      l.add(argTmp);\n   }\n")
+
+    def test_only_new_arguments_of_a_plain_call_statement_are_sites(self):
+        hyp = self.h.SITE_HYPOTHESES["hoist-arg-temp"]
+        self.assertEqual(len(hyp.sites("   void m() {\n      a.b(1, new X(y), z);\n   }\n")), 1)
+        self.assertEqual(hyp.sites("   void m() {\n      a.b(1, f(y), z);\n   }\n"), [])
+        self.assertEqual(hyp.sites("   void m() {\n      x = a.b(new X());\n   }\n"), [])
+        self.assertEqual(hyp.sites("   void m() {\n      a.b(new X() {\n      });\n   }\n"), [])
+        self.assertEqual(hyp.sites("   void m() {\n      a.b(new X(new Y()));\n   }\n"), [])
+
+
 if __name__ == "__main__":
     unittest.main()
