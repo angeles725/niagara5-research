@@ -35,6 +35,25 @@ class TestPure(unittest.TestCase):
     def setUp(self):
         self.mod = _load()
 
+    def test_code_distance_counts_differing_lines_and_stays_linear_for_big_methods(self):
+        a = [f"insn{i}: op{i % 7}" for i in range(10)]
+        b = list(a)
+        self.assertEqual(self.mod.code_distance(a, b), 0)
+        b[3] = "insn3: other"
+        self.assertEqual(self.mod.code_distance(a, b), 2)
+        big_a = [f"insn{i}: op{i % 50}" for i in range(2000)]
+        big_b = list(big_a)
+        big_b[10] = "insn10: x"
+        self.assertEqual(self.mod.code_distance(big_a, big_b), 2)
+        self.assertEqual(self.mod.code_distance(big_a, big_a), 0)
+
+    def test_numbering_only_difference_is_recognized(self):
+        a = ["insn0: new // class p/Foo$1", "insn1: invokespecial // Method p/Foo$1.\"<init>\":()V", "insn2: areturn"]
+        b = [x.replace("$1", "$2") for x in a]
+        self.assertTrue(self.mod.numbering_only(a, b))
+        self.assertFalse(self.mod.numbering_only(a, b + ["insn3: return"]))
+        self.assertFalse(self.mod.numbering_only(a, [x.replace("areturn", "return") for x in b]))
+
     def test_donors_prefer_exact_then_engine_order(self):
         m = ("f", "(I)I")
         verdicts = {"cfr": {m: {"verdict": "canonical", "rules": ["tail"]}},
@@ -272,6 +291,355 @@ class TestEndToEnd(unittest.TestCase):
         self.assertEqual(rec["imports_added"], ["java.util.ArrayList"])
         self.assertEqual(rec["self_grade"], "roundtrip-exact")
         self.assertIn("import java.util.ArrayList;", (mod_dir / "vineflower2s" / "p" / "Foo.java").read_text())
+
+
+class TestCli(unittest.TestCase):
+    def test_donor_and_primary_trees_reach_splice_module(self):
+        mod = _load()
+        with tempfile.TemporaryDirectory() as td:
+            targets = Path(td) / "t.json"
+            targets.write_text('[["m", "p/Foo"]]')
+            with mock.patch.object(mod.FID, "build_classpath", return_value=""), \
+                    mock.patch.object(mod, "compile_helper", return_value=Path(td)), \
+                    mock.patch.object(mod.FID, "shutdown_tool_servers"), \
+                    mock.patch.object(mod, "splice_module",
+                                      return_value={"classes": {}, "refused": {}, "not_candidates": {}}) as sm:
+                rc = mod.main(["--targets", str(targets), "--organized-dir", td, "--donor-trees",
+                               "vineflower-cons, vineflower", "--primary-trees", "vineflower2m", "--keep-existing"])
+        self.assertEqual(rc, 0)
+        kw = sm.call_args.kwargs
+        self.assertEqual((kw["donor_trees"], kw["primary_trees"], kw["keep_existing"]),
+                         (("vineflower-cons", "vineflower"), ("vineflower2m",), True))
+        self.assertEqual(kw["hypotheses"], ())
+        self.assertFalse(kw["climb"])
+        self.assertEqual(kw["decompilers"], ("cfr", "procyon"))
+
+    def test_hypotheses_flag_names_or_expands_all(self):
+        mod = _load()
+        for arg, want in (("compound-assign", ("compound-assign",)),
+                          ("all", (*mod.HYP.HYPOTHESES, *mod.HYP.SITE_HYPOTHESES))):
+            with tempfile.TemporaryDirectory() as td:
+                targets = Path(td) / "t.json"
+                targets.write_text('[["m", "p/Foo"]]')
+                with mock.patch.object(mod.FID, "build_classpath", return_value=""), \
+                        mock.patch.object(mod, "compile_helper", return_value=Path(td)), \
+                        mock.patch.object(mod.FID, "shutdown_tool_servers"), \
+                        mock.patch.object(mod, "splice_module",
+                                          return_value={"classes": {}, "refused": {}, "not_candidates": {}}) as sm:
+                    mod.main(["--targets", str(targets), "--organized-dir", td, "--hypotheses", arg])
+            self.assertEqual(sm.call_args.kwargs["hypotheses"], want)
+
+
+@unittest.skipUnless(_jdk(), "JDK 25 not installed")
+class _SpliceFixture(unittest.TestCase):
+    """Shared fixture of the C3d splice tests: real javac, fake CFR/Procyon."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load()
+        cls.td = tempfile.TemporaryDirectory()
+        cls.root = Path(cls.td.name)
+        cls.helper = cls.mod.compile_helper(cls.root / "helper", f"{JDK}/javac")
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.td.cleanup()
+
+    _module = TestEndToEnd._module
+
+    def _tree(self, mod_dir, tree, text):
+        (mod_dir / tree / "p").mkdir(parents=True, exist_ok=True)
+        (mod_dir / tree / "p" / "Foo.java").write_text(text)
+
+    def _run(self, name, mod_dir, fake, **kw):
+        with mock.patch.object(self.mod.FID, "_decompile_one_class_with", side_effect=fake):
+            return self.mod.splice_module(name, self.root / "organized", "vineflower2", "vineflower2s", ["p/Foo"],
+                                          classpath="", helper_dir=self.helper, javac_bin=f"{JDK}/javac",
+                                          javap_bin=f"{JDK}/javap", java_bin=f"{JDK}/java", tool_server=False, **kw)
+
+
+@unittest.skipUnless(_jdk(), "JDK 25 not installed")
+class TestOnDiskDonorTrees(_SpliceFixture):
+    """C3d: donors are not only CFR/Procyon: any decompile tree already on disk
+    (vineflower-cons, vineflower, a flag variant) is a donor named `tree:<name>`,
+    the primary can be the m/p patch stage, and a rerun keeps earlier splices."""
+
+    def test_on_disk_tree_is_a_donor_when_cfr_and_procyon_are_not(self):
+        mod_dir, fake = self._module("tree", SHIPPED, PRIMARY, PROCYON, PROCYON)
+        self._tree(mod_dir, "vineflower-cons", SHIPPED.replace("return a - b;", "return (a - b);"))
+        man = self._run("tree", mod_dir, fake, donor_trees=["vineflower-cons"])
+        rec = man["classes"]["p/Foo"]
+        self.assertEqual([(m["name"], m["donor"], m["reason"]) for m in rec["methods"]],
+                         [("f", "tree:vineflower-cons", "exact")])
+        self.assertEqual(man["donor_engines"], ["cfr", "procyon", "tree:vineflower-cons"])
+        self.assertEqual(rec["self_grade"], "roundtrip-exact")
+
+    def test_decompilers_can_be_switched_off(self):
+        mod_dir, fake = self._module("nodec", SHIPPED, PRIMARY, CFR, PROCYON)
+        calls = []
+
+        def spy(*a, **k):
+            calls.append(a[1])
+            return fake(*a, **k)
+        with mock.patch.object(self.mod.FID, "_decompile_one_class_with", side_effect=spy):
+            man = self.mod.splice_module("nodec", self.root / "organized", "vineflower2", "vineflower2s", ["p/Foo"],
+                                         classpath="", helper_dir=self.helper, javac_bin=f"{JDK}/javac",
+                                         javap_bin=f"{JDK}/javap", java_bin=f"{JDK}/java", tool_server=False,
+                                         decompilers=())
+        self.assertEqual(calls, [])
+        self.assertEqual(man["donor_engines"], [])
+        self.assertEqual(man["refused"]["p/Foo"]["reason"], "no-donor")
+
+    def test_missing_donor_tree_file_is_skipped_not_fatal(self):
+        mod_dir, fake = self._module("notree", SHIPPED, PRIMARY, PROCYON, PROCYON)
+        man = self._run("notree", mod_dir, fake, donor_trees=["vineflower-cons"])
+        self.assertEqual(man["refused"]["p/Foo"]["reason"], "no-donor")
+
+    def test_primary_preference_uses_the_patch_stage_tree(self):
+        mod_dir, fake = self._module("prim", SHIPPED, PRIMARY, CFR, PROCYON)
+        # the m stage fixed f but broke h; vineflower2 stays the graded baseline
+        self._tree(mod_dir, "vineflower2m", SHIPPED.replace("return k + 1;", "return k + 5;"))
+        man = self._run("prim", mod_dir, fake, primary_trees=["vineflower2m"])
+        rec = man["classes"]["p/Foo"]
+        self.assertEqual(rec["primary_tree"], "vineflower2m")
+        self.assertEqual([m["name"] for m in rec["methods"]], ["h"])
+
+    def test_first_compiling_primary_tree_wins_and_a_clean_one_is_emitted(self):
+        # vineflower2 (the baseline) does not compile; the alternative tree is clean as it stands
+        mod_dir, fake = self._module("alt", SHIPPED, "package p;\npublic class Foo { int broken( }\n", None, None)
+        self._tree(mod_dir, "vf-alt", SHIPPED)
+        man = self._run("alt", mod_dir, fake, primary_trees=["vf-missing", "vf-alt"])
+        rec = man["classes"]["p/Foo"]
+        self.assertEqual((rec["primary_tree"], rec["methods"], rec["self_grade"]), ("vf-alt", [], "roundtrip-exact"))
+        self.assertEqual([t["kind"] for t in rec["pre_transforms"]], ["primary-tree"])
+        self.assertEqual((mod_dir / "vineflower2s" / "p" / "Foo.java").read_text(), SHIPPED)
+
+    def test_clean_baseline_primary_is_still_not_a_candidate(self):
+        mod_dir, fake = self._module("base", SHIPPED, SHIPPED, None, None)
+        man = self._run("base", mod_dir, fake)
+        self.assertEqual(man["not_candidates"]["p/Foo"]["reason"], "already-clean")
+
+    def test_keep_existing_carries_earlier_splices_over(self):
+        mod_dir, fake = self._module("keep", SHIPPED, PRIMARY, CFR, PROCYON)
+        first = self._run("keep", mod_dir, fake)
+        self.assertIn("p/Foo", first["classes"])
+        kept = (mod_dir / "vineflower2s" / "p" / "Foo.java").read_text()
+        # second run targets nothing that splices; without keep_existing the earlier class is wiped
+        with mock.patch.object(self.mod.FID, "_decompile_one_class_with", side_effect=fake):
+            man = self.mod.splice_module("keep", self.root / "organized", "vineflower2", "vineflower2s", [],
+                                         classpath="", helper_dir=self.helper, javac_bin=f"{JDK}/javac",
+                                         javap_bin=f"{JDK}/javap", java_bin=f"{JDK}/java", tool_server=False,
+                                         keep_existing=True)
+        self.assertEqual(sorted(man["classes"]), ["p/Foo"])
+        self.assertEqual((mod_dir / "vineflower2s" / "p" / "Foo.java").read_text(), kept)
+
+
+CLINIT_SHIPPED = """package p;
+public class Foo {
+  static java.util.List<String> log = new java.util.ArrayList<>();
+  static {
+    log.add("a");
+  }
+  static int x = log.size();
+  static int f(int a, int b) { return a - b; }
+}
+"""
+# decompiler style: the field initializer hoisted before the static block; f wrong
+CLINIT_PRIMARY = """package p;
+public class Foo {
+  static java.util.List<String> log = new java.util.ArrayList<>();
+  static int x = log.size();
+  static int f(int a, int b) { return b - a; }
+  static {
+    log.add("a");
+  }
+}
+"""
+
+
+@unittest.skipUnless(_jdk(), "JDK 25 not installed")
+class TestClinitOrderPreTransform(_SpliceFixture):
+    """C3d: a mismatching <clinit> is no longer refused when the static-initializer order is the
+    only difference; the reordered source is the primary the method splice starts from."""
+
+    def test_clinit_order_and_method_splice_together(self):
+        cfr = CLINIT_SHIPPED
+        mod_dir, fake = self._module("clinit", CLINIT_SHIPPED, CLINIT_PRIMARY, cfr, None)
+        man = self._run("clinit", mod_dir, fake)
+        rec = man["classes"]["p/Foo"]
+        self.assertEqual(rec["self_grade"], "roundtrip-exact")
+        self.assertEqual([m["name"] for m in rec["methods"]], ["f"])
+        self.assertEqual([t["kind"] for t in rec["pre_transforms"]], ["clinit-order"])
+        out = (mod_dir / "vineflower2s" / "p" / "Foo.java").read_text()
+        self.assertIn("static int x;", out)
+        self.assertEqual(rec["original_sha256"], self.mod.sha256_text(CLINIT_PRIMARY))
+        self.assertRegex(rec["pre_transforms"][0]["sha256"], r"^[0-9a-f]{64}$")
+
+    def test_clinit_order_alone_is_a_splice_with_no_donor_methods(self):
+        primary = CLINIT_PRIMARY.replace("return b - a;", "return a - b;")
+        mod_dir, fake = self._module("clinit2", CLINIT_SHIPPED, primary, None, None)
+        man = self._run("clinit2", mod_dir, fake)
+        rec = man["classes"]["p/Foo"]
+        self.assertEqual(rec["methods"], [])
+        self.assertEqual(rec["self_grade"], "roundtrip-exact")
+
+    def test_unfixable_clinit_is_still_refused(self):
+        primary = CLINIT_PRIMARY.replace('log.add("a")', 'log.add("zz")')
+        mod_dir, fake = self._module("clinit3", CLINIT_SHIPPED, primary, CLINIT_SHIPPED, None)
+        man = self._run("clinit3", mod_dir, fake)
+        self.assertEqual(man["refused"]["p/Foo"]["reason"], "clinit")
+
+
+HYP_SHIPPED = """package p;
+public class Foo {
+  byte[] buf = new byte[4];
+  void set(boolean on) {
+    if (on) {
+      buf[3] |= 4;
+    } else {
+      buf[3] &= -5;
+    }
+  }
+  int keep(int a) { return a + 1; }
+}
+"""
+HYP_PRIMARY = HYP_SHIPPED.replace("buf[3] |= 4;", "buf[3] = (byte)(buf[3] | 4);").replace(
+    "buf[3] &= -5;", "buf[3] = (byte)(buf[3] & -5);")
+
+
+@unittest.skipUnless(_jdk(), "JDK 25 not installed")
+class TestSourceHypothesisDonors(_SpliceFixture):
+    """C3d: a source hypothesis (tools/n5_source_hypotheses.py) applied to the primary is one more
+    donor named `hyp:<name>`; its methods count only when their recompiled Code matches."""
+
+    def test_compound_assign_variant_donates_the_methods_it_fixes(self):
+        mod_dir, fake = self._module("hyp", HYP_SHIPPED, HYP_PRIMARY, None, None)
+        man = self._run("hyp", mod_dir, fake, hypotheses=["compound-assign"])
+        rec = man["classes"]["p/Foo"]
+        self.assertEqual([(m["name"], m["donor"]) for m in rec["methods"]], [("set", "hyp:compound-assign")])
+        self.assertEqual(rec["self_grade"], "roundtrip-exact")
+        out = (mod_dir / "vineflower2s" / "p" / "Foo.java").read_text()
+        self.assertIn("buf[3] |= 4;", out)
+        self.assertEqual(man["donor_engines"][-1], "hyp:compound-assign")
+
+    def test_hypothesis_fixing_a_static_initializer_is_adopted_as_a_pre_transform(self):
+        shipped = HYP_SHIPPED.replace("  int keep", "  static final byte[] T = new byte[2];\n  static {\n    T[1] |= 4;\n  }\n  int keep")
+        primary = HYP_PRIMARY.replace("  int keep", "  static final byte[] T = new byte[2];\n  static {\n"
+                                                      "    T[1] = (byte)(T[1] | 4);\n  }\n  int keep")
+        mod_dir, fake = self._module("hyp3", shipped, primary, None, None)
+        man = self._run("hyp3", mod_dir, fake, hypotheses=["compound-assign"])
+        rec = man["classes"]["p/Foo"]
+        self.assertEqual([t["kind"] for t in rec["pre_transforms"]], ["hyp:compound-assign"])
+        self.assertEqual(rec["methods"], [])
+        self.assertEqual(rec["self_grade"], "roundtrip-exact")
+
+    def test_context_hypothesis_restores_a_dropped_null_check(self):
+        shipped = HYP_SHIPPED.replace("int keep(int a) { return a + 1; }",
+                                      "static Object keep(Object a) { java.util.Objects.requireNonNull(a); return a; }")
+        primary = shipped.replace("java.util.Objects.requireNonNull(a); ", "")
+        mod_dir, fake = self._module("hyp4", shipped, primary.replace("buf[3] |= 4;", "buf[3] = (byte)(buf[3] | 4);")
+                                     .replace("buf[3] &= -5;", "buf[3] = (byte)(buf[3] & -5);"), None, None)
+        man = self._run("hyp4", mod_dir, fake, hypotheses=["compound-assign", "restore-null-checks"])
+        rec = man["classes"]["p/Foo"]
+        self.assertEqual(sorted((m["name"], m["donor"]) for m in rec["methods"]),
+                         [("keep", "hyp:restore-null-checks"), ("set", "hyp:compound-assign")])
+        self.assertEqual(rec["self_grade"], "roundtrip-exact")
+        self.assertIn("java.util.Objects.requireNonNull(a);", (mod_dir / "vineflower2s" / "p" / "Foo.java").read_text())
+
+    def test_lvt_declared_type_hypothesis_fixes_a_mismatching_local(self):
+        shipped = HYP_SHIPPED.replace("int keep(int a) { return a + 1; }",
+                                      "static int keep(java.util.List<String> a) {\n    java.util.Collection<String> c = a;\n"
+                                      "    return c.size();\n  }")
+        primary = shipped.replace("java.util.Collection<String> c = a;", "java.util.List<String> c = a;").replace(
+            "buf[3] |= 4;", "buf[3] = (byte)(buf[3] | 4);").replace("buf[3] &= -5;", "buf[3] = (byte)(buf[3] & -5);")
+        mod_dir, fake = self._module("hyp5", shipped, primary, None, None)
+        man = self._run("hyp5", mod_dir, fake, hypotheses=["compound-assign", "declared-local-types"])
+        rec = man["classes"]["p/Foo"]
+        self.assertIn(("keep", "hyp:declared-local-types"), [(m["name"], m["donor"]) for m in rec["methods"]])
+        self.assertEqual(rec["self_grade"], "roundtrip-exact")
+
+    def test_climb_applies_only_the_sites_a_method_needs(self):
+        # the original expanded one statement and compounded the other: all-or-nothing cannot match it
+        shipped = HYP_SHIPPED.replace("    if (on) {\n      buf[3] |= 4;\n    } else {\n      buf[3] &= -5;\n    }\n",
+                                      "    buf[3] |= 4;\n    buf[2] = (byte)(buf[2] & 1);\n")
+        primary = shipped.replace("buf[3] |= 4;", "buf[3] = (byte)(buf[3] | 4);")
+        mod_dir, fake = self._module("climb", shipped, primary, None, None)
+        man = self._run("climb", mod_dir, fake, hypotheses=["compound-assign-site"], climb=True)
+        rec = man["classes"]["p/Foo"]
+        self.assertEqual(rec["self_grade"], "roundtrip-exact")
+        self.assertEqual([t["kind"] for t in rec["pre_transforms"]], ["climb:compound-assign-site"])
+        self.assertEqual(rec["pre_transforms"][0]["sites"], 1)
+        out = (mod_dir / "vineflower2s" / "p" / "Foo.java").read_text()
+        self.assertIn("buf[3] |= 4;", out)
+        self.assertIn("buf[2] = (byte)(buf[2] & 1);", out)
+        # without --climb the same hypothesis list leaves the class alone
+        mod_dir, fake = self._module("climb2", shipped, primary, None, None)
+        man = self._run("climb2", mod_dir, fake, hypotheses=["compound-assign-site"])
+        self.assertNotIn("p/Foo", man["classes"])
+
+    def test_variant_identical_to_the_primary_is_skipped(self):
+        mod_dir, fake = self._module("hyp2", HYP_SHIPPED, HYP_SHIPPED.replace("a + 1", "a + 2"), None, None)
+        man = self._run("hyp2", mod_dir, fake, hypotheses=["compound-assign"])
+        self.assertEqual(man["refused"]["p/Foo"]["reason"], "no-donor")
+
+
+LAMBDA_SHIPPED = """package p;
+import java.util.function.Function;
+import java.util.function.Supplier;
+public class Foo {
+  static Object f(boolean b) {
+    if (b) {
+      return (Supplier<String>) () -> "a";
+    } else {
+      return (Function<String, Integer>) s -> s.length();
+    }
+  }
+  static int g(int a) { return a + 1; }
+}
+"""
+# the decompiler negated the condition and swapped the branches: javac numbers the lambdas the other way round
+LAMBDA_PRIMARY = LAMBDA_SHIPPED.replace("""    if (b) {
+      return (Supplier<String>) () -> "a";
+    } else {
+      return (Function<String, Integer>) s -> s.length();
+    }""", """    if (!b) {
+      return (Function<String, Integer>) s -> s.length();
+    } else {
+      return (Supplier<String>) () -> "a";
+    }""")
+
+
+@unittest.skipUnless(_jdk(), "JDK 25 not installed")
+class TestStructuralPrimarySearch(_SpliceFixture):
+    """C3d: a primary whose class structure differs from the shipped class (lambda numbering,
+    accessors) can only be replaced as a whole: the first alternative tree that restores the
+    structure becomes the primary, then the method splice continues from it."""
+
+    def test_alternative_tree_restoring_the_structure_becomes_the_primary(self):
+        mod_dir, fake = self._module("lam", LAMBDA_SHIPPED, LAMBDA_PRIMARY, None, None)
+        self._tree(mod_dir, "vineflower-cons", LAMBDA_SHIPPED)
+        man = self._run("lam", mod_dir, fake, donor_trees=["vineflower-cons"])
+        rec = man["classes"]["p/Foo"]
+        self.assertEqual(rec["self_grade"], "roundtrip-exact")
+        self.assertEqual([(t["kind"], t["tree"]) for t in rec["pre_transforms"]], [("primary-tree", "vineflower-cons")])
+        self.assertEqual((mod_dir / "vineflower2s" / "p" / "Foo.java").read_text(), LAMBDA_SHIPPED)
+
+    def test_site_hypothesis_repairs_the_structure_site_by_site(self):
+        mod_dir, fake = self._module("lam3", LAMBDA_SHIPPED, LAMBDA_PRIMARY, None, None)
+        man = self._run("lam3", mod_dir, fake, hypotheses=["swap-if-else"])
+        rec = man["classes"]["p/Foo"]
+        self.assertEqual(rec["self_grade"], "roundtrip-exact")
+        self.assertEqual([t["kind"] for t in rec["pre_transforms"]], ["site:swap-if-else"])
+        self.assertEqual(rec["pre_transforms"][0]["sites"], 1)
+        self.assertIn("if (b) {", (mod_dir / "vineflower2s" / "p" / "Foo.java").read_text())
+
+    def test_structure_that_no_alternative_restores_is_never_written(self):
+        mod_dir, fake = self._module("lam2", LAMBDA_SHIPPED, LAMBDA_PRIMARY, None, None)
+        self._tree(mod_dir, "vineflower-cons", LAMBDA_PRIMARY)
+        man = self._run("lam2", mod_dir, fake, donor_trees=["vineflower-cons"])
+        self.assertIn("p/Foo", man["refused"])
+        self.assertNotIn("p/Foo", man["classes"])
+        self.assertFalse((mod_dir / "vineflower2s" / "p" / "Foo.java").exists())
 
 
 if __name__ == "__main__":

@@ -45,6 +45,10 @@ imports, self grade; per refused class the reason). Grade it with
   n5-fidelity.py --regrade-nonclean --tree vineflower2 --patch-tree vineflower2s
 (-> fidelity.vineflower2.spliced.json).
 
+C3d: --donor-trees adds already-decompiled trees (vineflower-cons, the v1 tree, flag-variant trees) as
+donors named `tree:<name>`; --primary-trees starts from the m/p patch stage; --keep-existing extends an
+earlier splice stage instead of replacing it (a re-run without it rebuilds the out tree).
+
 Usage:
   python3 tools/n5-splice-methods.py --targets remaining.json --tool-server --jobs 2 --class-jobs 4
     (remaining.json: [[module, fqcn], ...])
@@ -52,11 +56,14 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import collections
 import concurrent.futures
+import difflib
 import hashlib
 import importlib.util
 import itertools
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -81,6 +88,29 @@ def _load_fidelity():
 
 
 FID = _load_fidelity()
+
+
+def _load_clinit():
+    spec = importlib.util.spec_from_file_location("n5_clinit_order_for_splice", TOOLS_DIR / "n5_clinit_order.py")
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+CLINIT = _load_clinit()
+
+
+def _load_hypotheses():
+    spec = importlib.util.spec_from_file_location("n5_source_hypotheses_for_splice",
+                                                  TOOLS_DIR / "n5_source_hypotheses.py")
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+HYP = _load_hypotheses()
 
 
 class Refusal(Exception):
@@ -129,11 +159,36 @@ def per_method_verdicts(shipped: dict, recompiled: dict) -> tuple[dict, dict]:
     return out, structure
 
 
-def donor_candidates(key, donor_verdicts: dict) -> list:
+TREE_DONOR_PREFIX = "tree:"
+HYP_DONOR_PREFIX = "hyp:"
+
+
+def code_distance(shipped_code: list, ours_code: list, cap: int = 250_000) -> int:
+    """Instruction lines that differ between two normalized codes: lines outside the longest matching
+    blocks for methods up to `cap` line pairs, else the multiset difference of the lines (a
+    linear-time bound that also shrinks as the codes converge)."""
+    a = [re.sub(r"^insn\d+:\s*", "", x) for x in shipped_code]
+    b = [re.sub(r"^insn\d+:\s*", "", x) for x in ours_code]
+    if len(a) * len(b) > cap:
+        ca, cb = collections.Counter(a), collections.Counter(b)
+        return sum(((ca - cb) + (cb - ca)).values())
+    matcher = difflib.SequenceMatcher(None, a, b, autojunk=False)
+    return len(a) + len(b) - 2 * sum(blk.size for blk in matcher.get_matching_blocks())
+
+
+def numbering_only(shipped_code: list, ours_code: list) -> bool:
+    """True when two normalized codes are equal once anonymous-class numbers (`Foo$1`) are ignored:
+    javac numbers anonymous classes in source order, so a reordered source differs only by them."""
+    strip = lambda code: [re.sub(r"\$\d+\b", "$N", line) for line in code]  # noqa: E731
+    return len(shipped_code) == len(ours_code) and strip(shipped_code) == strip(ours_code) \
+        and shipped_code != ours_code
+
+
+def donor_candidates(key, donor_verdicts: dict, engines: tuple = DONOR_ENGINES) -> list:
     """[(engine, verdict)] of the donors whose `key` matches the shipped method,
-    best evidence first (exact, allowlist, canonical), DONOR_ENGINES order on a tie."""
+    best evidence first (exact, allowlist, canonical), `engines` order on a tie."""
     found = []
-    for i, eng in enumerate(DONOR_ENGINES):
+    for i, eng in enumerate(engines):
         v = (donor_verdicts.get(eng) or {}).get(key)
         if v and v["verdict"] in _VERDICT_RANK:
             found.append((_VERDICT_RANK[v["verdict"]], i, eng, v))
@@ -284,7 +339,9 @@ def plan_splice(primary_text: str, primary: dict, donors: dict, assignment: dict
 # ---------------------------------------------------------------------------
 
 def compile_parse(java_file: Path, class_short: str, classpath: str, javac_bin: str, javap_bin: str,
-                  tool_server: bool) -> Optional[dict]:
+                  tool_server: bool, raw: bool = False):
+    """The parsed javap of the recompiled class (None when it does not compile);
+    (parsed, javap text) with raw=True."""
     with tempfile.TemporaryDirectory(prefix=f"n5sp-{class_short}-") as td:
         args = ["--release", "25", "-g", "-implicit:none", "-proc:none", "-nowarn", "-d", td]
         if classpath:
@@ -294,8 +351,8 @@ def compile_parse(java_file: Path, class_short: str, classpath: str, javac_bin: 
         found = list(Path(td).rglob(f"{class_short}.class"))
         if rc != 0 or not found:
             return None
-        return FID.parse_javap_verbose(FID.run_javap_verbose(str(found[0]), javap_bin=javap_bin,
-                                                             tool_server=tool_server))
+        text = FID.run_javap_verbose(str(found[0]), javap_bin=javap_bin, tool_server=tool_server)
+        return (FID.parse_javap_verbose(text), text) if raw else FID.parse_javap_verbose(text)
 
 
 def grade_text(text: str, class_short: str, shipped_class: Path, classpath: str, javac_bin: str,
@@ -313,34 +370,235 @@ def grade_text(text: str, class_short: str, shipped_class: Path, classpath: str,
 # one class, one module
 # ---------------------------------------------------------------------------
 
-def splice_class(fqcn: str, mod_dir: Path, tree: str, *, classpath: str, helper_dir: Path, javac_bin: str,
-                 javap_bin: str, java_bin: str, tool_server: bool) -> dict:
+def splice_class(fqcn: str, mod_dir: Path, tree: str, **kw) -> dict:
+    """{"status": "spliced", ...record, "_text": spliced} or
+    {"status": "refused"|"not-candidate", "reason", "detail"} (see _splice_class)."""
+    with tempfile.TemporaryDirectory(prefix=f"n5sd-{fqcn.rsplit('/', 1)[-1]}-") as td:
+        return _splice_class(fqcn, mod_dir, tree, td, **kw)
+
+
+def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: str, helper_dir: Path, javac_bin: str,
+                  javap_bin: str, java_bin: str, tool_server: bool, donor_trees: tuple = (),
+                  primary_trees: tuple = (), hypotheses: tuple = (), decompilers: tuple = DONOR_ENGINES,
+                  climb: bool = False) -> dict:
     """{"status": "spliced", ...record, "_text": spliced} or
     {"status": "refused"|"not-candidate", "reason", "detail"}."""
+    site_hyps = tuple(h for h in hypotheses if h in HYP.SITE_HYPOTHESES)
+    hypotheses = tuple(h for h in hypotheses if h in HYP.HYPOTHESES)
     class_short = fqcn.rsplit("/", 1)[-1]
     shipped_class = mod_dir / "extracted" / f"{fqcn}.class"
-    primary_tree = f"{tree}p" if (mod_dir / f"{tree}p" / f"{fqcn}.java").is_file() else tree
-    primary_path = mod_dir / primary_tree / f"{fqcn}.java"
-    if not primary_path.is_file() or not shipped_class.is_file():
-        return {"status": "not-candidate", "reason": "no-source", "detail": str(primary_path)}
-    primary_text = primary_path.read_text(encoding="utf-8")
+    # the primary is the first existing tree of primary_trees (e.g. the m/p patch stage), then
+    # <tree>p (F8), then <tree>
+    candidates = [t for t in (*primary_trees, f"{tree}p", tree) if (mod_dir / t / f"{fqcn}.java").is_file()]
+    if not candidates or not shipped_class.is_file():
+        return {"status": "not-candidate", "reason": "no-source", "detail": str(mod_dir / tree / f"{fqcn}.java")}
+    primary_tree = primary_path = primary_text = compiled = None
+    for t in candidates:
+        # the first tree that compiles is the primary (a patch stage, else a donor tree when the
+        # baseline does not compile at all)
+        path = mod_dir / t / f"{fqcn}.java"
+        text = path.read_text(encoding="utf-8")
+        compiled = compile_parse(path, class_short, classpath, javac_bin, javap_bin, tool_server, raw=True)
+        if compiled is not None:
+            primary_tree, primary_path, primary_text = t, path, text
+            break
+    if compiled is None:
+        return {"status": "not-candidate", "reason": "primary-no-compile", "detail": candidates[0]}
     if any(ord(ch) > 0xFFFF for ch in primary_text):
         return {"status": "refused", "reason": "non-bmp", "detail": "javac offsets are UTF-16"}
-    shipped = FID.parse_javap_verbose(FID.run_javap_verbose(str(shipped_class), javap_bin=javap_bin,
-                                                            tool_server=tool_server))
-    primary_parsed = compile_parse(primary_path, class_short, classpath, javac_bin, javap_bin, tool_server)
-    if primary_parsed is None:
-        return {"status": "not-candidate", "reason": "primary-no-compile", "detail": primary_tree}
+    shipped_javap = FID.run_javap_verbose(str(shipped_class), javap_bin=javap_bin, tool_server=tool_server)
+    shipped = FID.parse_javap_verbose(shipped_javap)
+    primary_parsed, primary_javap = compiled
     verdicts, structure = per_method_verdicts(shipped, primary_parsed)
     base = {"primary_tree": primary_tree}
+    original_text = primary_text
+    # a primary that is not the baseline tree (nor its F8 patch) and is clean as it stands is a
+    # result in itself; the baseline being clean is not (the class is then not a target)
+    pre_transforms: list = ([{"kind": "primary-tree", "tree": primary_tree, "sha256": sha256_text(primary_text)}]
+                            if primary_tree not in (tree, f"{tree}p") else [])
+
+    def hyp_variant(name: str) -> str:
+        """The hypothesis applied to the current primary; context hypotheses (needs_context) get the
+        attributed spans and the shipped/recompiled code of every method."""
+        fn = HYP.HYPOTHESES[name]
+        if not getattr(fn, "needs_context", False):
+            return fn(primary_text)
+        try:
+            scan = scan_spans([primary_path], helper_dir, java_bin, classpath)[str(primary_path)]
+        except Refusal:
+            return primary_text
+        if scan["errors"]:
+            return primary_text
+        return fn(primary_text, {
+            "methods": scan["methods"],
+            "shipped": {k: m["code"] for k, m in shipped["methods"].items()},
+            "ours": {k: m["code"] for k, m in primary_parsed["methods"].items()},
+            "static": {k: "ACC_STATIC" in m["flags"] for k, m in shipped["methods"].items()},
+            "lvt": HYP.lvt_types(shipped_javap),
+            "mismatched": {k for k, x in verdicts.items() if x["verdict"] == "mismatch"}})
+
+    def structure_ok(st: dict) -> bool:
+        return st["fields_match"] and st["attrs_match"] and not st["missing"] and not st["extra"]
+
+    def score(v: dict, st: dict, parsed: Optional[dict] = None) -> tuple:
+        """(structure differences, mismatching methods, instruction distance to the shipped code): lower
+        is better; the distance is only measured when `parsed` is given (the climb)."""
+        bad_structure = len(st["missing"]) + len(st["extra"]) + (not st["fields_match"]) + (not st["attrs_match"])
+        mism = [k for k, x in v.items() if x["verdict"] == "mismatch"]
+        dist = 0
+        if parsed is not None:
+            dist = sum(code_distance(shipped["methods"][k]["code"], parsed["methods"][k]["code"])
+                       for k in mism if k in parsed["methods"] and k in shipped["methods"])
+        return bad_structure, len(mism), dist
+
+    def repair_by_sites(names: tuple, use_distance: bool, max_rounds: int = 8, max_sites: int = 30) -> bool:
+        """Greedy site repair: apply the single site that lowers the score, repeat. Kept only when the
+        score ends strictly lower (and, for a structure repair, the class structure matches)."""
+        nonlocal primary_text, primary_path, primary_parsed, verdicts, structure
+        sc = lambda vv, ss, pp: score(vv, ss, pp if use_distance else None)  # noqa: E731
+        text, parsed, v, st, path_ = primary_text, primary_parsed, verdicts, structure, primary_path
+        start_score = sc(v, st, parsed)
+        applied: list = []
+        for _round in range(max_rounds):
+            improved = False
+            for name in names:
+                hyp = HYP.SITE_HYPOTHESES[name]
+                for n, site in enumerate(hyp.sites(text)[:max_sites]):
+                    cand = hyp.apply(text, site)
+                    if cand == text:
+                        continue
+                    path = Path(td) / "site" / f"{len(applied)}-{n}" / f"{class_short}.java"
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_text(cand, encoding="utf-8")
+                    cp = compile_parse(path, class_short, classpath, javac_bin, javap_bin, tool_server)
+                    if cp is None:
+                        continue
+                    cv, cs = per_method_verdicts(shipped, cp)
+                    if sc(cv, cs, cp) < sc(v, st, parsed):
+                        text, parsed, v, st, path_ = cand, cp, cv, cs, path
+                        applied.append(name)
+                        improved = True
+                        break
+                if improved:
+                    break
+            if not improved or (structure_ok(st) and sc(v, st, parsed)[1] == 0):
+                break
+        if not applied or not sc(v, st, parsed) < start_score:
+            return False
+        if not use_distance and not structure_ok(st):
+            return False
+        primary_text, primary_parsed, verdicts, structure, primary_path = text, parsed, v, st, path_
+        kind = ("climb:" if use_distance else "site:") + (applied[0] if len(set(applied)) == 1 else "mixed")
+        pre_transforms.append({"kind": kind, "sites": len(applied), "sha256": sha256_text(text)})
+        return True
+
+    def repair_structure_by_sites() -> bool:
+        return repair_by_sites(site_hyps, False)
+
+    def numbering_mismatch() -> bool:
+        return any(v["verdict"] == "mismatch" and k in primary_parsed["methods"] and k in shipped["methods"]
+                   and numbering_only(shipped["methods"][k]["code"], primary_parsed["methods"][k]["code"])
+                   for k, v in verdicts.items())
+
+    if structure_ok(structure) and site_hyps and numbering_mismatch():
+        repair_structure_by_sites()
+
+    if not structure_ok(structure):
+        # C3d: lambda numbering, accessors, nest attributes... cannot be spliced method by method;
+        # the first alternative source (donor tree, source hypothesis) that restores the class
+        # structure with the fewest mismatching methods becomes the primary
+        alts = []
+        sources = [(f"tree:{t}", (mod_dir / t / f"{fqcn}.java").read_text(encoding="utf-8"))
+                   for t in donor_trees if t != primary_tree and (mod_dir / t / f"{fqcn}.java").is_file()]
+        sources += [(HYP_DONOR_PREFIX + h, hyp_variant(h)) for h in hypotheses]
+        for n, (kind, text) in enumerate(sources):
+            if text == primary_text:
+                continue
+            path = Path(td) / "alt" / str(n) / f"{class_short}.java"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text, encoding="utf-8")
+            parsed = compile_parse(path, class_short, classpath, javac_bin, javap_bin, tool_server)
+            if parsed is None:
+                continue
+            alt_verdicts, alt_structure = per_method_verdicts(shipped, parsed)
+            if structure_ok(alt_structure):
+                bad = sum(1 for x in alt_verdicts.values() if x["verdict"] == "mismatch")
+                alts.append((bad, n, kind, text, path, parsed, alt_verdicts, alt_structure))
+        if alts:
+            _bad, _n, kind, primary_text, primary_path, primary_parsed, verdicts, structure = min(alts, key=lambda a: a[:2])
+            if kind.startswith("tree:"):
+                primary_tree = kind[len("tree:"):]
+                pre_transforms.append({"kind": "primary-tree", "tree": primary_tree, "sha256": sha256_text(primary_text)})
+            else:
+                pre_transforms.append({"kind": kind, "sha256": sha256_text(primary_text)})
+            base = {"primary_tree": primary_tree}
+        elif site_hyps:
+            repaired = repair_structure_by_sites()
+            if repaired:
+                base = {"primary_tree": primary_tree}
     non_synth = [k for k in structure["missing"] + structure["extra"] if not _is_synthetic_name(k[0])]
     if not structure["fields_match"] or not structure["attrs_match"] or non_synth:
         return {**base, "status": "refused", "reason": "structural-mismatch",
                 "detail": f"fields={structure['fields_match']} attrs={structure['attrs_match']} "
                           f"members={[list(k) for k in non_synth][:4]}"}
+    clinit_key = ("<clinit>", "()V")
+
+    def adopt(text: str, kind: str, must_fix_clinit: bool) -> bool:
+        """Make `text` the primary when it compiles and leaves no method worse (its mismatching
+        methods are a subset of the current ones, and <clinit> is fixed when it must be)."""
+        nonlocal primary_text, primary_path, primary_parsed, verdicts, structure
+        path = Path(td) / "pre" / f"{len(pre_transforms)}" / f"{class_short}.java"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+        parsed = compile_parse(path, class_short, classpath, javac_bin, javap_bin, tool_server)
+        if parsed is None:
+            return False
+        new_verdicts, new_structure = per_method_verdicts(shipped, parsed)
+        bad = lambda v: {k for k, x in v.items() if x["verdict"] == "mismatch"}  # noqa: E731
+        if not bad(new_verdicts) <= bad(verdicts) or (must_fix_clinit and clinit_key in bad(new_verdicts)):
+            return False
+        if new_structure["missing"] or new_structure["extra"] or not new_structure["fields_match"] \
+                or not new_structure["attrs_match"]:
+            return False
+        primary_text, primary_path, primary_parsed = text, path, parsed
+        verdicts, structure = new_verdicts, new_structure
+        pre_transforms.append({"kind": kind, "sha256": sha256_text(text)})
+        return True
+
+    if verdicts.get(clinit_key, {}).get("verdict") == "mismatch":
+        # C3d: a source hypothesis that repairs the static initializer, then its recoverable order
+        for h in hypotheses:
+            variant = hyp_variant(h)
+            if variant != primary_text and adopt(variant, HYP_DONOR_PREFIX + h, True):
+                break
+    if verdicts.get(clinit_key, {}).get("verdict") == "mismatch":
+        try:
+            scan = scan_spans([primary_path], helper_dir, java_bin, classpath)[str(primary_path)]
+            if scan["errors"]:
+                raise CLINIT.Unsupported(f"attribution: {scan['errors'][0]}")
+            primary_javap = compile_parse(primary_path, class_short, classpath, javac_bin, javap_bin, tool_server,
+                                          raw=True)[1]
+            reordered = CLINIT.reorder_clinit(primary_text, scan["inits"], shipped["methods"][clinit_key]["code"],
+                                              primary_javap, primary_parsed["methods"][clinit_key]["code"])
+        except (CLINIT.Unsupported, Refusal):
+            reordered = None
+        if reordered is not None:
+            adopt(reordered, "clinit-order", False)
+    if climb and site_hyps and structure_ok(structure):
+        n_bad = sum(1 for x in verdicts.values() if x["verdict"] == "mismatch")
+        if 0 < n_bad <= 4:
+            repair_by_sites(site_hyps, True)
     todo = sorted(k for k, v in verdicts.items() if v["verdict"] == "mismatch")
     if not todo and not structure["missing"] and not structure["extra"]:
-        return {**base, "status": "not-candidate", "reason": "already-clean", "detail": ""}
+        if not pre_transforms:
+            return {**base, "status": "not-candidate", "reason": "already-clean", "detail": ""}
+        grade = grade_text(primary_text, class_short, shipped_class, classpath, javac_bin, javap_bin, tool_server)
+        if not FID._is_clean(grade["grade"]):
+            return {**base, "status": "refused", "reason": "splice-not-clean", "detail": "clinit-order only"}
+        return {**base, "status": "spliced", "original_sha256": sha256_text(original_text),
+                "spliced_sha256": sha256_text(primary_text), "methods": [], "imports_added": [],
+                "pre_transforms": pre_transforms, "self_grade": grade["grade"],
+                "canonical_rules": grade.get("canonical_rules", []), "_text": primary_text}
     for k in todo:
         if k[0] == "<clinit>":
             return {**base, "status": "refused", "reason": "clinit", "detail": f"{k[0]}{k[1]}"}
@@ -349,61 +607,80 @@ def splice_class(fqcn: str, mod_dir: Path, tree: str, *, classpath: str, helper_
     if not todo:
         return {**base, "status": "refused", "reason": "structural-mismatch", "detail": "synthetic members only"}
 
-    with tempfile.TemporaryDirectory(prefix=f"n5sd-{class_short}-") as td:
-        donor_texts, donor_files, donor_verdicts = {}, {}, {}
-        for eng in DONOR_ENGINES:
+    donor_texts, donor_files, donor_verdicts = {}, {}, {}
+    engines = (*decompilers, *(TREE_DONOR_PREFIX + t for t in donor_trees),
+               *(HYP_DONOR_PREFIX + h for h in hypotheses))
+    for eng in engines:
+        if eng.startswith(HYP_DONOR_PREFIX):
+            # a source hypothesis applied to the (possibly reordered) primary; identical text is no donor
+            variant = hyp_variant(eng[len(HYP_DONOR_PREFIX):])
+            if variant == primary_text:
+                continue
+            src = Path(td) / "hyp" / eng[len(HYP_DONOR_PREFIX):] / f"{class_short}.java"
+            src.parent.mkdir(parents=True, exist_ok=True)
+            src.write_text(variant, encoding="utf-8")
+        elif eng.startswith(TREE_DONOR_PREFIX):
+            # an already-decompiled tree is a donor as-is (never the primary itself)
+            name = eng[len(TREE_DONOR_PREFIX):]
+            src = mod_dir / name / f"{fqcn}.java"
+            if name == primary_tree or not src.is_file():
+                continue
+        else:
             jar = FID.DEFAULT_CFR_JAR if eng == "cfr" else FID.DEFAULT_PROCYON_JAR
             src, _reason_ = FID._decompile_one_class_with(java_bin, eng, jar, shipped_class, Path(td) / eng)
             if src is None:
                 continue
-            parsed = compile_parse(Path(src), class_short, classpath, javac_bin, javap_bin, tool_server)
-            if parsed is None:
-                continue
-            donor_texts[eng] = Path(src).read_text(encoding="utf-8")
-            donor_files[eng] = Path(src)
-            donor_verdicts[eng] = per_method_verdicts(shipped, parsed)[0]
-        options = {k: donor_candidates(k, donor_verdicts) for k in todo}
-        lacking = [k for k, v in options.items() if not v]
-        if lacking:
-            return {**base, "status": "refused", "reason": "no-donor", "donors_compiled": sorted(donor_verdicts),
-                    "detail": ", ".join(f"{k[0]}{k[1]}" for k in lacking[:4])}
-        used = sorted({eng for v in options.values() for eng, _ in v})
+        parsed = compile_parse(Path(src), class_short, classpath, javac_bin, javap_bin, tool_server)
+        if parsed is None:
+            continue
+        donor_texts[eng] = Path(src).read_text(encoding="utf-8")
+        donor_files[eng] = Path(src)
+        donor_verdicts[eng] = per_method_verdicts(shipped, parsed)[0]
+    options = {k: donor_candidates(k, donor_verdicts, engines) for k in todo}
+    lacking = [k for k, v in options.items() if not v]
+    if lacking:
+        return {**base, "status": "refused", "reason": "no-donor", "donors_compiled": sorted(donor_verdicts),
+                "detail": ", ".join(f"{k[0]}{k[1]}" for k in lacking[:4])}
+    used = sorted({eng for v in options.values() for eng, _ in v})
+    try:
+        scans = scan_spans([primary_path] + [donor_files[e] for e in used], helper_dir, java_bin, classpath)
+    except Refusal as r:
+        return {**base, "status": "refused", "reason": r.reason, "detail": r.detail}
+    primary_scan = scans[str(primary_path)]
+    donors = {e: (donor_texts[e], scans[str(donor_files[e])]) for e in used}
+    full_decl = {k: not verdicts[k].get("body_only", True) for k in todo}
+    last = None
+    for combo in itertools.islice(itertools.product(*(options[k] for k in todo)), MAX_COMBOS):
+        assignment = {k: eng for k, (eng, _v) in zip(todo, combo)}
         try:
-            scans = scan_spans([primary_path] + [donor_files[e] for e in used], helper_dir, java_bin, classpath)
+            text, imports = plan_splice(primary_text, primary_scan, donors, assignment, full_decl, class_short)
         except Refusal as r:
-            return {**base, "status": "refused", "reason": r.reason, "detail": r.detail}
-        primary_scan = scans[str(primary_path)]
-        donors = {e: (donor_texts[e], scans[str(donor_files[e])]) for e in used}
-        full_decl = {k: not verdicts[k].get("body_only", True) for k in todo}
-        last = None
-        for combo in itertools.islice(itertools.product(*(options[k] for k in todo)), MAX_COMBOS):
-            assignment = {k: eng for k, (eng, _v) in zip(todo, combo)}
-            try:
-                text, imports = plan_splice(primary_text, primary_scan, donors, assignment, full_decl, class_short)
-            except Refusal as r:
-                last = (r.reason, r.detail)
-                continue
-            grade = grade_text(text, class_short, shipped_class, classpath, javac_bin, javap_bin, tool_server)
-            if grade["grade"] == "no-compile":
-                last = ("splice-no-compile", grade.get("first_error") or "")
-                continue
-            if not FID._is_clean(grade["grade"]):
-                last = ("splice-not-clean", ", ".join(f"{m[0]}{m[1]}" for m in grade["mismatched_methods"][:4]))
-                continue
-            return {**base, "status": "spliced",
-                    "original_sha256": sha256_text(primary_text), "spliced_sha256": sha256_text(text),
-                    "methods": [{"name": k[0], "descriptor": k[1], "donor": eng, "reason": _reason(v),
-                                 "donor_sha256": sha256_text(donor_texts[eng]),
-                                 "span": "declaration" if full_decl[k] else "after-modifiers"}
-                                for k, (eng, v) in zip(todo, combo)],
-                    "imports_added": imports, "self_grade": grade["grade"],
-                    "canonical_rules": grade.get("canonical_rules", []), "_text": text}
-        return {**base, "status": "refused", "reason": last[0], "detail": last[1][:300]}
+            last = (r.reason, r.detail)
+            continue
+        grade = grade_text(text, class_short, shipped_class, classpath, javac_bin, javap_bin, tool_server)
+        if grade["grade"] == "no-compile":
+            last = ("splice-no-compile", grade.get("first_error") or "")
+            continue
+        if not FID._is_clean(grade["grade"]):
+            last = ("splice-not-clean", ", ".join(f"{m[0]}{m[1]}" for m in grade["mismatched_methods"][:4]))
+            continue
+        return {**base, "status": "spliced",
+                "original_sha256": sha256_text(original_text), "spliced_sha256": sha256_text(text),
+                    **({"pre_transforms": pre_transforms} if pre_transforms else {}),
+                "methods": [{"name": k[0], "descriptor": k[1], "donor": eng, "reason": _reason(v),
+                             "donor_sha256": sha256_text(donor_texts[eng]),
+                             "span": "declaration" if full_decl[k] else "after-modifiers"}
+                            for k, (eng, v) in zip(todo, combo)],
+                "imports_added": imports, "self_grade": grade["grade"],
+                "canonical_rules": grade.get("canonical_rules", []), "_text": text}
+    return {**base, "status": "refused", "reason": last[0], "detail": last[1][:300]}
 
 
 def splice_module(module: str, organized_dir: Path, tree: str, out_tree: str, targets: list, *, classpath: str,
                   helper_dir: Path, javac_bin: str, javap_bin: str, java_bin: str, tool_server: bool,
-                  class_jobs: int = 1) -> dict:
+                  class_jobs: int = 1, donor_trees: tuple = (), primary_trees: tuple = (),
+                  keep_existing: bool = False, hypotheses: tuple = (), decompilers: tuple = DONOR_ENGINES,
+                  climb: bool = False) -> dict:
     mod_dir = Path(organized_dir) / module
     out_dir = mod_dir / out_tree
 
@@ -411,7 +688,9 @@ def splice_module(module: str, organized_dir: Path, tree: str, out_tree: str, ta
         try:
             return fqcn, splice_class(fqcn, mod_dir, tree, classpath=classpath, helper_dir=helper_dir,
                                       javac_bin=javac_bin, javap_bin=javap_bin, java_bin=java_bin,
-                                      tool_server=tool_server)
+                                      tool_server=tool_server, donor_trees=tuple(donor_trees),
+                                      primary_trees=tuple(primary_trees), hypotheses=tuple(hypotheses),
+                                      decompilers=tuple(decompilers), climb=climb)
         except Exception as exc:  # noqa: BLE001 -- one class must not abort the module
             return fqcn, {"status": "refused", "reason": "tool-error", "detail": repr(exc)[:300]}
 
@@ -421,10 +700,17 @@ def splice_module(module: str, organized_dir: Path, tree: str, out_tree: str, ta
     with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, class_jobs)) as pool:
         results = list(pool.map(one, targets))
     FID.reap_dead_thread_tool_servers()
+    old_classes = {}
+    manifest_path = out_dir / MANIFEST_NAME
+    if keep_existing and manifest_path.is_file():
+        # a later stage extends an earlier one: its splices survive unless re-targeted here
+        old_classes = {f: r for f, r in json.loads(manifest_path.read_text()).get("classes", {}).items()
+                       if f not in set(targets) and (out_dir / f"{f}.java").is_file()}
     if out_dir.is_dir():
         for old in out_dir.rglob("*.java"):
-            old.unlink()
-    classes, refused, skipped = {}, {}, {}
+            if not (keep_existing and old.relative_to(out_dir).with_suffix("").as_posix() in old_classes):
+                old.unlink()
+    classes, refused, skipped = dict(old_classes), {}, {}
     for fqcn, rec in sorted(results):
         status = rec.pop("status")
         if status == "spliced":
@@ -440,7 +726,9 @@ def splice_module(module: str, organized_dir: Path, tree: str, out_tree: str, ta
     manifest = {"schema": MANIFEST_SCHEMA, "module": module, "source_tree": tree,
                 "tool": "tools/n5-splice-methods.py",
                 "helper_sha256": hashlib.sha256(HELPER_SRC.read_bytes()).hexdigest(),
-                "donor_engines": list(DONOR_ENGINES), "classes": classes, "refused": refused,
+                "donor_engines": [*decompilers, *(TREE_DONOR_PREFIX + t for t in donor_trees),
+                                  *(HYP_DONOR_PREFIX + h for h in hypotheses if h in HYP.HYPOTHESES),
+                                  *("site:" + h for h in hypotheses if h in HYP.SITE_HYPOTHESES)], "classes": classes, "refused": refused,
                 "not_candidates": skipped}
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / MANIFEST_NAME).write_text(json.dumps(manifest, indent=1, sort_keys=True) + "\n")
@@ -463,7 +751,30 @@ def main(argv: Optional[list] = None) -> int:
     ap.add_argument("--jobs", type=int, default=1)
     ap.add_argument("--class-jobs", type=int, default=1)
     ap.add_argument("--tool-server", action="store_true")
+    ap.add_argument("--donor-trees", default="",
+                    help="comma-separated on-disk trees (organized/<mod>/<tree>/) used as extra donors after "
+                         "CFR/Procyon, e.g. vineflower-cons,vineflower")
+    ap.add_argument("--primary-trees", default="",
+                    help="comma-separated trees tried first as the primary source, e.g. vineflower2m "
+                         "(then <tree>p, then <tree>)")
+    ap.add_argument("--decompilers", default=",".join(DONOR_ENGINES),
+                    help="comma-separated re-decompile donors (cfr, procyon); empty = none, use when only "
+                         "on-disk trees and hypotheses should be tried")
+    ap.add_argument("--hypotheses", default="",
+                    help="comma-separated source hypotheses of tools/n5_source_hypotheses.py used as donors "
+                         "(\"all\" = every one)")
+    ap.add_argument("--climb", action="store_true",
+                    help="hill-climb the primary with the site hypotheses (one site at a time, kept only when the "
+                         "class structure / mismatching methods / code distance to the shipped class shrink)")
+    ap.add_argument("--keep-existing", action="store_true",
+                    help="keep the out tree's earlier splices that are not re-targeted (extend a stage)")
     args = ap.parse_args(argv)
+    split = lambda v: tuple(x.strip() for x in v.split(",") if x.strip())  # noqa: E731
+    known = (*HYP.HYPOTHESES, *HYP.SITE_HYPOTHESES)
+    hypotheses = known if args.hypotheses.strip() == "all" else split(args.hypotheses)
+    unknown = [h for h in hypotheses if h not in known]
+    if unknown:
+        ap.error(f"unknown hypothesis {unknown}; known: {sorted(known)}")
     by_module: dict = {}
     for module, fqcn in json.loads(Path(args.targets).read_text()):
         by_module.setdefault(module, []).append(fqcn)
@@ -484,7 +795,10 @@ def main(argv: Optional[list] = None) -> int:
             man = splice_module(module, Path(args.organized_dir), args.tree, out_tree, sorted(by_module[module]),
                                 classpath=classpath, helper_dir=helper, javac_bin=FID.DEFAULT_JAVAC,
                                 javap_bin=FID.DEFAULT_JAVAP, java_bin=FID.DEFAULT_JAVA,
-                                tool_server=args.tool_server, class_jobs=args.class_jobs)
+                                tool_server=args.tool_server, class_jobs=args.class_jobs,
+                                donor_trees=split(args.donor_trees), primary_trees=split(args.primary_trees),
+                                keep_existing=args.keep_existing, hypotheses=hypotheses,
+                                decompilers=split(args.decompilers), climb=args.climb)
             reasons: dict = {}
             for r in man["refused"].values():
                 reasons[r["reason"]] = reasons.get(r["reason"], 0) + 1

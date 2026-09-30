@@ -230,6 +230,17 @@ class TestSwitchGroupRedeclaration(MechanicalCase):
         self.assertIn("case 2: {", res["text"])
         self.assertNotIn("default: {", res["text"])
 
+    def test_every_group_of_the_switch_that_declares_a_local_is_braced(self):
+        # javac reuses a braced group's slots; the original scoped every declaring group, so a group
+        # declaring a uniquely named local shifts every later slot unless it is braced too (C3b-G1)
+        src = self.SRC.replace("         default:\n", "         case 3:\n            int n = s.length();\n"
+                                                          "            r = n;\n            break;\n         default:\n")
+        res = self.patch(src)
+        self.assertTrue(res["compiles"], res["residual_errors"])
+        self.assertIn("case 3: {", res["text"])
+        self.assertNotIn("default: {", res["text"])
+        self.assertEqual([p["kind"] for p in res["patches"]], ["switch-group-scope"] * 3)
+
     def test_stacked_labels_brace_after_the_last_label(self):
         src = self.SRC.replace("         case 2:\n", "         case 3:\n         case 2:\n")
         res = self.patch(src)

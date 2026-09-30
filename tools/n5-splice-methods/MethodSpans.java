@@ -20,7 +20,7 @@ import java.util.*;
  * never a regex over source text. One JSON line per file:
  *   methods  every method/constructor declared directly in the top-level class:
  *            name ("<init>" for constructors), JVM descriptor, source offsets
- *            (start, after the modifiers, end, body start)
+ *            (start, after the modifiers, end, body start), parameter names
  *   members  "owner|name|descriptor" of every member element (incl. implicit
  *            ones: default constructor, enum values/valueOf) of every class of
  *            the top-level class's nest (the class and its member types)
@@ -28,6 +28,8 @@ import java.util.*;
  *            qualified/binary), member of the nest (owner/name/descriptor),
  *            static (bare identifier bound to a static member of a class outside
  *            the nest), local_class (local or anonymous class declaration)
+ *   inits    static field initializers and static blocks (with their statements) of the
+ *            top-level class in source order (C3d clinit ordering)
  *   imports  every import declaration with offsets; package_end; errors
  * Offsets are javac's (UTF-16 code units).
  */
@@ -59,6 +61,7 @@ public class MethodSpans {
                         .append(",\"top\":").append(q(s.topBinary == null ? "" : s.topBinary))
                         .append(",\"imports\":").append(s.imports)
                         .append(",\"methods\":").append(s.methods)
+                        .append(",\"inits\":").append(s.inits)
                         .append(",\"members\":").append(s.members())
                         .append(",\"refs\":").append(s.refs)
                         .append(",\"errors\":").append(list(errors)).append("}");
@@ -76,6 +79,7 @@ public class MethodSpans {
         final StringJoiner imports = new StringJoiner(",", "[", "]");
         final StringJoiner methods = new StringJoiner(",", "[", "]");
         final StringJoiner refs = new StringJoiner(",", "[", "]");
+        final StringJoiner inits = new StringJoiner(",", "[", "]");
         TypeElement top;
         String topBinary;
 
@@ -193,11 +197,27 @@ public class MethodSpans {
                 topBinary = binary(te);
                 for (Tree member : ct.getMembers()) {
                     if (member instanceof MethodTree mt) method(mt, new TreePath(getCurrentPath(), mt));
+                    else initializer(member);
                 }
             } else if (!(parent instanceof ClassTree) && !(parent instanceof CompilationUnitTree)) {
                 refs.add("{\"kind\":\"local_class\",\"pos\":" + start(ct) + "}");
             }
             return super.visitClass(ct, v);
+        }
+
+        /** static field initializers and static blocks of the top-level class, in source order (C3d). */
+        void initializer(Tree member) {
+            if (member instanceof VariableTree vt && vt.getInitializer() != null
+                    && vt.getModifiers().getFlags().contains(Modifier.STATIC)) {
+                inits.add("{\"kind\":\"field\",\"name\":" + q(vt.getName().toString()) + ",\"start\":" + start(vt)
+                        + ",\"end\":" + end(vt) + ",\"init_start\":" + start(vt.getInitializer())
+                        + ",\"init_end\":" + end(vt.getInitializer()) + "}");
+            } else if (member instanceof BlockTree bt && bt.isStatic()) {
+                StringJoiner st = new StringJoiner(",", "[", "]");
+                for (StatementTree x : bt.getStatements()) st.add("[" + start(x) + "," + end(x) + "]");
+                inits.add("{\"kind\":\"static_block\",\"start\":" + start(bt) + ",\"end\":" + end(bt)
+                        + ",\"stmts\":" + st + "}");
+            }
         }
 
         void method(MethodTree mt, TreePath path) {
@@ -208,7 +228,8 @@ public class MethodSpans {
             long after = modsEnd > s ? modsEnd : s;
             methods.add("{\"name\":" + q(mt.getName().toString()) + ",\"desc\":" + q(methodDesc(ee))
                     + ",\"start\":" + s + ",\"after_mods\":" + after + ",\"end\":" + end(mt)
-                    + ",\"body_start\":" + (mt.getBody() == null ? -1 : start(mt.getBody())) + "}");
+                    + ",\"body_start\":" + (mt.getBody() == null ? -1 : start(mt.getBody()))
+                    + ",\"params\":" + list(mt.getParameters().stream().map(p -> p.getName().toString()).toList()) + "}");
         }
 
         @Override

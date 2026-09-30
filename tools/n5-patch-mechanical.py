@@ -221,6 +221,34 @@ def _case_group(lines: list[str], k: int, ind: int):
     return None if end is None else (first, lab, end)
 
 
+def _add_declaring_groups(lines: list[str], groups: dict) -> None:
+    """Add to `groups` every other group of the same switch(es) that declares a local at group
+    level. The original scoped every declaring group (javac frees a braced group's slots for the
+    next one), so bracing only the groups javac flagged leaves unflagged declarations holding
+    slots and shifts the slot of every later local (C3b-G1: renaming the duplicates instead has
+    the same defect and, unlike bracing, never reuses a slot at all)."""
+    for first, _last_label, end in list(groups.values()):
+        ind = len(lines[end]) - len(lines[end].lstrip())
+        lo, hi = first, end
+        while lo > 0:
+            s = lines[lo - 1]
+            if s.strip() and len(s) - len(s.lstrip()) < ind - 3:
+                break
+            lo -= 1
+        while hi + 1 < len(lines):
+            s = lines[hi + 1]
+            if s.strip() and len(s) - len(s.lstrip()) < ind - 3:
+                break
+            hi += 1
+        decl = re.compile(r"^\s{%d}(?:final )?[\w.<>\[\]?, ]+ \w+\s*(?:=|;)" % ind)
+        for t in range(lo, hi + 1):
+            if not _LABEL_RE.match(lines[t]) or len(_indent(lines[t])) != ind - 3:
+                continue
+            g = _case_group(lines, t + 1, ind)
+            if g and g[1] == t and t not in groups and any(decl.match(lines[u]) for u in range(g[1] + 1, g[2] + 1)):
+                groups[t] = g
+
+
 def fix_switch_group_scope(lines: list[str], errors: list[dict], ctx=None):
     """`variable v is already defined` where the duplicate sits in a switch group: switch
     groups share one scope, so the original source had braces around each group (javac
@@ -251,6 +279,7 @@ def fix_switch_group_scope(lines: list[str], errors: list[dict], ctx=None):
             j -= 1
     if not groups:
         return None
+    _add_declaring_groups(lines, groups)
     new = list(lines)
     patches = []
     for lab, first, end in sorted(((g[1], g[0], g[2]) for g in groups.values()), reverse=True):
