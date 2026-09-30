@@ -2041,3 +2041,104 @@ Unchanged grade: 8419
 - **Recommendation: adopt `vineflower2.spliced` as the primary tree.** Strictly higher measured round-trip rate (93.9% vs 92.9%) and zero regressions.
 - This recommendation is based ONLY on the measured round-trip rate and the worse-list above — NEVER on textual similarity, line count, or any feature-adoption diff between the two trees' decompiled source (see 'No textual-similarity grade' in Methodology notes).
 
+## third-party without upstream source
+
+Third-party classes that have NO byte-matching upstream source, graded from the decompiled trees of `organized/_lib-inf-3p` (and `_bin-ext` when a tree exists) with the same ladder as the modules, each class recompiled with the `--release` of its shipped class-file major version. Kotlin classes (`kotlin.Metadata`) are not decompile-graded: javap is their reference representation (B125). These numbers are NOT part of the module or Tridium bin/ext totals.
+
+| Artifact | Classes | roundtrip-exact | roundtrip-equivalent | roundtrip-canonical | roundtrip-canonical-t2 | compiles-mismatch | no-compile | bytecode-only | kotlin-javap-reference | release-unsupported | other |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| annotations-13.0-ace2a10dc8e2 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 |
+| batik-awt-util-1.19-c9ac9ed24e0b | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| biweekly-0.6.8-4077af25a5f9 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 |
+| commons-math3-3.6.1-1e56d7b058d2 | 4 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 4 | 0 |
+| hsqldb-2.7.4-5fab2bb4384a | 2 | 2 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| jackson-core-2.22.2-ff167a6317be | 39 | 18 | 1 | 17 | 0 | 0 | 0 | 3 | 0 | 0 | 0 |
+| jackson-databind-2.22.2-d0da14c12b16 | 2 | 1 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 |
+| jakarta.activation-api-2.1.4-c9db52100ce6 | 3 | 2 | 0 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| jakarta.mail-2.0.5-f48001755a4a | 10 | 9 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 |
+| javaparser-core-3.28.0-d3852d78461c | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 |
+| kotlin-stdlib-2.3.0-887587c91713 | 425 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 425 | 0 | 0 |
+| log4j-api-2.24.3-5b4a0a0cd0e7 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 |
+| mimepull-1.11.0-af26c386c4ba | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| mssql-jdbc-13.4.0.jre11-e36f5237c126 | 112 | 58 | 1 | 4 | 0 | 0 | 0 | 49 | 0 | 0 | 0 |
+| nimbus-jose-jwt-10.0.2-960b978a6cd6 | 82 | 42 | 2 | 11 | 0 | 0 | 0 | 23 | 0 | 4 | 0 |
+| org.eclipse.paho.client.mqttv3-1.2.5-736de983d218 | 96 | 49 | 0 | 6 | 0 | 0 | 0 | 41 | 0 | 0 | 0 |
+| org.eclipse.swt.win32.win32.x86_64-3.134.0-76d2d9611ed2 | 652 | 429 | 2 | 66 | 0 | 0 | 0 | 155 | 0 | 0 | 0 |
+| policy-4.0.5-5c76fe37107b | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| prosys-opc-ua-sdk-client-server-5.7.0-248-0d6f7dee409a | 3117 | 1891 | 4 | 43 | 1 | 0 | 0 | 1178 | 0 | 0 | 0 |
+| rt-4.0.5-eb0929489bd4 | 3 | 3 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| saaj-impl-3.0.6-70d657b7a6bf | 2 | 2 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| testng-7.12.0-5147e65e0bf0 | 3 | 3 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| woodstox-core-7.2.0-689f5be95f9b | 538 | 384 | 2 | 53 | 2 | 0 | 0 | 45 | 0 | 52 | 0 |
+| wsit-impl-4.0.7-80cbce2b411e | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| xml-apis-ext-1.3.05-15f6ab5c46c0 | 192 | 185 | 0 | 0 | 0 | 0 | 0 | 7 | 0 | 0 | 0 |
+| xmlgraphics-commons-2.11-1a37948ebfed | 4 | 2 | 0 | 0 | 0 | 0 | 0 | 2 | 0 | 0 | 0 |
+| xmlsec-4.0.4-8b2f8483b662 | 3 | 3 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+
+- graded classes: 5297
+- kotlin-javap-reference: 425
+- release-unsupported: 62
+- proven (any tier): 3303/5297 (62.4%)
+- proven of decompile-gradable (excluding kotlin-javap-reference / release-unsupported): 3303/4810 (68.7%)
+- fully proven (outer + nested): 3232/5297 (61.0%)
+
+| Artifact | Nested files | Proven | Unproven | Extra (recompile only) | Classes fully proven |
+|---|---:|---:|---:|---:|---:|
+| annotations-13.0-ace2a10dc8e2 | 0 | 0 | 0 | 0 | 0 |
+| batik-awt-util-1.19-c9ac9ed24e0b | 0 | 0 | 0 | 0 | 1 |
+| biweekly-0.6.8-4077af25a5f9 | 1 | 0 | 1 | 0 | 0 |
+| commons-math3-3.6.1-1e56d7b058d2 | 5 | 0 | 5 | 0 | 0 |
+| hsqldb-2.7.4-5fab2bb4384a | 0 | 0 | 0 | 0 | 2 |
+| jackson-core-2.22.2-ff167a6317be | 2 | 1 | 1 | 0 | 35 |
+| jackson-databind-2.22.2-d0da14c12b16 | 1 | 0 | 1 | 0 | 1 |
+| jakarta.activation-api-2.1.4-c9db52100ce6 | 0 | 0 | 0 | 0 | 3 |
+| jakarta.mail-2.0.5-f48001755a4a | 1 | 0 | 1 | 0 | 9 |
+| javaparser-core-3.28.0-d3852d78461c | 0 | 0 | 0 | 0 | 0 |
+| kotlin-stdlib-2.3.0-887587c91713 | 159 | 0 | 159 | 0 | 0 |
+| log4j-api-2.24.3-5b4a0a0cd0e7 | 0 | 0 | 0 | 0 | 0 |
+| mimepull-1.11.0-af26c386c4ba | 0 | 0 | 0 | 0 | 1 |
+| mssql-jdbc-13.4.0.jre11-e36f5237c126 | 54 | 25 | 29 | 0 | 62 |
+| nimbus-jose-jwt-10.0.2-960b978a6cd6 | 116 | 34 | 82 | 0 | 47 |
+| org.eclipse.paho.client.mqttv3-1.2.5-736de983d218 | 13 | 0 | 13 | 0 | 55 |
+| org.eclipse.swt.win32.win32.x86_64-3.134.0-76d2d9611ed2 | 307 | 61 | 246 | 0 | 479 |
+| policy-4.0.5-5c76fe37107b | 0 | 0 | 0 | 0 | 1 |
+| prosys-opc-ua-sdk-client-server-5.7.0-248-0d6f7dee409a | 1474 | 194 | 1280 | 0 | 1926 |
+| rt-4.0.5-eb0929489bd4 | 0 | 0 | 0 | 0 | 3 |
+| saaj-impl-3.0.6-70d657b7a6bf | 0 | 0 | 0 | 0 | 2 |
+| testng-7.12.0-5147e65e0bf0 | 0 | 0 | 0 | 0 | 3 |
+| woodstox-core-7.2.0-689f5be95f9b | 197 | 71 | 126 | 0 | 411 |
+| wsit-impl-4.0.7-80cbce2b411e | 0 | 0 | 0 | 0 | 1 |
+| xml-apis-ext-1.3.05-15f6ab5c46c0 | 0 | 0 | 0 | 0 | 185 |
+| xmlgraphics-commons-2.11-1a37948ebfed | 0 | 0 | 0 | 0 | 2 |
+| xmlsec-4.0.4-8b2f8483b662 | 0 | 0 | 0 | 0 | 3 |
+
+Not graded (typed gaps): uncovered classes of artifacts with no decompiled tree.
+
+| Artifact | Uncovered classes (top-level) | of which Kotlin | Reason |
+|---|---:|---:|---|
+| com.fasterxml.jackson.core:jackson-core:2.22.0 | 39 | 0 | no-decompiled-tree |
+| com.fasterxml.jackson.core:jackson-databind:2.22.0 | 2 | 0 | no-decompiled-tree |
+| com.fasterxml.jackson.module:jackson-module-kotlin:2.22.0 | 40 | 40 | no-decompiled-tree |
+| com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru:1.4.2 | 1 | 0 | no-decompiled-tree |
+| com.squareup.okhttp3:okhttp-jvm:5.5.0 | 27 | 27 | no-decompiled-tree |
+| com.squareup.okio:okio-jvm:3.18.1 | 16 | 16 | no-decompiled-tree |
+| io.github.resilience4j:resilience4j-core:2.4.0 | 1 | 0 | no-decompiled-tree |
+| io.github.resilience4j:resilience4j-retry:2.4.0 | 1 | 0 | no-decompiled-tree |
+| jakarta.servlet:jakarta.servlet-api:6.1.0 | 2 | 0 | no-decompiled-tree |
+| net.bytebuddy:byte-buddy:1.18.12 | 4 | 0 | no-decompiled-tree |
+| org.apache.thrift:libthrift:0.24.0 | 2 | 0 | no-decompiled-tree |
+| org.bouncycastle:bc-fips:2.1.2 | 2 | 0 | no-decompiled-tree |
+| org.bouncycastle:bcprov-jdk18on:1.85.2 | 5 | 0 | no-decompiled-tree |
+| org.eclipse.angus:angus-activation:2.0.3 | 1 | 0 | no-decompiled-tree |
+| org.eclipse.jetty:jetty-util:12.1.13 | 2 | 0 | no-decompiled-tree |
+| org.glassfish.jaxb:txw2:4.0.9 | 1 | 0 | no-decompiled-tree |
+| org.jetbrains.kotlin:kotlin-reflect:2.1.21 | 453 | 21 | no-decompiled-tree |
+| org.jetbrains.kotlin:kotlin-stdlib:2.4.10 | 430 | 430 | no-decompiled-tree |
+| unidentified:bin/ext/bcfips/bc-bcfkswrapprov-1.0.0.jar | 4 | 0 | no-decompiled-tree |
+| unidentified:bin/ext/jxbrowser/jxbrowser-9.5.0.jar | 2691 | 0 | no-decompiled-tree |
+| unidentified:bin/ext/jxbrowser/jxbrowser-javafx-9.5.0.jar | 89 | 0 | no-decompiled-tree |
+| unidentified:bin/ext/jxbrowser/jxbrowser-swing-9.5.0.jar | 85 | 0 | no-decompiled-tree |
+| unidentified:bin/ext/jxbrowser/jxbrowser-swt-9.5.0.jar | 99 | 0 | no-decompiled-tree |
+
+- top-level classes not graded (no tree): 3997 (Kotlin among them: 534)
+
