@@ -383,6 +383,21 @@ class TestOnDiskDonorTrees(_SpliceFixture):
         self.assertEqual(rec["primary_tree"], "vineflower2m")
         self.assertEqual([m["name"] for m in rec["methods"]], ["h"])
 
+    def test_first_compiling_primary_tree_wins_and_a_clean_one_is_emitted(self):
+        # vineflower2 (the baseline) does not compile; the alternative tree is clean as it stands
+        mod_dir, fake = self._module("alt", SHIPPED, "package p;\npublic class Foo { int broken( }\n", None, None)
+        self._tree(mod_dir, "vf-alt", SHIPPED)
+        man = self._run("alt", mod_dir, fake, primary_trees=["vf-missing", "vf-alt"])
+        rec = man["classes"]["p/Foo"]
+        self.assertEqual((rec["primary_tree"], rec["methods"], rec["self_grade"]), ("vf-alt", [], "roundtrip-exact"))
+        self.assertEqual([t["kind"] for t in rec["pre_transforms"]], ["primary-tree"])
+        self.assertEqual((mod_dir / "vineflower2s" / "p" / "Foo.java").read_text(), SHIPPED)
+
+    def test_clean_baseline_primary_is_still_not_a_candidate(self):
+        mod_dir, fake = self._module("base", SHIPPED, SHIPPED, None, None)
+        man = self._run("base", mod_dir, fake)
+        self.assertEqual(man["not_candidates"]["p/Foo"]["reason"], "already-clean")
+
     def test_keep_existing_carries_earlier_splices_over(self):
         mod_dir, fake = self._module("keep", SHIPPED, PRIMARY, CFR, PROCYON)
         first = self._run("keep", mod_dir, fake)

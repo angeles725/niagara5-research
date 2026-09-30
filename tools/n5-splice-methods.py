@@ -362,18 +362,25 @@ def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: st
     shipped_class = mod_dir / "extracted" / f"{fqcn}.class"
     # the primary is the first existing tree of primary_trees (e.g. the m/p patch stage), then
     # <tree>p (F8), then <tree>
-    primary_tree = next((t for t in (*primary_trees, f"{tree}p") if (mod_dir / t / f"{fqcn}.java").is_file()), tree)
-    primary_path = mod_dir / primary_tree / f"{fqcn}.java"
-    if not primary_path.is_file() or not shipped_class.is_file():
-        return {"status": "not-candidate", "reason": "no-source", "detail": str(primary_path)}
-    primary_text = primary_path.read_text(encoding="utf-8")
+    candidates = [t for t in (*primary_trees, f"{tree}p", tree) if (mod_dir / t / f"{fqcn}.java").is_file()]
+    if not candidates or not shipped_class.is_file():
+        return {"status": "not-candidate", "reason": "no-source", "detail": str(mod_dir / tree / f"{fqcn}.java")}
+    primary_tree = primary_path = primary_text = compiled = None
+    for t in candidates:
+        # the first tree that compiles is the primary (a patch stage, else a donor tree when the
+        # baseline does not compile at all)
+        path = mod_dir / t / f"{fqcn}.java"
+        text = path.read_text(encoding="utf-8")
+        compiled = compile_parse(path, class_short, classpath, javac_bin, javap_bin, tool_server, raw=True)
+        if compiled is not None:
+            primary_tree, primary_path, primary_text = t, path, text
+            break
+    if compiled is None:
+        return {"status": "not-candidate", "reason": "primary-no-compile", "detail": candidates[0]}
     if any(ord(ch) > 0xFFFF for ch in primary_text):
         return {"status": "refused", "reason": "non-bmp", "detail": "javac offsets are UTF-16"}
     shipped = FID.parse_javap_verbose(FID.run_javap_verbose(str(shipped_class), javap_bin=javap_bin,
                                                             tool_server=tool_server))
-    compiled = compile_parse(primary_path, class_short, classpath, javac_bin, javap_bin, tool_server, raw=True)
-    if compiled is None:
-        return {"status": "not-candidate", "reason": "primary-no-compile", "detail": primary_tree}
     primary_parsed, primary_javap = compiled
     verdicts, structure = per_method_verdicts(shipped, primary_parsed)
     base = {"primary_tree": primary_tree}
@@ -383,7 +390,10 @@ def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: st
                 "detail": f"fields={structure['fields_match']} attrs={structure['attrs_match']} "
                           f"members={[list(k) for k in non_synth][:4]}"}
     original_text = primary_text
-    pre_transforms: list = []
+    # a primary that is not the baseline tree (nor its F8 patch) and is clean as it stands is a
+    # result in itself; the baseline being clean is not (the class is then not a target)
+    pre_transforms: list = ([{"kind": "primary-tree", "tree": primary_tree, "sha256": sha256_text(primary_text)}]
+                            if primary_tree not in (tree, f"{tree}p") else [])
     clinit_key = ("<clinit>", "()V")
 
     def adopt(text: str, kind: str, must_fix_clinit: bool) -> bool:
