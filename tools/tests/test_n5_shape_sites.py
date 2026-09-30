@@ -465,5 +465,27 @@ class TestSplitHoistDeclaration(ShapeSiteCase):
         self.assertEqual(len(hyp.sites("   void m() {\n      Object a = f();\n      int b = g();\n   }\n")), 1)
 
 
+class TestCompoundAssignField(ShapeSiteCase):
+    """`this.f = this.f + x` evaluates the receiver twice, `this.f += x` once (dup): the shipped code
+    has the second form, the decompiler prints the first."""
+
+    def test_field_update_becomes_a_compound_assignment(self):
+        self.assert_reproduces(
+            "compound-assign-field-site",
+            "   void m(int x) {\n      this.f = this.f + x;\n   }\n",
+            "   void m(int x) {\n      this.f += x;\n   }\n")
+
+    def test_cast_wrapped_byte_field_update(self):
+        src = "   byte b;\n   void m(int x) {\n      this.b = (byte)(this.b | x);\n   }\n"
+        hyp = self.h.SITE_HYPOTHESES["compound-assign-field-site"]
+        self.assertEqual(hyp.apply(src, hyp.sites(src)[0]), "   byte b;\n   void m(int x) {\n      this.b |= x;\n   }\n")
+
+    def test_other_targets_and_multi_operand_right_sides_are_left_alone(self):
+        hyp = self.h.SITE_HYPOTHESES["compound-assign-field-site"]
+        for src in ("      this.f = this.g + 1;\n", "      this.f = this.f + a + b;\n", "      x = x + 1;\n",
+                    "      this.f = other.f + 1;\n"):
+            self.assertEqual(hyp.sites("   void m() {\n" + src + "   }\n"), [])
+
+
 if __name__ == "__main__":
     unittest.main()

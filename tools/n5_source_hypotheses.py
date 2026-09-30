@@ -39,6 +39,23 @@ def _single_operand(rhs: str) -> bool:
     return depth == 0 and not _BINARY_AT_TOP.search("".join(out))
 
 
+# a field of this / of a plain name: receiver evaluation is a load, javac dup's it for `op=`
+_FIELD = r"(?:this|[A-Za-z_][\w$]*)(?:\.[A-Za-z_][\w$]*)+"
+_FIELD_CAST_FORM = re.compile(
+    r"^(?P<ind>[ \t]*)(?P<lhs>%s) = \((?:byte|short|char|int|long)\)\((?P=lhs) (?P<op>%s) (?P<rhs>[^;]+?)\);[ \t]*$"
+    % (_FIELD, _OPS), re.M)
+_FIELD_PLAIN_FORM = re.compile(
+    r"^(?P<ind>[ \t]*)(?P<lhs>%s) = (?P=lhs) (?P<op>%s) (?P<rhs>[^;]+?);[ \t]*$" % (_FIELD, _OPS), re.M)
+
+
+def _compound_field_rewrites(text: str) -> list:
+    def sub(m: re.Match) -> str:
+        if not _single_operand(m.group("rhs")):
+            return m.group(0)
+        return f"{m.group('ind')}{m.group('lhs')} {m.group('op')}= {m.group('rhs')};"
+    return [(_FIELD_CAST_FORM, sub), (_FIELD_PLAIN_FORM, sub)]
+
+
 def _compound_rewrites(text: str) -> list:
     def sub(m: re.Match) -> str:
         if not _single_operand(m.group("rhs")):
@@ -1410,7 +1427,8 @@ remove_null_cast = RegexSites(_null_cast_rewrites)
 _LAYOUT_SITES = ("split-return-ternary", "split-return-boolean", "guard-return", "guard-continue",
                  "early-return-else", "swap-if-else", "unguard-else", "invert-guard-return", "return-out-of-try",
                  "split-or-condition")
-_TEMP_SITES = ("introduce-return-temp", "inline-return-temp", "compound-assign-site", "lift-increments-site")
+_TEMP_SITES = ("introduce-return-temp", "inline-return-temp", "compound-assign-site", "compound-assign-field-site",
+               "lift-increments-site")
 RULE_SITES = {
     "tail": _LAYOUT_SITES, "min": _LAYOUT_SITES, "inl": _LAYOUT_SITES, "merge": _LAYOUT_SITES,
     "thread": _LAYOUT_SITES, "const": _LAYOUT_SITES, "cov": _LAYOUT_SITES, "cmp0": _LAYOUT_SITES,
@@ -1457,6 +1475,7 @@ SITE_HYPOTHESES = {
     "eq-true": eq_true,
     "hoist-arg-temp": hoist_arg_temp,
     "compound-assign-site": RegexSites(_compound_rewrites),
+    "compound-assign-field-site": RegexSites(_compound_field_rewrites),
     "unfold-arrays-site": RegexSites(_unfold_rewrites),
     "expand-iinc-site": RegexSites(_expand_rewrites),
     "collapse-iinc-site": RegexSites(_collapse_rewrites),
@@ -1473,7 +1492,7 @@ SITE_HYPOTHESES = {
 # those make one pass)
 for _name in ("split-return-ternary", "split-return-boolean", "guard-return", "guard-continue", "unguard-else",
               "early-return-else", "hoist-declaration", "hoist-for-var", "introduce-return-temp",
-              "inline-return-temp", "remove-null-cast", "invert-guard-return", "instanceof-binding", "return-out-of-try", "split-or-condition", "wrap-boolean-ternary", "eq-true"):
+              "inline-return-temp", "remove-null-cast", "compound-assign-field-site", "invert-guard-return", "instanceof-binding", "return-out-of-try", "split-or-condition", "wrap-boolean-ternary", "eq-true"):
     SITE_HYPOTHESES[_name].fixpoint = True
 
 
