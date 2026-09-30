@@ -176,6 +176,51 @@ class TestClinitSites(ExactBase):
         self.assertIn("n(4, null);", (mod_dir / "vineflower2s/p/Foo.java").read_text())
 
 
+LOOP_SHIPPED = """package p;
+public class Foo {
+  int f;
+  void loop(int n) {
+    for (int i = 0; i < n; i++) {
+      if (i % 2 == 0) {
+        continue;
+      }
+      if (i % 3 == 0) {
+        continue;
+      }
+      this.f++;
+      this.f += i;
+    }
+  }
+}
+"""
+LOOP_PRIMARY = """package p;
+public class Foo {
+  int f;
+  void loop(int n) {
+    for (int i = 0; i < n; i++) {
+      if (i % 2 != 0) {
+        if (i % 3 != 0) {
+          this.f++;
+          this.f += i;
+        }
+      }
+    }
+  }
+}
+"""
+
+
+class TestSiteFixedPoint(ExactBase):
+    def test_nested_guards_are_all_unnested_by_one_donor(self):
+        """Applying the last site first invalidates the enclosing site's span; the donor re-finds the
+        sites after every edit until none is left (hypotheses that converge)."""
+        mod_dir, _ = self._module("fixpoint", LOOP_SHIPPED, LOOP_PRIMARY, None, None)
+        man = self._exact("fixpoint", mod_dir, exact=True, hypotheses=("guard-continue",))
+        rec = man["classes"]["p/Foo"]
+        self.assertEqual(rec["self_grade"], "roundtrip-exact")
+        self.assertEqual([m["donor"] for m in rec["methods"]], ["site:guard-continue"])
+
+
 class TestRuleTargetedSites(ExactBase):
     """A method whose canonical proof needed only `tail` is never offered the declaration-order or
     null-cast repairs: the climb tries only the site hypotheses that can explain the rules found."""

@@ -986,6 +986,15 @@ SITE_HYPOTHESES = {
     "inline-return-temp": inline_return_temp,
 }
 
+# hypotheses whose application makes progress and eventually leaves no site: the splice's site donor
+# re-applies them to a fixed point (swap-if-else flips back and the other regex sites persist, so
+# those make one pass)
+for _name in ("split-return-ternary", "split-return-boolean", "guard-return", "guard-continue", "unguard-else",
+              "early-return-else", "hoist-declaration", "hoist-for-var", "introduce-return-temp",
+              "inline-return-temp", "remove-null-cast"):
+    SITE_HYPOTHESES[_name].fixpoint = True
+
+
 # name -> hypothesis, in the order the splice tries them
 HYPOTHESES: dict[str, Callable[..., str]] = {
     "compound-assign": compound_assign,

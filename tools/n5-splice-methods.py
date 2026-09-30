@@ -78,6 +78,7 @@ DONOR_ENGINES = ("cfr", "procyon")
 MAX_COMBOS = 8
 CLIMB_MAX_BAD = 4
 CLIMB_MAX_BAD_EXACT = 12
+SITE_FIXPOINT_CAP = 60
 _VERDICT_RANK = {"exact": 0, "allowlist": 1, "canonical": 2}
 
 
@@ -603,16 +604,39 @@ def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: st
         return True
 
     def site_variant(name: str) -> str:
-        """C4: the site hypothesis applied to every one of its sites inside the mismatching methods
-        (last site first, so earlier offsets stay valid); a site an earlier edit made stale is skipped."""
+        """C4: the site hypothesis applied inside the mismatching methods. A hypothesis that converges
+        (`fixpoint`) is applied one site at a time, the last site first, re-finding the sites after every
+        edit (an edit can invalidate the enclosing site), until none is left; the others make one pass
+        over their sites, last first. The method spans are shifted by every edit."""
         hyp = HYP.SITE_HYPOTHESES[name]
         spans = mismatching_spans(primary_path, verdicts)
-        found = hyp.sites(primary_text)
-        if spans is not None:
-            found = [x for x in found if any(a <= HYP.site_pos(x) < b for a, b in spans)]
-        text = primary_text
-        for site in sorted(found, key=HYP.site_pos, reverse=True):
-            text = hyp.apply(text, site)
+        spans = [list(x) for x in spans] if spans is not None else None
+        text, seen = primary_text, {primary_text}
+
+        def in_scope(site) -> bool:
+            return spans is None or any(a <= HYP.site_pos(site) < b for a, b in spans)
+
+        if not getattr(hyp, "fixpoint", False):
+            for site in sorted([x for x in hyp.sites(text) if in_scope(x)], key=HYP.site_pos, reverse=True):
+                text = hyp.apply(text, site)
+            return text
+        for _ in range(SITE_FIXPOINT_CAP):
+            found = [x for x in hyp.sites(text) if in_scope(x)]
+            if not found:
+                break
+            site = max(found, key=HYP.site_pos)
+            new = hyp.apply(text, site)
+            if new in seen:
+                break
+            if spans is not None:
+                delta, at = len(new) - len(text), HYP.site_pos(site)
+                for span in spans:
+                    if span[0] > at:
+                        span[0] += delta
+                    if span[1] > at:
+                        span[1] += delta
+            text = new
+            seen.add(text)
         return text
 
     if exact and verdicts.get(clinit_key, {}).get("verdict") == "mismatch":
