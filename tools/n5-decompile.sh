@@ -123,6 +123,16 @@
 #    jar found during the scan is classified out before it is counted at all — it belongs to
 #    --extra-tridium instead).
 #
+# --third-party-uncovered [--uncovered-population <json>] (C2d, C2b-G2): decompiles the third-party
+# jars that hold classes WITHOUT a proven upstream source and that have no tree yet. Driven by
+# organized/_upstream-sources/uncovered-population.json (`tools/n5-upstream-sources.py
+# uncovered-population`); an artifact's jar is resolved from its bin/ext (N5_BIN_EXT_DIR) or etc/m2
+# (N5_ETC_M2_DIR) occurrence, verified against the population's sha256 (mismatch = failure), refused
+# when the Tridium classifier says "include*" (gate unchanged), then decompiled once with v2 settings
+# into organized/_lib-inf-3p/<stem>-<sha12>/ (same layout as --third-party-libinf; recon.json
+# population "third-party-uncovered"). LIB-INF-only artifacts are left to --third-party-libinf.
+# Prints "third-party-uncovered: decompiled=N skipped-up-to-date=N failed=N skipped-other=N artifacts=N".
+#
 # Undocumented Vineflower 1.12.0 CLI ordering requirement (verified empirically
 # 2026-09-28, not documented anywhere in --help): an "Additional option" such as
 # --include-runtime or --use-lvt-names placed AFTER a "General option" such as
@@ -2589,9 +2599,10 @@ run_extra_tridium_libinf() {
 # branch — so found_in always reflects the current scan's occurrences even
 # when the decompile itself was skipped as up to date.
 write_recon_lib_inf_3p() {
-  local moddir="$1" sha="$2" found_in_json="$3"
+  local moddir="$1" sha="$2" found_in_json="$3" population="${4:-lib-inf-3p}"
   RECON_PATH="$moddir/recon.json" \
   RECON_SHA="$sha" \
+  RECON_POPULATION="$population" \
   RECON_FOUND_IN_JSON="$found_in_json" \
   python3 <<'PYEOF'
 import json, os
@@ -2603,7 +2614,7 @@ try:
 except (OSError, json.JSONDecodeError):
     recon = {}
 
-recon["population"] = "lib-inf-3p"
+recon["population"] = os.environ["RECON_POPULATION"]
 recon["jar_sha256"] = os.environ["RECON_SHA"]
 recon["found_in"] = json.loads(os.environ["RECON_FOUND_IN_JSON"])
 
@@ -2735,6 +2746,108 @@ run_third_party_libinf() {
 }
 
 # ---------------------------------------------------------------------------
+# --third-party-uncovered (C2d, odd/tasks/n5-fidelity-completion.md, C2b-G2) — see the header
+# comment. Reads the authoritative uncovered-population.json, resolves every artifact whose bytes
+# live under bin/ext or etc/m2 (never LIB-INF-only ones: --third-party-libinf owns those) and
+# decompiles it ONCE with decompile_module_v2 into the same organized/_lib-inf-3p/<stem>-<sha12>/
+# layout. The Tridium classifier gate is unchanged: a jar the classifier calls Tridium-owned
+# (verdict "include*") is refused, never decompiled here.
+# ---------------------------------------------------------------------------
+run_third_party_uncovered() {
+  local force="$1" population="$2"
+  if [[ ! -f "$population" ]]; then
+    echo "--third-party-uncovered: population file not found: $population (run: python3 tools/n5-upstream-sources.py uncovered-population)" >&2
+    return 1
+  fi
+  v2_libcache_ready || prepare_v2_libcache "$force"
+  local out_root="$N5_OUT_DIR/_lib-inf-3p"
+  mkdir -p "$out_root"
+
+  # One TSV row per artifact: key, sha256, JSON list of occurrences, and the first bin/ext|etc/m2
+  # occurrence's relative path ("-" when the artifact has none, e.g. LIB-INF only).
+  local rows
+  rows="$(python3 - "$population" <<'PYEOF'
+import json, sys
+pop = json.load(open(sys.argv[1]))
+for a in pop.get("artifacts", []):
+    occ = a.get("occurrences", [])
+    if any(o.get("kind") == "LIB-INF" for o in occ):
+        kind, rel = "", ""  # decompiled by --third-party-libinf
+    else:
+        kind = rel = ""
+        for o in occ:
+            if o.get("kind") in ("bin/ext", "etc/m2"):
+                kind, rel = o["kind"], o["name"]
+                break
+    found = [f'{o.get("kind")}:{o.get("name")}' for o in occ]
+    # "-" placeholders: `read` with a tab IFS collapses empty fields
+    print("\t".join([a["key"], a["jar_sha256"], kind or "-", rel or "-", json.dumps(found)]))
+PYEOF
+)"
+
+  local artifacts=0 decompiled=0 skipped=0 failed=0 other=0
+  local key sha kind rel found_json src verdict stem moddir logfile before_lines new_log rc actual scratch
+  scratch="$(mktemp -d)"
+  while IFS=$'\t' read -r key sha kind rel found_json; do
+    [[ -z "$key" ]] && continue
+    artifacts=$((artifacts + 1))
+    if [[ "$kind" == "-" ]]; then
+      log "_lib-inf-3p" "third-party-uncovered: $key has no bin/ext or etc/m2 occurrence (LIB-INF-only artifacts belong to --third-party-libinf)"
+      other=$((other + 1))
+      continue
+    fi
+    if [[ "$kind" == "bin/ext" ]]; then
+      src="$N5_BIN_EXT_DIR/${rel#bin/ext/}"
+    else
+      src="$N5_ETC_M2_DIR/${rel#etc/m2/repository/}"
+    fi
+    if [[ ! -f "$src" ]]; then
+      echo "third-party-uncovered: $key: jar not found: $src" >&2
+      failed=$((failed + 1))
+      continue
+    fi
+    actual="$(sha256_of "$src")"
+    if [[ "$actual" != "$sha" ]]; then
+      echo "third-party-uncovered: $key: sha256 mismatch for $src (population $sha, file $actual) — regenerate the population" >&2
+      failed=$((failed + 1))
+      continue
+    fi
+    verdict="$(python3 "$SCRIPT_DIR/n5-classify-binext.py" "$src" 2>>"$LOG_DIR/_lib-inf-3p.log" || true)"
+    if [[ "$verdict" == include* ]]; then
+      log "_lib-inf-3p" "third-party-uncovered: refusing Tridium-owned jar $key ($verdict) — handled by the Tridium bin/ext pipeline"
+      other=$((other + 1))
+      continue
+    fi
+    stem="$(basename "$src" .jar)"
+    moddir="$out_root/${stem}-${sha:0:12}"
+    mkdir -p "$moddir"
+    cp "$src" "$scratch/${stem}.jar"
+    logfile="$LOG_DIR/$stem.log"
+    before_lines=0
+    [[ -f "$logfile" ]] && before_lines="$(wc -l < "$logfile")"
+    rc=0
+    decompile_module_v2 "$scratch/${stem}.jar" "$force" "$moddir" || rc=$?
+    new_log=""
+    [[ -f "$logfile" ]] && new_log="$(tail -n +"$((before_lines + 1))" "$logfile")"
+    write_recon_lib_inf_3p "$moddir" "$sha" "$found_json" "third-party-uncovered"
+    if [[ "$rc" -ne 0 ]]; then
+      failed=$((failed + 1))
+      log "_lib-inf-3p" "FAILED ${stem}-${sha:0:12} ($sha)"
+    elif [[ "$new_log" == *"up to date"* ]]; then
+      skipped=$((skipped + 1))
+    else
+      decompiled=$((decompiled + 1))
+    fi
+    rm -f "$scratch/${stem}.jar"
+  done <<< "$rows"
+  rm -rf "$scratch"
+  local summary="third-party-uncovered: decompiled=$decompiled skipped-up-to-date=$skipped failed=$failed skipped-other=$other artifacts=$artifacts"
+  log "_lib-inf-3p" "$summary"
+  echo "$summary"
+  [[ "$failed" -eq 0 ]]
+}
+
+# ---------------------------------------------------------------------------
 # main
 # ---------------------------------------------------------------------------
 # Print the .java files under $1 that carry a decompiler failure marker.
@@ -2752,6 +2865,7 @@ main() {
   local only=""
   local mode="modules"
   local variant=""
+  local uncovered_population=""
 
   # Parse every flag before acting, so order (--force --bin-ext vs --bin-ext
   # --force) never changes behavior.
@@ -2784,6 +2898,14 @@ main() {
       --third-party-libinf)
         mode="third-party-libinf"
         shift
+        ;;
+      --third-party-uncovered)
+        mode="third-party-uncovered"
+        shift
+        ;;
+      --uncovered-population)
+        uncovered_population="${2:?--uncovered-population needs a path}"
+        shift 2
         ;;
       --force)
         force="true"
@@ -2821,6 +2943,11 @@ main() {
 
   if [[ "$mode" == "third-party-libinf" ]]; then
     run_third_party_libinf "$force"
+    exit $?
+  fi
+
+  if [[ "$mode" == "third-party-uncovered" ]]; then
+    run_third_party_uncovered "$force" "${uncovered_population:-$N5_OUT_DIR/_upstream-sources/uncovered-population.json}"
     exit $?
   fi
 

@@ -2223,3 +2223,113 @@ PY
   [ ! -f "$gate_dir/out/poc/recon.json" ]
   [ ! -f "$gate_dir/out/norecon/recon.json" ]
 }
+
+# --- --third-party-uncovered (C2d, odd/tasks/n5-fidelity-completion.md, C2b-G2): decompile the
+# third-party jars (bin/ext, etc/m2) that hold classes WITHOUT a proven upstream source and have no
+# tree yet, driven by the authoritative population JSON, into the SAME layout --third-party-libinf
+# uses (organized/_lib-inf-3p/<stem>-<sha12>/), with the Tridium classifier gate left intact.
+
+# Writes a one-artifact uncovered-population.json at $1 for jar $2, recorded under occurrence
+# kind $3 with name $4 and (optional) sha override $5.
+write_uncovered_population() {
+  local dest="$1" jar="$2" kind="$3" name="$4" sha="${5:-}"
+  python3 - "$dest" "$jar" "$kind" "$name" "$sha" <<'PY'
+import hashlib, json, sys
+dest, jar, kind, name, sha = sys.argv[1:6]
+sha = sha or hashlib.sha256(open(jar, "rb").read()).hexdigest()
+json.dump({"summary": {}, "artifacts": [{
+    "key": "org.example:widget:1.0", "jar_sha256": sha,
+    "occurrences": [{"kind": kind, "name": name, "binary_sha256": sha}],
+    "class_count": 1, "uncovered_entries": ["org/example/Widget.class"],
+    "uncovered_top_level": ["org/example/Widget"], "kotlin_top_level": []}]}, open(dest, "w"))
+PY
+}
+
+@test "(g) --third-party-uncovered decompiles a bin/ext jar named by the population into _lib-inf-3p/<stem>-<sha12>/ with recon population+jar_sha256+found_in" {
+  local_dir="$BATS_TEST_TMPDIR/tpu_g"
+  mkdir -p "$local_dir/modules" "$local_dir/binext" "$local_dir/out"
+  make_fake_jar "$local_dir/modules/base.jar" Tridium ""
+  build_real_standalone_jar "$local_dir/binext/widget-1.0.jar" Widget org/example
+  write_uncovered_population "$local_dir/pop.json" "$local_dir/binext/widget-1.0.jar" bin/ext bin/ext/widget-1.0.jar
+
+  export N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR="$local_dir/binext" N5_OUT_DIR="$local_dir/out"
+  export N5_JDK25_HOME="${N5_JDK25_HOME:-/home/linuxbrew/.linuxbrew/opt/openjdk@25/libexec}"
+  run "$REPO_ROOT/tools/n5-decompile.sh" --prepare-libcache
+  [ "$status" -eq 0 ]
+  run "$REPO_ROOT/tools/n5-decompile.sh" --third-party-uncovered --uncovered-population "$local_dir/pop.json"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"third-party-uncovered: decompiled=1 skipped-up-to-date=0 failed=0 skipped-other=0 artifacts=1"* ]]
+
+  sha=$(sha256sum "$local_dir/binext/widget-1.0.jar" | awk '{print $1}')
+  moddir="$local_dir/out/_lib-inf-3p/widget-1.0-${sha:0:12}"
+  [ "$(python3 -c "import json;print(json.load(open('$moddir/recon.json'))['population'])")" = "third-party-uncovered" ]
+  [ "$(python3 -c "import json;print(json.load(open('$moddir/recon.json'))['jar_sha256'])")" = "$sha" ]
+  [ "$(python3 -c "import json;print(json.load(open('$moddir/recon.json'))['v2']['status'])")" = "ok" ]
+  [[ "$(python3 -c "import json;print(json.load(open('$moddir/recon.json'))['found_in'])")" == *"bin/ext/widget-1.0.jar"* ]]
+  [ -f "$moddir/vineflower2/org/example/Widget.java" ]
+
+  # idempotent rerun
+  run "$REPO_ROOT/tools/n5-decompile.sh" --third-party-uncovered --uncovered-population "$local_dir/pop.json"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"decompiled=0 skipped-up-to-date=1 failed=0"* ]]
+}
+
+@test "(h) --third-party-uncovered resolves an etc/m2 occurrence against N5_ETC_M2_DIR" {
+  local_dir="$BATS_TEST_TMPDIR/tpu_h"
+  mkdir -p "$local_dir/modules" "$local_dir/m2/org/example/widget/1.0" "$local_dir/out"
+  make_fake_jar "$local_dir/modules/base.jar" Tridium ""
+  build_real_standalone_jar "$local_dir/m2/org/example/widget/1.0/widget-1.0.jar" Widget org/example
+  write_uncovered_population "$local_dir/pop.json" "$local_dir/m2/org/example/widget/1.0/widget-1.0.jar" \
+    etc/m2 etc/m2/repository/org/example/widget/1.0/widget-1.0.jar
+
+  export N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR=/nonexistent N5_OUT_DIR="$local_dir/out" N5_ETC_M2_DIR="$local_dir/m2"
+  export N5_JDK25_HOME="${N5_JDK25_HOME:-/home/linuxbrew/.linuxbrew/opt/openjdk@25/libexec}"
+  run "$REPO_ROOT/tools/n5-decompile.sh" --prepare-libcache
+  [ "$status" -eq 0 ]
+  run "$REPO_ROOT/tools/n5-decompile.sh" --third-party-uncovered --uncovered-population "$local_dir/pop.json"
+  [ "$status" -eq 0 ]
+  sha=$(sha256sum "$local_dir/m2/org/example/widget/1.0/widget-1.0.jar" | awk '{print $1}')
+  [ -f "$local_dir/out/_lib-inf-3p/widget-1.0-${sha:0:12}/recon.json" ]
+}
+
+@test "(i) --third-party-uncovered fails loudly when the resolved jar's sha256 differs from the population's (stale population)" {
+  local_dir="$BATS_TEST_TMPDIR/tpu_i"
+  mkdir -p "$local_dir/modules" "$local_dir/binext" "$local_dir/out"
+  make_fake_jar "$local_dir/modules/base.jar" Tridium ""
+  build_real_standalone_jar "$local_dir/binext/widget-1.0.jar" Widget org/example
+  write_uncovered_population "$local_dir/pop.json" "$local_dir/binext/widget-1.0.jar" bin/ext bin/ext/widget-1.0.jar \
+    0000000000000000000000000000000000000000000000000000000000000000
+
+  export N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR="$local_dir/binext" N5_OUT_DIR="$local_dir/out"
+  export N5_JDK25_HOME="${N5_JDK25_HOME:-/home/linuxbrew/.linuxbrew/opt/openjdk@25/libexec}"
+  run "$REPO_ROOT/tools/n5-decompile.sh" --prepare-libcache
+  [ "$status" -eq 0 ]
+  run "$REPO_ROOT/tools/n5-decompile.sh" --third-party-uncovered --uncovered-population "$local_dir/pop.json"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"sha256 mismatch"* ]]
+  [ ! -d "$local_dir/out/_lib-inf-3p" ] || [ -z "$(ls -A "$local_dir/out/_lib-inf-3p")" ]
+}
+
+@test "(j) --third-party-uncovered never decompiles a Tridium-owned jar (classifier gate unchanged) nor a LIB-INF-only artifact" {
+  local_dir="$BATS_TEST_TMPDIR/tpu_j"
+  mkdir -p "$local_dir/modules" "$local_dir/binext" "$local_dir/out"
+  make_fake_jar "$local_dir/modules/base.jar" Tridium ""
+  python3 - "$local_dir/binext/tridiumowned-1.0.jar" <<'PY'
+import sys, zipfile
+with zipfile.ZipFile(sys.argv[1], "w") as z:
+    z.writestr("com/tridium/x/A.class", b"stub")
+PY
+  write_uncovered_population "$local_dir/pop.json" "$local_dir/binext/tridiumowned-1.0.jar" bin/ext bin/ext/tridiumowned-1.0.jar
+  write_uncovered_population "$local_dir/pop2.json" "$local_dir/binext/tridiumowned-1.0.jar" LIB-INF "modA.jar!LIB-INF/x.jar"
+
+  export N5_MODULES_DIR="$local_dir/modules" N5_BIN_EXT_DIR="$local_dir/binext" N5_OUT_DIR="$local_dir/out"
+  export N5_JDK25_HOME="${N5_JDK25_HOME:-/home/linuxbrew/.linuxbrew/opt/openjdk@25/libexec}"
+  run "$REPO_ROOT/tools/n5-decompile.sh" --prepare-libcache
+  [ "$status" -eq 0 ]
+  for p in pop pop2; do
+    run "$REPO_ROOT/tools/n5-decompile.sh" --third-party-uncovered --uncovered-population "$local_dir/$p.json"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"decompiled=0 skipped-up-to-date=0 failed=0 skipped-other=1 artifacts=1"* ]]
+  done
+  [ -z "$(ls -A "$local_dir/out/_lib-inf-3p" 2>/dev/null)" ]
+}
