@@ -292,6 +292,7 @@ class TestCli(unittest.TestCase):
         self.assertEqual((kw["donor_trees"], kw["primary_trees"], kw["keep_existing"]),
                          (("vineflower-cons", "vineflower"), ("vineflower2m",), True))
         self.assertEqual(kw["hypotheses"], ())
+        self.assertEqual(kw["decompilers"], ("cfr", "procyon"))
 
     def test_hypotheses_flag_names_or_expands_all(self):
         mod = _load()
@@ -351,6 +352,22 @@ class TestOnDiskDonorTrees(_SpliceFixture):
                          [("f", "tree:vineflower-cons", "exact")])
         self.assertEqual(man["donor_engines"], ["cfr", "procyon", "tree:vineflower-cons"])
         self.assertEqual(rec["self_grade"], "roundtrip-exact")
+
+    def test_decompilers_can_be_switched_off(self):
+        mod_dir, fake = self._module("nodec", SHIPPED, PRIMARY, CFR, PROCYON)
+        calls = []
+
+        def spy(*a, **k):
+            calls.append(a[1])
+            return fake(*a, **k)
+        with mock.patch.object(self.mod.FID, "_decompile_one_class_with", side_effect=spy):
+            man = self.mod.splice_module("nodec", self.root / "organized", "vineflower2", "vineflower2s", ["p/Foo"],
+                                         classpath="", helper_dir=self.helper, javac_bin=f"{JDK}/javac",
+                                         javap_bin=f"{JDK}/javap", java_bin=f"{JDK}/java", tool_server=False,
+                                         decompilers=())
+        self.assertEqual(calls, [])
+        self.assertEqual(man["donor_engines"], [])
+        self.assertEqual(man["refused"]["p/Foo"]["reason"], "no-donor")
 
     def test_missing_donor_tree_file_is_skipped_not_fatal(self):
         mod_dir, fake = self._module("notree", SHIPPED, PRIMARY, PROCYON, PROCYON)
