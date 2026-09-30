@@ -756,6 +756,12 @@ class RegexSites:
         return text[:start] + rewrite(m) + text[end:]
 
 
+def site_pos(site: tuple) -> int:
+    """Source offset of a site: RegexSites sites are (pattern index, start, end), every other site is
+    a (start, end) span."""
+    return site[1] if len(site) == 3 else site[0]
+
+
 # name -> site hypothesis (`sites(text)` and `apply(text, site)`): repairs a class's structure, and
 # with the splice's --climb the mismatching methods (one site at a time)
 SITE_HYPOTHESES = {

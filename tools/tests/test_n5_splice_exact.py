@@ -26,7 +26,7 @@ PRIMARY = SHIPPED.replace("    if ((x & 1) == 1) {\n      return true;\n    }\n 
 
 
 @unittest.skipUnless(_jdk(), "JDK 25 not installed")
-class TestExactMode(_SpliceFixture):
+class ExactBase(_SpliceFixture):
     def _fake(self, *a, **k):
         return None, "no donor"
 
@@ -37,6 +37,9 @@ class TestExactMode(_SpliceFixture):
                                           javap_bin=f"{JDK}/javap", java_bin=f"{JDK}/java", tool_server=False,
                                           decompilers=(), **kw)
 
+
+
+class TestExactMode(ExactBase):
     def test_canonical_verdict_is_a_mismatch_in_exact_mode(self):
         mod_dir, _ = self._module("verdict", SHIPPED, PRIMARY, None, None)
         FID = self.mod.FID
@@ -75,6 +78,20 @@ class TestExactMode(_SpliceFixture):
         again = self._exact("keepx", mod_dir, exact=True, keep_existing=True)
         self.assertIn("p/Foo", again["classes"])
         self.assertEqual((mod_dir / "vineflower2s/p/Foo.java").read_text(), kept)
+
+
+MANY = "".join(f"  boolean m{i}(int x) {{\n    return x == {i};\n  }}\n" for i in range(40))
+SHIPPED_MANY = SHIPPED.replace("  boolean a(int x)", MANY + "  boolean a(int x)")
+PRIMARY_MANY = PRIMARY.replace("  boolean a(int x)", MANY + "  boolean a(int x)")
+
+
+@unittest.skipUnless(_jdk(), "JDK 25 not installed")
+class TestClimbScope(ExactBase):
+    def test_sites_outside_the_mismatching_methods_are_not_tried(self):
+        # 40 already-exact `return x == i;` sites precede the one that matters (site cap is 30)
+        mod_dir, _ = self._module("scope", SHIPPED_MANY, PRIMARY_MANY, None, None)
+        man = self._exact("scope", mod_dir, exact=True, climb=True, hypotheses=("split-return-boolean",))
+        self.assertEqual(man["classes"]["p/Foo"]["self_grade"], "roundtrip-exact")
 
 
 if __name__ == "__main__":

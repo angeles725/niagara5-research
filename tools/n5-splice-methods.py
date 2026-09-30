@@ -461,6 +461,20 @@ def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: st
                        for k in mism if k in parsed["methods"] and k in shipped["methods"])
         return bad_structure, len(mism), dist
 
+    def mismatching_spans(path: Path, v: dict) -> Optional[list]:
+        """Source spans of the methods that still mismatch (the climb only tries sites inside them);
+        None when the attribution fails, then every site is tried."""
+        try:
+            scan = scan_spans([path], helper_dir, java_bin, classpath)[str(path)]
+        except Refusal:
+            return None
+        if scan["errors"]:
+            return None
+        found = [_find_method(scan, k[0], k[1], class_short) for k, x in v.items() if x["verdict"] == "mismatch"]
+        if not found or any(m is None for m in found):
+            return None
+        return [(m["start"], m["end"]) for m in found]
+
     def repair_by_sites(names: tuple, use_distance: bool, max_rounds: int = 8, max_sites: int = 30) -> bool:
         """Greedy site repair: apply the single site that lowers the score, repeat. Kept only when the
         score ends strictly lower (and, for a structure repair, the class structure matches)."""
@@ -471,9 +485,13 @@ def _splice_class(fqcn: str, mod_dir: Path, tree: str, td: str, *, classpath: st
         applied: list = []
         for _round in range(max_rounds):
             improved = False
+            spans = mismatching_spans(path_, v) if use_distance else None
             for name in names:
                 hyp = HYP.SITE_HYPOTHESES[name]
-                for n, site in enumerate(hyp.sites(text)[:max_sites]):
+                sites = hyp.sites(text)
+                if spans is not None:
+                    sites = [x for x in sites if any(a <= HYP.site_pos(x) < b for a, b in spans)]
+                for n, site in enumerate(sites[:max_sites]):
                     cand = hyp.apply(text, site)
                     if cand == text:
                         continue
