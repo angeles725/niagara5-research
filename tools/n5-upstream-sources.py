@@ -665,16 +665,39 @@ def real_class_entries(jar_bytes: bytes) -> dict[str, str]:
             if name.rsplit("/", 1)[-1][:-len(".class")] not in _NON_CLASS_SIMPLE_NAMES}
 
 
-def top_level_class_of(class_entry_name: str) -> str:
+def top_level_class_of(class_entry_name: str, known: Optional[set] = None) -> str:
     """The TOP-LEVEL class a `.class` entry belongs to -- the `.java`/`.kt` source file that
     would need to exist for this entry to be source-covered -- in the same "path/without/
     extension" shape class_names_from_zip(..., ".java") returns: "org/foo/A$B.class" ->
     "org/foo/A", "org/foo/A$1.class" -> "org/foo/A", "org/foo/A.class" -> "org/foo/A" (a nested/
     anonymous class A$B or A$1 is declared INSIDE A.java, so it is source-covered exactly when
-    A's own top-level source is)."""
+    A's own top-level source is).
+
+    A simple name may itself start with `$` (gson's shaded `$Gson$Types`): a split at the first
+    `$` would collapse it to the package (C2d-G2). The leading `$` run therefore always belongs to
+    the first segment, and when `known` (the set of "path/without/extension" names of the jar's
+    real classes) is given, the SHORTEST `$`-boundary prefix that is itself a real class wins, so
+    `$Gson$Types$Impl` -> `$Gson$Types`. Only `$`-leading names consult `known`: a plain `A$B` whose
+    outer `A` is absent from a pruned jar (poi-ooxml-lite `STFoo$Enum`) still belongs to `A.java`.
+    Without a match the first segment is returned."""
     base = class_entry_name[:-len(".class")] if class_entry_name.endswith(".class") else class_entry_name
     dirpart, sep, simple = base.rpartition("/")
-    return f"{dirpart}{sep}{simple.split('$', 1)[0]}"
+    lead = len(simple) - len(simple.lstrip("$"))
+    if known and lead:
+        pos = simple.find("$", lead)
+        while pos != -1:
+            if f"{dirpart}{sep}{simple[:pos]}" in known:
+                return f"{dirpart}{sep}{simple[:pos]}"
+            pos = simple.find("$", pos + 1)
+        if base in known:
+            return base
+    cut = simple.find("$", lead)
+    return f"{dirpart}{sep}{simple if cut == -1 else simple[:cut]}"
+
+
+def _class_names(real_entries) -> set:
+    """"path/without/.class" names of a jar's real class entries (top_level_class_of's `known`)."""
+    return {e[:-len(".class")] if e.endswith(".class") else e for e in real_entries}
 
 
 # ---------------------------------------------------------------------------
@@ -1190,9 +1213,10 @@ def run_all_third_party_coverage(manifest: dict, mirror_modules_dir=MIRROR_MODUL
 
         if proven:
             src_names = sources_top_level_names(art)
+            known = _class_names(real_entries)
             if src_names:
                 covered += sum(1 for entry in proven
-                                if class_has_matching_source(top_level_class_of(entry), src_names))
+                                if class_has_matching_source(top_level_class_of(entry, known), src_names))
             elif art.get("status") == "fetched":
                 unreadable_sources_jar += 1
                 print(f"n5-upstream-sources: {art.get('groupId')}:{art.get('artifactId')}:"
@@ -1270,7 +1294,8 @@ def compute_uncovered_population(manifest: dict, mirror_modules_dir=MIRROR_MODUL
         unc = sorted(real_entries - covered)
         if not unc:
             return
-        tops = sorted({top_level_class_of(e) for e in unc})
+        known = _class_names(real_entries)
+        tops = sorted({top_level_class_of(e, known) for e in unc})
         kotlin = []
         with zipfile.ZipFile(io.BytesIO(jar_bytes)) as z:
             for top in tops:
@@ -1303,8 +1328,9 @@ def compute_uncovered_population(manifest: dict, mirror_modules_dir=MIRROR_MODUL
         proven = proven_entries(art, real_entries)
         if proven:
             src_names = sources_top_level_names(art)
+            known = _class_names(real_entries)
             if src_names:
-                covered = {e for e in proven if class_has_matching_source(top_level_class_of(e), src_names)}
+                covered = {e for e in proven if class_has_matching_source(top_level_class_of(e, known), src_names)}
         uncovered += len(real_entries - covered)
         _record(key, occs, real_entries, covered, data)
         if load_binary_bytes_from_mirror(occs[0], mirror_modules_dir, mirror_binext_dir) is None:

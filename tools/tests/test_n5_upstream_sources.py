@@ -1070,6 +1070,31 @@ class DeclaredNamesForSourceTest(unittest.TestCase):
         self.assertEqual(m.declared_names_for_source("Foo.txt", b"package a.b;"), set())
 
 
+class TopLevelClassOfTest(unittest.TestCase):
+    def test_plain_nested_and_anonymous(self):
+        m = _load()
+        self.assertEqual(m.top_level_class_of("a/B.class"), "a/B")
+        self.assertEqual(m.top_level_class_of("a/B$C.class"), "a/B")
+        self.assertEqual(m.top_level_class_of("a/B$1.class"), "a/B")
+
+    def test_dollar_leading_top_level_is_kept_when_known(self):
+        m = _load()
+        known = {"a/$G$T", "a/$G$P"}
+        self.assertEqual(m.top_level_class_of("a/$G$T.class", known), "a/$G$T")
+        self.assertEqual(m.top_level_class_of("a/$G$T$Impl.class", known), "a/$G$T")
+        self.assertEqual(m.top_level_class_of("a/$G$T$1$2.class", known), "a/$G$T")
+        self.assertEqual(m.top_level_class_of("a/$G$P.class", known), "a/$G$P")
+
+    def test_plain_nested_of_an_absent_outer_still_maps_to_the_outer(self):
+        # poi-ooxml-lite ships `STFoo$Enum` without `STFoo.class`; its source is STFoo.java.
+        m = _load()
+        self.assertEqual(m.top_level_class_of("a/STFoo$Enum.class", {"a/STFoo$Enum"}), "a/STFoo")
+
+    def test_dollar_leading_never_collapses_to_the_package(self):
+        m = _load()
+        self.assertEqual(m.top_level_class_of("a/$G$T.class"), "a/$G")
+
+
 class ClassHasMatchingSourceTest(unittest.TestCase):
     def test_direct_path_match(self):
         m = _load()
@@ -2389,6 +2414,21 @@ class TestUncoveredPopulation(unittest.TestCase):
         self.assertEqual(art["uncovered_top_level"], ["a/Lacks"])
         self.assertEqual(art["uncovered_entries"], ["a/Lacks$1.class", "a/Lacks.class"])
         self.assertEqual(art["key"], "g:w:1.0")
+
+    def test_dollar_prefixed_top_level_names_are_not_collapsed(self):
+        # C2d-G2: gson-style `$Gson$Types` is a TOP-LEVEL class whose simple name starts with `$`;
+        # splitting at the first `$` collapsed it (and `$Gson$Preconditions`) to the bogus "p/".
+        m = _load()
+        with tempfile.TemporaryDirectory() as td:
+            modules_dir, binext_dir, install_dir = self._dirs(td)
+            with open(os.path.join(binext_dir, "d-1.0.jar"), "wb") as f:
+                f.write(_jar_bytes({"p/$Gson$Types.class": b"1", "p/$Gson$Types$Impl.class": b"2",
+                                    "p/$Gson$Types$1.class": b"3", "p/$Gson$Pre.class": b"4",
+                                    "p/Plain.class": b"5", "p/Plain$In.class": b"6"}))
+            manifest = {"artifacts": [], "unidentified": [{"kind": "bin/ext", "name": "bin/ext/d-1.0.jar"}]}
+            pop = m.compute_uncovered_population(manifest, modules_dir, binext_dir, install_dir)
+        self.assertEqual(pop["artifacts"][0]["uncovered_top_level"],
+                         ["p/$Gson$Pre", "p/$Gson$Types", "p/Plain"])
 
     def test_fully_covered_artifact_is_absent_and_unidentified_jar_is_wholly_uncovered(self):
         m = _load()
