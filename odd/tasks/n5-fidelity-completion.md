@@ -45,6 +45,13 @@ Task IDs are C<n> (completion). "N4"/"N5" always mean Niagara 4 / Niagara 5, nev
   after C4 + C2a-G1 merge (both touch tools/n5-fidelity.py). Then run C1b ALONE (no concurrent heavy agents,
   jobs = cores): the machine showed 25 JVMs on 16 threads / 31 GB during C2d+C4 (load ~30). Optional follow-up
   C1c-G1: persistent CFR/Procyon fallback server (per-class JVM spawn dominated jxbrowser's 8 h).
+  Scope extension (user 2026-09-30: "no volver a empezar de cero"): the per-class cache file doubles as a CHECKPOINT —
+  every graded class is appended durably (atomic write / fsync per batch) as soon as it is graded, so an interrupted
+  run (crash, reboot, compaction teardown) resumes at the next ungraded class instead of restarting the module.
+  Today: decompile is sha256-cached per jar (n5-decompile.sh), regrade-canon is checkpointed every 10 classes, but the
+  main grade is all-or-nothing PER MODULE (is_module_up_to_date: jar sha256 + schema) with no per-class resume.
+  Extra TDD case: kill mid-module -> rerun regrades only the missing classes and yields the same JSON as an
+  uninterrupted run.
 - [ ] C1b Full regrade with nested files on the best-of trees; report "fully proven (outer + nested)" per module.
 - [x] C2a (code 03df7d1 reviewed: lineage review-e1d0c2509715fd09 approved+acknowledged; 174 tests OK; run 2026-09-29: 501/587 = 85.35% proven) Grade the 6 Tridium bin/ext jars (nre 704, niagarad 255, niagaraAnnotationProcessors 51, niagara-remote-client 8,
       securityBridge 2, splash 2 classes; trees already in organized/_bin-ext/*/vineflower2, no fidelity JSON yet). ~600 top-level.
