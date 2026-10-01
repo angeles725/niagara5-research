@@ -106,6 +106,14 @@ Task IDs are C<n> (completion). "N4"/"N5" always mean Niagara 4 / Niagara 5, nev
   4d6369e) + property test over `$`-prefixed names; fixes C2d-G5 survivors n5-extract-census.py:127, n5-recon-helper.py:72.
 - [ ] P6 Machine-readable handoff state.json (in-flight workers, worktrees, branch, review boundary, next task) derived
   from git/worktree state; handoff prose generated from it.
+- [ ] P7 No-garbage rule (user 2026-09-30: "no se puede dejar tanta basura"). Inventory 2026-09-30: organized/_evidence
+  232 MB (rollback backups c3a 19M, c3b 16M, c3d 43M, c4 20M; b122 82M), organized/_logs 56M, 4 stray assess-*.json from
+  09-27 in niagara5-research-worktrees/ (deleted), /tmp/tmp.* dirs left by test runs. Rules: (a) every run writes only
+  under organized/_evidence/<task>/ or the session scratchpad, never loose in repo/worktree roots or /tmp; (b) rollback
+  backups carry a `RETENTION` note (delete when the task's results are merged + C1b regraded) and are deleted at C5;
+  (c) tests clean their temp dirs (trap/tearDown) with a test that asserts no leftover; (d) `make clean-check` lists
+  untracked/ignored leftovers, worktrees, merged branches, stale tmp, and runs at every task close and at C5;
+  (e) each task close removes its worktree + local/remote branch. C5 close gate: clean-check prints nothing.
 - [ ] C1b Full regrade with nested files on the best-of trees; report "fully proven (outer + nested)" per module.
 - [x] C2a (code 03df7d1 reviewed: lineage review-e1d0c2509715fd09 approved+acknowledged; 174 tests OK; run 2026-09-29: 501/587 = 85.35% proven) Grade the 6 Tridium bin/ext jars (nre 704, niagarad 255, niagaraAnnotationProcessors 51, niagara-remote-client 8,
       securityBridge 2, splash 2 classes; trees already in organized/_bin-ext/*/vineflower2, no fidelity JSON yet). ~600 top-level.
