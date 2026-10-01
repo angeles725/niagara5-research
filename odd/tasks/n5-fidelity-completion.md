@@ -44,7 +44,17 @@ Task IDs are C<n> (completion). "N4"/"N5" always mean Niagara 4 / Niagara 5, nev
       nimbus-jose 203, mssql-jdbc 166, paho 109 vendor-modified; unidentified jxbrowser 5,914, prosys-opc-ua 4,591, swt 959)
       on organized/_lib-inf-3p trees; per-jar --release; Kotlin (~3.6k) uses javap as the verified representation (B125).
 - [x] C2c (15aa01f review-4909f06f0c2e2261; report f02c89b: 63,538/79,241 = 80.2%) Fix upstream coverage loader for etc/m2 + regenerate docs/upstream-sources-report.md (C2b-G1).
-- [ ] C2d Decompile + grade the 3,997 uncovered third-party classes without a tree (C2b-G2; audit C2b-G4).
+- [x] C2d Decompile + grade the 3,997 uncovered third-party classes without a tree (C2b-G2; audit C2b-G4).
+  Done (delegated writer; strict TDD bats g-j RED->GREEN): 3bb6d9c `n5-decompile.sh --third-party-uncovered`
+  (RDD approved, lineage review-03eada57d4d2f0b9), 0402e78 report regenerated (assess passive). 3,997 classes:
+  exact 1,970 / eq 36 / canon 39 / bytecode-only 1,418 / kotlin-javap-reference 534 -> 2,045 proven = 59.0% of 3,463
+  gradable. Third-party overall 5,407/9,294 = 58.2% (64.9% of decompile-gradable); no no-decompiled-tree gaps left.
+  C2b-G4 audit 0/30 false --release failures (vineflower2 rung only). Grading 10.6h (jxbrowser 8h, load ~23-30).
+  Child gaps: C2d-G1 kotlin-reflect 412 metadata-less Kotlin classes counted bytecode-only (parent decision: typed
+  state via artifact/kotlin marker detection, fold into C1b); C2d-G2 `$`-prefixed top-level names collapse in the
+  population (nimbus $Gson$Types; 9,294 vs 9,295) -> fix n5-upstream-sources.py with a test; C2d-G3 1,418 bytecode-only
+  -> C3 patch/splice candidates (optional, C3e); C2d-G4 silent skipped-other for artifacts outside bin/ext/etc-m2;
+  process: grader should print a periodic per-class progress line.
 - [x] C2e (9f8c367 review-42c252c99b42b763; 59/62 proven with JDK 8 javac, --legacy-jdk8-javac) Grade the 62 release-unsupported classes with JDK 8 javac (C2b-G3).
 - [x] C3a (e248220, 624f772; review-54c9da1651ae379a approved; merged da9797a; 23 patcher tests + make test 666 OK) Extend the F8 doPrivileged patch tree to the 109 bytecode-only `reference to doPrivileged is ambiguous` classes.
 - [x] C3b (11 commits cf50de5..1e39ba0, tools/n5-patch-mechanical.py, tree vineflower2m; 24 tests, make test 737 OK) Mechanical patches: anonymous-class-with-arguments (12), generic Object->String casts (12), `no suitable method` overload casts (22).
