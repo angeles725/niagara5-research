@@ -1133,7 +1133,8 @@ def select_best_decompiler(attempts: list[tuple[str, dict]]) -> dict:
 # ---------------------------------------------------------------------------
 
 # cross-JSON ladder rungs, least to most advanced (the fidelity.<rung>.json files of one module)
-BEST_OF_RUNGS = ("vineflower", "vineflower2", "vineflower2.canon", "vineflower2.patched", "vineflower2.spliced")
+BEST_OF_RUNGS = ("vineflower", "vineflower2", "vineflower2.canon", "vineflower2.patched", "vineflower2.mech",
+                 "vineflower2.spliced")
 
 
 def _detail_index(attempted: list[tuple[str, dict]], patch_tree: Optional[str]) -> int:
@@ -1167,6 +1168,38 @@ def merge_best_of_records(rung_records: dict[str, dict]) -> dict:
             errors.setdefault(f"{r}/{sub}" if sub != r else r, err)
     out["detail_rung"] = win
     out["rung_errors"] = errors
+    return out
+
+
+BEST_OF_LABELS = ("canon", "patched", "mech", "spliced")
+
+
+def load_best_of_module_result(mod_dir: Path, tree: str, module: Optional[str] = None) -> Optional[dict]:
+    """One module's best-of over its rung files fidelity.<tree>.json plus .canon/.patched/.mech/.spliced
+    (BEST_OF_LABELS; --patch-label mech names the vineflower2m rung): per class merge_best_of_records,
+    with the summary fields the report sections read (grade_counts, class_count, nested counts,
+    fully_proven_count). None when the base file is absent; an absent or unreadable rung is skipped."""
+    mod_dir = Path(mod_dir)
+    base_path = fidelity_read_path(mod_dir, tree)
+    if base_path is None:
+        return None
+    base = json.loads(base_path.read_text())
+    rungs = {tree: base["classes"]}
+    for label in BEST_OF_LABELS:
+        p = mod_dir / f"fidelity.{tree}.{label}.json"
+        if p.is_file():
+            try:
+                rungs[f"{tree}.{label}"] = json.loads(p.read_text())["classes"]
+            except (json.JSONDecodeError, OSError, KeyError):
+                continue
+    classes = {fqcn: merge_best_of_records({r: c[fqcn] for r, c in rungs.items() if fqcn in c})
+               for fqcn in base["classes"]}
+    grade_counts: dict[str, int] = {}
+    for rec in classes.values():
+        grade_counts[rec["grade"]] = grade_counts.get(rec["grade"], 0) + 1
+    out = {k: v for k, v in base.items() if k not in ("classes", "grade_counts")}
+    out.update(module=module or base.get("module"), class_count=len(classes), grade_counts=grade_counts,
+               rungs=sorted(rungs), classes=classes, **summarize_nested(classes))
     return out
 
 
@@ -3119,6 +3152,7 @@ def generate_bin_ext_section(results: list[dict]) -> str:
              "compiles-mismatch", "no-compile", "bytecode-only")
     lines = ["The Tridium-authored jars of `bin/ext` (identified by an explicit allowlist plus the "
              f"`{BIN_EXT_TRIDIUM_SIGNATURE}` signature marker), graded with the same ladder as the modules. "
+             "Each class takes the best grade over its rungs (base, doPrivileged-patched, mechanical, spliced). "
              "These numbers are NOT part of the module totals above.", "",
              "| Jar | Classes | roundtrip-exact | roundtrip-equivalent | roundtrip-canonical | roundtrip-canonical-t2 | "
              "compiles-mismatch | no-compile | bytecode-only |",
@@ -3155,10 +3189,15 @@ def _upsert_bin_ext_section(report_path: Path, results: list[dict]) -> None:
         existing, f"## {BIN_EXT_SECTION_TITLE}", generate_bin_ext_section(results)))
 
 
-def load_bin_ext_results(organized_dir: Path, tree: str = BIN_EXT_DEFAULT_TREE) -> list[dict]:
-    """Already-graded bin/ext results (no grading); absent jars are skipped."""
+def load_bin_ext_results(organized_dir: Path, tree: str = BIN_EXT_DEFAULT_TREE, best_of: bool = False) -> list[dict]:
+    """Already-graded bin/ext results (no grading); absent jars are skipped. `best_of` merges each
+    jar's patched/mech/spliced rung files over the base tree (load_best_of_module_result)."""
     root = Path(organized_dir) / BIN_EXT_ORGANIZED_SUBDIR
-    return load_tree_results(root, bin_ext_tridium_modules(organized_dir), tree)
+    modules = bin_ext_tridium_modules(organized_dir)
+    if not best_of:
+        return load_tree_results(root, modules, tree)
+    out = [load_best_of_module_result(root / m, tree, module=m) for m in modules]
+    return [r for r in out if r is not None]
 
 
 # C2b: third-party classes WITHOUT a proven upstream source (the population is
@@ -3659,11 +3698,12 @@ def main(argv: Optional[list[str]] = None) -> int:
             )
         report_path = REPO_ROOT / "docs" / "decompile-fidelity-report.md"
         if bin_ext_mode:
-            _upsert_bin_ext_section(report_path, results)
+            _upsert_bin_ext_section(report_path, load_bin_ext_results(organized_dir.parent, args.tree, best_of=True)
+                                    or results)
         else:
             report_path.write_text(generate_report(results, cross_checks=cross_checks))
             # keep the separately labelled bin/ext section when its grades exist
-            bin_ext_results = load_bin_ext_results(organized_dir)
+            bin_ext_results = load_bin_ext_results(organized_dir, best_of=True)
             if bin_ext_results:
                 _upsert_bin_ext_section(report_path, bin_ext_results)
             tp_results, tp_gaps = load_third_party_results(organized_dir)
