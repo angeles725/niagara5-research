@@ -37,6 +37,14 @@ Task IDs are C<n> (completion). "N4"/"N5" always mean Niagara 4 / Niagara 5, nev
       "fully proven" only when it and all its nested files are proven. Missing/extra synthetic nested files are
       reported, never dropped. Forecast: 6,186 nested files; they are already produced by the existing compile step,
       so the added cost is javap+compare only. Route: delegated writer (TDD; writer trigger: tool + tests).
+- [ ] C1c Incremental regrade cache (user 2026-09-30: "agregala y hazla antes de C1b"). Per-class cache key = sha256 of
+  the decompiled source file(s) + shipped class bytes + nested bytes + toolchain identity (javac/javap version, grader
+  schema/NESTED_SCHEMA_VERSION, rung, --release/legacy flags, classpath digest); a hit reuses the stored record, a miss
+  regrades; `--force` still bypasses; cache stats (hits/misses) printed per module + periodic progress line (C2d process
+  note). Strict TDD (hit, miss on each key component, force bypass, schema bump invalidates). Route: delegated writer
+  after C4 + C2a-G1 merge (both touch tools/n5-fidelity.py). Then run C1b ALONE (no concurrent heavy agents,
+  jobs = cores): the machine showed 25 JVMs on 16 threads / 31 GB during C2d+C4 (load ~30). Optional follow-up
+  C1c-G1: persistent CFR/Procyon fallback server (per-class JVM spawn dominated jxbrowser's 8 h).
 - [ ] C1b Full regrade with nested files on the best-of trees; report "fully proven (outer + nested)" per module.
 - [x] C2a (code 03df7d1 reviewed: lineage review-e1d0c2509715fd09 approved+acknowledged; 174 tests OK; run 2026-09-29: 501/587 = 85.35% proven) Grade the 6 Tridium bin/ext jars (nre 704, niagarad 255, niagaraAnnotationProcessors 51, niagara-remote-client 8,
       securityBridge 2, splash 2 classes; trees already in organized/_bin-ext/*/vineflower2, no fidelity JSON yet). ~600 top-level.
@@ -165,7 +173,7 @@ How to review a delegated range (RDD on, consent granted by the user's standing 
 concurrently -> exact acknowledge). Lens budget: slice to <= ~260 changed lines at commit boundaries, checking out each slice end
 detached (temp worktree for already-pushed commits). Untracked files make assess "unassessable": commit first.
 Remaining order (user 2026-09-30): C2d -> review/merge; C2a-G1 (+ C3d-G1 patch label); C4 -> review/merge; optional C3e/C3d-G2;
-C1b full --force regrade (both trees, nested); C5 report + PR to main + merge; then clean close (no worktrees/processes, branches
+C1c incremental cache (user 2026-09-30, before C1b); C1b full --force regrade (both trees, nested); C5 report + PR to main + merge; then clean close (no worktrees/processes, branches
 deleted local+remote, retro, resume memory, session summary). Frontier research + Niagara 4 port = NEW sessions.
 Rules: task IDs C<n>; "N4"/"N5" = Niagara 4/5; never pkill -f own pattern; never kill long measurement runs; strict TDD;
 Conventional Commits without AI attribution; vendor source/JSON stay gitignored (repo is PUBLIC).
