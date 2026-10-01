@@ -44,3 +44,6 @@ poc/dashboardpan-n5/
 niagara-help/
 poc/_b39/
 poc/coldroompan-n5-ha/
+
+# Decompiled vendor (Tridium) source must never be tracked (repo is public)
+*.cons-linemapped.java
