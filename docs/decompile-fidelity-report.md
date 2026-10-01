@@ -2047,98 +2047,116 @@ Third-party classes that have NO byte-matching upstream source, graded from the 
 
 | Artifact | Classes | roundtrip-exact | roundtrip-equivalent | roundtrip-canonical | roundtrip-canonical-t2 | compiles-mismatch | no-compile | bytecode-only | kotlin-javap-reference | release-unsupported | other |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| annotations-13.0-ace2a10dc8e2 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 |
+| angus-activation-2.0.3-c058a35174a6 | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| annotations-13.0-ace2a10dc8e2 | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | batik-awt-util-1.19-c9ac9ed24e0b | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
-| biweekly-0.6.8-4077af25a5f9 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 |
-| commons-math3-3.6.1-1e56d7b058d2 | 4 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 4 | 0 |
+| bc-bcfkswrapprov-1.0.0-56643b6d4eb7 | 4 | 2 | 0 | 0 | 0 | 0 | 0 | 2 | 0 | 0 | 0 |
+| bc-fips-2.1.2-ba9aa4f3f4d2 | 2 | 0 | 0 | 0 | 0 | 0 | 0 | 2 | 0 | 0 | 0 |
+| bcprov-jdk18on-1.85.2-5b16c2baf9ff | 5 | 3 | 0 | 2 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| biweekly-0.6.8-4077af25a5f9 | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| byte-buddy-1.18.12-fca8e447506b | 4 | 2 | 0 | 0 | 0 | 0 | 0 | 2 | 0 | 0 | 0 |
+| commons-math3-3.6.1-1e56d7b058d2 | 4 | 4 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| concurrentlinkedhashmap-lru-1.4.2-47ab3adf5a35 | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hsqldb-2.7.4-5fab2bb4384a | 2 | 2 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| jackson-core-2.22.0-d2e8dd4df1e0 | 39 | 2 | 0 | 5 | 0 | 0 | 0 | 32 | 0 | 0 | 0 |
 | jackson-core-2.22.2-ff167a6317be | 39 | 18 | 1 | 17 | 0 | 0 | 0 | 3 | 0 | 0 | 0 |
+| jackson-databind-2.22.0-3520a0351f29 | 2 | 1 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 |
 | jackson-databind-2.22.2-d0da14c12b16 | 2 | 1 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 |
+| jackson-module-kotlin-2.22.0-83faaa8dac44 | 40 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 40 | 0 | 0 |
 | jakarta.activation-api-2.1.4-c9db52100ce6 | 3 | 2 | 0 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | jakarta.mail-2.0.5-f48001755a4a | 10 | 9 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 |
+| jakarta.servlet-api-6.1.0-a23f1ddf664c | 2 | 1 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 |
 | javaparser-core-3.28.0-d3852d78461c | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 |
+| jetty-util-12.1.13-91f27ac33663 | 2 | 2 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| jxbrowser-9.5.0-e20a7f7122f1 | 2691 | 1758 | 35 | 19 | 0 | 0 | 0 | 879 | 0 | 0 | 0 |
+| jxbrowser-javafx-9.5.0-9267055bf62c | 89 | 42 | 0 | 8 | 0 | 0 | 0 | 39 | 0 | 0 | 0 |
+| jxbrowser-swing-9.5.0-3ed7d5ff7e2d | 85 | 62 | 1 | 1 | 0 | 0 | 0 | 21 | 0 | 0 | 0 |
+| jxbrowser-swt-9.5.0-64f8e52f218f | 99 | 72 | 0 | 2 | 0 | 0 | 0 | 25 | 0 | 0 | 0 |
+| kotlin-reflect-2.1.21-bcd75a36ca4a | 453 | 19 | 0 | 1 | 0 | 0 | 0 | 412 | 21 | 0 | 0 |
 | kotlin-stdlib-2.3.0-887587c91713 | 425 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 425 | 0 | 0 |
+| kotlin-stdlib-2.4.10-555fda6033fd | 430 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 430 | 0 | 0 |
+| libthrift-0.24.0-f5f1ab2fdf02 | 2 | 2 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | log4j-api-2.24.3-5b4a0a0cd0e7 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 |
 | mimepull-1.11.0-af26c386c4ba | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | mssql-jdbc-13.4.0.jre11-e36f5237c126 | 112 | 58 | 1 | 4 | 0 | 0 | 0 | 49 | 0 | 0 | 0 |
-| nimbus-jose-jwt-10.0.2-960b978a6cd6 | 82 | 42 | 2 | 11 | 0 | 0 | 0 | 23 | 0 | 4 | 0 |
+| nimbus-jose-jwt-10.0.2-960b978a6cd6 | 82 | 46 | 2 | 11 | 0 | 0 | 0 | 23 | 0 | 0 | 0 |
+| okhttp-jvm-5.5.0-573001565954 | 27 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 27 | 0 | 0 |
+| okio-jvm-3.18.1-8d1049d1fc34 | 16 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 16 | 0 | 0 |
 | org.eclipse.paho.client.mqttv3-1.2.5-736de983d218 | 96 | 49 | 0 | 6 | 0 | 0 | 0 | 41 | 0 | 0 | 0 |
 | org.eclipse.swt.win32.win32.x86_64-3.134.0-76d2d9611ed2 | 652 | 429 | 2 | 66 | 0 | 0 | 0 | 155 | 0 | 0 | 0 |
 | policy-4.0.5-5c76fe37107b | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | prosys-opc-ua-sdk-client-server-5.7.0-248-0d6f7dee409a | 3117 | 1891 | 4 | 43 | 1 | 0 | 0 | 1178 | 0 | 0 | 0 |
+| resilience4j-core-2.4.0-cf8eebe0e42f | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 |
+| resilience4j-retry-2.4.0-726ed17bc518 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 |
 | rt-4.0.5-eb0929489bd4 | 3 | 3 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | saaj-impl-3.0.6-70d657b7a6bf | 2 | 2 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | testng-7.12.0-5147e65e0bf0 | 3 | 3 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
-| woodstox-core-7.2.0-689f5be95f9b | 538 | 384 | 2 | 53 | 2 | 0 | 0 | 45 | 0 | 52 | 0 |
+| txw2-4.0.9-ccfb874c6b6a | 1 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| woodstox-core-7.2.0-689f5be95f9b | 538 | 428 | 2 | 58 | 2 | 0 | 0 | 48 | 0 | 0 | 0 |
 | wsit-impl-4.0.7-80cbce2b411e | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | xml-apis-ext-1.3.05-15f6ab5c46c0 | 192 | 185 | 0 | 0 | 0 | 0 | 0 | 7 | 0 | 0 | 0 |
 | xmlgraphics-commons-2.11-1a37948ebfed | 4 | 2 | 0 | 0 | 0 | 0 | 0 | 2 | 0 | 0 | 0 |
 | xmlsec-4.0.4-8b2f8483b662 | 3 | 3 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 
-- graded classes: 5297
-- kotlin-javap-reference: 425
-- release-unsupported: 62
-- proven (any tier): 3303/5297 (62.4%)
-- proven of decompile-gradable (excluding kotlin-javap-reference / release-unsupported): 3303/4810 (68.7%)
-- fully proven (outer + nested): 3232/5297 (61.0%)
+- graded classes: 9294
+- kotlin-javap-reference: 959
+- release-unsupported: 0
+- proven (any tier): 5407/9294 (58.2%)
+- proven of decompile-gradable (excluding kotlin-javap-reference / release-unsupported): 5407/8335 (64.9%)
+- fully proven (outer + nested): 5324/9294 (57.3%)
 
 | Artifact | Nested files | Proven | Unproven | Extra (recompile only) | Classes fully proven |
 |---|---:|---:|---:|---:|---:|
-| annotations-13.0-ace2a10dc8e2 | 0 | 0 | 0 | 0 | 0 |
+| angus-activation-2.0.3-c058a35174a6 | 0 | 0 | 0 | 0 | 1 |
+| annotations-13.0-ace2a10dc8e2 | 0 | 0 | 0 | 0 | 1 |
 | batik-awt-util-1.19-c9ac9ed24e0b | 0 | 0 | 0 | 0 | 1 |
-| biweekly-0.6.8-4077af25a5f9 | 1 | 0 | 1 | 0 | 0 |
-| commons-math3-3.6.1-1e56d7b058d2 | 5 | 0 | 5 | 0 | 0 |
+| bc-bcfkswrapprov-1.0.0-56643b6d4eb7 | 5 | 0 | 5 | 0 | 2 |
+| bc-fips-2.1.2-ba9aa4f3f4d2 | 0 | 0 | 0 | 0 | 0 |
+| bcprov-jdk18on-1.85.2-5b16c2baf9ff | 2 | 2 | 0 | 0 | 5 |
+| biweekly-0.6.8-4077af25a5f9 | 1 | 1 | 0 | 0 | 1 |
+| byte-buddy-1.18.12-fca8e447506b | 21 | 8 | 13 | 0 | 1 |
+| commons-math3-3.6.1-1e56d7b058d2 | 5 | 5 | 0 | 0 | 4 |
+| concurrentlinkedhashmap-lru-1.4.2-47ab3adf5a35 | 0 | 0 | 0 | 0 | 1 |
 | hsqldb-2.7.4-5fab2bb4384a | 0 | 0 | 0 | 0 | 2 |
+| jackson-core-2.22.0-d2e8dd4df1e0 | 2 | 0 | 2 | 0 | 7 |
 | jackson-core-2.22.2-ff167a6317be | 2 | 1 | 1 | 0 | 35 |
+| jackson-databind-2.22.0-3520a0351f29 | 1 | 0 | 1 | 0 | 1 |
 | jackson-databind-2.22.2-d0da14c12b16 | 1 | 0 | 1 | 0 | 1 |
+| jackson-module-kotlin-2.22.0-83faaa8dac44 | 36 | 0 | 36 | 0 | 0 |
 | jakarta.activation-api-2.1.4-c9db52100ce6 | 0 | 0 | 0 | 0 | 3 |
 | jakarta.mail-2.0.5-f48001755a4a | 1 | 0 | 1 | 0 | 9 |
+| jakarta.servlet-api-6.1.0-a23f1ddf664c | 0 | 0 | 0 | 0 | 1 |
 | javaparser-core-3.28.0-d3852d78461c | 0 | 0 | 0 | 0 | 0 |
+| jetty-util-12.1.13-91f27ac33663 | 0 | 0 | 0 | 0 | 2 |
+| jxbrowser-9.5.0-e20a7f7122f1 | 3223 | 2300 | 923 | 0 | 1805 |
+| jxbrowser-javafx-9.5.0-9267055bf62c | 38 | 33 | 5 | 0 | 49 |
+| jxbrowser-swing-9.5.0-3ed7d5ff7e2d | 37 | 28 | 9 | 0 | 64 |
+| jxbrowser-swt-9.5.0-64f8e52f218f | 48 | 38 | 10 | 0 | 71 |
+| kotlin-reflect-2.1.21-bcd75a36ca4a | 492 | 2 | 490 | 0 | 20 |
 | kotlin-stdlib-2.3.0-887587c91713 | 159 | 0 | 159 | 0 | 0 |
+| kotlin-stdlib-2.4.10-555fda6033fd | 159 | 0 | 159 | 0 | 0 |
+| libthrift-0.24.0-f5f1ab2fdf02 | 0 | 0 | 0 | 0 | 2 |
 | log4j-api-2.24.3-5b4a0a0cd0e7 | 0 | 0 | 0 | 0 | 0 |
 | mimepull-1.11.0-af26c386c4ba | 0 | 0 | 0 | 0 | 1 |
 | mssql-jdbc-13.4.0.jre11-e36f5237c126 | 54 | 25 | 29 | 0 | 62 |
-| nimbus-jose-jwt-10.0.2-960b978a6cd6 | 116 | 34 | 82 | 0 | 47 |
+| nimbus-jose-jwt-10.0.2-960b978a6cd6 | 116 | 34 | 82 | 0 | 51 |
+| okhttp-jvm-5.5.0-573001565954 | 10 | 0 | 10 | 0 | 0 |
+| okio-jvm-3.18.1-8d1049d1fc34 | 0 | 0 | 0 | 0 | 0 |
 | org.eclipse.paho.client.mqttv3-1.2.5-736de983d218 | 13 | 0 | 13 | 0 | 55 |
 | org.eclipse.swt.win32.win32.x86_64-3.134.0-76d2d9611ed2 | 307 | 61 | 246 | 0 | 479 |
 | policy-4.0.5-5c76fe37107b | 0 | 0 | 0 | 0 | 1 |
 | prosys-opc-ua-sdk-client-server-5.7.0-248-0d6f7dee409a | 1474 | 194 | 1280 | 0 | 1926 |
+| resilience4j-core-2.4.0-cf8eebe0e42f | 0 | 0 | 0 | 0 | 0 |
+| resilience4j-retry-2.4.0-726ed17bc518 | 0 | 0 | 0 | 0 | 0 |
 | rt-4.0.5-eb0929489bd4 | 0 | 0 | 0 | 0 | 3 |
 | saaj-impl-3.0.6-70d657b7a6bf | 0 | 0 | 0 | 0 | 2 |
 | testng-7.12.0-5147e65e0bf0 | 0 | 0 | 0 | 0 | 3 |
-| woodstox-core-7.2.0-689f5be95f9b | 197 | 71 | 126 | 0 | 411 |
+| txw2-4.0.9-ccfb874c6b6a | 0 | 0 | 0 | 0 | 1 |
+| woodstox-core-7.2.0-689f5be95f9b | 197 | 78 | 119 | 0 | 460 |
 | wsit-impl-4.0.7-80cbce2b411e | 0 | 0 | 0 | 0 | 1 |
 | xml-apis-ext-1.3.05-15f6ab5c46c0 | 0 | 0 | 0 | 0 | 185 |
 | xmlgraphics-commons-2.11-1a37948ebfed | 0 | 0 | 0 | 0 | 2 |
 | xmlsec-4.0.4-8b2f8483b662 | 0 | 0 | 0 | 0 | 3 |
 
-Not graded (typed gaps): uncovered classes of artifacts with no decompiled tree.
 
-| Artifact | Uncovered classes (top-level) | of which Kotlin | Reason |
-|---|---:|---:|---|
-| com.fasterxml.jackson.core:jackson-core:2.22.0 | 39 | 0 | no-decompiled-tree |
-| com.fasterxml.jackson.core:jackson-databind:2.22.0 | 2 | 0 | no-decompiled-tree |
-| com.fasterxml.jackson.module:jackson-module-kotlin:2.22.0 | 40 | 40 | no-decompiled-tree |
-| com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru:1.4.2 | 1 | 0 | no-decompiled-tree |
-| com.squareup.okhttp3:okhttp-jvm:5.5.0 | 27 | 27 | no-decompiled-tree |
-| com.squareup.okio:okio-jvm:3.18.1 | 16 | 16 | no-decompiled-tree |
-| io.github.resilience4j:resilience4j-core:2.4.0 | 1 | 0 | no-decompiled-tree |
-| io.github.resilience4j:resilience4j-retry:2.4.0 | 1 | 0 | no-decompiled-tree |
-| jakarta.servlet:jakarta.servlet-api:6.1.0 | 2 | 0 | no-decompiled-tree |
-| net.bytebuddy:byte-buddy:1.18.12 | 4 | 0 | no-decompiled-tree |
-| org.apache.thrift:libthrift:0.24.0 | 2 | 0 | no-decompiled-tree |
-| org.bouncycastle:bc-fips:2.1.2 | 2 | 0 | no-decompiled-tree |
-| org.bouncycastle:bcprov-jdk18on:1.85.2 | 5 | 0 | no-decompiled-tree |
-| org.eclipse.angus:angus-activation:2.0.3 | 1 | 0 | no-decompiled-tree |
-| org.eclipse.jetty:jetty-util:12.1.13 | 2 | 0 | no-decompiled-tree |
-| org.glassfish.jaxb:txw2:4.0.9 | 1 | 0 | no-decompiled-tree |
-| org.jetbrains.kotlin:kotlin-reflect:2.1.21 | 453 | 21 | no-decompiled-tree |
-| org.jetbrains.kotlin:kotlin-stdlib:2.4.10 | 430 | 430 | no-decompiled-tree |
-| unidentified:bin/ext/bcfips/bc-bcfkswrapprov-1.0.0.jar | 4 | 0 | no-decompiled-tree |
-| unidentified:bin/ext/jxbrowser/jxbrowser-9.5.0.jar | 2691 | 0 | no-decompiled-tree |
-| unidentified:bin/ext/jxbrowser/jxbrowser-javafx-9.5.0.jar | 89 | 0 | no-decompiled-tree |
-| unidentified:bin/ext/jxbrowser/jxbrowser-swing-9.5.0.jar | 85 | 0 | no-decompiled-tree |
-| unidentified:bin/ext/jxbrowser/jxbrowser-swt-9.5.0.jar | 99 | 0 | no-decompiled-tree |
-
-- top-level classes not graded (no tree): 3997 (Kotlin among them: 534)
 
