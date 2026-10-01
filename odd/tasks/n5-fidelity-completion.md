@@ -249,26 +249,28 @@ Task IDs are C<n> (completion). "N4"/"N5" always mean Niagara 4 / Niagara 5, nev
   Process note: rdd.py needs an ABSOLUTE worktree path (a relative one is re-resolved inside the worktree and fails with
   KeyError next_transition).
 
-## Handoff / resume point (rewritten before the 2nd context compaction, 2026-09-30 ~21:40 CST)
-Numbers: Niagara 5 Tridium top-level proven 13,955/14,307 = 97.54% (exact 10,345). bin/ext Tridium 543/587 = 92.50%
-(best-of, C2a-G1 done). Third-party 5,408/9,296 = 58.2%.
-Last REVIEWED boundary on the branch: ba6b830 (C2a-G1 slices approved; e9f854d and this update are docs-only/passive).
-In flight (notifies on completion; do NOT relaunch):
-- C4 writer: worktree niagara5-research-worktrees/c4, branch feat/n5-c4-exact (from 5c030c6), last seen 795ed9c.
-When each returns: spot-check one reported command; review its commits with
-`python3 organized/_evidence/tools/rdd.py <repo-or-worktree> <base-ref>` in slices <= ~260 changed lines at commit
-boundaries (detached temp worktree under niagara5-research-worktrees/ for a slice end; use each commit's REAL parent as
-base -- `git log --format='%h %p'` -- because of merge topology); docs-only slices assess passive. Then tick tasks here,
-mirror to Engram (odd/n5-fidelity-completion/tasks + /progress), commit + push.
-Remaining order: C4 review + merge (remove worktree, delete branch local+remote) -> P1 leak guard, P2 test fast lane, P3 review tooling, P5 `$` lint -> C1c incremental
-regrade cache (+P4 generated facts) (user-approved, delegated writer, strict TDD) -> C1d dedup -> C3h triage -> C3f Vineflower sweep -> C3g
-AI-proposed reconstruction -> C1b ALONE (no concurrent heavy agents, jobs = cores; machine
-showed 25 JVMs/16 threads/31 GB) -> optional C3e/C3d-G2/C2d-G3 -> C5 report + PR to main + merge -> clean close (no
-worktrees/processes, branches deleted local+remote, §18 retro, resume memory, engram session summary).
-Frontier research + Niagara 4 port = NEW sessions (seed: N4 type catalog for bog-nav, memory n4-type-catalog-for-bog-nav-seed).
-Rules: task IDs C<n>; "N4"/"N5" = Niagara 4/5; speed WITHOUT sacrificing quality (memory speed-without-sacrificing-quality);
-never pkill -f own pattern; never kill long measurement runs; strict TDD; Conventional Commits without AI attribution;
-vendor source/JSON stay gitignored (repo is PUBLIC); RDD consent granted by the user's standing instruction this session.
+## Handoff / resume point (rewritten before the 3rd context compaction, 2026-10-01 ~01:10 CST)
+Numbers: Tridium top-level proven 13,955/14,307 = 97.54% (exact 10,345); bin/ext 543/587 = 92.50% (C2a-G1 done,
+reviewed); third-party 5,408/9,296 = 58.2%. Last REVIEWED boundary on this branch: ba6b830 (later commits are docs-only
+or retro moves: passive).
+IN FLIGHT (notifies on completion; do NOT relaunch or duplicate):
+- C4 writer: worktree niagara5-research-worktrees/c4, branch feat/n5-c4-exact (from 5c030c6), 28 commits up to 795ed9c
+  (~2,270 changed lines). Stage B2 measurement since 22:14: 85/164 modules at 00:46 (5 shards,
+  organized/_evidence/c4/run.sB2.{0..4}.log, targets.sB2.*.json), 1,009 classes spliced so far; rate ~0.63 modules/min
+  -> B2 ends ~02:50, then regrade + report. Shard 2 silent since 23:56 (big module) — never kill measurement runs.
+  When it reports: spot-check one command; P3-style review in ~9 slices <=260 lines at commit boundaries with REAL
+  parents, rdd.py with ABSOLUTE worktree paths; merge; remove worktree; delete branch local+remote.
+REMAINING ORDER: C4 review+merge -> P1 leak guard, P2 test fast lane, P3 review tooling, P5 `$` lint -> C1c (domain-free
+cache=checkpoint engine, +P4 generated facts) -> C1d dedup -> C3h triage -> C3f Vineflower sweep -> C3g AI-proposed
+reconstruction -> C1b ALONE (jobs=cores, --patch-label mech for module m results) -> C5 report + PR + merge (clean-check
+must print nothing; delete rollback backups c3a/c3b/c3d/c4-backup) -> clean close.
+RULES: never merge before an RDD review that assess says is due (PR #25 slip); no garbage (P7); possibility-first
+(no bare "can't"); speed without sacrificing quality; strict TDD; Conventional Commits without AI attribution;
+vendor source/JSON never tracked (repo PUBLIC; b118 history purge declined by the user 2026-09-30).
+Related work outside this repo (see Engram + memory files): kit PR angeles725/sdd-investigacion#1278 (possibility-first
+#1263-#1267, RDD approved review-a4daa3f9f6bf9b71, waiting toolbelt-tests CI, then merge + remove worktree
+~/investigacion/sdd-investigacion-worktrees/possibility-first + delete branch; follow-up PR for #1268-#1270); N4 agent
+MCP research focus n4-agent-mcp in niagara-research (B1168+).
 
 ## Next step
-Wait for the C4 report, review + merge it, then P1/P2/P3/P5, then C1c (+P4), C1d, C3h, C3f, C3g, then C1b alone, then C5.
+Wait for the C4 report; review + merge it; then P1/P2/P3/P5, C1c (+P4), C1d, C3h, C3f, C3g, C1b alone, C5.
