@@ -73,6 +73,17 @@ Task IDs are C<n> (completion). "N4"/"N5" always mean Niagara 4 / Niagara 5, nev
   orders rungs/hypotheses by historical success (ordering only, never skipping; the verifier stays the judge). Promote to
   the research-sdd kit after its equivalence tests pass (kit issue #1262, throughput retro row 5).
   C3e input: Vineflower option-sweep rung on the bytecode-only residual (additive, option set in the cache key).
+- [ ] C1d (after C1c, user 2026-09-30) Grade identical classes once: dedup by the C1c per-class key (shipped bytes +
+  decompiled source + classpath digest), e.g. jxbrowser javafx/swing/swt variants; every duplicate gets the canonical
+  record copied with a `dedup_of` pointer. Test: deduped run vs full run -> identical grades per class.
+- [ ] C3h (after C1c) Residual triage table: every non-exact class with the rule/mismatch family that failed, ranked by
+  family size, so the largest families (e.g. C3d-G2 LVT) are attacked first. Generated from the JSON, no regrade.
+- [ ] C3f (after C1c) Vineflower option-sweep rung on the bytecode-only residual (options from vineflower.org/usage:
+  pattern-matching, try-loop-fix, ensure-synchronized-monitors, use-lvt-names, decompile-generics...). Additive rung
+  (best-of cannot regress); option set in the cache key.
+- [ ] C3g (after C1c; method for C3e) AI-proposed reconstruction of the residual (352 Tridium + 44 bin/ext): the model
+  proposes source edits, the compiler + bytecode comparison is the only judge; accepted only when the grade improves,
+  recorded as its own rung with the proposal kept as evidence.
 - [ ] C1b Full regrade with nested files on the best-of trees; report "fully proven (outer + nested)" per module.
 - [x] C2a (code 03df7d1 reviewed: lineage review-e1d0c2509715fd09 approved+acknowledged; 174 tests OK; run 2026-09-29: 501/587 = 85.35% proven) Grade the 6 Tridium bin/ext jars (nre 704, niagarad 255, niagaraAnnotationProcessors 51, niagara-remote-client 8,
       securityBridge 2, splash 2 classes; trees already in organized/_bin-ext/*/vineflower2, no fidelity JSON yet). ~600 top-level.
@@ -220,7 +231,8 @@ boundaries (detached temp worktree under niagara5-research-worktrees/ for a slic
 base -- `git log --format='%h %p'` -- because of merge topology); docs-only slices assess passive. Then tick tasks here,
 mirror to Engram (odd/n5-fidelity-completion/tasks + /progress), commit + push.
 Remaining order: C4 review + merge (remove worktree, delete branch local+remote) -> C1c incremental
-regrade cache (user-approved, delegated writer, strict TDD) -> C1b ALONE (no concurrent heavy agents, jobs = cores; machine
+regrade cache (user-approved, delegated writer, strict TDD) -> C1d dedup -> C3h triage -> C3f Vineflower sweep -> C3g
+AI-proposed reconstruction -> C1b ALONE (no concurrent heavy agents, jobs = cores; machine
 showed 25 JVMs/16 threads/31 GB) -> optional C3e/C3d-G2/C2d-G3 -> C5 report + PR to main + merge -> clean close (no
 worktrees/processes, branches deleted local+remote, §18 retro, resume memory, engram session summary).
 Frontier research + Niagara 4 port = NEW sessions (seed: N4 type catalog for bog-nav, memory n4-type-catalog-for-bog-nav-seed).
@@ -229,4 +241,4 @@ never pkill -f own pattern; never kill long measurement runs; strict TDD; Conven
 vendor source/JSON stay gitignored (repo is PUBLIC); RDD consent granted by the user's standing instruction this session.
 
 ## Next step
-Wait for the C4 report, review + merge it, then C1c, then C1b alone, then C5.
+Wait for the C4 report, review + merge it, then C1c, C1d, C3h, C3f, C3g, then C1b alone, then C5.
