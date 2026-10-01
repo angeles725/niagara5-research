@@ -2079,7 +2079,7 @@ Third-party classes that have NO byte-matching upstream source, graded from the 
 | log4j-api-2.24.3-5b4a0a0cd0e7 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 |
 | mimepull-1.11.0-af26c386c4ba | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | mssql-jdbc-13.4.0.jre11-e36f5237c126 | 112 | 58 | 1 | 4 | 0 | 0 | 0 | 49 | 0 | 0 | 0 |
-| nimbus-jose-jwt-10.0.2-960b978a6cd6 | 82 | 46 | 2 | 11 | 0 | 0 | 0 | 23 | 0 | 0 | 0 |
+| nimbus-jose-jwt-10.0.2-960b978a6cd6 | 84 | 47 | 2 | 11 | 0 | 0 | 0 | 24 | 0 | 0 | 0 |
 | okhttp-jvm-5.5.0-573001565954 | 27 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 27 | 0 | 0 |
 | okio-jvm-3.18.1-8d1049d1fc34 | 16 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 16 | 0 | 0 |
 | org.eclipse.paho.client.mqttv3-1.2.5-736de983d218 | 96 | 49 | 0 | 6 | 0 | 0 | 0 | 41 | 0 | 0 | 0 |
@@ -2098,12 +2098,12 @@ Third-party classes that have NO byte-matching upstream source, graded from the 
 | xmlgraphics-commons-2.11-1a37948ebfed | 4 | 2 | 0 | 0 | 0 | 0 | 0 | 2 | 0 | 0 | 0 |
 | xmlsec-4.0.4-8b2f8483b662 | 3 | 3 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 
-- graded classes: 9294
+- graded classes: 9296
 - kotlin-javap-reference: 959
 - release-unsupported: 0
-- proven (any tier): 5407/9294 (58.2%)
-- proven of decompile-gradable (excluding kotlin-javap-reference / release-unsupported): 5407/8335 (64.9%)
-- fully proven (outer + nested): 5324/9294 (57.3%)
+- proven (any tier): 5408/9296 (58.2%)
+- proven of decompile-gradable (excluding kotlin-javap-reference / release-unsupported): 5408/8337 (64.9%)
+- fully proven (outer + nested): 5325/9296 (57.3%)
 
 | Artifact | Nested files | Proven | Unproven | Extra (recompile only) | Classes fully proven |
 |---|---:|---:|---:|---:|---:|
@@ -2139,7 +2139,7 @@ Third-party classes that have NO byte-matching upstream source, graded from the 
 | log4j-api-2.24.3-5b4a0a0cd0e7 | 0 | 0 | 0 | 0 | 0 |
 | mimepull-1.11.0-af26c386c4ba | 0 | 0 | 0 | 0 | 1 |
 | mssql-jdbc-13.4.0.jre11-e36f5237c126 | 54 | 25 | 29 | 0 | 62 |
-| nimbus-jose-jwt-10.0.2-960b978a6cd6 | 116 | 34 | 82 | 0 | 51 |
+| nimbus-jose-jwt-10.0.2-960b978a6cd6 | 119 | 34 | 85 | 0 | 52 |
 | okhttp-jvm-5.5.0-573001565954 | 10 | 0 | 10 | 0 | 0 |
 | okio-jvm-3.18.1-8d1049d1fc34 | 0 | 0 | 0 | 0 | 0 |
 | org.eclipse.paho.client.mqttv3-1.2.5-736de983d218 | 13 | 0 | 13 | 0 | 55 |
@@ -2158,5 +2158,30 @@ Third-party classes that have NO byte-matching upstream source, graded from the 
 | xmlgraphics-commons-2.11-1a37948ebfed | 0 | 0 | 0 | 0 | 2 |
 | xmlsec-4.0.4-8b2f8483b662 | 0 | 0 | 0 | 0 | 3 |
 
+
+## bin/ext (Tridium)
+
+The Tridium-authored jars of `bin/ext` (identified by an explicit allowlist plus the `NIAGARA4.SF` signature marker), graded with the same ladder as the modules. Each class takes the best grade over its rungs (base, doPrivileged-patched, mechanical, spliced). These numbers are NOT part of the module totals above.
+
+| Jar | Classes | roundtrip-exact | roundtrip-equivalent | roundtrip-canonical | roundtrip-canonical-t2 | compiles-mismatch | no-compile | bytecode-only |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| niagara-remote-client-1.0.5 | 4 | 3 | 0 | 1 | 0 | 0 | 0 | 0 |
+| niagaraAnnotationProcessors | 47 | 43 | 0 | 3 | 0 | 0 | 0 | 1 |
+| niagarad | 115 | 48 | 0 | 52 | 0 | 0 | 0 | 15 |
+| nre | 418 | 315 | 0 | 74 | 1 | 0 | 0 | 28 |
+| securityBridge | 2 | 2 | 0 | 0 | 0 | 0 | 0 | 0 |
+| splash | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
+
+| Jar | Nested files | Proven | Unproven | Extra (recompile only) | Classes fully proven |
+|---|---:|---:|---:|---:|---:|
+| niagara-remote-client-1.0.5 | 4 | 4 | 0 | 0 | 4 |
+| niagaraAnnotationProcessors | 4 | 4 | 0 | 0 | 46 |
+| niagarad | 140 | 61 | 79 | 0 | 100 |
+| nre | 286 | 126 | 160 | 0 | 386 |
+| securityBridge | 0 | 0 | 0 | 0 | 2 |
+| splash | 1 | 1 | 0 | 0 | 1 |
+
+- proven (any tier): 543/587 (92.5%)
+- fully proven (outer + nested): 539/587 (91.8%)
 
 
