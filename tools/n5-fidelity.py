@@ -1713,18 +1713,36 @@ def _extract_nested_libinf(jar: Path, nested_dir: Path) -> list[str]:
 # Module-level orchestration
 # ---------------------------------------------------------------------------
 
+def _is_top_level_stem(stem: str, siblings: set) -> bool:
+    """A class file's simple name is top-level unless it is `Outer$Inner`. A name whose leading
+    run is `$` (gson's shaded `$Gson$Types`) is itself top-level (C2d-G2) unless a shorter
+    `$`-boundary prefix is a class in the same directory, which then owns it."""
+    lead = len(stem) - len(stem.lstrip("$"))
+    pos = stem.find("$", lead)
+    if lead == 0:
+        return pos == -1
+    while pos != -1:
+        if stem[:pos] in siblings:
+            return False
+        pos = stem.find("$", pos + 1)
+    return True
+
+
 def discover_top_level_classes(extracted_dir: Path) -> list[tuple[str, Path]]:
     """Return [(fqcn_with_slashes, class_file_path)] for every TOP-LEVEL class
-    under extracted_dir (a class file whose basename has no '$').
+    under extracted_dir (see _is_top_level_stem).
     """
     out = []
     if not extracted_dir.is_dir():
         return out
     for class_file in sorted(extracted_dir.rglob("*.class")):
-        if "$" in class_file.stem:
-            continue
         if class_file.stem == "module-info":
             continue
+        if "$" in class_file.stem:
+            if not class_file.stem.startswith("$"):
+                continue
+            if not _is_top_level_stem(class_file.stem, {f.stem for f in class_file.parent.glob("$*.class")}):
+                continue
         rel = class_file.relative_to(extracted_dir).with_suffix("")
         fqcn = str(rel).replace(os.sep, "/")
         out.append((fqcn, class_file))
