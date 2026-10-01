@@ -84,6 +84,28 @@ Task IDs are C<n> (completion). "N4"/"N5" always mean Niagara 4 / Niagara 5, nev
 - [ ] C3g (after C1c; method for C3e) AI-proposed reconstruction of the residual (352 Tridium + 44 bin/ext): the model
   proposes source edits, the compiler + bytecode comparison is the only judge; accepted only when the grade improves,
   recorded as its own rung with the proposal kept as evidence.
+- [x] P0 Leak fix (process study 2026-09-30): 3 decompiled Tridium classes (BDevice, BQudtUnitTag, BSimpleSigningProfile,
+  ~878 lines) were tracked in evidence/b118 since b8eebcd while the repo is PUBLIC. Untracked + gitignored + block 118
+  note, PR #25 (merged; post-merge review review-0daa96c7e791466b approved — the review ran AFTER the merge, a process
+  slip). Local copies in organized/_evidence/b118/. Still in git HISTORY: purge = separate user decision.
+- [ ] P1 (before C1c) Leak guard: tools/githooks/pre-commit + CI reject staged *.class/*.jar, decompiled-vendor patterns
+  (*.cons-linemapped.java, packages com.tridium/javax.baja/niagara.* outside a reviewed allowlist) and files over a size
+  limit; fixture tests (blocked vendor file, allowed own probe).
+- [ ] P2 (before C1c) Test fast lane: `make test-changed` (tools/X.py -> tools/tests/test_X*.py map + a test that every
+  tool has a mapped test) and `--durations` profiling; full serial suite stays the closing gate. Measured: 755 tests in
+  1,298.8 s serial (maketest.log); now 841 + 99 bats.
+- [ ] P3 (before C1c) Review tooling: rdd.py abspath fix; `slice-plan` (cut points <= 250 changed lines at commit
+  boundaries using real parents); `--all-due` walking from a tracked boundary file odd/review-boundary.txt. Evidence: a
+  3,378-line slice refused (rdd-c2d.log); two relative-path failures today. Operating rule: review slice N while the next
+  writer runs (reviews take ~40-90 s per slice and are read-only on immutable commits); never merge before review.
+- [ ] P4 (with C1c) Generated facts: status.py recounts the headline numbers from the fidelity JSON into a marked doc
+  block (test: block == script output); `make test-record` writes Ran/OK/seconds/HEAD/dirty to evidence; runs.tsv
+  start/end/load/cores/JVMs for every heavy run; env.json toolchain identity (reused as C1c key part); `odd-close` script
+  ticks a task from git + review output (17 of 46 commits since 09-29 were bookkeeping docs).
+- [ ] P5 (before C1c) Defect-class lint: ban first-`$` splits of class names (recurred in 4 files; fix commits d1623a7,
+  4d6369e) + property test over `$`-prefixed names; fixes C2d-G5 survivors n5-extract-census.py:127, n5-recon-helper.py:72.
+- [ ] P6 Machine-readable handoff state.json (in-flight workers, worktrees, branch, review boundary, next task) derived
+  from git/worktree state; handoff prose generated from it.
 - [ ] C1b Full regrade with nested files on the best-of trees; report "fully proven (outer + nested)" per module.
 - [x] C2a (code 03df7d1 reviewed: lineage review-e1d0c2509715fd09 approved+acknowledged; 174 tests OK; run 2026-09-29: 501/587 = 85.35% proven) Grade the 6 Tridium bin/ext jars (nre 704, niagarad 255, niagaraAnnotationProcessors 51, niagara-remote-client 8,
       securityBridge 2, splash 2 classes; trees already in organized/_bin-ext/*/vineflower2, no fidelity JSON yet). ~600 top-level.
@@ -230,8 +252,8 @@ When each returns: spot-check one reported command; review its commits with
 boundaries (detached temp worktree under niagara5-research-worktrees/ for a slice end; use each commit's REAL parent as
 base -- `git log --format='%h %p'` -- because of merge topology); docs-only slices assess passive. Then tick tasks here,
 mirror to Engram (odd/n5-fidelity-completion/tasks + /progress), commit + push.
-Remaining order: C4 review + merge (remove worktree, delete branch local+remote) -> C1c incremental
-regrade cache (user-approved, delegated writer, strict TDD) -> C1d dedup -> C3h triage -> C3f Vineflower sweep -> C3g
+Remaining order: C4 review + merge (remove worktree, delete branch local+remote) -> P1 leak guard, P2 test fast lane, P3 review tooling, P5 `$` lint -> C1c incremental
+regrade cache (+P4 generated facts) (user-approved, delegated writer, strict TDD) -> C1d dedup -> C3h triage -> C3f Vineflower sweep -> C3g
 AI-proposed reconstruction -> C1b ALONE (no concurrent heavy agents, jobs = cores; machine
 showed 25 JVMs/16 threads/31 GB) -> optional C3e/C3d-G2/C2d-G3 -> C5 report + PR to main + merge -> clean close (no
 worktrees/processes, branches deleted local+remote, §18 retro, resume memory, engram session summary).
@@ -241,4 +263,4 @@ never pkill -f own pattern; never kill long measurement runs; strict TDD; Conven
 vendor source/JSON stay gitignored (repo is PUBLIC); RDD consent granted by the user's standing instruction this session.
 
 ## Next step
-Wait for the C4 report, review + merge it, then C1c, C1d, C3h, C3f, C3g, then C1b alone, then C5.
+Wait for the C4 report, review + merge it, then P1/P2/P3/P5, then C1c (+P4), C1d, C3h, C3f, C3g, then C1b alone, then C5.
