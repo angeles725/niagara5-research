@@ -161,23 +161,29 @@ Task IDs are C<n> (completion). "N4"/"N5" always mean Niagara 4 / Niagara 5, nev
   (largest family); C3d-G3 lambda/anonymous/access$ numbering via declaration reordering; C3d-G4 checkcast on intersection
   casts/varargs; C3d-G5 iinc inside expressions; vineflower2m tree not regenerated with brace-all.
 
-## Handoff / resume point (written before a context compaction, 2026-09-30)
-State: feat/n5-fidelity-completion at 5c030c6 (pushed). Niagara 5 Tridium top-level proven 13,955/14,307 = 97.54%
-(exact 10,345). bin/ext Tridium 501/587 = 85.35% (base rung only). Third-party uncovered: 3,303/5,297 = 62.4% + C2e 59/62.
-In flight when written:
-- C2d writer (main checkout): commit 3bb6d9c (decompile --third-party-uncovered); grading run PID 2443395
-  (`n5-fidelity.py --third-party-uncovered --third-party-artifacts ...`), log organized/_evidence/c2d/run.log.
-- C4 writer: worktree niagara5-research-worktrees/c4, branch feat/n5-c4-exact (from 5c030c6).
-How to review a delegated range (RDD on, consent granted by the user's standing instruction for this session):
-`python3 organized/_evidence/tools/rdd.py <repo-or-worktree> <base-ref>` (drives assess -> start -> consent granted -> 4 lenses
-concurrently -> exact acknowledge). Lens budget: slice to <= ~260 changed lines at commit boundaries, checking out each slice end
-detached (temp worktree for already-pushed commits). Untracked files make assess "unassessable": commit first.
-Remaining order (user 2026-09-30): C2d -> review/merge; C2a-G1 (+ C3d-G1 patch label); C4 -> review/merge; optional C3e/C3d-G2;
-C1c incremental cache (user 2026-09-30, before C1b); C1b full --force regrade (both trees, nested); C5 report + PR to main + merge; then clean close (no worktrees/processes, branches
-deleted local+remote, retro, resume memory, session summary). Frontier research + Niagara 4 port = NEW sessions.
-Rules: task IDs C<n>; "N4"/"N5" = Niagara 4/5; never pkill -f own pattern; never kill long measurement runs; strict TDD;
-Conventional Commits without AI attribution; vendor source/JSON stay gitignored (repo is PUBLIC).
+## Handoff / resume point (rewritten before the 2nd context compaction, 2026-09-30 ~21:40 CST)
+Numbers: Niagara 5 Tridium top-level proven 13,955/14,307 = 97.54% (exact 10,345). bin/ext Tridium 501/587 = 85.35% (base
+rung; C2a-G1 regrade in flight). Third-party (C2b+C2e+C2d) 5,407/9,294 = 58.2% (64.9% of decompile-gradable); C2d done.
+Last REVIEWED boundary on the branch: 6f53a9c (C2d code 3bb6d9c approved review-03eada57d4d2f0b9; 0402e78 passive).
+In flight when written (both agents notify on completion; do NOT relaunch them):
+- C2a-G1 writer (main checkout, same branch): done so far d1623a7 (C2d-G2 dollar names, upstream), 3c46358 (--patch-label,
+  C3d-G1), 4d6369e (grader discovers dollar-prefixed top-level classes), 3c156e0 (bin/ext best-of over 2p/2m/2s rungs),
+  ba6b830 (report bin/ext best-of + nimbus grades). Running stage-s/regrade-s; evidence organized/_evidence/c2a-g1/.
+  Some of these commits were pushed together with 036ca14 but are NOT reviewed yet.
+- C4 writer: worktree niagara5-research-worktrees/c4, branch feat/n5-c4-exact (from 5c030c6), last seen 795ed9c.
+When each returns: spot-check one reported command; review its commits with
+`python3 organized/_evidence/tools/rdd.py <repo-or-worktree> <base-ref>` in slices <= ~260 changed lines at commit
+boundaries (detached temp worktree under niagara5-research-worktrees/ for a slice end; use each commit's REAL parent as
+base -- `git log --format='%h %p'` -- because of merge topology); docs-only slices assess passive. Then tick tasks here,
+mirror to Engram (odd/n5-fidelity-completion/tasks + /progress), commit + push.
+Remaining order: C2a-G1 review -> C4 review + merge (remove worktree, delete branch local+remote) -> C1c incremental
+regrade cache (user-approved, delegated writer, strict TDD) -> C1b ALONE (no concurrent heavy agents, jobs = cores; machine
+showed 25 JVMs/16 threads/31 GB) -> optional C3e/C3d-G2/C2d-G3 -> C5 report + PR to main + merge -> clean close (no
+worktrees/processes, branches deleted local+remote, §18 retro, resume memory, engram session summary).
+Frontier research + Niagara 4 port = NEW sessions (seed: N4 type catalog for bog-nav, memory n4-type-catalog-for-bog-nav-seed).
+Rules: task IDs C<n>; "N4"/"N5" = Niagara 4/5; speed WITHOUT sacrificing quality (memory speed-without-sacrificing-quality);
+never pkill -f own pattern; never kill long measurement runs; strict TDD; Conventional Commits without AI attribution;
+vendor source/JSON stay gitignored (repo is PUBLIC); RDD consent granted by the user's standing instruction this session.
 
 ## Next step
-C2d running (decompile + grade 3,997 third-party classes). Then C2a-G1 (bin/ext stages) + C3d-G1, C4, C3e/C3d-G2 as time allows, C1b, C5, close.
-C1b (full --force regrade) is deferred until the C2/C3 tool changes land, so it runs once.
+Wait for C2a-G1 and C4 reports, review + merge them, then C1c, then C1b alone, then C5.
