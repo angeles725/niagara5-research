@@ -52,6 +52,23 @@ Task IDs are C<n> (completion). "N4"/"N5" always mean Niagara 4 / Niagara 5, nev
   main grade is all-or-nothing PER MODULE (is_module_up_to_date: jar sha256 + schema) with no per-class resume.
   Extra TDD case: kill mid-module -> rerun regrades only the missing classes and yields the same JSON as an
   uninterrupted run.
+  Research 2026-09-30 (read-only agent; parent re-checked l.2237-2265, l.1577-1587, l.1815-1830, l.1066), folded into C1c:
+  (a) key ALSO covers decompiler jar sha256s, rung list + ORDER, patch label, nested bytes, classpath digest — the module
+  check today covers only schema, jar sha, tree, limits, so a re-decompile or toolchain change is skipped as up to date;
+  (b) cache the shipped-class javap parse by sha256, reused across rungs/nested/docsource (up to 6x `javap -v` today);
+  (c) NEVER cache or checkpoint a `timeout` record (wall-clock, load-dependent) and print timeouts per module;
+  (d) per-stage time accumulators (javac / javap / parse / spawn) on the progress line — no stage timings exist yet;
+  (e) hard assert jobs x class-jobs <= cores (each tool server -Xmx1g); (f) schedule modules longest-first from the
+  previous run's durations (no lone long tail). Each with an equivalence test (cache on/off -> identical JSON).
+  C1c-G1 refined: CFR via CfrDriver library API in one JVM per worker, engines serial inside it (CFR issue #250
+  StackOverflow in parallel), recycle by request count; differential test on 200 sampled classes vs `java -jar` output
+  (byte-identical .java). jxbrowser measured: CFR tried ~1,130 / rescued 232; Procyon tried ~906 / rescued 11.
+  Run the primary rung for all classes first, fallbacks as a warm second pass.
+  New optional C1c-G2: in-server javac reusing one StandardJavaFileManager per classpath digest + AppCDS (JEP 350) +
+  TieredStopAtLevel=1, and batched primary-rung compiles with per-class fallback on any error — benchmark on an IDLE
+  machine first; differential test on 100 classes incl. no-compile (same .class bytes and first_error); resolve output
+  .class by package path, not rglob simple name, before batching.
+  C3e input: Vineflower option-sweep rung on the bytecode-only residual (additive, option set in the cache key).
 - [ ] C1b Full regrade with nested files on the best-of trees; report "fully proven (outer + nested)" per module.
 - [x] C2a (code 03df7d1 reviewed: lineage review-e1d0c2509715fd09 approved+acknowledged; 174 tests OK; run 2026-09-29: 501/587 = 85.35% proven) Grade the 6 Tridium bin/ext jars (nre 704, niagarad 255, niagaraAnnotationProcessors 51, niagara-remote-client 8,
       securityBridge 2, splash 2 classes; trees already in organized/_bin-ext/*/vineflower2, no fidelity JSON yet). ~600 top-level.
