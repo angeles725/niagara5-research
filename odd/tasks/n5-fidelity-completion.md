@@ -87,7 +87,7 @@ Task IDs are C<n> (completion). "N4"/"N5" always mean Niagara 4 / Niagara 5, nev
 - [x] P0 Leak fix (process study 2026-09-30): 3 decompiled Tridium classes (BDevice, BQudtUnitTag, BSimpleSigningProfile,
   ~878 lines) were tracked in evidence/b118 since b8eebcd while the repo is PUBLIC. Untracked + gitignored + block 118
   note, PR #25 (merged; post-merge review review-0daa96c7e791466b approved — the review ran AFTER the merge, a process
-  slip). Local copies in organized/_evidence/b118/. Still in git HISTORY: purge = separate user decision.
+  slip). Local copies in organized/_evidence/b118/. Still in git HISTORY: user decided 2026-09-30 NOT to purge ("lo dejamos así"); no history rewrite.
 - [ ] P1 (before C1c) Leak guard: tools/githooks/pre-commit + CI reject staged *.class/*.jar, decompiled-vendor patterns
   (*.cons-linemapped.java, packages com.tridium/javax.baja/niagara.* outside a reviewed allowlist) and files over a size
   limit; fixture tests (blocked vendor file, allowed own probe).
