@@ -50,6 +50,23 @@ class TestLabels(unittest.TestCase):
         self.assertEqual(self.mod.patch_output_path(d, "vineflower2", "vineflower2p"),
                          d / "fidelity.vineflower2.patched.json")
 
+    def test_explicit_label_names_the_output_but_not_the_manifest(self):
+        # C3d-G1: a non-default patch tree (vineflower2m) must not share fidelity.<tree>.patched.json
+        # with the F8 tree; --patch-label picks the file label, the rung kind (manifest) is unchanged.
+        self.assertEqual(self.mod.patch_output_label("vineflower2", "vineflower2m", "mech"), "mech")
+        self.assertEqual(self.mod.patch_output_label("vineflower2", "vineflower2m"), "patched")
+        self.assertEqual(self.mod.patch_manifest_name("vineflower2", "vineflower2m"), "PATCHES.json")
+        d = Path("/x/m")
+        self.assertEqual(self.mod.patch_output_path(d, "vineflower2", "vineflower2m", "mech"),
+                         d / "fidelity.vineflower2.mech.json")
+        self.assertEqual(self.mod.patch_output_path(d, "vineflower2", "vineflower2s", "sp2"),
+                         d / "fidelity.vineflower2.sp2.json")
+
+    def test_label_must_be_a_plain_filename_token(self):
+        for bad in ("", "a/b", "..", "x.json", "a b", "canon"):
+            with self.assertRaises(ValueError, msg=bad):
+                self.mod.patch_output_label("vineflower2", "vineflower2m", bad)
+
 
 @unittest.skipUnless(os.path.isfile(JAVAC) and os.path.isfile(JAVAP), "JDK 25 not installed")
 class TestSpliceRung(unittest.TestCase):
@@ -130,6 +147,31 @@ class TestRegradeWithSpliceTree(unittest.TestCase):
             self.assertEqual(written["patch_manifest_sha256"],
                              self.mod.sha256_of(mod_dir / "vineflower2s" / "SPLICES.json"))
             self.assertEqual(patched.read_text(), "{}")
+
+    def test_regrade_with_patch_label_writes_the_labelled_file_and_keeps_patched(self):
+        with tempfile.TemporaryDirectory() as td:
+            mod_dir = Path(td) / "m"
+            (mod_dir / "vineflower2m" / "p").mkdir(parents=True)
+            (mod_dir / "vineflower2m" / "p" / "B.java").write_text("class B {}\n")
+            (mod_dir / "vineflower2m" / "PATCHES.json").write_text(json.dumps({"schema": 1}))
+            (mod_dir / "fidelity.vineflower2.json").write_text(json.dumps(
+                {"module": "m", "schema_version": 2, "classes": {"p/B": {"grade": "bytecode-only"}}}))
+            (mod_dir / "fidelity.vineflower2.patched.json").write_text("{}")
+
+            def grade(fqcn, classfile, **kwargs):
+                return fqcn, {"grade": "roundtrip-exact", "patched": True}
+            self.mod.regrade_nonclean_module("m", organized_dir=Path(td), tree="vineflower2", grade_fn=grade,
+                                             patch_tree="vineflower2m", patch_label="mech")
+            self.assertTrue((mod_dir / "fidelity.vineflower2.mech.json").is_file())
+            self.assertEqual((mod_dir / "fidelity.vineflower2.patched.json").read_text(), "{}")
+
+    def test_cli_rejects_patch_label_without_patch_tree(self):
+        import contextlib
+        import io
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err), self.assertRaises(SystemExit):
+            self.mod.main(["--regrade-nonclean", "--patch-label", "mech", "--modules", "m"])
+        self.assertIn("--patch-label requires --patch-tree", err.getvalue())
 
 
 if __name__ == "__main__":

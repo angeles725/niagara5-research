@@ -1989,7 +1989,7 @@ def _grade_one_class(
             # a patched (or spliced) class counts only when the patch rung's grade
             # IS the class grade (never merely because a patch rung was attempted)
             hit = best["best_decompiler"] == patch_tree
-            if patch_output_label(primary_tree, patch_tree) == "spliced":
+            if patch_kind(primary_tree, patch_tree) == "spliced":
                 record["spliced"] = hit
                 if hit:
                     record["splice"] = _splice_record(fqcn, patch_tree, Path(patch_dir), patch_java)
@@ -2234,20 +2234,37 @@ def patched_output_path(mod_dir: Path, tree: str) -> Path:
     return Path(mod_dir) / f"fidelity.{tree}.patched.json"
 
 
-def patch_output_label(tree: str, patch_tree: str) -> str:
-    """"spliced" for a per-method splice tree (T21/F9, tools/n5-splice-methods.py
-    writes <tree>s), "patched" for every other patch tree (F8's <tree>p)."""
+def patch_kind(tree: str, patch_tree: str) -> str:
+    """The rung kind of a patch tree: "spliced" for a per-method splice tree (T21/F9,
+    tools/n5-splice-methods.py writes <tree>s), "patched" for every other patch tree (F8's
+    <tree>p, the mechanical <tree>m, ...). It decides the manifest and the record flags."""
     return "spliced" if patch_tree == tree + "s" else "patched"
 
 
+_PATCH_LABEL_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]*$")
+_RESERVED_PATCH_LABELS = frozenset({"canon", "json"})
+
+
+def patch_output_label(tree: str, patch_tree: str, label: Optional[str] = None) -> str:
+    """The <label> of the output fidelity.<tree>.<label>.json. Defaults to patch_kind;
+    an explicit `label` (C3d-G1, --patch-label) lets a non-default patch tree (vineflower2m, a
+    _bin-ext stage) write its own file instead of sharing fidelity.<tree>.patched.json. It must
+    be a plain filename token and never collide with the canon file."""
+    if label is None:
+        return patch_kind(tree, patch_tree)
+    if not _PATCH_LABEL_RE.fullmatch(label) or label in _RESERVED_PATCH_LABELS:
+        raise ValueError(f"invalid patch label {label!r}: use letters, digits, '_' or '-' (not canon/json)")
+    return label
+
+
 def patch_manifest_name(tree: str, patch_tree: str) -> str:
-    return "SPLICES.json" if patch_output_label(tree, patch_tree) == "spliced" else "PATCHES.json"
+    return "SPLICES.json" if patch_kind(tree, patch_tree) == "spliced" else "PATCHES.json"
 
 
-def patch_output_path(mod_dir: Path, tree: str, patch_tree: str) -> Path:
+def patch_output_path(mod_dir: Path, tree: str, patch_tree: str, label: Optional[str] = None) -> Path:
     """fidelity.<tree>.<label>.json (label: patch_output_label) -- a splice run
     never overwrites the F8 patched file, and vice versa."""
-    return Path(mod_dir) / f"fidelity.{tree}.{patch_output_label(tree, patch_tree)}.json"
+    return Path(mod_dir) / f"fidelity.{tree}.{patch_output_label(tree, patch_tree, label)}.json"
 
 
 def _write_json_atomic(path: Path, data: dict) -> None:
@@ -2265,6 +2282,7 @@ def regrade_nonclean_module(
     checkpoint_every: int = REGRADE_CHECKPOINT_EVERY,
     force: bool = False,
     patch_tree: Optional[str] = None,
+    patch_label: Optional[str] = None,
     **grade_kwargs,
 ) -> dict:
     """Re-grade (recompile, full redundancy ladder, current grader) ONLY the
@@ -2294,7 +2312,7 @@ def regrade_nonclean_module(
         raise FileNotFoundError(f"no fidelity.{tree}.json for module {module} under {organized_dir}")
     src_sha = sha256_of(src_path)
     source = json.loads(src_path.read_text())
-    out_path = patch_output_path(mod_dir, tree, patch_tree) if patch_tree else canon_output_path(mod_dir, tree)
+    out_path = patch_output_path(mod_dir, tree, patch_tree, patch_label) if patch_tree else canon_output_path(mod_dir, tree)
     patch_dir = mod_dir / patch_tree if patch_tree else None
     manifest_path = patch_dir / patch_manifest_name(tree, patch_tree) if patch_dir else None
     manifest_sha = sha256_of(manifest_path) if manifest_path and manifest_path.is_file() else None
@@ -3288,7 +3306,7 @@ def _main_regrade_nonclean(args, modules: list[str], organized_dir: Path, classp
         try:
             result = regrade_nonclean_module(
                 module, organized_dir=organized_dir, tree=args.tree, class_jobs=args.class_jobs, force=args.force,
-                patch_tree=args.patch_tree,
+                patch_tree=args.patch_tree, patch_label=args.patch_label,
                 classpath=classpath, javac_bin=DEFAULT_JAVAC, javap_bin=DEFAULT_JAVAP, java_bin=DEFAULT_JAVA,
                 cfr_jar=DEFAULT_CFR_JAR, procyon_jar=DEFAULT_PROCYON_JAR, jd_cli_jar=jd_cli_jar,
                 tool_server=args.tool_server,
@@ -3453,6 +3471,11 @@ def main(argv: Optional[list[str]] = None) -> int:
                               "fidelity.<tree>.patched.json. TREE = <tree>s is a per-method splice tree "
                               "(tools/n5-splice-methods.py, SPLICES.json): output fidelity.<tree>.spliced.json, "
                               "records spliced: true + splice donors.")
+    parser.add_argument("--patch-label", default=None, metavar="LABEL",
+                         help="with --patch-tree: name the output fidelity.<tree>.<LABEL>.json instead of the "
+                              "default patched/spliced label, so a non-default patch tree (e.g. vineflower2m or a "
+                              "_bin-ext stage) never shares or overwrites another rung's file. The rung kind "
+                              "(PATCHES.json vs SPLICES.json, patched vs spliced records) is unchanged.")
     parser.add_argument("--compare", default=None, metavar="TREE_A,TREE_B",
                          help="report mode: read each already-graded module's fidelity.<tree>.json for BOTH "
                               "trees (no grading is performed) and report the per-class grade transition "
@@ -3477,6 +3500,15 @@ def main(argv: Optional[list[str]] = None) -> int:
         # a patch rung must never leak into the pure fidelity.<tree>.json
         parser.error("--patch-tree requires --regrade-nonclean (output: fidelity.<tree>.patched.json)")
         return 2
+    if args.patch_label and not args.patch_tree:
+        parser.error("--patch-label requires --patch-tree")
+        return 2
+    if args.patch_label:
+        try:
+            patch_output_label(args.tree, args.patch_tree, args.patch_label)
+        except ValueError as exc:
+            parser.error(str(exc))
+            return 2
     organized_dir = Path(args.organized_dir)
     if args.third_party_uncovered:
         if args.all or args.modules or args.compare or args.bin_ext_tridium or args.regrade_nonclean:
