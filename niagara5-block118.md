@@ -1,5 +1,7 @@
 # Block 118 — Logic-recovery method ladder for N5: what each instrument proves (line-mapped Vineflower, a LineNumberTable pattern discriminator, SootUp/Joern/bytecode-xref call graphs, sandboxed differential execution, an ASM trace agent, CodeQL vs Joern dataflow, and a krak2 round-trip of all 20,724 module classes)
 
+> Evidence note (2026-09-30): the three `evidence/b118/*.cons-linemapped.java` files are decompiled vendor source and are kept LOCAL only (gitignored; local copy under `organized/_evidence/b118/`). `evidence/b118/SHA256SUMS` still pins their exact bytes; regenerate them with Vineflower 1.12.0 `--bytecode-source-mapping` + `__dump_original_lines__` as described below.
+
 > Research task **T18** of `odd/tasks/decompiler-fidelity-audit.md` (user requirement: "as faithful as possible;
 > verify everything is right; try a thousand ways that can help us with the decompile and to know the logic").
 > Evaluates seven method families (M1-M7) plus the orchestrator's addendum (forensic Vineflower flags, CFR git
