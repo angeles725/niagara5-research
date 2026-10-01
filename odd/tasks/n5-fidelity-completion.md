@@ -68,6 +68,10 @@ Task IDs are C<n> (completion). "N4"/"N5" always mean Niagara 4 / Niagara 5, nev
   TieredStopAtLevel=1, and batched primary-rung compiles with per-class fallback on any error — benchmark on an IDLE
   machine first; differential test on 100 classes incl. no-compile (same .class bytes and first_error); resolve output
   .class by package path, not rglob simple name, before batching.
+  Design rule (user 2026-09-30: "que nos sirva para cualquier cosa"): build the C1c cache/checkpoint/scheduler/timers as a
+  DOMAIN-FREE module (no Niagara/javac names inside; the grader plugs in key + work functions), plus a strategy ranker that
+  orders rungs/hypotheses by historical success (ordering only, never skipping; the verifier stays the judge). Promote to
+  the research-sdd kit after its equivalence tests pass (kit issue #1262, throughput retro row 5).
   C3e input: Vineflower option-sweep rung on the bytecode-only residual (additive, option set in the cache key).
 - [ ] C1b Full regrade with nested files on the best-of trees; report "fully proven (outer + nested)" per module.
 - [x] C2a (code 03df7d1 reviewed: lineage review-e1d0c2509715fd09 approved+acknowledged; 174 tests OK; run 2026-09-29: 501/587 = 85.35% proven) Grade the 6 Tridium bin/ext jars (nre 704, niagarad 255, niagaraAnnotationProcessors 51, niagara-remote-client 8,
