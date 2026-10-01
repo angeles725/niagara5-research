@@ -146,9 +146,23 @@ Task IDs are C<n> (completion). "N4"/"N5" always mean Niagara 4 / Niagara 5, nev
 - [x] C2d-G2 `$`-prefixed top-level names (d1623a7 upstream population, 4d6369e grader discovery): nimbus 84 classes,
   third-party 5,408/9,296 = 58.2%.
 - [ ] C3e Hand reconstruction of the long tail (~220 compile errors + 4 many-method mismatches), prioritised by module use.
-- [ ] C4 Push canonical-only classes toward byte-exact where source-controllable: expression-level rules (r1 503, iinc 21,
-      cmp1 18, const 1, boolmat 53 ~ 700 classes) first; inspect the 210 canonical classes with no rule fired;
-      layout rules (tail 2,101, min 1,192, web, inl, merge, dse, thread, peep) are javac codegen shape and stay canonical.
+- [x] C4 Canonical-only -> byte-exact (worktree c4, 29 commits ee89ae9..3610d70, 2,418 changed lines; merged 69d0532).
+  Exact 10,345 -> 11,827 (+1,482), canonical 3,513 -> 2,057, t2 72 -> 46, proven 13,955 unchanged, fully proven
+  594 -> 1,503; 0 regressions, 0 missing (parent re-ran `n5-exact-regrade.py --organized-dir organized recount`).
+  Writer: 30 random new exacts recompiled against the official classpath = 30/30; make test 888 OK (skipped=4).
+  Review: 10 slices all approved, 0 corrections: review-50b5d4e9686963fb, -0fee76f491cc1e3a, -4909499e048f0cf5,
+  -5369da65fabe2417, -9119193f3a75c2ca, -f65795ac81c92f5a, -0eb591f996a8354a, -99df7f00f3791317, -7a6d1cff57a05b85,
+  -df0f6ac4ef3b9afa. Compiler verdict: shipped = javac 25 (major 69); residual non-exactness is SOURCE SHAPE, not
+  compiler (pair fixtures per rule). The old premise "layout rules stay canonical" is DISPROVED: tail 872/1,407,
+  min 358/693, web 110/416 solved. Residual 2,128 non-exact proven (1,019 no-donor, 916 >=4 methods not attempted,
+  124 CFR/Procyon-best, 35 synthetic, 21 clinit, ...).
+  Child gaps: C4-G1 JDK 25.0.3 check; C4-G2 (MUST before C1b) grader `--regrade-nonclean --patch-tree` skips
+  baseline-clean classes, so C1b would NOT reproduce +1,482 — target non-exact classes with a patched source;
+  C4-G3 LVT slot/scope solver for `web` (718); C4-G4 combo donors; C4-G5 string/enum switch reorder; C4-G6 refused map
+  overwritten per run; C4-G7 ldc_w equivalent (25); C4-G8 span-scanner cost; C4-G9 (parent) recount without
+  --organized-dir silently reports missing=14307 rc=0 -> fail loudly; C4b optional: 916 >=4-method + 124 CFR-best.
+  Retention: /tmp/n5-jars-local (437 MB local jar copy, javac ~6x faster than /mnt/c, identical results) +
+  /tmp/n5-jars-cache-local kept for C1b, delete at C5; organized/_evidence/c4-backup delete at C5.
 - [ ] C5 Report + PR + merge; then open the N4 port as a separate ODD project.
 
 ## Route log
@@ -250,17 +264,11 @@ Task IDs are C<n> (completion). "N4"/"N5" always mean Niagara 4 / Niagara 5, nev
   KeyError next_transition).
 
 ## Handoff / resume point (rewritten before the 3rd context compaction, 2026-10-01 ~01:10 CST)
-Numbers: Tridium top-level proven 13,955/14,307 = 97.54% (exact 10,345); bin/ext 543/587 = 92.50% (C2a-G1 done,
-reviewed); third-party 5,408/9,296 = 58.2%. Last REVIEWED boundary on this branch: ba6b830 (later commits are docs-only
-or retro moves: passive).
-IN FLIGHT (notifies on completion; do NOT relaunch or duplicate):
-- C4 writer: worktree niagara5-research-worktrees/c4, branch feat/n5-c4-exact (from 5c030c6), 28 commits up to 795ed9c
-  (~2,270 changed lines). Stage B2 measurement since 22:14: 85/164 modules at 00:46 (5 shards,
-  organized/_evidence/c4/run.sB2.{0..4}.log, targets.sB2.*.json), 1,009 classes spliced so far; rate ~0.63 modules/min
-  -> B2 ends ~02:50, then regrade + report. Shard 2 silent since 23:56 (big module) — never kill measurement runs.
-  When it reports: spot-check one command; P3-style review in ~9 slices <=260 lines at commit boundaries with REAL
-  parents, rdd.py with ABSOLUTE worktree paths; merge; remove worktree; delete branch local+remote.
-REMAINING ORDER: C4 review+merge -> P1 leak guard, P2 test fast lane, P3 review tooling, P5 `$` lint -> C1c (domain-free
+Numbers: Tridium top-level proven 13,955/14,307 = 97.54% (exact 11,827 after C4); bin/ext 543/587 = 92.50% (C2a-G1 done,
+reviewed); third-party 5,408/9,296 = 58.2%. Last REVIEWED boundary on this branch: 69d0532 (C4 merge; 10 slices approved;
+later docs-only commits are passive).
+IN FLIGHT: none (C4 merged 69d0532; worktree c4 and branch feat/n5-c4-exact removed).
+REMAINING ORDER: P1 leak guard, P2 test fast lane, P3 review tooling, P5 `$` lint -> C4-G2 grader fix -> C1c (domain-free
 cache=checkpoint engine, +P4 generated facts) -> C1d dedup -> C3h triage -> C3f Vineflower sweep -> C3g AI-proposed
 reconstruction -> C1b ALONE (jobs=cores, --patch-label mech for module m results) -> C5 report + PR + merge (clean-check
 must print nothing; delete rollback backups c3a/c3b/c3d/c4-backup) -> clean close.
@@ -273,4 +281,4 @@ Related work outside this repo (see Engram + memory files): kit PR angeles725/sd
 MCP research focus n4-agent-mcp in niagara-research (B1168+).
 
 ## Next step
-Wait for the C4 report; review + merge it; then P1/P2/P3/P5, C1c (+P4), C1d, C3h, C3f, C3g, C1b alone, C5.
+Next: P1/P2/P3/P5, C4-G2 grader fix, C1c (+P4), C1d, C3h, C3f, C3g, C1b alone, C5.
