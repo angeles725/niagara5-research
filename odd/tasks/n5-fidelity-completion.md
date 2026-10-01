@@ -69,6 +69,13 @@ Task IDs are C<n> (completion). "N4"/"N5" always mean Niagara 4 / Niagara 5, nev
 - [x] C3c (same stage as C3b) Split `cannot find symbol` (67) by missing symbol kind and patch the mechanical sub-classes.
 - [x] C3d (23 commits ff7012c..6bf863b, 12 reviewed slices; make test 803 OK) Per-method splice with more donors / hand edits for the 103 one-method and 18 two-to-three-method mismatches
       (`<clinit>` is the top mismatched method: 166 of 602).
+- [x] C2a-G1 bin/ext on the best-of ladder (base + doPrivileged + mechanical + splice rungs): 543/587 = 92.50% proven
+  (was 501, 85.35%). Commits d1623a7, 3c46358, 4d6369e, 3c156e0, ba6b830; reviewed in 3 slices: 6f53a9c..3c46358
+  review-a4d08a71f2ef7afc, 3c46358..036ca14 review-74d18ef1015a3e1d, 036ca14..ba6b830 review-6bf66779a39df0b8 (all
+  approved, 0 corrections); make test 841 OK (writer), parent spot check 7 new tests OK.
+- [x] C3d-G1 `--patch-label LABEL` (3c46358): non-default patch trees write their own rung file; `vineflower2.mech` added to BEST_OF_RUNGS.
+- [x] C2d-G2 `$`-prefixed top-level names (d1623a7 upstream population, 4d6369e grader discovery): nimbus 84 classes,
+  third-party 5,408/9,296 = 58.2%.
 - [ ] C3e Hand reconstruction of the long tail (~220 compile errors + 4 many-method mismatches), prioritised by module use.
 - [ ] C4 Push canonical-only classes toward byte-exact where source-controllable: expression-level rules (r1 503, iinc 21,
       cmp1 18, const 1, boolmat 53 ~ 700 classes) first; inspect the 210 canonical classes with no rule fired;
@@ -161,22 +168,30 @@ Task IDs are C<n> (completion). "N4"/"N5" always mean Niagara 4 / Niagara 5, nev
   (largest family); C3d-G3 lambda/anonymous/access$ numbering via declaration reordering; C3d-G4 checkcast on intersection
   casts/varargs; C3d-G5 iinc inside expressions; vineflower2m tree not regenerated with brace-all.
 
+- C2a-G1 result (evidence organized/_evidence/c2a-g1/): exact 401 -> 412, canonical 99 -> 130, fully proven 539/587 (91.8%).
+  Bytecode-only nre 64 -> 28, niagarad 21 -> 15, niagaraAnnotationProcessors 1. Stages: 2p nre 45 classes/135 sites +
+  niagarad 7/9; 2m nre 2 + niagarad 2 compile (regraded with --patch-label mech, m re-run after the p regrade); 2s 53 targets,
+  9 spliced, refused no-donor 25 / clinit 2 / structural 1 / synthetic 2.
+  Child gaps (parent decisions by recommendation): C2a-G2 44 residual bytecode-only bin/ext classes, mostly no-donor -> fold
+  into C3e or keep as residual; C2a-G3 n5-patch-mechanical.py reads only fidelity.vineflower2.patched.json (fixed RUNGS) ->
+  read BEST_OF_LABELS files, also closes C3b-G4; C2a-G4 4 nre clinit/synthetic mismatches -> C3d-G2/G3 families;
+  C1b MUST regrade module m-stage results with `--patch-label mech` (C3b m results still sit in .patched.json);
+  C2d-G5 n5-extract-census.py:127 and n5-recon-helper.py:72 still split at the first `$`.
+  Process note: rdd.py needs an ABSOLUTE worktree path (a relative one is re-resolved inside the worktree and fails with
+  KeyError next_transition).
+
 ## Handoff / resume point (rewritten before the 2nd context compaction, 2026-09-30 ~21:40 CST)
-Numbers: Niagara 5 Tridium top-level proven 13,955/14,307 = 97.54% (exact 10,345). bin/ext Tridium 501/587 = 85.35% (base
-rung; C2a-G1 regrade in flight). Third-party (C2b+C2e+C2d) 5,407/9,294 = 58.2% (64.9% of decompile-gradable); C2d done.
-Last REVIEWED boundary on the branch: 6f53a9c (C2d code 3bb6d9c approved review-03eada57d4d2f0b9; 0402e78 passive).
-In flight when written (both agents notify on completion; do NOT relaunch them):
-- C2a-G1 writer (main checkout, same branch): done so far d1623a7 (C2d-G2 dollar names, upstream), 3c46358 (--patch-label,
-  C3d-G1), 4d6369e (grader discovers dollar-prefixed top-level classes), 3c156e0 (bin/ext best-of over 2p/2m/2s rungs),
-  ba6b830 (report bin/ext best-of + nimbus grades). Running stage-s/regrade-s; evidence organized/_evidence/c2a-g1/.
-  Some of these commits were pushed together with 036ca14 but are NOT reviewed yet.
+Numbers: Niagara 5 Tridium top-level proven 13,955/14,307 = 97.54% (exact 10,345). bin/ext Tridium 543/587 = 92.50%
+(best-of, C2a-G1 done). Third-party 5,408/9,296 = 58.2%.
+Last REVIEWED boundary on the branch: ba6b830 (C2a-G1 slices approved; e9f854d and this update are docs-only/passive).
+In flight (notifies on completion; do NOT relaunch):
 - C4 writer: worktree niagara5-research-worktrees/c4, branch feat/n5-c4-exact (from 5c030c6), last seen 795ed9c.
 When each returns: spot-check one reported command; review its commits with
 `python3 organized/_evidence/tools/rdd.py <repo-or-worktree> <base-ref>` in slices <= ~260 changed lines at commit
 boundaries (detached temp worktree under niagara5-research-worktrees/ for a slice end; use each commit's REAL parent as
 base -- `git log --format='%h %p'` -- because of merge topology); docs-only slices assess passive. Then tick tasks here,
 mirror to Engram (odd/n5-fidelity-completion/tasks + /progress), commit + push.
-Remaining order: C2a-G1 review -> C4 review + merge (remove worktree, delete branch local+remote) -> C1c incremental
+Remaining order: C4 review + merge (remove worktree, delete branch local+remote) -> C1c incremental
 regrade cache (user-approved, delegated writer, strict TDD) -> C1b ALONE (no concurrent heavy agents, jobs = cores; machine
 showed 25 JVMs/16 threads/31 GB) -> optional C3e/C3d-G2/C2d-G3 -> C5 report + PR to main + merge -> clean close (no
 worktrees/processes, branches deleted local+remote, §18 retro, resume memory, engram session summary).
@@ -186,4 +201,4 @@ never pkill -f own pattern; never kill long measurement runs; strict TDD; Conven
 vendor source/JSON stay gitignored (repo is PUBLIC); RDD consent granted by the user's standing instruction this session.
 
 ## Next step
-Wait for C2a-G1 and C4 reports, review + merge them, then C1c, then C1b alone, then C5.
+Wait for the C4 report, review + merge it, then C1c, then C1b alone, then C5.
